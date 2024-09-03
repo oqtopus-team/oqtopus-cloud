@@ -1,0 +1,613 @@
+tasks.sampling:
+  get:
+    tags:
+      - task
+    summary: "List all sampling quantum tasks"
+    description: "List all sampling quantum tasks"
+    operationId: listSamplingTasks
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: "Return a list of submitted quantum tasks"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/tasks.yaml#/tasks.SamplingTaskInfo"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+  post:
+    tags:
+      - task
+    summary: "Submit a sampling quantum task"
+    description: "Submit a sampling quantum task"
+    operationId: submitSamplingTask
+    security:
+      - BearerAuth: []
+    requestBody:
+      description: "Quantum task to be submitted"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/tasks.yaml#/tasks.SamplingTaskDef"
+          examples:
+            simulator:
+              description: Simulator example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Sampling",
+                  device: "SVsim",
+                  nNodes: 12,
+                  nShots: 1000,
+                  skipTranspilation: false,
+                  seedTranspilation: 873,
+                  seedSimulation: 39058567,
+                  nPerNode: 2,
+                  simulationOpt: {
+                    optimizationMethod: "light",
+                    optimizationBlockSize: 1,
+                    optimizationSwapLevel: 1
+                  },
+                  note: "Bell State Sampling Example"
+                }
+            qpu:
+              description: QPU example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Sampling",
+                  device: "Kawasaki",
+                  nShots: 1000,
+                  note: "Bell State Sampling Example"
+                }
+
+    responses:
+      "200":
+        description: "Task submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
+            example:
+              taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      '400':
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+
+tasks.sampling.taskId:
+  get:
+    tags:
+      - task
+    summary: "Get selected sampling task"
+    description: "Get selected sampling task"
+    operationId: getSamplingTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/tasks.yaml#/tasks.SamplingTaskInfo"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+  delete:
+    tags:
+      - task
+    summary: "Delete sampling task"
+    description: "Deletes quantum task and related result<br/><br/>Operation is valid only for task with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING tasks must be cancelled before deletion."
+    operationId: deleteSamplingTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Quantum task deleted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Quantum task deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+tasks.sampling.taskId.status:
+  get:
+    tags:
+      - task
+    summary: "Get selected sampling task's status"
+    description: "Get selected sampling task's status"
+    operationId: getSamplingTaskStatus
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task status"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/tasks.yaml#/tasks.GetSamplingTaskStatusResponse'
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+tasks.sampling.taskId.cancel:
+  post:
+    tags:
+      - task
+    summary: "Cancel sampling task"
+    description: "Start a procedure to cancel quantum task.<br/><br/> Operation is valid only for task with status: QUEUED or RUNNING."
+    operationId: cancelSamplingTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Task cancelled"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: cancel request accepted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+tasks.estimation:
+  post:
+    tags:
+      - task
+    summary: "Submit estimation quantum task"
+    description: "Submit estimation quantum task"
+    operationId: submitEstimationTask
+    security:
+      - BearerAuth: []
+    requestBody:
+      description: "Quantum task to be submitted"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/tasks.yaml#/tasks.EstimationTaskDef"
+          examples:
+            simulator:
+              description: Simulator example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Estimation",
+                  device: "SVsim",
+                  nNodes: 12,
+                  method: "sampling",
+                  nShots: 1000,
+                  operator:
+                  [
+                    ["X 0 X 1", [1.5, 2.8]],
+                    ["Y 0 Z 1", [1.2, -2e-8]],
+                  ],
+                  skipTranspilation: false,
+                  seedTranspilation: 873,
+                  seedSimulation: 39058567,
+                  nPerNode: 2,
+                  simulationOpt: {
+                    optimizationMethod: "light",
+                    optimizationBlockSize: 1,
+                    optimizationSwapLevel: 1
+                  },
+                  note: "Bell State Estimation Example"
+                }
+            simulator2:
+              description: Simulator example with statevector
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Estimation",
+                  device: "SVsim",
+                  nNodes: 12,
+                  method: "state_vector",
+                  operator:
+                  [
+                    ["X 0 X 1", [1.5, 2.8]],
+                    ["Y 0 Z 1", [1.2, -2e-8]],
+                  ],
+                  skipTranspilation: false,
+                  seedTranspilation: 873,
+                  seedSimulation: 39058567,
+                  nPerNode: 2,
+                  simulationOpt: {
+                    optimizationMethod: "light",
+                    optimizationBlockSize: 1,
+                    optimizationSwapLevel: 1
+                  },
+                  note: "Bell State Estimation Example"
+                }
+            qpu:
+              description: QPU example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Estimation",
+                  device: "Kawasaki",
+                  method: "sampling",
+                  nShots: 1000,
+                  operator:
+                  [
+                    ["X 0 X 1", [1.5, 2.8]],
+                    ["Y 0 Z 1", [1.2, -2e-8]],
+                  ],
+                  note: "Bell State Estimation Example"
+                }
+
+    responses:
+      "200":
+        description: "Task submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
+            example:
+              taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+  get:
+    tags:
+      - task
+    summary: "List all estimation quantum tasks"
+    description: "List all estimation quantum tasks"
+    operationId: listEstimationTasks
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: "Return a list of submitted quantum tasks"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/tasks.yaml#/tasks.EstimationTaskInfo"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+
+tasks.estimation.taskId:
+  get:
+    tags:
+      - task
+    summary: "Get selected estimation task"
+    description: "Get selected estimation task"
+    operationId: getEstimationTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/tasks.yaml#/tasks.EstimationTaskInfo"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+  delete:
+    tags:
+      - task
+    summary: "Deletes estimation task"
+    description: "Deletes quantum task and related result<br/><br/>Operation is valid only for task with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING tasks must be cancelled before deletion."
+    operationId: deleteEstimationTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Quantum task deleted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Quantum task deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+tasks.estimation.taskId.status:
+  get:
+    tags:
+      - task
+    summary: "Get selected estimation task's status"
+    description: "Get selected estimation task's status"
+    operationId: getEstimationTaskStatus
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task status"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/tasks.yaml#/tasks.GetEstimationTaskStatusResponse'
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+tasks.estimation.taskId.cancel:
+  post:
+    tags:
+      - task
+    summary: "Cancel estimation task"
+    description: "Start a procedure to cancel quantum task.<br/><br/> Operation is valid only for task with status: QUEUED or RUNNING."
+    operationId: cancelEstimationTask
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "cancel request accepted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Task cancelled
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found

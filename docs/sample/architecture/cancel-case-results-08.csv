@@ -1,0 +1,2 @@
+task_id,status,result,reason,transpiled_code,qubit_allocation
+2c7a254b-4985-43eb-b0f3-598c88a8c36f,CANCELLED,null,Cancelled by the user,null,null

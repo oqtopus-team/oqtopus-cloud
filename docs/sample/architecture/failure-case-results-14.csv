@@ -1,0 +1,2 @@
+task_id,status,result,reason,transpiled_code,qubit_allocation
+7b198c4a-a4c5-41ab-8916-26f44d76ec13,FAILURE,null,The use of measurements/classical-bits in OpenQASM code is not allowed for an estimation task.,null,null

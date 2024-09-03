@@ -1,0 +1,7 @@
+INSERT INTO main.tasks (id, owner, name, device, n_qubits, n_nodes, code, action, method, shots, operator, qubit_allocation, skip_transpilation, seed_transpilation, seed_simulation, n_per_node, simulation_opt, ro_error_mitigation, note, status, created_at)
+SELECT UNHEX(REPLACE('7af020f6-2e38-4d70-8cf0-4349650ea08c', '-', '')), 'admin', 'Test task 1', 'Kawasaki', 2, 12, 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];', 'sampling', 'state_vector', 1024, 'Z0*Z1', NULL, false, NULL, NULL, 1, NULL, 'none', NULL, 'QUEUED', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT * FROM main.tasks WHERE owner = 'admin' AND name = 'Test task 1');
+
+INSERT INTO main.tasks (id, owner, name, device, n_qubits, n_nodes, code, action, method, shots, operator, qubit_allocation, skip_transpilation, seed_transpilation, seed_simulation, n_per_node, simulation_opt, ro_error_mitigation, note, status, created_at)
+SELECT UNHEX(REPLACE('7af020f6-2e38-4d70-8cf0-4349650ea08d', '-', '')), 'admin', 'Test task 2', 'Kawasaki', 2, 12, 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];', 'sampling', 'state_vector', 1024, 'Z0*Z1', NULL, false, NULL, NULL, 1, NULL, 'none', NULL, 'QUEUED_FETCHED', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT * FROM main.tasks WHERE owner = 'admin' AND name = 'Test task 2');

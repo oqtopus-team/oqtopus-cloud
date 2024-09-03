@@ -1,0 +1,143 @@
+results.sampling.taskId:
+  get:
+    tags:
+      - result
+    summary: "Get result of a sampling task"
+    description: "Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks"
+    operationId: getSamplingResult
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task result"
+        content:
+          application/json:
+            schema:
+                $ref: "../schemas/results.yaml#/results.SamplingResultDef"
+            examples:
+              success sampling:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "SUCCESS",
+                    "result":
+                      {
+                        "00": 5020,
+                        "11": 4980
+                      },
+                    "transpiledCode": "OPENQASM 3;include \"stdgates.inc\";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];"
+                  }
+              failure:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "FAILURE",
+                    "reason": "Invalid device parameter in request"
+                  }
+              cancel:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "CANCELLED",
+                    "reason": "User cancelled"
+                  }
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found
+
+results.estimation.taskId:
+  get:
+    tags:
+      - result
+    summary: "Get result of estimation task"
+    description: "Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks"
+    operationId: getEstimationResult
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: "Task identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum task result"
+        content:
+          application/json:
+            schema:
+                $ref: "../schemas/results.yaml#/results.EstimationResultDef"
+            examples:
+              success estimation:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "SUCCESS",
+                    "result": [1.5, 2.8],
+                    "transpiledCode": "OPENQASM 3;include \"stdgates.inc\";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];"
+                  }
+              failure:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "FAILURE",
+                    "reason": "Invalid device parameter in request"
+                  }
+              cancel:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "CANCELLED",
+                    "reason": "User cancelled"
+                  }
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: task not found

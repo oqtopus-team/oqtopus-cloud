@@ -1,0 +1,16 @@
+desc: hello world test
+runners:
+  req: ${API_URL}
+  openapi3: docs/provider/openapi.yaml
+steps:
+- req:
+    /v1/hello:
+      get:
+        headers:
+          Authorization: Bearer ${IdToken}
+        body: null
+  test: |
+    # status code is 200
+    current.res.status == 200
+    # body is as expected
+    && compare(current.res.body, {"message":"Hello World!!"})

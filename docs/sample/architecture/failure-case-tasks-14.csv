@@ -1,0 +1,10 @@
+id,owner,name,device,n_qubits,n_nodes,code,action,method,shots,operator,qubit_allocation,skip_transpilation,seed_transpilation,seed_simulation,n_per_node,simulation_opt,ro_error_mitigation,note,status,created_at
+7b198c4a-a4c5-41ab-8916-26f44d76ec13,alice,null,SVSim,null,null,"OPENQASM 3;
+include ""stdgates.inc"";
+bit[2] meas;
+qubit[2] q;
+h q[0];
+cx q[0], q[1];
+barrier q[0], q[1];
+meas[0] = measure q[0];
+meas[1] = measure q[1];",estimation,sampling,1024,"[[""I"", [1.0, 0.0]], [""X 0"", [1.0, 0.0]], [""X 0 X 1"", [0.5, 0.0]], [""Y 0 Y 1"", [0.5, 0.0]], [""Z 0 Z 1"", [-1.5, 0.0]]]",null,0,null,null,1,null,null,null,FAILED,2024-06-25 07:17:36

@@ -1,0 +1,75 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: './schemas/security.yaml#/BearerAuth'
+
+devices:
+  get:
+    tags:
+      - device
+    summary: List available devices
+    description: List available devices
+    operationId: listDevices
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Returns a list of available devices
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/devices.yaml#/devices.DeviceInfo"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+
+devices.deviceId:
+  get:
+    tags:
+      - device
+    summary: Get specified device details
+    description: get device
+    operationId: getDevice
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: deviceId
+        in: path
+        description: "Device identifier"
+        required: true
+        schema:
+          type: string
+        example: "Kawasaki"
+    responses:
+      '200':
+        description: task response
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/devices.yaml#/devices.DeviceInfo'
+      '404':
+        description: "Device with deviceId not found"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+

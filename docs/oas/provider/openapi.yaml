@@ -1,0 +1,847 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud Provider API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8888
+    description: Local server url
+paths:
+  /internal/devices/{deviceId}:
+    patch:
+      tags:
+        - devices
+      summary: Update data of selected device
+      description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending tasks  (all device types)<br/>- calibrationData (QPU devices only)
+      operationId: patchDeviceData
+      security: []
+      parameters:
+        - in: path
+          name: deviceId
+          description: Device ID
+          required: true
+          schema:
+            type: string
+            example: Kawasaki
+      requestBody:
+        description: New calibration data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/devices.DeviceDataUpdate'
+            examples:
+              status update (NOT_AVAILABLE):
+                value:
+                  command: DeviceStatusUpdate
+                  status: NOT_AVAILABLE
+                  restartAt: '2023-09-10T14:00:00Z'
+              status update (AVAILABLE):
+                value:
+                  command: DeviceStatusUpdate
+                  status: AVAILABLE
+              pending tasks update:
+                value:
+                  command: DevicePendingTasksUpdate
+                  nPendingTasks: 6
+              calibrationData update:
+                value:
+                  command: DeviceCalibrationUpdate
+                  calibrationData:
+                    qubitConnectivity:
+                      - (1,4)
+                      - (4,5)
+                      - (5,8)
+                    t1:
+                      '0': 55.51
+                      '1': 37.03
+                      '2': 57.13
+                    t2:
+                      '0': 99.31
+                      '1': 111.03
+                      '2': 30.12
+                    roError:
+                      '0': 0.0467
+                      '1': 0.18
+                      '2': 0.355
+                    gateError:
+                      sx:
+                        '0': 0.00692
+                        '1': 0.00296
+                        '2': 0.072
+                    measProb0As1:
+                      '0': 0.00608
+                      '1': 0.012
+                      '2': 0.248
+                    measProb1As0:
+                      '0': 0.0281
+                      '1': 0.386
+                      '2': 0.0811
+                    gateDuration:
+                      sx:
+                        '0': 29.3
+                        '1': 50.9
+                        '2': 45.4
+                  calibratedAt: '2023-09-10T14:00:00Z'
+      responses:
+        '200':
+          description: Device's data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceDataUpdateResponse'
+              example:
+                message: Device's data updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal server error
+  /internal/tasks:
+    get:
+      tags:
+        - tasks
+      summary: Search tasks for a device
+      description: Search tasks for a device
+      operationId: gettasks
+      security: []
+      parameters:
+        - in: query
+          name: deviceId
+          required: true
+          description: Device identifier
+          schema:
+            type: string
+            example: Kawasaki
+        - in: query
+          name: status
+          description: Additional search parameter:<br/> Search tasks with specified status only
+          schema:
+            $ref: '#/components/schemas/tasks.InternalTaskStatus'
+        - in: query
+          name: maxResults
+          description: Additional search parameter:<br/> Set max number of quantum tasks to return in single request
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: timestamp
+          description: Additional search parameter:<br/> Fetch tasks created after the specified timetsamp
+          schema:
+            type: string
+            example: '2022-12-15 15:54:46'
+      responses:
+        '200':
+          description: List of tasks for a device
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/tasks.TaskInfo'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal server error
+  /internal/tasks/{taskId}:
+    get:
+      summary: Get a task by ID
+      description: Get a task by ID
+      operationId: getTask
+      security: []
+      tags:
+        - tasks
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.TaskInfo'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+    patch:
+      summary: Modify selected quantum task (update status).
+      description: Used by device to set task status to "RUNNING".<br/>Other statuses are set by CloudAPI automatically when result is created
+      operationId: patchTask
+      security: []
+      tags:
+        - tasks
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      requestBody:
+        description: 'New task status. '
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tasks.TaskStatusUpdate'
+      responses:
+        '200':
+          description: task data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.TaskStatusUpdateResponse'
+              example:
+                message: task data updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /internal/tasks/unfetched:
+    get:
+      summary: Fetch tasks for device
+      description: 'Fetches tasks for execution/cancel<br/><br/>Operation is valid only for task with status: QUEUED or CANCELLING. After the operation task status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
+      operationId: getUnfetchedTasks
+      security: []
+      tags:
+        - tasks
+      parameters:
+        - in: query
+          name: deviceId
+          required: true
+          description: Device identifier
+          schema:
+            type: string
+            example: Kawasaki
+        - in: query
+          name: status
+          required: true
+          description: Fetch tasks with specified status
+          schema:
+            $ref: '#/components/schemas/tasks.InternalFetchableTaskStatus'
+        - in: query
+          name: maxResults
+          description: Additional search parameter:<br/> Set max number of quantum tasks to return in single request
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: List of tasks for execution (all task data) / cancel (taskIds only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.UnfetchedTasksResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+  /internal/results:
+    post:
+      summary: Submit a quantum task result
+      tags:
+        - results
+      description: Submit a quantum task result
+      operationId: postResult
+      security: []
+      requestBody:
+        description: Result to be submitted
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/results.ResultDef'
+            examples:
+              success sampling:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: SUCCESS
+                  result:
+                    '11': 4980
+                    '00': 5020
+                  reason: null
+                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+              success estimation:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: SUCCESS
+                  result:
+                    - 1.5
+                    - 2.8
+                  reason: null
+                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+              failure:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: FAILURE
+                  result: null
+                  reason: Invalid device parameter in request
+                  transpiledCode: null
+              cancel:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: CANCELLED
+                  result: null
+                  reason: User cancelled
+                  transpiledCode: null
+      responses:
+        '200':
+          description: Results submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/results.CreateResultResponse'
+              example:
+                message: Results submitted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: TaskID not found
+        '409':
+          description: Result for taskId already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ConflictError'
+              example:
+                detail: Result for taskId already exists
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal server error
+components:
+  schemas:
+    devices.DeviceStatusUpdate:
+      type: object
+      properties:
+        command:
+          type: string
+          example: DeviceStatusUpdate
+        status:
+          type: string
+          enum:
+            - AVAILABLE
+            - NOT_AVAILABLE
+        restartAt:
+          description: Parameter mandatory and valid for status 'NOT_AVAILABLE'
+          type: string
+          format: date-time
+          example: '2023-09-10T14:00:00Z'
+    devices.DevicePendingTasksUpdate:
+      type: object
+      properties:
+        command:
+          type: string
+          example: DevicePendingTasksUpdate
+        nPendingTasks:
+          type: integer
+    CalibrationData:
+      description: Calibration data available only for 'QPU' devices
+      type: object
+      properties:
+        qubitConnectivity:
+          type: array
+          items:
+            type: string
+            format: (number, number)
+          example:
+            - (1,4)
+            - (4,5)
+            - (5,8)
+        t1:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 55.51
+            '1': 37.03
+            '2': 57.13
+        t2:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 99.31
+            '1': 111.03
+            '2': 30.12
+        roError:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.0467
+            '1': 0.18
+            '2': 0.355
+        gateError:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+          example:
+            sx:
+              '0': 0.00692
+              '1': 0.00296
+              '2': 0.072
+        measProb0As1:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.00608
+            '1': 0.012
+            '2': 0.248
+        measProb1As0:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.0281
+            '1': 0.386
+            '2': 0.0811
+        gateDuration:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+          example:
+            sx:
+              '0': 29.3
+              '1': 50.9
+              '2': 45.4
+    devices.DeviceCalibrationUpdate:
+      type: object
+      properties:
+        command:
+          type: string
+          example: DeviceCalibrationUpdate
+        calibrationData:
+          $ref: '#/components/schemas/CalibrationData'
+        calibratedAt:
+          description: Parameter mandatory and valid if calibrationData not null
+          type: string
+          format: date-time
+          example: '2023-09-10T14:00:00Z'
+    devices.DeviceDataUpdate:
+      discriminator:
+        propertyName: command
+        mapping:
+          DeviceStatusUpdate: '#/components/schemas/devices.DeviceStatusUpdate'
+          DevicePendingTasksUpdate: '#/components/schemas/devices.DevicePendingTasksUpdate'
+          DeviceCalibrationUpdate: '#/components/schemas/devices.DeviceCalibrationUpdate'
+      oneOf:
+        - $ref: '#/components/schemas/devices.DeviceStatusUpdate'
+        - $ref: '#/components/schemas/devices.DevicePendingTasksUpdate'
+        - $ref: '#/components/schemas/devices.DeviceCalibrationUpdate'
+    devices.DeviceDataUpdateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          default: Device's data updated
+          example: Device's data updated
+      required:
+        - message
+    error.BadRequest:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    error.NotFoundError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    error.InternalServerError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    tasks.InternalTaskStatus:
+      type: string
+      enum:
+        - QUEUED
+        - QUEUED_FETCHED
+        - RUNNING
+        - COMPLETED
+        - FAILED
+        - CANCELLING
+        - CANCELLING_FETCHED
+        - CANCELLED
+      example: QUEUED
+    tasks.TaskId:
+      type: string
+      format: uuid
+      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    tasks.SamplingAction:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: sampling
+          example: sampling
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+      required:
+        - name
+        - nShots
+    tasks.SingleOperator:
+      type: array
+      items:
+        anyOf:
+          - type: string
+            description: Pauli string
+            example: X 0 Y 1 Z 5 I 2
+          - type: array
+            description: Real and imaginary components of complex coef value
+            items:
+              type: number
+            minItems: 2
+            maxItems: 2
+            example:
+              - 1.5
+              - 2.8
+      minItems: 2
+      maxItems: 2
+    tasks.Operator:
+      type: array
+      items:
+        $ref: '#/components/schemas/tasks.SingleOperator'
+      example:
+        - - X 0 X 1
+          - - 1.5
+            - 2.8
+        - - Y 0 Z 1
+          - - 1.2
+            - -2.e-8
+    tasks.EstimationAction:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: estimation
+          example: estimation
+        method:
+          type: string
+          enum:
+            - state_vector
+            - sampling
+          example: sampling
+          description: state_vector method valid only for 'simulator' devices
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+          description: Parameter valid only for sampling method
+        operator:
+          $ref: '#/components/schemas/tasks.Operator'
+      required:
+        - name
+        - method
+        - operator
+    tasks.Action:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/tasks.SamplingAction'
+        - $ref: '#/components/schemas/tasks.EstimationAction'
+    tasks.TaskInfo:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        device:
+          type: string
+          example: Kawasaki
+        nQubits:
+          type: integer
+          example: null
+        nNodes:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 12
+        action:
+          $ref: '#/components/schemas/tasks.Action'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        status:
+          $ref: '#/components/schemas/tasks.InternalTaskStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2022-10-19 11:45:34'
+      required:
+        - taskId
+        - code
+        - device
+        - action
+        - skipTranspilation
+        - status
+        - createdAt
+      example:
+        taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        device: Kawasaki
+        nQubits: null
+        nNodes: 12
+        action:
+          name: sampling
+          nShots: 1000
+        qubitAllocation: null
+        skipTranspilation: false
+        seedTranspilation: 873
+        seedSimulation: 39058567
+        roErrorMitigation: null
+        nPerNode: 2
+        simulationOpt:
+          optimizationMethod: light
+          optimizationBlockSize: 1
+          optimizationSwapLevel: 1
+        status: QUEUED_FETCHED
+        createdAt: '2022-10-19 11:45:34'
+    tasks.TaskStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - RUNNING
+          example: RUNNING
+      required:
+        - status
+    tasks.TaskStatusUpdateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    tasks.InternalFetchableTaskStatus:
+      type: string
+      enum:
+        - QUEUED
+        - CANCELLING
+      example: QUEUED
+    tasks.UnfetchedTasksResponse:
+      type: array
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/tasks.TaskInfo'
+          - $ref: '#/components/schemas/tasks.TaskId'
+    results.ResultStatus:
+      type: string
+      enum:
+        - SUCCESS
+        - FAILURE
+        - CANCELLED
+      default: SUCCESS
+      example: SUCCESS
+    results.SamplingResult:
+      type: object
+      additionalProperties:
+        type: integer
+      minProperties: 2
+      example:
+        '11': 4980
+        '00': 5020
+    results.EstimationResult:
+      type: array
+      items:
+        type: number
+      minItems: 2
+      maxItems: 2
+      example:
+        - 1.5
+        - 2.8
+    results.Result:
+      oneOf:
+        - type: 'null'
+        - $ref: '#/components/schemas/results.SamplingResult'
+        - $ref: '#/components/schemas/results.EstimationResult'
+    results.ResultDef:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        status:
+          $ref: '#/components/schemas/results.ResultStatus'
+        result:
+          $ref: '#/components/schemas/results.Result'
+        reason:
+          type: string
+          nullable: true
+        transpiledCode:
+          type: string
+          nullable: true
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+          example:
+            '0': 0
+            '1': 4
+      required:
+        - taskId
+        - status
+        - result
+        - reason
+        - transpiledCode
+    results.CreateResultResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+      example:
+        message: Results submitted
+    error.ConflictError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail

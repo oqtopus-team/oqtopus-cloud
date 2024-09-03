@@ -1,0 +1,22 @@
+id,owner,name,device,n_qubits,n_nodes,code,action,method,shots,operator,qubit_allocation,skip_transpilation,seed_transpilation,seed_simulation,n_per_node,simulation_opt,ro_error_mitigation,note,status,created_at
+0b45f006-8276-4bd4-9d97-ce149bc236d0,alice,Bell State Sampling,SC,null,null,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,1000,null,null,0,null,null,null,null,pseudo_inverse,Bell State Sampling,COMPLETED,2024-05-28 05:46:22
+24b26e53-3222-4f61-a0c3-08543d0ec863,bob,GHZ state,SVSim,null,null,"OPENQASM 3.0; include ""stdgates.inc""; qubit[4] qs; ry(3.14447402) qs[0]; rz(1.55815818) qs[0]; ry(3.14118891) qs[1]; rz(5.89664276) qs[1]; ry(-0.00073989) qs[2]; rz(0.77729655) qs[2]; ry(4.44113712) qs[3]; rz(6.28504122) qs[3]; cx qs[0], qs[1]; cx qs[1], qs[2]; cx qs[2], qs[3]; ry(-0.00126054) qs[0]; rz(3.62618886) qs[0]; ry(6.28323912) qs[1]; rz(1.27470588) qs[1]; ry(0.00094021) qs[2]; rz(0.66843303) qs[2]; ry(1.8415555) qs[3]; rz(6.18871167) qs[3];",sampling,null,1024,null,null,0,null,null,1,null,null,null,COMPLETED,2024-06-25 10:17:33
+2c7a254b-4985-43eb-b0f3-598c88a8c36f,bob,sampling task,SVSim,null,1,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,1000,null,null,1,null,456,1,"{""optimizationMethod"": ""normal"", ""optimizationBlockSize"": 1, ""optimizationSwapLevel"": 1}",null,sampling task example,CANCELLED,2024-06-27 01:16:08
+4eae977e-c9ae-4cb2-9dc4-97b09a3668f6,bob,null,SC,null,null,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",estimation,sampling,100,"[[""X 0 X 1"", [1.2, 0.0001]], [""Z 1"", [1.5, 0.0]]]","{""q[0]"": 2, ""q[1]"": 1}",1,null,null,null,null,null,null,COMPLETED,2024-06-20 03:20:12
+7b198c4a-a4c5-41ab-8916-26f44d76ec13,alice,null,SVSim,null,null,"OPENQASM 3;
+include ""stdgates.inc"";
+bit[2] meas;
+qubit[2] q;
+h q[0];
+cx q[0], q[1];
+barrier q[0], q[1];
+meas[0] = measure q[0];
+meas[1] = measure q[1];",estimation,sampling,1024,"[[""I"", [1.0, 0.0]], [""X 0"", [1.0, 0.0]], [""X 0 X 1"", [0.5, 0.0]], [""Y 0 Y 1"", [0.5, 0.0]], [""Z 0 Z 1"", [-1.5, 0.0]]]",null,0,null,null,1,null,null,null,FAILED,2024-06-25 07:17:36
+c89d6302-fa42-40be-b9ab-7bb04a8514b1,alice,sampling task,SC,null,null,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,100,null,null,1,null,null,null,null,none,sampling task example,QUEUED,2024-05-28 13:50:04
+d4a56fd4-a5bb-4450-a5fb-716ef26e33c5,alice,My sampling circuit,SVSim,null,null,"OPENQASM 3.0; include ""stdgates.inc""; qubit[2] q; bit[1] c; h q[0]; cx q[0], q[1];",sampling,null,100,null,null,0,0,1214,1,null,null,null,COMPLETED,2024-06-18 02:40:49
+da7a2b86-a87a-4ea6-a6ca-fdd96810f7c9,bob,sampling task,SVSim,null,1,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,100,null,null,1,null,456,1,"{""optimizationMethod"": ""normal"", ""optimizationBlockSize"": 1, ""optimizationSwapLevel"": 1}",null,sampling task example,COMPLETED,2024-06-27 00:25:58
+eb25ef48-9056-460d-820c-249e8edef0cc,alice,null,SVSim,null,null,"OPENQASM 3;
+include ""stdgates.inc"";
+qubit[2] q;
+h q[0];
+cx q[0], q[1];",estimation,state_vector,null,"[[""X 0 X 1"", [1.2, 0.0001]], [""Z 1"", [1.5, 0.0]]]",null,1,null,null,1,null,null,null,COMPLETED,2024-06-20 00:28:51

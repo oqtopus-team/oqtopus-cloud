@@ -1,0 +1,25 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud Provider API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8888
+    description: Local server url
+paths:
+  /internal/devices/{deviceId}:
+    $ref: ./paths/devices.yaml#/devices.deviceId
+  /internal/tasks:
+    $ref: ./paths/tasks.yaml#/tasks
+  /internal/tasks/{taskId}:
+    $ref: ./paths/tasks.yaml#/tasks.taskId
+  /internal/tasks/unfetched:
+    $ref: ./paths/tasks.yaml#/tasks.unfetched
+  /internal/results:
+    $ref: ./paths/results.yaml#/results

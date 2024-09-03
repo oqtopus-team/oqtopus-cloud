@@ -1,0 +1,87 @@
+devices.deviceId:
+    patch:
+      tags:
+      - devices
+      summary: "Update data of selected device"
+      description: "Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending tasks  (all device types)<br/>- calibrationData (QPU devices only)"
+      operationId: patchDeviceData
+      security: []
+      parameters:
+        - in: path
+          name: deviceId
+          description: "Device ID"
+          required: true
+          schema:
+            type: string
+            example: "Kawasaki"
+      requestBody:
+        description: "New calibration data"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceDataUpdate"
+            examples:
+              status update (NOT_AVAILABLE):
+                value: {
+                  "command": "DeviceStatusUpdate",
+                  "status": "NOT_AVAILABLE",
+                  "restartAt": "2023-09-10T14:00:00Z"
+                }
+              status update (AVAILABLE):
+                value: {
+                  "command": "DeviceStatusUpdate",
+                  "status": "AVAILABLE"
+                }
+              pending tasks update:
+                value: {
+                  "command": "DevicePendingTasksUpdate",
+                  "nPendingTasks": 6
+                }
+              calibrationData update:
+                value: {
+                  "command": "DeviceCalibrationUpdate",
+                  "calibrationData": {
+                  "qubitConnectivity": ["(1,4)", "(4,5)", "(5,8)"],
+                  "t1": {"0": 55.51, "1": 37.03, "2": 57.13},
+                  "t2": {"0": 99.31, "1": 111.03, "2": 30.12},
+                  "roError": {"0": 4.67e-2, "1": 1.8e-1, "2": 3.55e-1},
+                  "gateError": {"sx": {"0": 6.92e-3, "1": 2.96e-3, "2": 7.2e-2}},
+                  "measProb0As1": {"0": 6.08e-3, "1": 1.2e-2, "2": 2.48e-1},
+                  "measProb1As0": {"0": 2.81e-2, "1": 3.86e-1, "2": 8.11e-2},
+                  "gateDuration": {"sx": {"0": 29.3, "1": 50.9, "2": 45.4}}
+                  },
+                  calibratedAt: "2023-09-10T14:00:00Z"
+                }
+      responses:
+        '200':
+          description: Device's data updated
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/devices.yaml#/devices.DeviceDataUpdateResponse'
+              example:
+                message: Device's data updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.NotFoundError'
+              example:
+                detail: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.InternalServerError'
+              example:
+                detail: Internal server error

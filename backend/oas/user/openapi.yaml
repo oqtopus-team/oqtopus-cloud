@@ -1,0 +1,1586 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud User API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Local server url
+paths:
+  /devices:
+    get:
+      tags:
+        - device
+      summary: List available devices
+      description: List available devices
+      operationId: listDevices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Returns a list of available devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/devices.DeviceInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /devices/{deviceId}:
+    get:
+      tags:
+        - device
+      summary: Get specified device details
+      description: get device
+      operationId: getDevice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          description: Device identifier
+          required: true
+          schema:
+            type: string
+          example: Kawasaki
+      responses:
+        '200':
+          description: task response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfo'
+        '404':
+          description: Device with deviceId not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /tasks/sampling:
+    get:
+      tags:
+        - task
+      summary: List all sampling quantum tasks
+      description: List all sampling quantum tasks
+      operationId: listSamplingTasks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return a list of submitted quantum tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/tasks.SamplingTaskInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+    post:
+      tags:
+        - task
+      summary: Submit a sampling quantum task
+      description: Submit a sampling quantum task
+      operationId: submitSamplingTask
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Quantum task to be submitted
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tasks.SamplingTaskDef'
+            examples:
+              simulator:
+                description: Simulator example
+                value:
+                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                  name: Bell State Sampling
+                  device: SVsim
+                  nNodes: 12
+                  nShots: 1000
+                  skipTranspilation: false
+                  seedTranspilation: 873
+                  seedSimulation: 39058567
+                  nPerNode: 2
+                  simulationOpt:
+                    optimizationMethod: light
+                    optimizationBlockSize: 1
+                    optimizationSwapLevel: 1
+                  note: Bell State Sampling Example
+              qpu:
+                description: QPU example
+                value:
+                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                  name: Bell State Sampling
+                  device: Kawasaki
+                  nShots: 1000
+                  note: Bell State Sampling Example
+      responses:
+        '200':
+          description: Task submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.SubmitTaskResponse'
+              example:
+                taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+  /tasks/sampling/{taskId}:
+    get:
+      tags:
+        - task
+      summary: Get selected sampling task
+      description: Get selected sampling task
+      operationId: getSamplingTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.SamplingTaskInfo'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+    delete:
+      tags:
+        - task
+      summary: Delete sampling task
+      description: 'Deletes quantum task and related result<br/><br/>Operation is valid only for task with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING tasks must be cancelled before deletion.'
+      operationId: deleteSamplingTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quantum task deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Quantum task deleted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /tasks/sampling/{taskId}/status:
+    get:
+      tags:
+        - task
+      summary: Get selected sampling task's status
+      description: Get selected sampling task's status
+      operationId: getSamplingTaskStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.GetSamplingTaskStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /tasks/sampling/{taskId}/cancel:
+    post:
+      tags:
+        - task
+      summary: Cancel sampling task
+      description: 'Start a procedure to cancel quantum task.<br/><br/> Operation is valid only for task with status: QUEUED or RUNNING.'
+      operationId: cancelSamplingTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: cancel request accepted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /tasks/estimation:
+    post:
+      tags:
+        - task
+      summary: Submit estimation quantum task
+      description: Submit estimation quantum task
+      operationId: submitEstimationTask
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Quantum task to be submitted
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tasks.EstimationTaskDef'
+            examples:
+              simulator:
+                description: Simulator example
+                value:
+                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                  name: Bell State Estimation
+                  device: SVsim
+                  nNodes: 12
+                  method: sampling
+                  nShots: 1000
+                  operator:
+                    - - X 0 X 1
+                      - - 1.5
+                        - 2.8
+                    - - Y 0 Z 1
+                      - - 1.2
+                        - -2.e-8
+                  skipTranspilation: false
+                  seedTranspilation: 873
+                  seedSimulation: 39058567
+                  nPerNode: 2
+                  simulationOpt:
+                    optimizationMethod: light
+                    optimizationBlockSize: 1
+                    optimizationSwapLevel: 1
+                  note: Bell State Estimation Example
+              simulator2:
+                description: Simulator example with statevector
+                value:
+                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                  name: Bell State Estimation
+                  device: SVsim
+                  nNodes: 12
+                  method: state_vector
+                  operator:
+                    - - X 0 X 1
+                      - - 1.5
+                        - 2.8
+                    - - Y 0 Z 1
+                      - - 1.2
+                        - -2.e-8
+                  skipTranspilation: false
+                  seedTranspilation: 873
+                  seedSimulation: 39058567
+                  nPerNode: 2
+                  simulationOpt:
+                    optimizationMethod: light
+                    optimizationBlockSize: 1
+                    optimizationSwapLevel: 1
+                  note: Bell State Estimation Example
+              qpu:
+                description: QPU example
+                value:
+                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                  name: Bell State Estimation
+                  device: Kawasaki
+                  method: sampling
+                  nShots: 1000
+                  operator:
+                    - - X 0 X 1
+                      - - 1.5
+                        - 2.8
+                    - - Y 0 Z 1
+                      - - 1.2
+                        - -2.e-8
+                  note: Bell State Estimation Example
+      responses:
+        '200':
+          description: Task submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.SubmitTaskResponse'
+              example:
+                taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+    get:
+      tags:
+        - task
+      summary: List all estimation quantum tasks
+      description: List all estimation quantum tasks
+      operationId: listEstimationTasks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return a list of submitted quantum tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/tasks.EstimationTaskInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+  /tasks/estimation/{taskId}:
+    get:
+      tags:
+        - task
+      summary: Get selected estimation task
+      description: Get selected estimation task
+      operationId: getEstimationTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.EstimationTaskInfo'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+    delete:
+      tags:
+        - task
+      summary: Deletes estimation task
+      description: 'Deletes quantum task and related result<br/><br/>Operation is valid only for task with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING tasks must be cancelled before deletion.'
+      operationId: deleteEstimationTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quantum task deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Quantum task deleted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /tasks/estimation/{taskId}/status:
+    get:
+      tags:
+        - task
+      summary: Get selected estimation task's status
+      description: Get selected estimation task's status
+      operationId: getEstimationTaskStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tasks.GetEstimationTaskStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /tasks/estimation/{taskId}/cancel:
+    post:
+      tags:
+        - task
+      summary: Cancel estimation task
+      description: 'Start a procedure to cancel quantum task.<br/><br/> Operation is valid only for task with status: QUEUED or RUNNING.'
+      operationId: cancelEstimationTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: cancel request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Task cancelled
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /results/sampling/{taskId}:
+    get:
+      tags:
+        - result
+      summary: Get result of a sampling task
+      description: Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks
+      operationId: getSamplingResult
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/results.SamplingResultDef'
+              examples:
+                success sampling:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: SUCCESS
+                    result:
+                      '11': 4980
+                      '00': 5020
+                    transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+                failure:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: FAILURE
+                    reason: Invalid device parameter in request
+                cancel:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: CANCELLED
+                    reason: User cancelled
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+  /results/estimation/{taskId}:
+    get:
+      tags:
+        - result
+      summary: Get result of estimation task
+      description: Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks
+      operationId: getEstimationResult
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return quantum task result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/results.EstimationResultDef'
+              examples:
+                success estimation:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: SUCCESS
+                    result:
+                      - 1.5
+                      - 2.8
+                    transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+                failure:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: FAILURE
+                    reason: Invalid device parameter in request
+                cancel:
+                  value:
+                    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    status: CANCELLED
+                    reason: User cancelled
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: task not found
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    devices.CalibrationData:
+      description: Calibration data available only for 'QPU' devices
+      type: object
+      properties:
+        qubitConnectivity:
+          type: array
+          items:
+            type: string
+            format: (number, number)
+          example:
+            - (1,4)
+            - (4,5)
+            - (5,8)
+        t1:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 55.51
+            '1': 37.03
+            '2': 57.13
+        t2:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 99.31
+            '1': 111.03
+            '2': 30.12
+        roError:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.0467
+            '1': 0.18
+            '2': 0.355
+        gateError:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+          example:
+            sx:
+              '0': 0.00692
+              '1': 0.00296
+              '2': 0.072
+        measProb0As1:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.00608
+            '1': 0.012
+            '2': 0.248
+        measProb1As0:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example:
+            '0': 0.0281
+            '1': 0.386
+            '2': 0.0811
+        gateDuration:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+          example:
+            sx:
+              '0': 29.3
+              '1': 50.9
+              '2': 45.4
+    devices.DeviceInfo:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          example: SVSim
+        deviceType:
+          type: string
+          enum:
+            - QPU
+            - simulator
+          example: simulator
+        status:
+          type: string
+          enum:
+            - AVAILABLE
+            - NOT_AVAILABLE
+          example: AVAILABLE
+        restartAt:
+          description: Parameter mandatory and valid for 'NOT_AVAILABLE' devices
+          type: string
+          format: date-time
+          example: '2022-10-19 11:45:34'
+        nPendingTasks:
+          type: integer
+          example: 8
+        nQubits:
+          type: integer
+          example: 39
+        nNodes:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 512
+        basisGates:
+          type: array
+          items:
+            type: string
+          example:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+        supportedInstructions:
+          type: array
+          items:
+            type: string
+          example:
+            - measure
+            - barrier
+            - reset
+        calibrationData:
+          $ref: '#/components/schemas/devices.CalibrationData'
+        calibratedAt:
+          description: Parameter available only for 'QPU' devices with available calibration data
+          type: string
+          format: date-time
+          example: '2022-10-19 11:45:34'
+        description:
+          type: string
+          example: State vector-based quantum circuit simulator
+      required:
+        - deviceId
+        - deviceType
+        - status
+        - nPendingTasks
+        - basisGates
+        - supportedInstructions
+        - description
+      example:
+        - deviceId: SVSim
+          deviceType: simulator
+          status: AVAILABLE
+          nPendingTasks: 8
+          nQubits: 39
+          nNodes: 512
+          basisGates:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+          supportedInstructions:
+            - measure
+            - barrier
+            - reset
+          description: State vector-based quantum circuit simulator
+    error.UnauthorizedError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    error.InternalServerError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    error.NotFoundError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    tasks.TaskId:
+      type: string
+      format: uuid
+      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    tasks.TaskStatus:
+      type: string
+      enum:
+        - QUEUED
+        - RUNNING
+        - COMPLETED
+        - FAILED
+        - CANCELLING
+        - CANCELLED
+      example: QUEUED
+    tasks.SamplingTaskInfo:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name:
+          type: string
+          example: Bell State Sampling
+        device:
+          type: string
+          example: Kawasaki
+        nQubits:
+          description: Parameter exclusive with nNodes
+          type: integer
+        nNodes:
+          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
+          type: integer
+          example: 12
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        note:
+          type: string
+          example: Bell State Sampling Example
+        status:
+          $ref: '#/components/schemas/tasks.TaskStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2022-10-19 11:45:34'
+      required:
+        - taskId
+        - code
+        - device
+        - nShots
+        - skipTranspilation
+        - status
+        - createdAt
+      example:
+        taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name: Bell State Sampling
+        device: Kawasaki
+        nNodes: 12
+        nShots: 1000
+        skipTranspilation: false
+        seedTranspilation: 387
+        seedSimulation: 39058567
+        nPerNode: 2
+        simulationOpt:
+          optimizationMethod: light
+          optimizationBlockSize: 1
+          optimizationSwapLevel: 1
+        note: Bell State Sampling Example
+        status: QUEUED
+        createdAt: '2022-10-19 11:45:34'
+    tasks.SamplingTaskDef:
+      type: object
+      properties:
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name:
+          type: string
+          example: Bell State Sampling
+        device:
+          type: string
+          example: Kawasaki
+        nQubits:
+          description: Parameter exclusive with nNodes
+          type: integer
+        nNodes:
+          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
+          type: integer
+          example: 12
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          default: false
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          default: none
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        note:
+          type: string
+          example: Bell State Sampling Example
+      required:
+        - code
+        - device
+        - nShots
+    tasks.SubmitTaskResponse:
+      description: submit a task
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+      required:
+        - taskId
+    error.BadRequest:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    success.SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    tasks.GetSamplingTaskStatusResponse:
+      description: task status
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        status:
+          $ref: '#/components/schemas/tasks.TaskStatus'
+      required:
+        - taskId
+        - status
+    tasks.SingleOperator:
+      type: array
+      items:
+        anyOf:
+          - type: string
+            description: Pauli string
+            example: X 0 Y 1 Z 5 I 2
+          - type: array
+            description: Real and imaginary components of complex coef value
+            items:
+              type: number
+            minItems: 2
+            maxItems: 2
+            example:
+              - 1.5
+              - 2.8
+      minItems: 2
+      maxItems: 2
+    tasks.Operator:
+      type: array
+      items:
+        $ref: '#/components/schemas/tasks.SingleOperator'
+      example:
+        - - X 0 X 1
+          - - 1.5
+            - 2.8
+        - - Y 0 Z 1
+          - - 1.2
+            - -2.e-8
+    tasks.EstimationTaskInfo:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name:
+          type: string
+          example: Bell State Estimation
+        device:
+          type: string
+          example: Kawasaki
+        nQubits:
+          description: Parameter exclusive with nNodes
+          type: integer
+        nNodes:
+          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
+          type: integer
+          example: 12
+        method:
+          type: string
+          enum:
+            - state_vector
+            - sampling
+          example: sampling
+          description: state_vector method valid only for 'simulator' devices
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+          description: Parameter valid only for sampling method
+        operator:
+          $ref: '#/components/schemas/tasks.Operator'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        note:
+          type: string
+          example: Bell State Estimation Example
+        status:
+          $ref: '#/components/schemas/tasks.TaskStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2022-10-19 11:45:34'
+      required:
+        - taskId
+        - code
+        - device
+        - method
+        - operator
+        - skipTranspilation
+        - status
+        - createdAt
+      example:
+        taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name: Bell State Estimation
+        device: Kawasaki
+        nNodes: 12
+        method: sampling
+        nShots: 1000
+        operator:
+          - - X 0 X 1
+            - - 1.5
+              - 2.8
+          - - Y 0 Z 1
+            - - 1.2
+              - -2.e-8
+        skipTranspilation: false
+        seedTranspilation: 387
+        seedSimulation: 39058567
+        nPerNode: 2
+        simulationOpt:
+          optimizationMethod: light
+          optimizationBlockSize: 1
+          optimizationSwapLevel: 1
+        note: Bell State Estimation Example
+        status: QUEUED
+        createdAt: '2022-10-19 11:45:34'
+    tasks.EstimationTaskDef:
+      type: object
+      properties:
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name:
+          type: string
+          example: Bell State Estimation
+        device:
+          type: string
+          example: Kawasaki
+        nQubits:
+          description: Parameter exclusive with nNodes
+          type: integer
+        nNodes:
+          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
+          type: integer
+          example: 12
+        method:
+          type: string
+          enum:
+            - state_vector
+            - sampling
+          example: sampling
+          description: state_vector method valid only for 'simulator' devices
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+          description: Parameter valid only for sampling method
+        operator:
+          $ref: '#/components/schemas/tasks.Operator'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          default: false
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          default: none
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        note:
+          type: string
+          example: Bell State Estimation Example
+      required:
+        - code
+        - device
+        - method
+        - operator
+    tasks.GetEstimationTaskStatusResponse:
+      description: task status
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        status:
+          $ref: '#/components/schemas/tasks.TaskStatus'
+      required:
+        - taskId
+        - status
+    results.ResultStatus:
+      type: string
+      enum:
+        - SUCCESS
+        - FAILURE
+        - CANCELLED
+      default: SUCCESS
+      example: SUCCESS
+    results.SamplingResultDef:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        status:
+          $ref: '#/components/schemas/results.ResultStatus'
+        result:
+          description: Provided only for successful results
+          type: object
+          additionalProperties:
+            type: integer
+            minProperties: 2
+          example:
+            '11': 4980
+            '00': 5020
+        reason:
+          description: Provided only for unsuccessful (failed, cancelled) results
+          type: string
+        transpiledCode:
+          description: Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull
+          type: string
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 0
+            '1': 4
+      required:
+        - taskId
+        - status
+    results.EstimationResultDef:
+      type: object
+      properties:
+        taskId:
+          $ref: '#/components/schemas/tasks.TaskId'
+        status:
+          $ref: '#/components/schemas/results.ResultStatus'
+        result:
+          description: Real and imaginary components of complex estimation result value<br>Provided only for successful results
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
+          example:
+            - 1.5
+            - 2.8
+        reason:
+          description: Provided only for unsuccessful (failed, cancelled) results
+          type: string
+        transpiledCode:
+          description: Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull
+          type: string
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 0
+            '1': 4
+      required:
+        - taskId
+        - status

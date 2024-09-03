@@ -1,0 +1,199 @@
+tasks.TaskId:
+  type: string
+  format: uuid
+  example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
+
+tasks.InternalTaskStatus:
+  type: string
+  enum: ["QUEUED", "QUEUED_FETCHED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLING_FETCHED", "CANCELLED"]
+  example: "QUEUED"
+
+tasks.Action:
+  type: object
+  oneOf:
+    - $ref: "#/tasks.SamplingAction"
+    - $ref: "#/tasks.EstimationAction"
+
+tasks.SamplingAction:
+  type: object
+  properties:
+    name:
+      type: string
+      pattern: "sampling"
+      example: "sampling"
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+  required: [
+    name, nShots
+  ]
+
+tasks.EstimationAction:
+  type: object
+  properties:
+    name:
+      type: string
+      pattern: "estimation"
+      example: "estimation"
+    method:
+      type: string
+      enum: ["state_vector", "sampling"]
+      example: "sampling"
+      description: "state_vector method valid only for 'simulator' devices"
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+      description: "Parameter valid only for sampling method"
+    operator:
+      $ref: "#/tasks.Operator"
+  required: [
+    name, method, operator
+  ]
+
+tasks.Operator:
+  type: array
+  items:
+    $ref: "#/tasks.SingleOperator"
+  example:
+    [
+      ["X 0 X 1", [1.5, 2.8]],
+      ["Y 0 Z 1", [1.2, -2e-8]],
+    ]
+
+tasks.SingleOperator:
+  type: array
+  items:
+    anyOf:
+      - type: string
+        description: "Pauli string"
+        example: "X 0 Y 1 Z 5 I 2"
+      - type: array
+        description: "Real and imaginary components of complex coef value"
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+        example: [1.5, 2.8]
+  minItems: 2
+  maxItems: 2
+
+tasks.TaskInfo:
+  type: object
+  properties:
+    taskId:
+      $ref: "#/tasks.TaskId"
+    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+    device: {type: string, example: "Kawasaki"}
+    nQubits:
+      type: integer
+      example: null
+    nNodes:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 12
+    action:
+      $ref: "#/tasks.Action"
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 12
+        "1": 16
+    skipTranspilation:
+      type: boolean
+      example: false
+    seedTranspilation:
+      description: "Parameter valid only if skipTranspilation is false"
+      type: integer
+      example: 873
+    seedSimulation:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 39058567
+    roErrorMitigation:
+      description: "Parameter valid only for QPU devices"
+      type: string
+      enum: ["none", "pseudo_inverse", "least_square"]
+      example: "pseudo_inverse"
+    nPerNode:
+      description: "Parameter valid only for simulator devices"
+      type: integer
+      minimum: 1
+      example: 5
+    simulationOpt:
+      description: "Parameter valid only for simulator devices"
+      type: object
+      example: {
+          optimizationMethod: "light",
+          optimizationBlockSize: 1,
+          optimizationSwapLevel: 1
+        }
+    status:
+      $ref: "#/tasks.InternalTaskStatus"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2022-10-19 11:45:34"
+  required: [
+    taskId, code, device, action, skipTranspilation, status, createdAt
+  ]
+  example:
+    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+    device: Kawasaki
+    nQubits: null
+    nNodes: 12
+    action:
+      name: sampling
+      nShots: 1000
+    qubitAllocation: null
+    skipTranspilation: false
+    seedTranspilation: 873
+    seedSimulation: 39058567
+    roErrorMitigation: null
+    nPerNode: 2
+    simulationOpt: {
+      optimizationMethod: "light",
+      optimizationBlockSize: 1,
+      optimizationSwapLevel: 1
+    }
+    status: QUEUED_FETCHED
+    createdAt: '2022-10-19 11:45:34'
+
+tasks.TaskStatusUpdate:
+  type: object
+  properties:
+    status:
+      type: string
+      enum: ["RUNNING"]
+      example: "RUNNING"
+  required: [
+    status
+  ]
+
+tasks.TaskStatusUpdateResponse:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
+
+tasks.UnfetchedTasksResponse:
+  type: array
+  items:
+    oneOf:
+      - $ref: '#/tasks.TaskInfo'
+      - $ref: '#/tasks.TaskId'
+
+tasks.InternalFetchableTaskStatus:
+  type: string
+  enum: ["QUEUED", "CANCELLING"]
+  example: "QUEUED"
+

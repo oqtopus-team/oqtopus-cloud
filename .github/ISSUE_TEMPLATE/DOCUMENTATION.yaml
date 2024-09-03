@@ -1,0 +1,23 @@
+name: Documentation request
+description: Request for documentation improvements or additions
+title: "[Docs]: "
+labels: [documentation]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for requesting documentation improvements or additions. Please provide a clear and concise description of what you want to be added or improved.
+
+  - type: input
+    id: description
+    attributes:
+      label: Describe the documentation request
+      description: A clear and concise description of what you want to be added or improved.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the documentation request here.

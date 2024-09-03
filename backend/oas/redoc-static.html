@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8" />
+  <title>cloud server</title>
+  <!-- needed for adaptive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.redoc.ly/redoc/v2.1.3/bundles/redoc.standalone.js"></script><style data-styled="true" data-styled-version="6.1.3">.bTopMl{width:calc(100% - 40%);padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.bTopMl{width:100%;padding:40px 40px;}}/*!sc*/
+data-styled.g4[id="sc-hKwCKL"]{content:"bTopMl,"}/*!sc*/
+.iKHSib{padding:40px 0;}/*!sc*/
+.iKHSib:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.iKHSib>.iKHSib:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.iKHSib{padding:0;}}/*!sc*/
+.ebpfYk{padding:40px 0;position:relative;}/*!sc*/
+.ebpfYk:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.ebpfYk>.ebpfYk:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.ebpfYk{padding:0;}}/*!sc*/
+.ebpfYk:not(:last-of-type):after{position:absolute;bottom:0;width:100%;display:block;content:'';border-bottom:1px solid rgba(0, 0, 0, 0.2);}/*!sc*/
+data-styled.g5[id="sc-eCImbG"]{content:"iKHSib,ebpfYk,"}/*!sc*/
+.gDTHQs{width:40%;color:#ffffff;background-color:#263238;padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.gDTHQs{width:100%;padding:40px 40px;}}/*!sc*/
+data-styled.g6[id="sc-jRQCJB"]{content:"gDTHQs,"}/*!sc*/
+.gIRCzN{background-color:#263238;}/*!sc*/
+data-styled.g7[id="sc-gKcmaw"]{content:"gIRCzN,"}/*!sc*/
+.gzjfIy{display:flex;width:100%;padding:0;}/*!sc*/
+@media print,screen and (max-width: 75rem){.gzjfIy{flex-direction:column;}}/*!sc*/
+data-styled.g8[id="sc-iCfLYb"]{content:"gzjfIy,"}/*!sc*/
+.bAbPzU{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#333333;}/*!sc*/
+data-styled.g9[id="sc-furvoW"]{content:"bAbPzU,"}/*!sc*/
+.leSFcM{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;margin:0 0 20px;}/*!sc*/
+data-styled.g10[id="sc-pVSSq"]{content:"leSFcM,"}/*!sc*/
+.jvEbyZ{color:#ffffff;}/*!sc*/
+data-styled.g12[id="sc-kDTjaY"]{content:"jvEbyZ,"}/*!sc*/
+.bDlFnN{border-bottom:1px solid rgba(38, 50, 56, 0.3);margin:1em 0 1em 0;color:rgba(38, 50, 56, 0.5);font-weight:normal;text-transform:uppercase;font-size:0.929em;line-height:20px;}/*!sc*/
+data-styled.g13[id="sc-iqsfxh"]{content:"bDlFnN,"}/*!sc*/
+.sc-crHlpi{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.fQserj:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+h1:hover>.fQserj::before,h2:hover>.fQserj::before,.fQserj:hover::before{visibility:visible;}/*!sc*/
+data-styled.g14[id="sc-crHlpi"]{content:"fQserj,"}/*!sc*/
+.Kcrjp{height:18px;width:18px;min-width:18px;vertical-align:middle;float:right;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.jplBtf{height:1.5em;width:1.5em;min-width:1.5em;vertical-align:middle;float:left;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.jplBtf polygon{fill:#1d8127;}/*!sc*/
+.rFWsv{height:1.5em;width:1.5em;min-width:1.5em;vertical-align:middle;float:left;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.rFWsv polygon{fill:#d41f1c;}/*!sc*/
+.dLiTUf{height:20px;width:20px;min-width:20px;vertical-align:middle;float:right;transition:transform 0.2s ease-out;transform:rotateZ(0);}/*!sc*/
+.dLiTUf polygon{fill:white;}/*!sc*/
+.foXlDF{height:18px;width:18px;min-width:18px;vertical-align:middle;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+data-styled.g15[id="sc-eghLr"]{content:"Kcrjp,jplBtf,rFWsv,dLiTUf,foXlDF,"}/*!sc*/
+.jonnEs{border-left:1px solid #7c7cbb;box-sizing:border-box;position:relative;padding:10px 10px 10px 0;}/*!sc*/
+@media screen and (max-width: 50rem){.jonnEs{display:block;overflow:hidden;}}/*!sc*/
+tr:first-of-type>.jonnEs,tr.last>.jonnEs{border-left-width:0;background-position:top left;background-repeat:no-repeat;background-size:1px 100%;}/*!sc*/
+tr:first-of-type>.jonnEs{background-image:linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 22px,
+      #7c7cbb 22px,
+      #7c7cbb 100%
+    );}/*!sc*/
+tr.last>.jonnEs{background-image:linear-gradient(
+      to bottom,
+      #7c7cbb 0%,
+      #7c7cbb 22px,
+      transparent 22px,
+      transparent 100%
+    );}/*!sc*/
+tr.last+tr>.jonnEs{border-left-color:transparent;}/*!sc*/
+tr.last:first-child>.jonnEs{background:none;border-left-color:transparent;}/*!sc*/
+data-styled.g18[id="sc-hBURxS"]{content:"jonnEs,"}/*!sc*/
+.kJuNSl{vertical-align:top;line-height:20px;white-space:nowrap;font-size:13px;font-family:Courier,monospace;}/*!sc*/
+.kJuNSl.deprecated{text-decoration:line-through;color:#707070;}/*!sc*/
+data-styled.g20[id="sc-fFejAl"]{content:"kJuNSl,"}/*!sc*/
+.hOPTki{border-bottom:1px solid #9fb4be;padding:10px 0;width:75%;box-sizing:border-box;}/*!sc*/
+tr.expanded .hOPTki{border-bottom:none;}/*!sc*/
+@media screen and (max-width: 50rem){.hOPTki{padding:0 20px;border-bottom:none;border-left:1px solid #7c7cbb;}tr.last>.hOPTki{border-left:none;}}/*!sc*/
+data-styled.g21[id="sc-bkkfxM"]{content:"hOPTki,"}/*!sc*/
+.drtBwG{color:#7c7cbb;font-family:Courier,monospace;margin-right:10px;}/*!sc*/
+.drtBwG::before{content:'';display:inline-block;vertical-align:middle;width:10px;height:1px;background:#7c7cbb;}/*!sc*/
+.drtBwG::after{content:'';display:inline-block;vertical-align:middle;width:1px;background:#7c7cbb;height:7px;}/*!sc*/
+data-styled.g22[id="sc-ieebOX"]{content:"drtBwG,"}/*!sc*/
+.hmEbIM{border-collapse:separate;border-radius:3px;font-size:14px;border-spacing:0;width:100%;}/*!sc*/
+.hmEbIM >tr{vertical-align:middle;}/*!sc*/
+@media screen and (max-width: 50rem){.hmEbIM{display:block;}.hmEbIM >tr,.hmEbIM >tbody>tr{display:block;}}/*!sc*/
+@media screen and (max-width: 50rem) and (-ms-high-contrast:none){.hmEbIM td{float:left;width:100%;}}/*!sc*/
+.hmEbIM .sc-dJjXMy,.hmEbIM .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy,.hmEbIM .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy{margin:1em;margin-right:0;background:#fafafa;}/*!sc*/
+.hmEbIM .sc-dJjXMy .sc-dJjXMy,.hmEbIM .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy,.hmEbIM .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy .sc-dJjXMy{background:#ffffff;}/*!sc*/
+data-styled.g24[id="sc-hGPBXd"]{content:"hmEbIM,"}/*!sc*/
+.dQWePb >ul{list-style:none;padding:0;margin:0;margin:0 -5px;}/*!sc*/
+.dQWePb >ul >li{padding:5px 10px;display:inline-block;background-color:#11171a;border-bottom:1px solid rgba(0, 0, 0, 0.5);cursor:pointer;text-align:center;outline:none;color:#ccc;margin:0 5px 5px 5px;border:1px solid #07090b;border-radius:5px;min-width:60px;font-size:0.9em;font-weight:bold;}/*!sc*/
+.dQWePb >ul >li.react-tabs__tab--selected{color:#333333;background:#ffffff;}/*!sc*/
+.dQWePb >ul >li.react-tabs__tab--selected:focus{outline:auto;}/*!sc*/
+.dQWePb >ul >li:only-child{flex:none;min-width:100px;}/*!sc*/
+.dQWePb >ul >li.tab-success{color:#1d8127;}/*!sc*/
+.dQWePb >ul >li.tab-redirect{color:#ffa500;}/*!sc*/
+.dQWePb >ul >li.tab-info{color:#87ceeb;}/*!sc*/
+.dQWePb >ul >li.tab-error{color:#d41f1c;}/*!sc*/
+.dQWePb >.react-tabs__tab-panel{background:#11171a;}/*!sc*/
+.dQWePb >.react-tabs__tab-panel>div,.dQWePb >.react-tabs__tab-panel>pre{padding:20px;margin:0;}/*!sc*/
+.dQWePb >.react-tabs__tab-panel>div>pre{padding:0;}/*!sc*/
+data-styled.g30[id="sc-cxpSRg"]{content:"dQWePb,"}/*!sc*/
+.lorSOn code[class*='language-'],.lorSOn pre[class*='language-']{text-shadow:0 -0.1em 0.2em black;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none;}/*!sc*/
+@media print{.lorSOn code[class*='language-'],.lorSOn pre[class*='language-']{text-shadow:none;}}/*!sc*/
+.lorSOn pre[class*='language-']{padding:1em;margin:0.5em 0;overflow:auto;}/*!sc*/
+.lorSOn .token.comment,.lorSOn .token.prolog,.lorSOn .token.doctype,.lorSOn .token.cdata{color:hsl(30, 20%, 50%);}/*!sc*/
+.lorSOn .token.punctuation{opacity:0.7;}/*!sc*/
+.lorSOn .namespace{opacity:0.7;}/*!sc*/
+.lorSOn .token.property,.lorSOn .token.tag,.lorSOn .token.number,.lorSOn .token.constant,.lorSOn .token.symbol{color:#4a8bb3;}/*!sc*/
+.lorSOn .token.boolean{color:#e64441;}/*!sc*/
+.lorSOn .token.selector,.lorSOn .token.attr-name,.lorSOn .token.string,.lorSOn .token.char,.lorSOn .token.builtin,.lorSOn .token.inserted{color:#a0fbaa;}/*!sc*/
+.lorSOn .token.selector+a,.lorSOn .token.attr-name+a,.lorSOn .token.string+a,.lorSOn .token.char+a,.lorSOn .token.builtin+a,.lorSOn .token.inserted+a,.lorSOn .token.selector+a:visited,.lorSOn .token.attr-name+a:visited,.lorSOn .token.string+a:visited,.lorSOn .token.char+a:visited,.lorSOn .token.builtin+a:visited,.lorSOn .token.inserted+a:visited{color:#4ed2ba;text-decoration:underline;}/*!sc*/
+.lorSOn .token.property.string{color:white;}/*!sc*/
+.lorSOn .token.operator,.lorSOn .token.entity,.lorSOn .token.url,.lorSOn .token.variable{color:hsl(40, 90%, 60%);}/*!sc*/
+.lorSOn .token.atrule,.lorSOn .token.attr-value,.lorSOn .token.keyword{color:hsl(350, 40%, 70%);}/*!sc*/
+.lorSOn .token.regex,.lorSOn .token.important{color:#e90;}/*!sc*/
+.lorSOn .token.important,.lorSOn .token.bold{font-weight:bold;}/*!sc*/
+.lorSOn .token.italic{font-style:italic;}/*!sc*/
+.lorSOn .token.entity{cursor:help;}/*!sc*/
+.lorSOn .token.deleted{color:red;}/*!sc*/
+data-styled.g32[id="sc-iJKOgi"]{content:"lorSOn,"}/*!sc*/
+.dJXTNH{opacity:0.7;transition:opacity 0.3s ease;text-align:right;}/*!sc*/
+.dJXTNH:focus-within{opacity:1;}/*!sc*/
+.dJXTNH >button{background-color:transparent;border:0;color:inherit;padding:2px 10px;font-family:Roboto,sans-serif;font-size:14px;line-height:1.5em;cursor:pointer;outline:0;}/*!sc*/
+.dJXTNH >button :hover,.dJXTNH >button :focus{background:rgba(255, 255, 255, 0.1);}/*!sc*/
+data-styled.g33[id="sc-giYfyr"]{content:"dJXTNH,"}/*!sc*/
+.iPSXkA{position:relative;}/*!sc*/
+data-styled.g37[id="sc-kLwgDa"]{content:"iPSXkA,"}/*!sc*/
+.kgmZzc{margin-left:10px;text-transform:none;font-size:0.929em;color:black;}/*!sc*/
+data-styled.g41[id="sc-gWXaWL"]{content:"kgmZzc,"}/*!sc*/
+.hCocPB{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.hCocPB p:last-child{margin-bottom:0;}/*!sc*/
+.hCocPB h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.hCocPB h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.hCocPB code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.hCocPB pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.hCocPB pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.hCocPB pre code:before,.hCocPB pre code:after{content:none;}/*!sc*/
+.hCocPB blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.hCocPB img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.hCocPB ul,.hCocPB ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.hCocPB ul ul,.hCocPB ol ul,.hCocPB ul ol,.hCocPB ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.hCocPB table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.hCocPB table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.hCocPB table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.hCocPB table th,.hCocPB table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.hCocPB table th{text-align:left;font-weight:bold;}/*!sc*/
+.hCocPB .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.hCocPB .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.hCocPB h1:hover>.share-link::before,.hCocPB h2:hover>.share-link::before,.hCocPB .share-link:hover::before{visibility:visible;}/*!sc*/
+.hCocPB a{text-decoration:auto;color:#32329f;}/*!sc*/
+.hCocPB a:visited{color:#32329f;}/*!sc*/
+.hCocPB a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+.gatTWH{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.gatTWH p:last-child{margin-bottom:0;}/*!sc*/
+.gatTWH p:first-child{margin-top:0;}/*!sc*/
+.gatTWH p:last-child{margin-bottom:0;}/*!sc*/
+.gatTWH h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.gatTWH h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.gatTWH code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.gatTWH pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.gatTWH pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.gatTWH pre code:before,.gatTWH pre code:after{content:none;}/*!sc*/
+.gatTWH blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.gatTWH img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.gatTWH ul,.gatTWH ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.gatTWH ul ul,.gatTWH ol ul,.gatTWH ul ol,.gatTWH ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.gatTWH table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.gatTWH table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.gatTWH table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.gatTWH table th,.gatTWH table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.gatTWH table th{text-align:left;font-weight:bold;}/*!sc*/
+.gatTWH .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.gatTWH .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.gatTWH h1:hover>.share-link::before,.gatTWH h2:hover>.share-link::before,.gatTWH .share-link:hover::before{visibility:visible;}/*!sc*/
+.gatTWH a{text-decoration:auto;color:#32329f;}/*!sc*/
+.gatTWH a:visited{color:#32329f;}/*!sc*/
+.gatTWH a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+data-styled.g42[id="sc-cCcWUm"]{content:"hCocPB,gatTWH,"}/*!sc*/
+.dvTXik{display:inline;}/*!sc*/
+data-styled.g43[id="sc-cidEGh"]{content:"dvTXik,"}/*!sc*/
+.btvmc{position:relative;}/*!sc*/
+data-styled.g44[id="sc-jcFkcE"]{content:"btvmc,"}/*!sc*/
+.iRRVqp:hover>.sc-giYfyr{opacity:1;}/*!sc*/
+data-styled.g49[id="sc-cTAqdr"]{content:"iRRVqp,"}/*!sc*/
+.inasXH{font-family:Courier,monospace;font-size:13px;white-space:pre;contain:content;overflow-x:auto;}/*!sc*/
+.inasXH .redoc-json code>.collapser{display:none;pointer-events:none;}/*!sc*/
+.inasXH .callback-function{color:gray;}/*!sc*/
+.inasXH .collapser:after{content:'-';cursor:pointer;}/*!sc*/
+.inasXH .collapsed>.collapser:after{content:'+';cursor:pointer;}/*!sc*/
+.inasXH .ellipsis:after{content:' … ';}/*!sc*/
+.inasXH .collapsible{margin-left:2em;}/*!sc*/
+.inasXH .hoverable{padding-top:1px;padding-bottom:1px;padding-left:2px;padding-right:2px;border-radius:2px;}/*!sc*/
+.inasXH .hovered{background-color:rgba(235, 238, 249, 1);}/*!sc*/
+.inasXH .collapser{background-color:transparent;border:0;color:#fff;font-family:Courier,monospace;font-size:13px;padding-right:6px;padding-left:6px;padding-top:0;padding-bottom:0;display:flex;align-items:center;justify-content:center;width:15px;height:15px;position:absolute;top:4px;left:-1.5em;cursor:default;user-select:none;-webkit-user-select:none;padding:2px;}/*!sc*/
+.inasXH .collapser:focus{outline-color:#fff;outline-style:dotted;outline-width:1px;}/*!sc*/
+.inasXH ul{list-style-type:none;padding:0px;margin:0px 0px 0px 26px;}/*!sc*/
+.inasXH li{position:relative;display:block;}/*!sc*/
+.inasXH .hoverable{display:inline-block;}/*!sc*/
+.inasXH .selected{outline-style:solid;outline-width:1px;outline-style:dotted;}/*!sc*/
+.inasXH .collapsed>.collapsible{display:none;}/*!sc*/
+.inasXH .ellipsis{display:none;}/*!sc*/
+.inasXH .collapsed>.ellipsis{display:inherit;}/*!sc*/
+data-styled.g50[id="sc-jObVzO"]{content:"inasXH,"}/*!sc*/
+.kmxZjR{padding:0.9em;background-color:rgba(38,50,56,0.4);margin:0 0 10px 0;display:block;font-family:Montserrat,sans-serif;font-size:0.929em;line-height:1.5em;}/*!sc*/
+data-styled.g51[id="sc-dPiKnG"]{content:"kmxZjR,"}/*!sc*/
+.gFhOV{font-family:Montserrat,sans-serif;font-size:12px;position:absolute;z-index:1;top:-11px;left:12px;font-weight:600;color:rgba(255,255,255,0.7);}/*!sc*/
+data-styled.g52[id="sc-bBHGJP"]{content:"gFhOV,"}/*!sc*/
+.iTgdlW{position:relative;}/*!sc*/
+data-styled.g53[id="sc-cNKqXs"]{content:"iTgdlW,"}/*!sc*/
+.cKDMsE{margin-top:15px;}/*!sc*/
+data-styled.g56[id="sc-hUoZOX"]{content:"cKDMsE,"}/*!sc*/
+.kEvQSx button{background-color:transparent;border:0;outline:0;font-size:13px;font-family:Courier,monospace;cursor:pointer;padding:0;color:#333333;}/*!sc*/
+.kEvQSx button:focus{font-weight:600;}/*!sc*/
+.kEvQSx .sc-eghLr{height:1.1em;width:1.1em;}/*!sc*/
+.kEvQSx .sc-eghLr polygon{fill:#666;}/*!sc*/
+data-styled.g57[id="sc-jgrKcA"]{content:"kEvQSx,"}/*!sc*/
+.iHNfA-D{vertical-align:middle;font-size:13px;line-height:20px;}/*!sc*/
+data-styled.g58[id="sc-gSQGyJ"]{content:"iHNfA-D,"}/*!sc*/
+.bUBFfi{color:rgba(102,102,102,0.9);}/*!sc*/
+data-styled.g59[id="sc-lbhITi"]{content:"bUBFfi,"}/*!sc*/
+.CIngO{color:#666;}/*!sc*/
+data-styled.g60[id="sc-iNGFpr"]{content:"CIngO,"}/*!sc*/
+.gNuSpR{color:#666;word-break:break-word;}/*!sc*/
+data-styled.g61[id="sc-jeraVB"]{content:"gNuSpR,"}/*!sc*/
+.bfaVcY{color:#d41f1c;font-size:0.9em;font-weight:normal;margin-left:20px;line-height:1;}/*!sc*/
+data-styled.g62[id="sc-eJwWTc"]{content:"bfaVcY,"}/*!sc*/
+.igkhrg{border-radius:2px;word-break:break-word;background-color:rgba(51,51,51,0.05);color:rgba(51,51,51,0.9);padding:0 5px;border:1px solid rgba(51,51,51,0.1);font-family:Courier,monospace;}/*!sc*/
++{margin-left:0;}/*!sc*/
+data-styled.g66[id="sc-lcepYk"]{content:"igkhrg,"}/*!sc*/
+.jZLUBW{border-radius:2px;background-color:rgba(104,104,207,0.05);color:rgba(50,50,159,0.9);margin:0 5px;padding:0 5px;border:1px solid rgba(50,50,159,0.1);}/*!sc*/
++{margin-left:0;}/*!sc*/
+data-styled.g68[id="sc-clIyOa"]{content:"jZLUBW,"}/*!sc*/
+.hYvwND{margin-top:0;margin-bottom:0.5em;}/*!sc*/
+data-styled.g91[id="sc-eGRTAW"]{content:"hYvwND,"}/*!sc*/
+.eBnqds{border:1px solid #32329f;color:#32329f;font-weight:normal;margin-left:0.5em;padding:4px 8px 4px;display:inline-block;text-decoration:none;cursor:pointer;}/*!sc*/
+data-styled.g92[id="sc-ctqPXf"]{content:"eBnqds,"}/*!sc*/
+.hyspCV::before{content:'|';display:inline-block;opacity:0.5;width:15px;text-align:center;}/*!sc*/
+.hyspCV:last-child::after{display:none;}/*!sc*/
+data-styled.g93[id="sc-dFtAkI"]{content:"hyspCV,"}/*!sc*/
+.fkQMQs{overflow:hidden;}/*!sc*/
+data-styled.g94[id="sc-brSwGR"]{content:"fkQMQs,"}/*!sc*/
+.eoXdjQ{display:flex;flex-wrap:wrap;margin-left:-15px;}/*!sc*/
+data-styled.g95[id="sc-gIDlXO"]{content:"eoXdjQ,"}/*!sc*/
+.kXxwFz{width:9ex;display:inline-block;height:13px;line-height:13px;background-color:#333;border-radius:3px;background-repeat:no-repeat;background-position:6px 4px;font-size:7px;font-family:Verdana,sans-serif;color:white;text-transform:uppercase;text-align:center;font-weight:bold;vertical-align:middle;margin-right:6px;margin-top:2px;}/*!sc*/
+.kXxwFz.get{background-color:#2F8132;}/*!sc*/
+.kXxwFz.post{background-color:#186FAF;}/*!sc*/
+.kXxwFz.put{background-color:#95507c;}/*!sc*/
+.kXxwFz.options{background-color:#947014;}/*!sc*/
+.kXxwFz.patch{background-color:#bf581d;}/*!sc*/
+.kXxwFz.delete{background-color:#cc3333;}/*!sc*/
+.kXxwFz.basic{background-color:#707070;}/*!sc*/
+.kXxwFz.link{background-color:#07818F;}/*!sc*/
+.kXxwFz.head{background-color:#A23DAD;}/*!sc*/
+.kXxwFz.hook{background-color:#32329f;}/*!sc*/
+.kXxwFz.schema{background-color:#707070;}/*!sc*/
+data-styled.g99[id="sc-dkYQPm"]{content:"kXxwFz,"}/*!sc*/
+.cOvXWd{margin:0;padding:0;}/*!sc*/
+.cOvXWd:first-child{padding-bottom:32px;}/*!sc*/
+.sc-XxNlv .sc-XxNlv{font-size:0.929em;}/*!sc*/
+.iiEGWI{margin:0;padding:0;display:none;}/*!sc*/
+.iiEGWI:first-child{padding-bottom:32px;}/*!sc*/
+.sc-XxNlv .sc-XxNlv{font-size:0.929em;}/*!sc*/
+data-styled.g100[id="sc-XxNlv"]{content:"cOvXWd,iiEGWI,"}/*!sc*/
+.bvkoCV{list-style:none inside none;overflow:hidden;text-overflow:ellipsis;padding:0;}/*!sc*/
+data-styled.g101[id="sc-ilftuq"]{content:"bvkoCV,"}/*!sc*/
+.hkCgTV{cursor:pointer;color:#333333;margin:0;padding:12.5px 20px;display:flex;justify-content:space-between;font-family:Montserrat,sans-serif;font-size:0.929em;text-transform:none;background-color:#fafafa;}/*!sc*/
+.hkCgTV:hover{color:#32329f;background-color:#e1e1e1;}/*!sc*/
+.hkCgTV .sc-eghLr{height:1.5em;width:1.5em;}/*!sc*/
+.hkCgTV .sc-eghLr polygon{fill:#333333;}/*!sc*/
+.dAYpjH{cursor:pointer;color:#333333;margin:0;padding:12.5px 20px;display:flex;justify-content:space-between;font-family:Montserrat,sans-serif;background-color:#fafafa;}/*!sc*/
+.dAYpjH:hover{color:#32329f;background-color:#ededed;}/*!sc*/
+.dAYpjH .sc-eghLr{height:1.5em;width:1.5em;}/*!sc*/
+.dAYpjH .sc-eghLr polygon{fill:#333333;}/*!sc*/
+data-styled.g102[id="sc-uoiTn"]{content:"hkCgTV,dAYpjH,"}/*!sc*/
+.ksEOto{display:inline-block;vertical-align:middle;width:calc(100% - 38px);overflow:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g103[id="sc-bilzwk"]{content:"ksEOto,"}/*!sc*/
+.kHOSwl{font-size:0.8em;margin-top:10px;text-align:center;position:fixed;width:260px;bottom:0;background:#fafafa;}/*!sc*/
+.kHOSwl a,.kHOSwl a:visited,.kHOSwl a:hover{color:#333333!important;padding:5px 0;border-top:1px solid #e1e1e1;text-decoration:none;display:flex;align-items:center;justify-content:center;}/*!sc*/
+.kHOSwl img{width:15px;margin-right:5px;}/*!sc*/
+@media screen and (max-width: 50rem){.kHOSwl{width:100%;}}/*!sc*/
+data-styled.g104[id="sc-eGPYud"]{content:"kHOSwl,"}/*!sc*/
+.cNZNgh{cursor:pointer;position:relative;margin-bottom:5px;}/*!sc*/
+data-styled.g110[id="sc-bQtKkX"]{content:"cNZNgh,"}/*!sc*/
+.cTJnop{font-family:Courier,monospace;margin-left:10px;flex:1;overflow-x:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g111[id="sc-fXEpQz"]{content:"cTJnop,"}/*!sc*/
+.cOWtAb{outline:0;color:inherit;width:100%;text-align:left;cursor:pointer;padding:10px 30px 10px 20px;border-radius:4px 4px 0 0;background-color:#11171a;display:flex;white-space:nowrap;align-items:center;border:1px solid transparent;border-bottom:0;transition:border-color 0.25s ease;}/*!sc*/
+.cOWtAb ..sc-fXEpQz{color:#ffffff;}/*!sc*/
+.cOWtAb:focus{box-shadow:inset 0 2px 2px rgba(0, 0, 0, 0.45),0 2px 0 rgba(128, 128, 128, 0.25);}/*!sc*/
+data-styled.g112[id="sc-FNXeq"]{content:"cOWtAb,"}/*!sc*/
+.cmbEZt{font-size:0.929em;line-height:20px;background-color:#2F8132;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+.gkxfhX{font-size:0.929em;line-height:20px;background-color:#186FAF;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+data-styled.g113[id="sc-jWUAnp"]{content:"cmbEZt,gkxfhX,"}/*!sc*/
+.jwroxc{position:absolute;width:100%;z-index:100;background:#fafafa;color:#263238;box-sizing:border-box;box-shadow:0 0 6px rgba(0, 0, 0, 0.33);overflow:hidden;border-bottom-left-radius:4px;border-bottom-right-radius:4px;transition:all 0.25s ease;visibility:hidden;transform:translateY(-50%) scaleY(0);}/*!sc*/
+data-styled.g114[id="sc-eFehBg"]{content:"jwroxc,"}/*!sc*/
+.iGpJSN{padding:10px;}/*!sc*/
+data-styled.g115[id="sc-fmBChP"]{content:"iGpJSN,"}/*!sc*/
+.fKFzsN{padding:5px;border:1px solid #ccc;background:#fff;word-break:break-all;color:#32329f;}/*!sc*/
+.fKFzsN >span{color:#333333;}/*!sc*/
+data-styled.g116[id="sc-lkgSUC"]{content:"fKFzsN,"}/*!sc*/
+.cvTChQ{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#1d8127;background-color:rgba(29,129,39,0.07);}/*!sc*/
+.cvTChQ:focus{outline:auto #1d8127;}/*!sc*/
+.jdWAQS{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#d41f1c;background-color:rgba(212,31,28,0.07);}/*!sc*/
+.jdWAQS:focus{outline:auto #d41f1c;}/*!sc*/
+data-styled.g119[id="sc-htJRij"]{content:"cvTChQ,jdWAQS,"}/*!sc*/
+.cwqRmK{vertical-align:top;}/*!sc*/
+data-styled.g122[id="sc-gUQwbF"]{content:"cwqRmK,"}/*!sc*/
+.bCFfCP{font-size:1.3em;padding:0.2em 0;margin:3em 0 1.1em;color:#333333;font-weight:normal;}/*!sc*/
+data-styled.g123[id="sc-fXeVMO"]{content:"bCFfCP,"}/*!sc*/
+.gEgztj{margin-bottom:30px;}/*!sc*/
+data-styled.g128[id="sc-eXlEbH"]{content:"gEgztj,"}/*!sc*/
+.jpyFWI{user-select:none;width:20px;height:20px;align-self:center;display:flex;flex-direction:column;color:#32329f;}/*!sc*/
+data-styled.g129[id="sc-iFMBvM"]{content:"jpyFWI,"}/*!sc*/
+.gMfWHA{width:260px;background-color:#fafafa;overflow:hidden;display:flex;flex-direction:column;backface-visibility:hidden;height:100vh;position:sticky;position:-webkit-sticky;top:0;}/*!sc*/
+@media screen and (max-width: 50rem){.gMfWHA{position:fixed;z-index:20;width:100%;background:#fafafa;display:none;}}/*!sc*/
+@media print{.gMfWHA{display:none;}}/*!sc*/
+data-styled.g130[id="sc-iqVXtp"]{content:"gMfWHA,"}/*!sc*/
+.jxMwPs{outline:none;user-select:none;background-color:#f2f2f2;color:#32329f;display:none;cursor:pointer;position:fixed;right:20px;z-index:100;border-radius:50%;box-shadow:0 0 20px rgba(0, 0, 0, 0.3);bottom:44px;width:60px;height:60px;padding:0 20px;}/*!sc*/
+@media screen and (max-width: 50rem){.jxMwPs{display:flex;}}/*!sc*/
+.jxMwPs svg{color:#0065FB;}/*!sc*/
+@media print{.jxMwPs{display:none;}}/*!sc*/
+data-styled.g131[id="sc-eWfWAl"]{content:"jxMwPs,"}/*!sc*/
+.gcgNwG{font-family:Roboto,sans-serif;font-size:14px;font-weight:400;line-height:1.5em;color:#333333;display:flex;position:relative;text-align:left;-webkit-font-smoothing:antialiased;font-smoothing:antialiased;text-rendering:optimizeSpeed!important;tap-highlight-color:rgba(0, 0, 0, 0);text-size-adjust:100%;}/*!sc*/
+.gcgNwG *{box-sizing:border-box;-webkit-tap-highlight-color:rgba(255, 255, 255, 0);}/*!sc*/
+data-styled.g132[id="sc-kTLnmY"]{content:"gcgNwG,"}/*!sc*/
+.llbGGV{z-index:1;position:relative;overflow:hidden;width:calc(100% - 260px);contain:layout;}/*!sc*/
+@media print,screen and (max-width: 50rem){.llbGGV{width:100%;}}/*!sc*/
+data-styled.g133[id="sc-dwsneX"]{content:"llbGGV,"}/*!sc*/
+.cmipqF{background:#263238;position:absolute;top:0;bottom:0;right:0;width:calc((100% - 260px) * 0.4);}/*!sc*/
+@media print,screen and (max-width: 75rem){.cmipqF{display:none;}}/*!sc*/
+data-styled.g134[id="sc-jtXDRK"]{content:"cmipqF,"}/*!sc*/
+.crIRRz{padding:5px 0;}/*!sc*/
+data-styled.g135[id="sc-eldiRB"]{content:"crIRRz,"}/*!sc*/
+.gfKPpg{width:calc(100% - 40px);box-sizing:border-box;margin:0 20px;padding:5px 10px 5px 20px;border:0;border-bottom:1px solid #e1e1e1;font-family:Roboto,sans-serif;font-weight:bold;font-size:13px;color:#333333;background-color:transparent;outline:none;}/*!sc*/
+data-styled.g136[id="sc-kiIzEo"]{content:"gfKPpg,"}/*!sc*/
+.hpsWVS{position:absolute;left:20px;height:1.8em;width:0.9em;}/*!sc*/
+.hpsWVS path{fill:#333333;}/*!sc*/
+data-styled.g137[id="sc-cLpzwn"]{content:"hpsWVS,"}/*!sc*/
+</style>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+</head>
+
+<body>
+  
+      <div id="redoc"><div class="sc-kTLnmY gcgNwG redoc-wrap"><div class="sc-iqVXtp gMfWHA menu-content" style="top:0px;height:calc(100vh - 0px)"><div role="search" class="sc-eldiRB crIRRz"><svg class="sc-cLpzwn hpsWVS search-icon" version="1.1" viewBox="0 0 1000 1000" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px"><path d="M968.2,849.4L667.3,549c83.9-136.5,66.7-317.4-51.7-435.6C477.1-25,252.5-25,113.9,113.4c-138.5,138.3-138.5,362.6,0,501C219.2,730.1,413.2,743,547.6,666.5l301.9,301.4c43.6,43.6,76.9,14.9,104.2-12.4C981,928.3,1011.8,893,968.2,849.4z M524.5,522c-88.9,88.7-233,88.7-321.8,0c-88.9-88.7-88.9-232.6,0-321.3c88.9-88.7,233-88.7,321.8,0C613.4,289.4,613.4,433.3,524.5,522z"></path></svg><input placeholder="Search..." aria-label="Search" type="text" class="sc-kiIzEo gfKPpg search-input" value=""/></div><div class="sc-kLwgDa iPSXkA scrollbar-container undefined"><ul role="menu" class="sc-XxNlv cOvXWd"><li tabindex="0" depth="1" data-item-id="tag/hello" role="menuitem" class="sc-ilftuq bvkoCV"><label class="sc-uoiTn hkCgTV -depth1"><span width="calc(100% - 38px)" title="hello" class="sc-bilzwk ksEOto">hello</span><svg class="sc-eghLr Kcrjp" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></label><ul class="sc-XxNlv iiEGWI"><li tabindex="0" depth="2" data-item-id="tag/hello/operation/helloWorld" role="menuitem" class="sc-ilftuq bvkoCV"><label class="sc-uoiTn dAYpjH -depth2"><span type="get" class="sc-dkYQPm kXxwFz operation-type get">get</span><span tabindex="0" width="calc(100% - 38px)" class="sc-bilzwk ksEOto">Hello World</span></label></li></ul></li><li tabindex="0" depth="1" data-item-id="tag/task" role="menuitem" class="sc-ilftuq bvkoCV"><label class="sc-uoiTn hkCgTV -depth1"><span width="calc(100% - 38px)" title="task" class="sc-bilzwk ksEOto">task</span><svg class="sc-eghLr Kcrjp" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></label><ul class="sc-XxNlv iiEGWI"><li tabindex="0" depth="2" data-item-id="tag/task/operation/postTask" role="menuitem" class="sc-ilftuq bvkoCV"><label class="sc-uoiTn dAYpjH -depth2"><span type="post" class="sc-dkYQPm kXxwFz operation-type post">post</span><span tabindex="0" width="calc(100% - 38px)" class="sc-bilzwk ksEOto">post task</span></label></li><li tabindex="0" depth="2" data-item-id="tag/task/operation/getTask" role="menuitem" class="sc-ilftuq bvkoCV"><label class="sc-uoiTn dAYpjH -depth2"><span type="get" class="sc-dkYQPm kXxwFz operation-type get">get</span><span tabindex="0" width="calc(100% - 38px)" class="sc-bilzwk ksEOto">get task</span></label></li></ul></li></ul><div class="sc-eGPYud kHOSwl"><a target="_blank" rel="noopener noreferrer" href="https://redocly.com/redoc/">API docs by Redocly</a></div></div></div><div class="sc-eWfWAl jxMwPs"><div class="sc-iFMBvM jpyFWI"><svg class="" style="transform:translate(2px, -4px) rotate(180deg);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg><svg class="" style="transform:translate(2px, 4px);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg></div></div><div class="sc-dwsneX llbGGV api-content"><div class="sc-eCImbG iKHSib"><div class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl api-info"><h1 class="sc-furvoW sc-eGRTAW bAbPzU hYvwND">cloud server<!-- --> <span>(<!-- -->1.0<!-- -->)</span></h1><p>Download OpenAPI specification<!-- -->:<a download="openapi.json" target="_blank" class="sc-ctqPXf eBnqds">Download</a></p><div class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><div class="sc-brSwGR fkQMQs"><div class="sc-gIDlXO eoXdjQ"><span class="sc-dFtAkI hyspCV">Takafumi Miyanaga<!-- -->:<!-- --> <a href="mailto:orangekame3.dev@gmail.com">orangekame3.dev@gmail.com</a></span> <!-- --> <span class="sc-dFtAkI hyspCV">License:<!-- --> <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache 2.0</a></span> </div></div></div><div data-role="redoc-summary" html="" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"></div><div data-role="redoc-description" html="&lt;p&gt;cloud server API&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><p>cloud server API</p>
+</div></div></div></div><div id="tag/hello" data-section-id="tag/hello" class="sc-eCImbG iKHSib"><div class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl"><h1 class="sc-furvoW bAbPzU"><a class="sc-crHlpi fQserj" href="#tag/hello" aria-label="tag/hello"></a>hello</h1></div></div></div><div id="tag/hello/operation/helloWorld" data-section-id="tag/hello/operation/helloWorld" class="sc-eCImbG ebpfYk"><div data-section-id="operation/helloWorld" id="operation/helloWorld" class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl"><h2 class="sc-pVSSq leSFcM"><a class="sc-crHlpi fQserj" href="#tag/hello/operation/helloWorld" aria-label="tag/hello/operation/helloWorld"></a>Hello World<!-- --> </h2><div class="sc-eXlEbH gEgztj"><div html="&lt;p&gt;Hello World&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><p>Hello World</p>
+</div></div><div><h3 class="sc-fXeVMO bCFfCP">Responses</h3><div><button class="sc-htJRij cvTChQ"><svg class="sc-eghLr jplBtf" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">200<!-- --> </strong><div html="&lt;p&gt;サーバーの状態のレスポンス&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>サーバーの状態のレスポンス</p>
+</div></button></div><div><button class="sc-htJRij jdWAQS"><svg class="sc-eghLr rFWsv" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">500<!-- --> </strong><div html="&lt;p&gt;Internal Server Error&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Internal Server Error</p>
+</div></button></div></div></div><div class="sc-jRQCJB sc-gKcmaw gDTHQs gIRCzN"><div class="sc-bQtKkX cNZNgh"><button class="sc-FNXeq cOWtAb"><span type="get" class="sc-jWUAnp cmbEZt http-verb get">get</span><span class="sc-fXEpQz cTJnop">/hello</span><svg class="sc-eghLr dLiTUf" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-eFehBg jwroxc"><div class="sc-fmBChP iGpJSN"><div html="&lt;p&gt;Local server url&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Local server url</p>
+</div><div tabindex="0" role="button"><div class="sc-lkgSUC fKFzsN"><span>http://localhost:8888</span>/hello</div></div></div></div></div><div><h3 class="sc-kDTjaY jvEbyZ"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxpSRg dQWePb" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="react-tabs-0" aria-selected="true" aria-disabled="false" aria-controls="react-tabs-1" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="react-tabs-2" aria-selected="false" aria-disabled="false" aria-controls="react-tabs-3" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="react-tabs-1" aria-labelledby="react-tabs-0"><div><div class="sc-cNKqXs iTgdlW"><span class="sc-bBHGJP gFhOV">Content type</span><div class="sc-dPiKnG kmxZjR">application/json</div></div><div class="sc-hUoZOX cKDMsE"><div class="sc-cTAqdr iRRVqp"><div class="sc-giYfyr dJXTNH"><button><div class="sc-jcFkcE btvmc">Copy</div></button></div><div class="sc-iJKOgi lorSOn sc-jObVzO inasXH"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"status"</span>: <span class="token string">&quot;Hello World!&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="react-tabs-3" aria-labelledby="react-tabs-2"></div></div></div></div></div></div><div id="tag/task" data-section-id="tag/task" class="sc-eCImbG iKHSib"><div class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl"><h1 class="sc-furvoW bAbPzU"><a class="sc-crHlpi fQserj" href="#tag/task" aria-label="tag/task"></a>task</h1></div></div></div><div id="tag/task/operation/postTask" data-section-id="tag/task/operation/postTask" class="sc-eCImbG ebpfYk"><div data-section-id="operation/postTask" id="operation/postTask" class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl"><h2 class="sc-pVSSq leSFcM"><a class="sc-crHlpi fQserj" href="#tag/task/operation/postTask" aria-label="tag/task/operation/postTask"></a>post task<!-- --> </h2><div class="sc-eXlEbH gEgztj"><div html="&lt;p&gt;post task&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><p>post task</p>
+</div></div><h5 class="sc-iqsfxh bDlFnN">Request Body schema: <span class="sc-gWXaWL kgmZzc">application/json</span></h5><div html="&lt;p&gt;Quantum task to be submitted&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><p>Quantum task to be submitted</p>
+</div><table class="sc-hGPBXd hmEbIM"><tbody><tr class=""><td kind="field" title="code" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">code</span><div class="sc-gSQGyJ sc-eJwWTc iHNfA-D bfaVcY">required</div></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr><tr class=""><td kind="field" title="name" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">name</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr><tr class=""><td kind="field" title="device" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">device</span><div class="sc-gSQGyJ sc-eJwWTc iHNfA-D bfaVcY">required</div></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr><tr class=""><td kind="field" title="n_qubits" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">n_qubits</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span></div> <div><div html="&lt;p&gt;Parameter exclusive with nNodes&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter exclusive with nNodes</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="n_nodes" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">n_nodes</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span></div><div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Default:<!-- --> </span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">1</span></div> <div><div html="&lt;p&gt;Parameter exclusive with nQubits&lt;br/&gt;Parameter valid only for &amp;#39;simulator&amp;#39; devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter exclusive with nQubits<br/>Parameter valid only for &#39;simulator&#39; devices</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="n_shots" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">n_shots</span><div class="sc-gSQGyJ sc-eJwWTc iHNfA-D bfaVcY">required</div></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span><span> <span class="sc-gSQGyJ sc-clIyOa iHNfA-D jZLUBW"> <!-- -->[ 1 .. 10000000 ]<!-- --> </span></span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr><tr class=""><td kind="field" title="qubit_allocation" class="sc-hBURxS sc-fFejAl sc-jgrKcA jonnEs kJuNSl kEvQSx"><span class="sc-ieebOX drtBwG"></span><button aria-label="expand qubit_allocation"><span class="property-name">qubit_allocation</span><svg class="sc-eghLr foXlDF" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">object</span></div> <div><div html="&lt;p&gt;Parameter valid only for QPU devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only for QPU devices</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="skip_transpilation" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">skip_transpilation</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">boolean</span></div><div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Default:<!-- --> </span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">false</span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr><tr class=""><td kind="field" title="seed_transpilation" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">seed_transpilation</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span></div> <div><div html="&lt;p&gt;Parameter valid only if skipTranspilation is false&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only if skipTranspilation is false</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="seed_simulation" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">seed_simulation</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span></div> <div><div html="&lt;p&gt;Parameter valid only for &amp;#39;simulator&amp;#39; devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only for &#39;simulator&#39; devices</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="ro_error_mitigation" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">ro_error_mitigation</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span></div><div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Default:<!-- --> </span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">&quot;none&quot;</span></div><div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Enum<!-- -->:</span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">&quot;none&quot;</span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">&quot;pseudo_inverse&quot;</span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">&quot;least_square&quot;</span> </div> <div><div html="&lt;p&gt;Parameter valid only for QPU devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only for QPU devices</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="n_per_node" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">n_per_node</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">integer</span><span> <span class="sc-gSQGyJ sc-clIyOa iHNfA-D jZLUBW"> <!-- -->&gt;= 1<!-- --> </span></span></div><div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Default:<!-- --> </span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">1</span></div> <div><div html="&lt;p&gt;Parameter valid only for simulator devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only for simulator devices</p>
+</div></div></div></td></tr><tr class=""><td kind="field" title="simulation_opt" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">simulation_opt</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">object</span></div> <div><div html="&lt;p&gt;Parameter valid only for simulator devices&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Parameter valid only for simulator devices</p>
+</div></div></div></td></tr><tr class="last "><td kind="field" title="note" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">note</span></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span></div> <div><div html="" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"></div></div></div></td></tr></tbody></table><div><h3 class="sc-fXeVMO bCFfCP">Responses</h3><div><button class="sc-htJRij cvTChQ"><svg class="sc-eghLr jplBtf" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">200<!-- --> </strong><div html="&lt;p&gt;Task submitted&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Task submitted</p>
+</div></button></div><div><button class="sc-htJRij jdWAQS"><svg class="sc-eghLr rFWsv" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">500<!-- --> </strong><div html="&lt;p&gt;Internal Server Error&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Internal Server Error</p>
+</div></button></div></div></div><div class="sc-jRQCJB sc-gKcmaw gDTHQs gIRCzN"><div class="sc-bQtKkX cNZNgh"><button class="sc-FNXeq cOWtAb"><span type="post" class="sc-jWUAnp gkxfhX http-verb post">post</span><span class="sc-fXEpQz cTJnop">/task</span><svg class="sc-eghLr dLiTUf" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-eFehBg jwroxc"><div class="sc-fmBChP iGpJSN"><div html="&lt;p&gt;Local server url&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Local server url</p>
+</div><div tabindex="0" role="button"><div class="sc-lkgSUC fKFzsN"><span>http://localhost:8888</span>/task</div></div></div></div></div><div><h3 class="sc-kDTjaY jvEbyZ"> <!-- -->Request samples<!-- --> </h3><div class="sc-cxpSRg dQWePb" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="react-tabs__tab react-tabs__tab--selected" role="tab" id="react-tabs-4" aria-selected="true" aria-disabled="false" aria-controls="react-tabs-5" tabindex="0" data-rttab="true">Payload</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="react-tabs-5" aria-labelledby="react-tabs-4"><div><div class="sc-cNKqXs iTgdlW"><span class="sc-bBHGJP gFhOV">Content type</span><div class="sc-dPiKnG kmxZjR">application/json</div></div><div class="sc-hUoZOX cKDMsE"><div class="sc-cTAqdr iRRVqp"><div class="sc-giYfyr dJXTNH"><button><div class="sc-jcFkcE btvmc">Copy</div></button><button> Expand all </button><button> Collapse all </button></div><div class="sc-iJKOgi lorSOn sc-jObVzO inasXH"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"code"</span>: <span class="token string">&quot;OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"name"</span>: <span class="token string">&quot;Bell State Sampling&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"device"</span>: <span class="token string">&quot;Kawasaki&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_nodes"</span>: <span class="token number">12</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_shots"</span>: <span class="token number">1000</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"skip_transpilation"</span>: <span class="token boolean">false</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"seed_transpilation"</span>: <span class="token number">873</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"seed_simulation"</span>: <span class="token number">39058567</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_per_node"</span>: <span class="token number">2</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"simulation_opt"</span>: <button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable collapsed"><span class="property token string">"optimization_method"</span>: <span class="token string">&quot;light&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"optimization_blockSize"</span>: <span class="token number">1</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"optimization_swapLevel"</span>: <span class="token number">1</span></div></li></ul><span class="token punctuation">}</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"note"</span>: <span class="token string">&quot;Bell State Sampling Example&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div></div></div><div><h3 class="sc-kDTjaY jvEbyZ"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxpSRg dQWePb" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="react-tabs-6" aria-selected="true" aria-disabled="false" aria-controls="react-tabs-7" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="react-tabs-8" aria-selected="false" aria-disabled="false" aria-controls="react-tabs-9" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="react-tabs-7" aria-labelledby="react-tabs-6"><div><div class="sc-cNKqXs iTgdlW"><span class="sc-bBHGJP gFhOV">Content type</span><div class="sc-dPiKnG kmxZjR">application/json</div></div><div class="sc-hUoZOX cKDMsE"><div class="sc-cTAqdr iRRVqp"><div class="sc-giYfyr dJXTNH"><button><div class="sc-jcFkcE btvmc">Copy</div></button></div><div class="sc-iJKOgi lorSOn sc-jObVzO inasXH"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"task_id"</span>: <span class="token string">&quot;7af020f6-2e38-4d70-8cf0-4349650ea08c&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="react-tabs-9" aria-labelledby="react-tabs-8"></div></div></div></div></div></div><div id="tag/task/operation/getTask" data-section-id="tag/task/operation/getTask" class="sc-eCImbG ebpfYk"><div data-section-id="operation/getTask" id="operation/getTask" class="sc-iCfLYb gzjfIy"><div class="sc-hKwCKL bTopMl"><h2 class="sc-pVSSq leSFcM"><a class="sc-crHlpi fQserj" href="#tag/task/operation/getTask" aria-label="tag/task/operation/getTask"></a>get task<!-- --> </h2><div class="sc-eXlEbH gEgztj"><div html="&lt;p&gt;get task&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB"><p>get task</p>
+</div></div><div><h5 class="sc-iqsfxh bDlFnN">path<!-- --> Parameters</h5><table class="sc-hGPBXd hmEbIM"><tbody><tr class="last "><td kind="field" title="task_id" class="sc-hBURxS sc-fFejAl jonnEs kJuNSl"><span class="sc-ieebOX drtBwG"></span><span class="property-name">task_id</span><div class="sc-gSQGyJ sc-eJwWTc iHNfA-D bfaVcY">required</div></td><td class="sc-bkkfxM hOPTki"><div><div><span class="sc-gSQGyJ sc-lbhITi iHNfA-D bUBFfi"></span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO">string</span><span class="sc-gSQGyJ sc-iNGFpr iHNfA-D CIngO"> <!-- -->&lt;<!-- -->uuid<!-- -->&gt;<!-- --> </span><span class="sc-gSQGyJ sc-jeraVB iHNfA-D gNuSpR"> (<!-- -->task.TaskId<!-- -->) </span></div> <div><span class="sc-gSQGyJ iHNfA-D"> <!-- -->Example:<!-- --> </span> <span class="sc-gSQGyJ sc-lcepYk iHNfA-D igkhrg">7af020f6-2e38-4d70-8cf0-4349650ea08c</span></div><div><div html="&lt;p&gt;Quantum task identifier&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Quantum task identifier</p>
+</div></div></div></td></tr></tbody></table></div><div><h3 class="sc-fXeVMO bCFfCP">Responses</h3><div><button class="sc-htJRij cvTChQ"><svg class="sc-eghLr jplBtf" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">200<!-- --> </strong><div html="&lt;p&gt;task response&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>task response</p>
+</div></button></div><div><button class="sc-htJRij jdWAQS"><svg class="sc-eghLr rFWsv" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">400<!-- --> </strong><div html="&lt;p&gt;Bad Request&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Bad Request</p>
+</div></button></div><div><button class="sc-htJRij jdWAQS"><svg class="sc-eghLr rFWsv" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">404<!-- --> </strong><div html="&lt;p&gt;Not Found&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Not Found</p>
+</div></button></div><div><button class="sc-htJRij jdWAQS"><svg class="sc-eghLr rFWsv" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-gUQwbF cwqRmK">500<!-- --> </strong><div html="&lt;p&gt;Internal Server Error&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn hCocPB sc-cidEGh dvTXik"><p>Internal Server Error</p>
+</div></button></div></div></div><div class="sc-jRQCJB sc-gKcmaw gDTHQs gIRCzN"><div class="sc-bQtKkX cNZNgh"><button class="sc-FNXeq cOWtAb"><span type="get" class="sc-jWUAnp cmbEZt http-verb get">get</span><span class="sc-fXEpQz cTJnop">/task/{task_id}</span><svg class="sc-eghLr dLiTUf" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-eFehBg jwroxc"><div class="sc-fmBChP iGpJSN"><div html="&lt;p&gt;Local server url&lt;/p&gt;
+" class="sc-iJKOgi sc-cCcWUm lorSOn gatTWH"><p>Local server url</p>
+</div><div tabindex="0" role="button"><div class="sc-lkgSUC fKFzsN"><span>http://localhost:8888</span>/task/{task_id}</div></div></div></div></div><div><h3 class="sc-kDTjaY jvEbyZ"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxpSRg dQWePb" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="react-tabs-10" aria-selected="true" aria-disabled="false" aria-controls="react-tabs-11" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="react-tabs-12" aria-selected="false" aria-disabled="false" aria-controls="react-tabs-13" data-rttab="true">400</li><li class="tab-error" role="tab" id="react-tabs-14" aria-selected="false" aria-disabled="false" aria-controls="react-tabs-15" data-rttab="true">404</li><li class="tab-error" role="tab" id="react-tabs-16" aria-selected="false" aria-disabled="false" aria-controls="react-tabs-17" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="react-tabs-11" aria-labelledby="react-tabs-10"><div><div class="sc-cNKqXs iTgdlW"><span class="sc-bBHGJP gFhOV">Content type</span><div class="sc-dPiKnG kmxZjR">application/json</div></div><div class="sc-hUoZOX cKDMsE"><div class="sc-cTAqdr iRRVqp"><div class="sc-giYfyr dJXTNH"><button><div class="sc-jcFkcE btvmc">Copy</div></button><button> Expand all </button><button> Collapse all </button></div><div class="sc-iJKOgi lorSOn sc-jObVzO inasXH"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"task_id"</span>: <span class="token string">&quot;7af020f6-2e38-4d70-8cf0-4349650ea08c&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"code"</span>: <span class="token string">&quot;OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"device"</span>: <span class="token string">&quot;Kawasaki&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_qubits"</span>: <span class="token keyword">null</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_nodes"</span>: <span class="token number">12</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"action"</span>: <button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable collapsed"><span class="property token string">"name"</span>: <span class="token string">&quot;sampling&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"n_shots"</span>: <span class="token number">1000</span></div></li></ul><span class="token punctuation">}</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"qubit_allocation"</span>: <span class="token keyword">null</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"skip_transpilation"</span>: <span class="token boolean">false</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"seed_transpilation"</span>: <span class="token number">873</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"seed_simulation"</span>: <span class="token number">39058567</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"ro_error_mitigation"</span>: <span class="token keyword">null</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"n_per_node"</span>: <span class="token number">2</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"simulation_opt"</span>: <button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable collapsed"><span class="property token string">"optimization_method"</span>: <span class="token string">&quot;light&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"optimization_block_size"</span>: <span class="token number">1</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"optimization_swap_level"</span>: <span class="token number">1</span></div></li></ul><span class="token punctuation">}</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"status"</span>: <span class="token string">&quot;QUEUED_FETCHED&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"createdAt"</span>: <span class="token string">&quot;2022-10-19 11:45:34&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="react-tabs-13" aria-labelledby="react-tabs-12"></div><div class="react-tabs__tab-panel" role="tabpanel" id="react-tabs-15" aria-labelledby="react-tabs-14"></div><div class="react-tabs__tab-panel" role="tabpanel" id="react-tabs-17" aria-labelledby="react-tabs-16"></div></div></div></div></div></div></div><div class="sc-jtXDRK cmipqF"></div></div></div>
+      <script>
+      const __redoc_state = {"menu":{"activeItemIdx":-1},"spec":{"data":{"openapi":"3.0.1","info":{"title":"cloud server","version":"1.0","contact":{"name":"Takafumi Miyanaga","email":"orangekame3.dev@gmail.com"},"description":"cloud server API","license":{"name":"Apache 2.0","url":"https://www.apache.org/licenses/LICENSE-2.0.html"}},"servers":[{"url":"http://localhost:8888","description":"Local server url"}],"paths":{"/hello":{"get":{"tags":["hello"],"summary":"Hello World","description":"Hello World","operationId":"helloWorld","responses":{"200":{"description":"サーバーの状態のレスポンス","content":{"application/json":{"schema":{"$ref":"#/components/schemas/hello.HelloWorldResponse"},"example":{"status":"Hello World!"}}}},"500":{"description":"Internal Server Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/error.InternalServerError"},"example":{"detail":"システムエラーが発生しました。"}}}}},"x-amazon-apigateway-integration":{"type":"aws_proxy","credentials":"${role_arn}","uri":"arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${lambda_arn}/invocations","payloadFormatVersion":"2.0","httpMethod":"POST","connectionType":"INTERNET"}}},"/task":{"post":{"tags":["task"],"summary":"post task","description":"post task","operationId":"postTask","requestBody":{"description":"Quantum task to be submitted","content":{"application/json":{"schema":{"$ref":"#/components/schemas/task.PostTaskRequest"},"example":{"code":"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;","name":"Bell State Sampling","device":"Kawasaki","n_nodes":12,"n_shots":1000,"skip_transpilation":false,"seed_transpilation":873,"seed_simulation":39058567,"n_per_node":2,"simulation_opt":{"optimization_method":"light","optimization_blockSize":1,"optimization_swapLevel":1},"note":"Bell State Sampling Example"}}}},"responses":{"200":{"description":"Task submitted","content":{"application/json":{"schema":{"type":"object","properties":{"task_id":{"$ref":"#/components/schemas/task.TaskId"}},"required":["task_id"]}}}},"500":{"description":"Internal Server Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/error.InternalServerError"},"example":{"code":"","message":"システムエラーが発生しました。"}}}}},"x-amazon-apigateway-integration":{"type":"aws_proxy","credentials":"${role_arn}","uri":"arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${lambda_arn}/invocations","payloadFormatVersion":"2.0","httpMethod":"POST","connectionType":"INTERNET"}}},"/task/{task_id}":{"get":{"tags":["task"],"summary":"get task","description":"get task","operationId":"getTask","parameters":[{"$ref":"#/components/parameters/task.TaskId"}],"responses":{"200":{"description":"task response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/task.GetTaskResponse"},"example":{"task_id":"7af020f6-2e38-4d70-8cf0-4349650ea08c","code":"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;","device":"Kawasaki","n_qubits":null,"n_nodes":12,"action":{"name":"sampling","n_shots":1000},"qubit_allocation":null,"skip_transpilation":false,"seed_transpilation":873,"seed_simulation":39058567,"ro_error_mitigation":null,"n_per_node":2,"simulation_opt":{"optimization_method":"light","optimization_block_size":1,"optimization_swap_level":1},"status":"QUEUED_FETCHED","createdAt":"2022-10-19 11:45:34"}}}},"400":{"description":"Bad Request","content":{"application/json":{"schema":{"$ref":"#/components/schemas/error.BadRequest"},"example":{"detail":"invalid task_id"}}}},"404":{"description":"Not Found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/error.NotFoundError"},"example":{"detail":"task not found with given id"}}}},"500":{"description":"Internal Server Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/error.InternalServerError"},"example":{"detail":"internal server error"}}}}},"x-amazon-apigateway-integration":{"type":"aws_proxy","credentials":"${role_arn}","uri":"arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${lambda_arn}/invocations","payloadFormatVersion":"2.0","httpMethod":"POST","connectionType":"INTERNET"}}}},"components":{"schemas":{"hello.HelloWorldResponse":{"description":"サーバーの状態のレスポンス","type":"object","properties":{"message":{"type":"string"}},"required":["message"]},"error.InternalServerError":{"type":"object","properties":{"detail":{"type":"string"}},"required":["detail"]},"task.PostTaskRequest":{"type":"object","properties":{"code":{"type":"string","example":"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"},"name":{"type":"string","example":"Bell State Sampling"},"device":{"type":"string","example":"Kawasaki"},"n_qubits":{"description":"Parameter exclusive with nNodes","type":"integer"},"n_nodes":{"description":"Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices","type":"integer","example":12,"default":1},"n_shots":{"type":"integer","minimum":1,"maximum":10000000,"example":"1000"},"qubit_allocation":{"description":"Parameter valid only for QPU devices","type":"object","additionalProperties":{"type":"integer"},"example":{"0":12,"1":16}},"skip_transpilation":{"type":"boolean","default":false,"example":false},"seed_transpilation":{"description":"Parameter valid only if skipTranspilation is false","type":"integer","example":873},"seed_simulation":{"description":"Parameter valid only for 'simulator' devices","type":"integer","example":39058567},"ro_error_mitigation":{"description":"Parameter valid only for QPU devices","type":"string","enum":["none","pseudo_inverse","least_square"],"default":"none","example":"pseudo_inverse"},"n_per_node":{"description":"Parameter valid only for simulator devices","type":"integer","minimum":1,"default":1,"example":5},"simulation_opt":{"description":"Parameter valid only for simulator devices","type":"object","example":{"optimization_method":"light","optimization_block_size":1,"optimization_swap_level":1}},"note":{"type":"string","example":"Bell State Sampling Example"}},"required":["code","device","n_shots"]},"task.TaskId":{"type":"string","format":"uuid","example":"7af020f6-2e38-4d70-8cf0-4349650ea08c"},"task.GetTaskResponse":{"description":"detail of task response","type":"object","properties":{"task_id":{"$ref":"#/components/schemas/task.TaskId"},"code":{"type":"string","example":"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"},"device":{"type":"string","example":"Kawasaki"},"n_qubits":{"type":"integer","example":null},"n_nodes":{"description":"Parameter valid only for 'simulator' devices","type":"integer","example":12},"qubit_allocation":{"description":"Parameter valid only for QPU devices","type":"object","additionalProperties":{"type":"integer"},"example":{"0":12,"1":16}},"skip_transpilation":{"type":"boolean","example":false},"seed_transpilation":{"description":"Parameter valid only if skipTranspilation is false","type":"integer","example":873},"seed_simulation":{"description":"Parameter valid only for 'simulator' devices","type":"integer","example":39058567},"ro_error_mitigation":{"description":"Parameter valid only for QPU devices","type":"string","enum":["none","pseudo_inverse","least_square"],"example":"pseudo_inverse"},"n_per_node":{"description":"Parameter valid only for simulator devices","type":"integer","minimum":1,"example":5},"simulation_opt":{"description":"Parameter valid only for simulator devices","type":"object","example":{"optimization_method":"light","optimization_block_size":1,"optimization_swap_level":1}}},"required":["taskId","code","device","skip_transpilation"]},"error.BadRequest":{"type":"object","properties":{"detail":{"type":"string"}},"required":["detail"]},"error.NotFoundError":{"type":"object","properties":{"detail":{"type":"string"}},"required":["detail"]}},"parameters":{"task.TaskId":{"name":"task_id","in":"path","description":"Quantum task identifier","required":true,"schema":{"$ref":"#/components/schemas/task.TaskId"}}}}}},"searchIndex":{"store":["tag/hello","tag/hello/operation/helloWorld","tag/task","tag/task/operation/postTask","tag/task/operation/getTask"],"index":{"version":"2.3.9","fields":["title","description"],"fieldVectors":[["title/0",[0,0.61]],["description/0",[]],["title/1",[0,0.459,1,0.745]],["description/1",[0,0.595,1,0.645]],["title/2",[2,0.099]],["description/2",[]],["title/3",[2,0.074,3,0.745]],["description/3",[2,0.096,3,0.645]],["title/4",[2,0.099]],["description/4",[2,0.079,4,1.258]]],"invertedIndex":[["hello",{"_index":0,"title":{"0":{},"1":{}},"description":{"1":{}}}],["post",{"_index":3,"title":{"3":{}},"description":{"3":{}}}],["task",{"_index":2,"title":{"2":{},"3":{},"4":{}},"description":{"3":{},"4":{}}}],["task/{task_id",{"_index":4,"title":{},"description":{"4":{}}}],["world",{"_index":1,"title":{"1":{}},"description":{"1":{}}}]],"pipeline":[]}},"options":{}};
+
+      var container = document.getElementById('redoc');
+      Redoc.hydrate(__redoc_state, container);
+
+      </script>
+</body>
+
+</html>

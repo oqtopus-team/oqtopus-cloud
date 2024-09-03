@@ -1,0 +1,57 @@
+name: TFLint
+
+on:
+  push:
+    paths:
+      - 'terraform/**/*.tf'
+
+# permissions:
+#   contents: write
+#   pull-requests: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Aqua
+        uses: aquaproj/aqua-installer@v3.0.1
+        with:
+          aqua_version: v2.28.0
+          working_directory: ""
+          aqua_opts: ""
+        env:
+          AQUA_CONFIG: aqua.yaml
+          AQUA_LOG_LEVEL: debug
+
+      - name: Install TFLint with Aqua
+        run: |
+          aqua init
+          aqua i
+        working-directory: ./terraform
+
+      - name: Run TFLint via Makefile
+        run: |
+          make lint-ci
+        working-directory: ./terraform
+        continue-on-error: true
+
+      - name: Run Trivy via Makefile
+        run: |
+          make scan
+        working-directory: ./terraform
+        continue-on-error: true
+
+      # - name: Install reviewdog
+      #   uses: reviewdog/action-setup@v1
+      #   with:
+      #     reviewdog_version: latest
+
+      # - name: Run reviewdog
+      #   run: |
+      #     cat terraform/tflint_report.json | reviewdog -f=tflint -name="tflint" -reporter=github-pr-review -filter-mode=diff_context -level=error
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

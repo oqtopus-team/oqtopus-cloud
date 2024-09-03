@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "njpwerner.autodocstring",
+    "editorconfig.editorconfig",
+    "hashicorp.terraform",
+    "davidanson.vscode-markdownlint",
+    "ms-python.mypy-type-checker",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-vscode.live-server",
+    "arjun.swagger-viewer",
+    "redhat.vscode-yaml",
+    "gruntfuggly.todo-tree"
+  ]
+}

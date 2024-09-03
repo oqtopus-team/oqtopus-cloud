@@ -1,0 +1,67 @@
+hello:
+  get:
+    tags:
+      - hello
+    summary: Hello World
+    description: Hello World
+    operationId: getHello
+    security: []
+    responses:
+      '200':
+        description: サーバーの状態のレスポンス
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/hello.yaml#/hello.HelloWorldResponse'
+            example:
+              message: Hello World!
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+            example:
+              detail: システムエラーが発生しました。
+
+hello.name:
+  get:
+    tags:
+      - hello
+    summary: display hello name
+    description: display hello name
+    operationId: getHelloName
+    security: []
+    parameters:
+      - in: path
+        name: name
+        description: "Message to be displayed"
+        required: true
+        schema:
+          $ref: "../schemas/hello.yaml#/hello.Name"
+    responses:
+      '200':
+        description: task response
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/hello.yaml#/hello.HelloWorldResponse'
+            example:
+              message: Hello Mike!
+      '400':
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: invalid task_id
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+            example:
+              detail: internal server error
+

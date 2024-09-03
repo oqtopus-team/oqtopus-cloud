@@ -1,0 +1,83 @@
+.md-typeset h1 {
+  font-weight: bold;
+  color: rgba(0, 0, 0, .87);
+  border-bottom: solid 2px rgba(0, 0, 0, .87);
+  padding-bottom: .1em;
+}
+
+.md-typeset h2 {
+  font-weight: bold;
+  border-bottom: 2px dotted rgba(0, 0, 0, .87);
+}
+
+.md-typeset h3 {
+  font-weight: bold;
+  border-bottom: 1px dotted #757575;
+}
+
+.md-typeset h4 {
+  font-weight: bold;
+  border-bottom: 1px solid hsla(0, 0%, 92.5%, .5);
+}
+
+.md-typeset > ::before {
+  font-family: "FontAwesome";
+  /* font-family: "Font Awesome 5 Free"; */
+  margin-right: .3em;
+  display:inline-block !important;
+}
+
+.md-typeset h1::before {
+  content:"\f02d" !important;
+}
+
+.md-typeset h2::before {
+  content:"\f0a9" !important;
+}
+
+.md-typeset h3::before {
+  content:"\f061" !important;
+}
+
+.md-typeset h4::before {
+  content:"\f0da" !important;
+}
+
+.md-typeset a:not([class])::before {
+  font-family: "FontAwesome";
+  margin-right: .2em;
+  content: "\f14c";
+}
+
+.md-typeset a:not([class]) {
+  border-bottom: 1px dotted #757575;
+}
+
+.md-typeset > p {
+  text-indent: 1em;
+}
+
+.md-typeset > div.admonition {
+  margin-left: 1em !important;
+}
+
+.md-typeset > table.codehilitetable {
+  margin-left: 1em !important;
+  margin-right: 0em !important;
+}
+
+.md-typeset > ul {
+  margin-left: 1em;
+}
+
+.md-typeset > ol li, .md-typeset > ul li {
+  margin-bottom: .1em !important;
+}
+
+.md-typeset > ol li ol, .md-typeset > ol li ul, .md-typeset > ul li ol, .md-typeset > ul li ul {
+  margin-top: .1em !important;
+}
+
+.md-typeset i.fa {
+  text-indent: 0em;
+}

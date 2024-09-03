@@ -1,0 +1,73 @@
+results.SamplingResultDef:
+  type: object
+  properties:
+    taskId:
+      $ref: "tasks.yaml#/tasks.TaskId"
+    status:
+      $ref: "#/results.ResultStatus"
+    result:
+      description: "Provided only for successful results"
+      type: object
+      additionalProperties:
+        type: integer
+        minProperties: 2
+      example:
+        "11": 4980
+        "00": 5020
+    reason:
+      description: "Provided only for unsuccessful (failed, cancelled) results"
+      type: string
+    transpiledCode:
+      description: "Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull"
+      type: string
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 0
+        "1": 4
+  required: [
+    taskId, status
+  ]
+
+results.ResultStatus:
+  type: string
+  enum: ["SUCCESS", "FAILURE", "CANCELLED"]
+  default: "SUCCESS"
+  example: "SUCCESS"
+
+
+results.EstimationResultDef:
+  type: object
+  properties:
+    taskId:
+      $ref: "tasks.yaml#/tasks.TaskId"
+    status:
+      $ref: "#/results.ResultStatus"
+    result:
+      description: "Real and imaginary components of complex estimation result value<br>Provided only for successful results"
+      type: array
+      items:
+        type: number
+      minItems: 1
+      maxItems: 2
+      example: [1.5, 2.8]
+    reason:
+      description: "Provided only for unsuccessful (failed, cancelled) results"
+      type: string
+    transpiledCode:
+      description: "Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull"
+      type: string
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 0
+        "1": 4
+  required: [
+    taskId, status
+  ]

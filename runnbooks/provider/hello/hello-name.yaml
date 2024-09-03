@@ -1,0 +1,18 @@
+desc: hello name test
+runners:
+  req: ${API_URL}
+  openapi3: docs/provider/openapi.yaml
+steps:
+  -
+    desc: set name Mike
+    req:
+      /v1/hello/Mike:
+        get:
+          headers:
+            Authorization: Bearer ${IdToken}
+          body: null
+    test: |
+      # status code is 200
+      current.res.status == 200
+      # body is as expected
+      && compare(current.res.body, {"message":"Hello Mike!!"})

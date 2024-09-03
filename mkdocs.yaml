@@ -1,0 +1,118 @@
+site_name: OQTOPUS
+repo_url: "https://github.com/oqtopus-team/oqtopus-cloud"
+nav:
+  - Architecture:
+      - AWS System Architecture Diagram: architecture/aws_system_architecture_diagram.md
+      - Task State Transition Diagram: architecture/task_state_transition_diagram.md
+      - Sequence Diagram: architecture/sequence_diagram.md
+  - Developer Guidelines:
+      - Development Flow: developer_guidelines/index.md
+      - Setup Development Environment: developer_guidelines/setup.md
+      - OpenAPI Specification-Based Code Generation: developer_guidelines/openapi.md
+      - Backend Implementation: developer_guidelines/backend.md
+      - Terraform Guidelines: developer_guidelines/terraform_guidelines.md
+      - Terraform Modules:
+          - Overview: terraform_modules/README.md
+          - network: terraform_modules/network/README.md
+          - security-group: terraform_modules/security-group/README.md
+          - db: terraform_modules/db/README.md
+          - management: terraform_modules/management/README.md
+          - api-server: terraform_modules/api-server/README.md
+          - vpc-endpoint: terraform_modules/vpc-endpoint/README.md
+      - DB Schema:
+          - Overview: schema/README.md
+          - devices: schema/devices.md
+          - results: schema/results.md
+          - tasks: schema/tasks.md
+      - OpenAPI Specification:
+          - User API: oas/user/README.md
+          - Provider API: oas/provider/README.md
+  - Operation:
+      - Setup Operation Environment: operation/setup.md
+      - Deployment: operation/deployment.md
+  - Others:
+      - How to Contribute: CONTRIBUTING.md
+      - Code of Conduct: CODE_OF_CONDUCT.md
+      - Security: SECURITY.md
+
+
+theme:
+  name: 'material'
+  language: 'ja'
+  palette:
+    primary: 'indigo'
+    accent: 'indigo'
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - toc.integrate
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - footnotes
+  - codehilite
+  - toc:
+      permalink: true
+
+
+plugins:
+  - swagger-ui-tag:
+  - search:
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          default: false
+          name: English
+          build: true
+        - locale: ja
+          default: true
+          name: 日本語
+          build: true
+          nav_translations:
+            site_name: OQTOPUS
+            Overview: 概要
+
+            Architecture: アーキテクチャ
+            AWS System Architecture Diagram: AWSシステムアーキテクチャ図
+            Task State Transition Diagram: タスクの状態遷移
+            Sequence Diagram: シーケンス図
+
+            Developer Guidelines: 開発者ガイドライン
+            Development Flow: 開発フロー
+            Setup Development Environment: 開発環境のセットアップ
+            OpenAPI Specification-Based Code Generation: OpenAPI仕様書に基づくコード生成
+            Backend Implementation: バックエンドの実装
+            Terraform Guidelines: Terraformガイドライン
+            Terraform Modules: Terraformモジュール
+            DB Schema: DBスキーマ
+
+            OpenAPI Specification: OpenAPI仕様書
+            UserAPI: ユーザーAPI
+            ProviderAPI: プロバイダーAPI
+
+            Operation: 運用
+            Setup Operation Environment: 運用環境のセットアップ
+            Deployment: デプロイメント
+
+            Others: その他
+            How to Contribute: コントリビュートの方法
+            Code of Conduct: 行動規範
+            Security: セキュリティ
+
+extra_css:
+    - "https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    - "css/custom.css"
+
+extra:
+  toc:
+    include: 2
+

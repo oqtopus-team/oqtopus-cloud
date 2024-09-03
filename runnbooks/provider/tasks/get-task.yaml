@@ -1,0 +1,18 @@
+desc: get internal task test
+runners:
+  req: ${API_URL}
+  openapi3: docs/provider/openapi.yaml
+steps:
+  -
+    desc: get task
+    req:
+      /v1/internal/tasks/7af020f6-2e38-4d70-8cf0-4349650ea08c:
+        get:
+          headers:
+            Authorization: Bearer ${IdToken}
+          body: null
+    test: |
+      # status code is 200
+      current.res.status == 200
+      # body is as expected
+      && compare(current.res.body, {"action":{"nShots":1024,"name":"sampling"},"code":"OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -\u003e c[0];\nmeasure q[1] -\u003e c[1];","createdAt":"2024-03-28T16:50:27+09:00","device":"Kawasaki","nNodes":12,"nPerNode":1,"nQubits":2,"qubitAllocation":null,"roErrorMitigation":"none","seedSimulation":null,"seedTranspilation":null,"simulationOpt":null,"skipTranspilation":false,"status":"QUEUED","taskId":"7af020f6-2e38-4d70-8cf0-4349650ea08c"})

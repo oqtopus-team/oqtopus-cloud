@@ -1,0 +1,23 @@
+name: Question
+description: Ask a question about the project
+title: "[Question]: "
+labels: [question]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to ask a question. Please provide a clear and concise question along with any relevant context or additional information that might help in answering your question.
+
+  - type: input
+    id: question
+    attributes:
+      label: What is your question?
+      description: Please provide a clear and concise question.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context or additional information
+      description: Provide any relevant context or additional information.

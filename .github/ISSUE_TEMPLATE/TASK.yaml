@@ -1,0 +1,53 @@
+name: Task
+description: Track a task that needs to be completed
+title: "[Task]: "
+labels: [enhancement]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for creating a task. Please provide a clear and concise description of the task and any relevant details.
+
+  - type: input
+    id: task_description
+    attributes:
+      label: Task Description
+      description: A clear and concise description of what the task is.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: Steps to complete the task.
+      value: |
+        1. Step one
+        2. Step two
+        3. Step three
+
+  - type: input
+    id: due_date
+    attributes:
+      label: Due Date
+      description: The date by which this task should be completed.
+      placeholder: "YYYY-MM-DD"
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Please select the priority level for this task.
+      options:
+        - label: Low
+          value: low
+        - label: Medium
+          value: medium
+        - label: High
+          value: high
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context or details about the task here.

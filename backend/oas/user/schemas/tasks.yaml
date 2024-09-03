@@ -1,0 +1,417 @@
+tasks.TaskId:
+  type: string
+  format: uuid
+  example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
+
+tasks.GetSamplingTaskStatusResponse:
+  description: task status
+  type: object
+  properties:
+    taskId:
+      $ref: "#/tasks.TaskId"
+    status:
+      $ref: "#/tasks.TaskStatus"
+  required: [
+    taskId,status
+  ]
+
+tasks.GetEstimationTaskStatusResponse:
+  description: task status
+  type: object
+  properties:
+    taskId:
+      $ref: "#/tasks.TaskId"
+    status:
+      $ref: "#/tasks.TaskStatus"
+  required: [
+    taskId,status
+  ]
+
+tasks.SubmitTaskResponse:
+  description: submit a task
+  type: object
+  properties:
+    taskId:
+      $ref: '#/components/schemas/tasks.TaskId'
+  required:
+    - taskId
+
+tasks.TaskStatus:
+  type: string
+  enum: ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"]
+  example: "QUEUED"
+
+tasks.SamplingTaskInfo:
+  type: object
+  properties:
+    taskId:
+      $ref: "#/tasks.TaskId"
+    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+    name:
+      type: string
+      example: "Bell State Sampling"
+    device:
+      type: string
+      example: "Kawasaki"
+    nQubits:
+      description: "Parameter exclusive with nNodes"
+      type: integer
+    nNodes:
+      description: "Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 12
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 12
+        "1": 16
+    skipTranspilation:
+      type: boolean
+      example: false
+    seedTranspilation:
+      description: "Parameter valid only if skipTranspilation is false"
+      type: integer
+      example: 873
+    seedSimulation:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 39058567
+    roErrorMitigation:
+      description: "Parameter valid only for QPU devices"
+      type: string
+      enum: ["none", "pseudo_inverse", "least_square"]
+      example: "pseudo_inverse"
+    nPerNode:
+      description: "Parameter valid only for simulator devices"
+      type: integer
+      minimum: 1
+      example: 5
+    simulationOpt:
+      description: "Parameter valid only for simulator devices"
+      type: object
+      example: {
+          optimizationMethod: "light",
+          optimizationBlockSize: 1,
+          optimizationSwapLevel: 1
+        }
+    note:
+      type: string
+      example: "Bell State Sampling Example"
+    status:
+      $ref: "#/tasks.TaskStatus"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2022-10-19 11:45:34"
+  required: [
+    taskId, code, device, nShots, skipTranspilation, status, createdAt
+  ]
+  example:
+    {
+      taskId: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+      code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+      name: "Bell State Sampling",
+      device: "Kawasaki",
+      nNodes: 12,
+      nShots: 1000,
+      skipTranspilation: false,
+      seedTranspilation: 387,
+      seedSimulation: 39058567,
+      nPerNode: 2,
+      simulationOpt: {
+        optimizationMethod: "light",
+        optimizationBlockSize: 1,
+        optimizationSwapLevel: 1
+      },
+      note: "Bell State Sampling Example",
+      status: "QUEUED",
+      createdAt: "2022-10-19 11:45:34"
+    }
+
+tasks.SamplingTaskDef:
+  type: object
+  properties:
+    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+    name:
+      type: string
+      example: "Bell State Sampling"
+    device:
+      type: string
+      example: "Kawasaki"
+    nQubits:
+      description: "Parameter exclusive with nNodes"
+      type: integer
+    nNodes:
+      description: "Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 12
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 12
+        "1": 16
+    skipTranspilation:
+      type: boolean
+      default: false
+      example: false
+    seedTranspilation:
+      description: "Parameter valid only if skipTranspilation is false"
+      type: integer
+      example: 873
+    seedSimulation:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 39058567
+    roErrorMitigation:
+      description: "Parameter valid only for QPU devices"
+      type: string
+      enum: ["none", "pseudo_inverse", "least_square"]
+      default: "none"
+      example: "pseudo_inverse"
+    nPerNode:
+      description: "Parameter valid only for simulator devices"
+      type: integer
+      minimum: 1
+      example: 5
+    simulationOpt:
+      description: "Parameter valid only for simulator devices"
+      type: object
+      example: {
+          optimizationMethod: "light",
+          optimizationBlockSize: 1,
+          optimizationSwapLevel: 1
+        }
+    note:
+      type: string
+      example: "Bell State Sampling Example"
+  required: [
+    code, device, nShots
+  ]
+
+tasks.Operator:
+  type: array
+  items:
+    $ref: "#/tasks.SingleOperator"
+  example:
+    [
+      ["X 0 X 1", [1.5, 2.8]],
+      ["Y 0 Z 1", [1.2, -2e-8]],
+    ]
+
+tasks.SingleOperator:
+  type: array
+  items:
+    anyOf:
+      - type: string
+        description: "Pauli string"
+        example: "X 0 Y 1 Z 5 I 2"
+      - type: array
+        description: "Real and imaginary components of complex coef value"
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+        example: [1.5, 2.8]
+  minItems: 2
+  maxItems: 2
+
+tasks.EstimationTaskDef:
+  type: object
+  properties:
+    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+    name:
+      type: string
+      example: "Bell State Estimation"
+    device:
+      type: string
+      example: "Kawasaki"
+    nQubits:
+      description: "Parameter exclusive with nNodes"
+      type: integer
+    nNodes:
+      description: "Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 12
+    method:
+      type: string
+      enum: ["state_vector", "sampling"]
+      example: "sampling"
+      description: "state_vector method valid only for 'simulator' devices"
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+      description: "Parameter valid only for sampling method"
+    operator:
+      $ref: "#/tasks.Operator"
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 12
+        "1": 16
+    skipTranspilation:
+      type: boolean
+      default: false
+      example: false
+    seedTranspilation:
+      description: "Parameter valid only if skipTranspilation is false"
+      type: integer
+      example: 873
+    seedSimulation:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 39058567
+    roErrorMitigation:
+      description: "Parameter valid only for QPU devices"
+      type: string
+      enum: ["none", "pseudo_inverse", "least_square"]
+      default: "none"
+      example: "pseudo_inverse"
+    nPerNode:
+      description: "Parameter valid only for simulator devices"
+      type: integer
+      minimum: 1
+      example: 5
+    simulationOpt:
+      description: "Parameter valid only for simulator devices"
+      type: object
+      example: {
+          optimizationMethod: "light",
+          optimizationBlockSize: 1,
+          optimizationSwapLevel: 1
+        }
+    note:
+      type: string
+      example: "Bell State Estimation Example"
+  required: [
+    code, device, method, operator
+  ]
+
+tasks.EstimationTaskInfo:
+  type: object
+  properties:
+    taskId:
+      $ref: "#/tasks.TaskId"
+    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+    name:
+      type: string
+      example: "Bell State Estimation"
+    device:
+      type: string
+      example: "Kawasaki"
+    nQubits:
+      description: "Parameter exclusive with nNodes"
+      type: integer
+    nNodes:
+      description: "Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 12
+    method:
+      type: string
+      enum: ["state_vector", "sampling"]
+      example: "sampling"
+      description: "state_vector method valid only for 'simulator' devices"
+    nShots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+      description: "Parameter valid only for sampling method"
+    operator:
+      $ref: "#/tasks.Operator"
+    qubitAllocation:
+      description: "Parameter valid only for QPU devices"
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        "0": 12
+        "1": 16
+    skipTranspilation:
+      type: boolean
+      example: false
+    seedTranspilation:
+      description: "Parameter valid only if skipTranspilation is false"
+      type: integer
+      example: 873
+    seedSimulation:
+      description: "Parameter valid only for 'simulator' devices"
+      type: integer
+      example: 39058567
+    roErrorMitigation:
+      description: "Parameter valid only for QPU devices"
+      type: string
+      enum: ["none", "pseudo_inverse", "least_square"]
+      example: "pseudo_inverse"
+    nPerNode:
+      description: "Parameter valid only for simulator devices"
+      type: integer
+      minimum: 1
+      example: 5
+    simulationOpt:
+      description: "Parameter valid only for simulator devices"
+      type: object
+      example: {
+          optimizationMethod: "light",
+          optimizationBlockSize: 1,
+          optimizationSwapLevel: 1
+        }
+    note:
+      type: string
+      example: "Bell State Estimation Example"
+    status:
+      $ref: "#/tasks.TaskStatus"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2022-10-19 11:45:34"
+  required: [
+    taskId, code, device, method, operator, skipTranspilation, status, createdAt
+  ]
+  example:
+    {
+      taskId: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+      code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+      name: "Bell State Estimation",
+      device: "Kawasaki",
+      nNodes: 12,
+      method: "sampling",
+      nShots: 1000,
+      operator:
+      [
+        ["X 0 X 1", [1.5, 2.8]],
+        ["Y 0 Z 1", [1.2, -2e-8]],
+      ],
+      skipTranspilation: false,
+      seedTranspilation: 387,
+      seedSimulation: 39058567,
+      nPerNode: 2,
+      simulationOpt: {
+        optimizationMethod: "light",
+        optimizationBlockSize: 1,
+        optimizationSwapLevel: 1
+      },
+      note: "Bell State Estimation Example",
+      status: "QUEUED",
+      createdAt: "2022-10-19 11:45:34"
+    }

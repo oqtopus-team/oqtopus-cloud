@@ -1,0 +1,97 @@
+results:
+  post:
+    summary: Submit a quantum task result
+    tags:
+    - results
+    description: Submit a quantum task result
+    operationId: postResult
+    security: []
+    requestBody:
+        description: "Result to be submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/results.yaml#/results.ResultDef"
+            examples:
+              success sampling:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "SUCCESS",
+                    "result":
+                      {
+                        "00": 5020,
+                        "11": 4980
+                      },
+                    "reason": null,
+                    "transpiledCode": "OPENQASM 3;include \"stdgates.inc\";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];"
+                  }
+              success estimation:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "SUCCESS",
+                    "result": [1.5, 2.8],
+                    "reason": null,
+                    "transpiledCode": "OPENQASM 3;include \"stdgates.inc\";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];"
+                  }
+              failure:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "FAILURE",
+                    "result": null,
+                    "reason": "Invalid device parameter in request",
+                    "transpiledCode": null
+                  }
+              cancel:
+                value:
+                  {
+                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "status": "CANCELLED",
+                    "result": null,
+                    "reason": "User cancelled",
+                    "transpiledCode": null
+                  }
+
+    responses:
+      '200':
+        description: Results submitted
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/results.yaml#/results.CreateResultResponse'
+            example:
+              message: Results submitted
+      '400':
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: TaskID not found
+      "409":
+        description: "Result for taskId already exists"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.ConflictError'
+            example:
+              detail: Result for taskId already exists
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+            example:
+              detail: Internal server error

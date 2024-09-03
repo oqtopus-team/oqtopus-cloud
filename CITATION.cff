@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "OQTOPUS-CLOUD"
+authors:
+- family-names: "Aso"
+  given-names: "Noriyasu"
+- family-names: "Gokita"
+  given-names: "Shun"
+- family-names: "Kakuko"
+  given-names: "Norihiro"
+- family-names: "Masumoto"
+  given-names: "Naoyuki"
+- family-names: "Mori"
+  given-names: "Toshio"
+- family-names: "Miyanaga"
+  given-names: "Takafumi"
+- family-names: "Noda"
+  given-names: "Kunihiro"
+- family-names: "Tsukano"
+  given-names: "Satoyuki"
+  orcid: "https://orcid.org/0009-0000-3825-9083"
+- family-names: "Ymaguchi"
+  given-names: "Masaomi"
+version: 1.0.0
+date-released: 2024-09-01
+license: Apache-2.0
+repository-code: "https://github.com/oqtopus-team/oqtopus-cloud"
+url: "https://github.com/oqtopus-team.github.io/oqtopus-cloud"

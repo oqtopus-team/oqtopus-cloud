@@ -1,0 +1,14 @@
+services:
+  db:
+    image: mysql:8.0
+    platform: linux/x86_64
+    environment:
+      - MYSQL_DATABASE=main
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./db/conf.d:/etc/mysql/conf.d
+      - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306

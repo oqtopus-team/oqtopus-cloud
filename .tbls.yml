@@ -1,0 +1,16 @@
+# .tbls.yml
+
+# DSN (Database Source Name) to connect database
+dsn: mysql://admin:password@localhost:3306/main
+
+# Path to generate document
+# Default is `dbdoc`
+docPath: docs/schema
+
+er:
+  format: mermaid
+
+templates:
+  md:
+    index: 'tbls/index.md.tmpl'
+    table: 'tbls/table.md.tmpl'
