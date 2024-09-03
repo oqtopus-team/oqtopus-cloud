@@ -172,6 +172,17 @@ make test-user
 make test-provider
 ```
 
+## リリース
+
+バージョニングは[セマンティックバージョニング](https://semver.org/)を採用しています。
+
+リリースノートの作成は自動化しているため、以下のコマンドを実行することでタグ打ちとリリースノートの作成が行われます。
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## コマンド一覧
 
 ```bash
