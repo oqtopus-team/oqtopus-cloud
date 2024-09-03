@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "OQTOPUS-CLOUD"
+title: "OQTOPUS Cloud"
 authors:
 - family-names: "Aso"
   given-names: "Noriyasu"
@@ -21,8 +21,8 @@ authors:
   orcid: "https://orcid.org/0009-0000-3825-9083"
 - family-names: "Ymaguchi"
   given-names: "Masaomi"
-version: 1.0.0
-date-released: 2024-09-01
+version: 0.1.0
+date-released: 2024-09-04
 license: Apache-2.0
 repository-code: "https://github.com/oqtopus-team/oqtopus-cloud"
 url: "https://github.com/oqtopus-team.github.io/oqtopus-cloud"
