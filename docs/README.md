@@ -11,7 +11,7 @@
   </thead>
 </table>
 
-[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml)[![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml)[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
