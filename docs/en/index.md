@@ -11,13 +11,13 @@
   </thead>
 </table>
 
-[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml)[![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml)[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
 ## Overview
 
-OQTOPUS Cloud is a project that provides the architecture of cloud quantum computers as an open-source software (OSS).
+**O**pen **Q**uantum **T**oolchain for **OP**erators & **US**ers (**OQTOPUS**) is a project that provides the architecture of cloud quantum computers as an open-source software (OSS).
 By using it in conjunction with various OSS provided by [@oqtopus-team](https://github.com/oqtopus-team), you can build a cloud quantum computer system.
 
 ![OQTOPUS Cloud](./asset/aws_system_architecture_diagram_overview.drawio.png)
@@ -64,24 +64,24 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 ## CITATION
 
-If you use OQTOPUS Cloud in your research, please cite the following paper:
+If you use OQTOPUS Cloud in your research, please cite the following GitHub repository:
 
 ### APA
 
 ```apacite
-Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS-CLOUD (Version 1.0.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
+Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS Cloud (Version 0.1.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
 ```
 
 ### BibTeX
 
 ```bibtex
-@software{Aso_OQTOPUS-CLOUD_2024,
+@software{Aso_OQTOPUS_Cloud_2024,
 author = {Aso, Noriyasu and Gokita, Shun and Kakuko, Norihiro and Masumoto, Naoyuki and Mori, Toshio and Miyanaga, Takafumi and Noda, Kunihiro and Tsukano, Satoyuki and Ymaguchi, Masaomi},
 license = {Apache-2.0},
 month = sep,
-title = {{OQTOPUS-CLOUD}},
+title = {{OQTOPUS Cloud}},
 url = {https://github.com/oqtopus-team/oqtopus-cloud},
-version = {1.0.0},
+version = {0.1.0},
 year = {2024}
 }
 ```

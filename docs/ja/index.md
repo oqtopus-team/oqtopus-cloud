@@ -11,13 +11,13 @@
   </thead>
 </table>
 
-[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml)[![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml)[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
 ## 概要
 
-OQTOPUS Cloud は クラウド量子コンピュータのアーキテクチャをOSSとして提供するプロジェクトです。
+**O**pen **Q**uantum **T**oolchain for **OP**erators & **US**ers (**OQTOPUS**) は クラウド量子コンピュータのアーキテクチャをOSSとして提供するプロジェクトです。
 [@oqtopus-team](https://github.com/oqtopus-team)が提供している各種OSSと連携して利用することで、クラウド量子コンピュータシステムを構築することができます。
 
 ![OQTOPUS Cloud](./asset/aws_system_architecture_diagram_overview.drawio.png)
@@ -64,24 +64,24 @@ OQTOPUS Cloud は クラウド量子コンピュータのアーキテクチャ�
 
 ## 引用
 
-OQTOPUS Cloudを研究で使用する場合は、以下の論文を引用してください。
+OQTOPUS Cloudを研究で使用する場合は、以下のGitHubリポジトリを引用してください。
 
 ### APA
 
 ```apacite
-Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS-CLOUD (Version 1.0.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
+Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS Cloud (Version 0.1.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
 ```
 
 ### BibTeX
 
 ```bibtex
-@software{Aso_OQTOPUS-CLOUD_2024,
+@software{Aso_OQTOPUS_Cloud_2024,
 author = {Aso, Noriyasu and Gokita, Shun and Kakuko, Norihiro and Masumoto, Naoyuki and Mori, Toshio and Miyanaga, Takafumi and Noda, Kunihiro and Tsukano, Satoyuki and Ymaguchi, Masaomi},
 license = {Apache-2.0},
 month = sep,
-title = {{OQTOPUS-CLOUD}},
+title = {{OQTOPUS Cloud}},
 url = {https://github.com/oqtopus-team/oqtopus-cloud},
-version = {1.0.0},
+version = {0.1.0},
 year = {2024}
 }
 ```
