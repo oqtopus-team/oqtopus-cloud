@@ -169,6 +169,17 @@ make test-user
 make test-provider
 ```
 
+## Release
+
+We are adopting [Semantic Versioning](https://semver.org/).
+
+The creation of release notes is automated, so you can tag and create release notes by executing the following commands:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## List of Commands
 
 ```bash
