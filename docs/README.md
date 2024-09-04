@@ -64,27 +64,9 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 ## CITATION
 
-If you use OQTOPUS Cloud in your research, please cite the following GitHub repository:
+You can use the DOI to cite OQTOPUS Cloud in your research.
 
-### APA
-
-```apacite
-Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS Cloud (Version 0.1.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
-```
-
-### BibTeX
-
-```bibtex
-@software{Aso_OQTOPUS_Cloud_2024,
-author = {Aso, Noriyasu and Gokita, Shun and Kakuko, Norihiro and Masumoto, Naoyuki and Mori, Toshio and Miyanaga, Takafumi and Noda, Kunihiro and Tsukano, Satoyuki and Ymaguchi, Masaomi},
-license = {Apache-2.0},
-month = sep,
-title = {{OQTOPUS Cloud}},
-url = {https://github.com/oqtopus-team/oqtopus-cloud},
-version = {0.1.0},
-year = {2024}
-}
-```
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677665.svg)](https://doi.org/10.5281/zenodo.13677665)
 
 Citation information is also available in the [CITATION](../CITATION.cff) file.
 
