@@ -1,11 +1,23 @@
 changelog:
   categories:
-    - title: Enhancement 🎉
+    - title: New Feature 🎉
       labels:
-        - enhancement
+        - feature
     - title: Bug Fixes 🐛
       labels:
-        - bug
+        - bugfix
+    - title: Refactor 🛠
+      labels:
+        - refactor
+    - title: Style 🎨
+      labels:
+        - style
+    - title: Test 🧪
+      labels:
+        - test
+    - title: CI/CD 🚀
+      labels:
+        - ci
     - title: Documentation 📚
       labels:
         - documentation
