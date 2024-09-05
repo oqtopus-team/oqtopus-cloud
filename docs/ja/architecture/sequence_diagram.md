@@ -59,9 +59,9 @@ sequenceDiagram
 Provider は定期的に、タスクのフェッチ・タスクの実行・実行結果の送信、の流れを繰り返します。
 上図では 1 回分の流れを記載しています。
 
-!!! note
-    Cloud はフェッチ済みか否か (status の末尾に _FETCHED が付くか否か) の情報を Provider に対してのみ公開します。
-    例えば、ユーザーが QUEUED_FETCHED のタスク情報を Cloud から取得すると status は QUEUED になっており、Provider が取得すると status は QUEUED_FETCHED になっています。
+> [!NOTE]
+> Cloud はフェッチ済みか否か (status の末尾に _FETCHED が付くか否か) の情報を Provider に対してのみ公開します。
+> 例えば、ユーザーが QUEUED_FETCHED のタスク情報を Cloud から取得すると status は QUEUED になっており、Provider が取得すると status は QUEUED_FETCHED になっています。
 
 ### 各時点における DB 内のデータ
 
