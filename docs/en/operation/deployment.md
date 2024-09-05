@@ -173,11 +173,20 @@ make test-provider
 
 We are adopting [Semantic Versioning](https://semver.org/).
 
-The creation of release notes is automated, so you can tag and create release notes by executing the following commands:
+The creation of release notes is automated, so release notes will be generated when a tag is created.
+
+Since releases are performed on the main branch, make sure to switch to the main branch beforehand.
+
+### Steps
+
+1. Review the pull request for the release and merge develop into main. When doing so, select Create Merge Commit to tidy up the commit log.
+
+2. Run the following commands in the terminal (adjust the version number as needed):
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git checkout main
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
 ## List of Commands

@@ -69,8 +69,8 @@ paths:
 - The paths directly under the resource should refer to the `root` in the files placed in the `paths` directory.
 - Deeper nested paths should be defined as `root.{path_name}.{path_name}`.
 
-!!! note
-    Define as `task/{taskId}` instead of `task/{task_id}`.
+> [!NOTE]
+> Define as `task/{taskId}` instead of `task/{task_id}`.
 
 ## How to Write `paths`
 

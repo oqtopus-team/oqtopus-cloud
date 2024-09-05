@@ -11,7 +11,7 @@
   </thead>
 </table>
 
-[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
@@ -64,27 +64,9 @@
 
 ## 引用
 
-OQTOPUS Cloudを研究で使用する場合は、以下のGitHubリポジトリを引用してください。
+OQTOPUS Cloudを研究に引用する際には、以下のDOIをご利用いただけます。
 
-### APA
-
-```apacite
-Aso, N., Gokita, S., Kakuko, N., Masumoto, N., Mori, T., Miyanaga, T., Noda, K., Tsukano, S., & Ymaguchi, M. (2024). OQTOPUS Cloud (Version 0.1.0) [Computer software]. https://github.com/oqtopus-team/oqtopus-cloud
-```
-
-### BibTeX
-
-```bibtex
-@software{Aso_OQTOPUS_Cloud_2024,
-author = {Aso, Noriyasu and Gokita, Shun and Kakuko, Norihiro and Masumoto, Naoyuki and Mori, Toshio and Miyanaga, Takafumi and Noda, Kunihiro and Tsukano, Satoyuki and Ymaguchi, Masaomi},
-license = {Apache-2.0},
-month = sep,
-title = {{OQTOPUS Cloud}},
-url = {https://github.com/oqtopus-team/oqtopus-cloud},
-version = {0.1.0},
-year = {2024}
-}
-```
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677665.svg)](https://doi.org/10.5281/zenodo.13677665)
 
 引用情報は[CITATION](../CITATION.cff)ファイルにも記載されています。
 

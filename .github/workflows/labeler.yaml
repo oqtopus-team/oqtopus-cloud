@@ -1,0 +1,81 @@
+name: PR Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - develop
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Extract commit messages
+        run: |
+          COMMITS=$(git log --format=%B origin/develop..HEAD)
+          echo "$COMMITS"
+          echo "$COMMITS" > commits.txt
+
+      - name: Debug - Print commits
+        run: cat commits.txt
+
+      - name: Set labels based on commit messages
+        id: set-labels
+        run: |
+          labels=()
+          while IFS= read -r commit; do
+            echo "Processing commit: $commit"
+            if [[ $commit =~ ^feat ]]; then
+              labels+=("feature")
+            elif [[ $commit =~ ^fix ]]; then
+              labels+=("bugfix")
+            elif [[ $commit =~ ^docs ]]; then
+              labels+=("documentation")
+            elif [[ $commit =~ ^style ]]; then
+              labels+=("style")
+            elif [[ $commit =~ ^refactor ]]; then
+              labels+=("refactor")
+            elif [[ $commit =~ ^test ]]; then
+              labels+=("test")
+            elif [[ $commit =~ ^ci ]]; then
+              labels+=("ci")
+            elif [[ $commit =~ ^chore ]]; then
+              labels+=("chore")
+            fi
+          done < commits.txt
+
+          # Remove duplicate labels and join them as a newline-separated string
+          unique_labels=$(printf "%s\n" "${labels[@]}" | sort -u)
+
+          # Debug output for unique labels
+          echo "Unique labels:"
+          echo "$unique_labels"
+
+          # Set the output as a newline-separated string
+          echo "labels<<EOF" >> $GITHUB_OUTPUT
+          echo "$unique_labels" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Add labels to PR
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: ${{ steps.set-labels.outputs.labels }}
+
+      - name: Assign PR creator
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              assignees: [context.actor]
+            })
