@@ -66,7 +66,7 @@
 
 OQTOPUS Cloudを研究に引用する際には、以下のDOIをご利用いただけます。
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677665.svg)](https://doi.org/10.5281/zenodo.13677665)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677664.svg)](https://doi.org/10.5281/zenodo.13677664)
 
 引用情報は[CITATION](../CITATION.cff)ファイルにも記載されています。
 
