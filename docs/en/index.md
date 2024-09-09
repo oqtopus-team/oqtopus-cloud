@@ -66,7 +66,7 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 You can use the DOI to cite OQTOPUS Cloud in your research.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677665.svg)](https://doi.org/10.5281/zenodo.13677665)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13677664.svg)](https://doi.org/10.5281/zenodo.13677664)
 
 Citation information is also available in the [CITATION](../CITATION.cff) file.
 
