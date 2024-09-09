@@ -4,8 +4,14 @@ title: "OQTOPUS Cloud"
 authors:
 - family-names: "Aso"
   given-names: "Noriyasu"
+- family-names: "Feluś"
+  given-names: "Karolina"
+- family-names: "Gaj"
+  given-names: "Adrian"
 - family-names: "Gokita"
   given-names: "Shun"
+- family-names: "Góralczyk"
+  given-names: "Sławomir"
 - family-names: "Kakuko"
   given-names: "Norihiro"
 - family-names: "Masumoto"
@@ -24,6 +30,8 @@ authors:
   orcid: "https://orcid.org/0009-0000-3825-9083"
 - family-names: "Ymaguchi"
   given-names: "Masaomi"
+- family-names: "Żybort"
+  given-names: "Dobrosław"
 version: 0.1.0
 date-released: 2024-09-04
 license: Apache-2.0
