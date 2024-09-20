@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider up down mig-gen mig-up fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -60,6 +60,18 @@ up: ## Start the DB
 down: ## Stop the DB
 	@docker compose down
 
+mig-up: ## Run migration
+	@poetry run alembic upgrade head
+
+mig-down: ## Rollback to specific revision
+	@poetry run alembic downgrade "$(REV)"
+
+mig-gen: ## Generatet migration script
+	@poetry run alembic revision --autogenerate -m "$(ARG)"
+
+# db-seed:
+#	 @poetry run
+
 fmt-common: ## Format common code
 	@poetry run ruff format oqtopus_cloud/common
 
@@ -69,7 +81,10 @@ fmt-user: ## Format user code
 fmt-provider: ## Format provider code
 	@poetry run ruff format oqtopus_cloud/provider
 
-fmt-all: fmt-common fmt-user fmt-provider ## Format all code
+fmt-migration: ## Format migration script code
+	@poetry run ruff format alembic/versions
+
+fmt-all: fmt-common fmt-user fmt-provider fmt-migration ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
