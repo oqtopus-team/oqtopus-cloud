@@ -3,7 +3,7 @@ import enum
 import uuid
 from typing import Any, Literal
 
-from sqlalchemy import JSON, TIMESTAMP, Boolean, Enum, ForeignKey, Integer, String
+from sqlalchemy import JSON, TIMESTAMP, Boolean, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.mysql import (
     VARBINARY,
 )
@@ -61,12 +61,14 @@ class Task(Base):
         nullable=False,
     )
     n_qubits: Mapped[int] = mapped_column(
+        Integer,
         nullable=True,
     )
     n_nodes: Mapped[int] = mapped_column(
         nullable=True,
     )
     code: Mapped[str] = mapped_column(
+        Text(),
         nullable=False,
     )
     action: Mapped[enum.Enum] = mapped_column(

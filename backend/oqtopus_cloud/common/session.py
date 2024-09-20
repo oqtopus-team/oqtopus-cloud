@@ -14,7 +14,7 @@ from botocore.exceptions import (
 from sqlalchemy import (
     create_engine,
 )
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 
 def get_secret() -> Any:
@@ -48,7 +48,7 @@ def get_secret() -> Any:
     return json.loads(secret)
 
 
-def get_db() -> Generator:
+def get_db() -> Generator[Session, None, None]:
     """Returns a database session.
 
     This function creates a database session using the SQLAlchemy engine and sessionmaker.
