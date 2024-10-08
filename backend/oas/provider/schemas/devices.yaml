@@ -34,7 +34,7 @@ devices.DeviceStatusUpdate:
           description: "Parameter mandatory and valid for status 'NOT_AVAILABLE'"
           type: string
           format: date-time
-          example: "2023-09-10T14:00:00Z"
+          example: "2023-09-10T14:00:00+09:00"
 
 devices.DevicePendingTasksUpdate:
       type: object
@@ -57,7 +57,7 @@ devices.DeviceCalibrationUpdate:
           description: "Parameter mandatory and valid if calibrationData not null"
           type: string
           format: date-time
-          example: "2023-09-10T14:00:00Z"
+          example: "2023-09-10T14:00:00+09:00"
 
 components:
   schemas:

@@ -139,7 +139,7 @@ tasks.TaskInfo:
     createdAt:
       type: string
       format: date-time
-      example: "2022-10-19 11:45:34"
+      example: "2022-10-19T11:45:34+09:00"
   required: [
     taskId, code, device, action, skipTranspilation, status, createdAt
   ]
@@ -164,7 +164,7 @@ tasks.TaskInfo:
       optimizationSwapLevel: 1
     }
     status: QUEUED_FETCHED
-    createdAt: '2022-10-19 11:45:34'
+    createdAt: "2022-10-19T11:45:34+09:00"
 
 tasks.TaskStatusUpdate:
   type: object
