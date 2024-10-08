@@ -71,7 +71,7 @@ tasks.sampling:
                 }
 
     responses:
-      "200":
+      "201":
         description: "Task submitted"
         content:
           application/json:
@@ -157,7 +157,7 @@ tasks.sampling.taskId:
           description: "Task identifier"
           schema: {type: string}
     responses:
-      "200":
+      "204":
         description: "Quantum task deleted"
         content:
           application/json:
@@ -371,7 +371,7 @@ tasks.estimation:
                 }
 
     responses:
-      "200":
+      "201":
         description: "Task submitted"
         content:
           application/json:
@@ -483,7 +483,7 @@ tasks.estimation.taskId:
           description: "Task identifier"
           schema: {type: string}
     responses:
-      "200":
+      "204":
         description: "Quantum task deleted"
         content:
           application/json:
