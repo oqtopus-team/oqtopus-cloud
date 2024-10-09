@@ -114,11 +114,11 @@ paths:
               example:
                 detail: Device not found
         '500':
-          description: nal Server Error
+          description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error.nalServerError'
+                $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
   /tasks:
@@ -172,11 +172,11 @@ paths:
               example:
                 detail: Bad request malformed input data
         '500':
-          description: nal Server Error
+          description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error.nalServerError'
+                $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
   /tasks/{taskId}:
@@ -548,14 +548,14 @@ components:
           type: string
       required:
         - detail
-    error.nalServerError:
+    error.InternalServerError:
       type: object
       properties:
         detail:
           type: string
       required:
         - detail
-    tasks.nalTaskStatus:
+    tasks.InternalTaskStatus:
       type: string
       enum:
         - QUEUED
@@ -706,7 +706,7 @@ components:
             optimizationBlockSize: 1
             optimizationSwapLevel: 1
         status:
-          $ref: '#/components/schemas/tasks.nalTaskStatus'
+          $ref: '#/components/schemas/tasks.InternalTaskStatus'
         createdAt:
           type: string
           format: date-time
@@ -757,7 +757,7 @@ components:
           type: string
       required:
         - message
-    tasks.nalFetchableTaskStatus:
+    tasks.InternalFetchableTaskStatus:
       type: string
       enum:
         - QUEUED
