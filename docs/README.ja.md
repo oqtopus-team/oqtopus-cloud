@@ -45,6 +45,7 @@
 - [Terraformガイドライン](./ja/developer_guidelines/terraform_guidelines.md)
 - [Terraform Modules](./terraform_modules/README.md)
 - [DBスキーマ](./schema/README.md)
+- [FAQ](./ja/developer_guidelines/faq.md)
 
 ### OpenAPI仕様書
 
