@@ -22,7 +22,6 @@ generate:
 	@poetry run datamodel-codegen \
 	--use-schema-description \
 	--target-python-version 3.12 \
-	--enable-version-header \
 	--field-constraints \
 	--use-annotated \
 	--use-field-description \
@@ -30,6 +29,7 @@ generate:
 	--input-file-type openapi \
 	--output-model-type pydantic_v2.BaseModel \
 	--enum-field-as-literal all \
+	--disable-timestamp \
 	--use-standard-collections \
 	--strict-nullable \
 	--use-default \
