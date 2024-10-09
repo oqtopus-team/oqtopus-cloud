@@ -40,7 +40,7 @@ paths:
                 value:
                   command: DeviceStatusUpdate
                   status: NOT_AVAILABLE
-                  restartAt: '2023-09-19T11:45:34+09:00'
+                  restartAt: '2023-09-10T14:00:00Z'
               status update (AVAILABLE):
                 value:
                   command: DeviceStatusUpdate
@@ -367,7 +367,7 @@ components:
           description: Parameter mandatory and valid for status 'NOT_AVAILABLE'
           type: string
           format: date-time
-          example: '2023-09-19T11:45:34+09:00'
+          example: '2023-09-10T14:00:00Z'
     devices.DevicePendingTasksUpdate:
       type: object
       properties:
