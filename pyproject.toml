@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12.4"
+python = "^3.12.3"
 mangum = "^0.17.0"
 pymysql = "^1.1.0"
 aws-lambda-powertools = "^2.41.0"
