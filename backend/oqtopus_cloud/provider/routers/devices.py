@@ -130,7 +130,7 @@ def update_device_calibration(
 
 
 @router.patch(
-    "/internal/devices/{deviceId}",
+    "/devices/{deviceId}",
     response_model=DeviceDataUpdateResponse,
     responses={
         400: {"model": Detail},
