@@ -928,7 +928,7 @@ components:
           description: Parameter mandatory and valid for 'NOT_AVAILABLE' devices
           type: string
           format: date-time
-          example: '2022-10-19 11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
         nPendingTasks:
           type: integer
           example: 8
@@ -980,7 +980,7 @@ components:
           description: Parameter available only for 'QPU' devices with available calibration data
           type: string
           format: date-time
-          example: '2022-10-19 11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
         description:
           type: string
           example: State vector-based quantum circuit simulator
@@ -1135,7 +1135,7 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: '2022-10-19 11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
       required:
         - taskId
         - code
@@ -1161,7 +1161,7 @@ components:
           optimizationSwapLevel: 1
         note: Bell State Sampling Example
         status: QUEUED
-        createdAt: '2022-10-19 11:45:34'
+        createdAt: '2022-10-19T11:45:34+09:00'
     tasks.SamplingTaskDef:
       type: object
       properties:
@@ -1379,7 +1379,7 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: '2022-10-19 11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
       required:
         - taskId
         - code
@@ -1414,7 +1414,7 @@ components:
           optimizationSwapLevel: 1
         note: Bell State Estimation Example
         status: QUEUED
-        createdAt: '2022-10-19 11:45:34'
+        createdAt: '2022-10-19T11:45:34+09:00'
     tasks.EstimationTaskDef:
       type: object
       properties:
