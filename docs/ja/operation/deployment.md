@@ -41,6 +41,12 @@ stateファイルはS3で管理されるため、S3バケットを作成する�
 aws s3api create-bucket --bucket tfstate.oqtopus-example-dev --profile example-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
 ```
 
+次にTerraformのStateフアイルをロックするためのDynamoDBテーブルを作成します。
+
+```bash
+aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile example-dev --region ap-northeast-1
+```
+
 次に、terraformの設定ファイルを用意します。以下の2つのファイルを作成します。
 
 ```hcl:infrastructure/example-dev/example-dev.tfbackend
@@ -50,6 +56,7 @@ key            = "infrastructure.tfstate"
 encrypt        = true
 profile        = "example-dev"
 region         = "ap-northeast-1"
+dynamodb_table     = "terraform-lock"
 ```
 
 ```hcl:infrastructure/example-dev/terraform.tfvars
@@ -88,6 +95,7 @@ key            = "service.tfstate"
 encrypt        = true
 profile        = "example-dev"
 region         = "ap-northeast-1"
+dynamodb_table     = "terraform-lock"
 ```
 
 ```hcl:service/example-dev/terraform.tfvars
