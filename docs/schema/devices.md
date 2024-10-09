@@ -95,7 +95,7 @@ erDiagram
   text simulation_opt
   enum__none___pseudo_inverse___least_square__ ro_error_mitigation
   varchar_1024_ note
-  enum__QUEUED___QUEUED_FETCHED___RUNNING___COMPLETED___FAILED___CANCELLING___CANCELLING_FETCHED___CANCELLED__ status
+  enum__QUEUED___RUNNING___COMPLETED___FAILED___CANCELLING___CANCELLED__ status
   timestamp created_at
 }
 ```
