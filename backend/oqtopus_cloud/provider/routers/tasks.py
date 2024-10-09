@@ -22,7 +22,6 @@ from oqtopus_cloud.provider.schemas.tasks import (
     TaskInfo,
     TaskStatusUpdate,
     TaskStatusUpdateResponse,
-    UnfetchedTasksResponse,
 )
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -83,53 +82,6 @@ def get_tasks(
 
 
 @router.get(
-    "/internal/tasks/unfetched",
-    response_model=UnfetchedTasksResponse,
-    responses={400: {"model": Detail}, 500: {"model": Detail}},
-)
-@tracer.capture_method
-def get_unfetched_tasks(
-    deviceId: str,
-    status: str,
-    maxResults: Optional[int] = None,
-    db: Session = Depends(get_db),
-) -> UnfetchedTasksResponse | ErrorResponse:
-    logger.info("invoked get_task")
-    try:
-        if status not in ["QUEUED", "CANCELLING"]:
-            return BadRequestResponse("Invalid status")
-        if status == "QUEUED":
-            query = (
-                db.query(Task)
-                .filter(Task.device == deviceId, Task.status == "QUEUED")
-                .order_by(Task.created_at)
-            )
-            update_status = "QUEUED_FETCHED"
-        else:
-            query = (
-                db.query(Task).filter(Task.device == deviceId).order_by(Task.created_at)
-            )
-            update_status = "CANCELLING_FETCHED"
-
-        if maxResults is not None:
-            query = query.limit(maxResults)
-
-        tasks = query.all()
-        if len(tasks) != 0:
-            for task in tasks:
-                task.status = update_status  # type: ignore
-            db.commit()
-        if status == "QUEUED":
-            task_info = [create_task_info(task, status=update_status) for task in tasks]
-            return UnfetchedTasksResponse(root=task_info)  # type: ignore
-        else:
-            task_ids = [TaskId(task.id) for task in tasks]
-            return UnfetchedTasksResponse(root=task_ids)  # type: ignore
-    except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
-
-
-@router.get(
     "/internal/tasks/{taskId}",
     response_model=TaskInfo,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
@@ -172,7 +124,7 @@ def update_task(
     try:
         task = (
             db.query(Task)
-            .filter(Task.id == id, Task.status == "QUEUED_FETCHED")
+            .filter(Task.id == id)
             .first()
         )
         if task is None:
