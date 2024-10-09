@@ -450,6 +450,7 @@ def get_sampling_task(
 
 @router.delete(
     "/tasks/sampling/{taskId}",
+    status_code=status.HTTP_204,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -603,6 +604,7 @@ def get_estimation_tasks(
 
 @router.post(
     "/tasks/estimation",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -768,6 +770,7 @@ def get_estimation_task(
 
 @router.delete(
     "/tasks/estimation/{taskId}",
+    status_code=status.HTTP_204,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
