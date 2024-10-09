@@ -22,7 +22,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
 @router.post(
-    "/internal/results",
+    "/results",
     response_model=CreateResultResponse,
     responses={
         404: {"model": Detail},
