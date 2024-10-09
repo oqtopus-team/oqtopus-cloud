@@ -7,11 +7,9 @@ For example, QUEUED_FETCHED tasks can be transitioned to COMPLETED directly.
 stateDiagram-v2
   [*] --> QUEUED :task submitted
 
-  QUEUED --> QUEUED_FETCHED :fetched
-  QUEUED_FETCHED --> RUNNING :execution started
+  QUEUED --> RUNNING :execution started
   
   state join_state <<join>>
-  QUEUED_FETCHED --> join_state
   RUNNING --> join_state
   
   state join_state <<fork>>
@@ -21,8 +19,7 @@ stateDiagram-v2
   
   COMPLETED --> [*] :deleted
   FAILED --> [*] :deleted
-  CANCELLING --> CANCELLING_FETCHED :fetched
-  CANCELLING_FETCHED --> CANCELLED :cancelled in a gateway
+  CANCELLING --> CANCELLED :cancelled in a gateway
   QUEUED --> CANCELLED :cancelled requested (cancelled in the cloud PF)
   CANCELLED --> [*] :deleted
 ```
