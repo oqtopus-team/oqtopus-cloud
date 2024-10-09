@@ -1,8 +1,8 @@
 results.SamplingResultDef:
   type: object
   properties:
-    taskId:
-      $ref: "tasks.yaml#/tasks.TaskId"
+    jobId:
+      $ref: "jobs.yaml#/jobs.JobId"
     status:
       $ref: "#/results.ResultStatus"
     result:
@@ -18,7 +18,7 @@ results.SamplingResultDef:
       description: "Provided only for unsuccessful (failed, cancelled) results"
       type: string
     transpiledCode:
-      description: "Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull"
+      description: "Provided only for jobs with transpilation (jobs created with skipTranspilation=False), if traspilation was successfull"
       type: string
     qubitAllocation:
       description: "Parameter valid only for QPU devices"
@@ -29,7 +29,7 @@ results.SamplingResultDef:
         "0": 0
         "1": 4
   required: [
-    taskId, status
+    jobId, status
   ]
 
 results.ResultStatus:
@@ -42,8 +42,8 @@ results.ResultStatus:
 results.EstimationResultDef:
   type: object
   properties:
-    taskId:
-      $ref: "tasks.yaml#/tasks.TaskId"
+    jobId:
+      $ref: "jobs.yaml#/jobs.JobId"
     status:
       $ref: "#/results.ResultStatus"
     result:
@@ -58,7 +58,7 @@ results.EstimationResultDef:
       description: "Provided only for unsuccessful (failed, cancelled) results"
       type: string
     transpiledCode:
-      description: "Provided only for tasks with transpilation (tasks created with skipTranspilation=False), if traspilation was successfull"
+      description: "Provided only for jobs with transpilation (jobs created with skipTranspilation=False), if traspilation was successfull"
       type: string
     qubitAllocation:
       description: "Parameter valid only for QPU devices"
@@ -69,5 +69,5 @@ results.EstimationResultDef:
         "0": 0
         "1": 4
   required: [
-    taskId, status
+    jobId, status
   ]

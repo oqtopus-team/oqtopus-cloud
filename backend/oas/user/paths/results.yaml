@@ -1,21 +1,21 @@
-results.sampling.taskId:
+results.sampling.jobId:
   get:
     tags:
       - result
-    summary: "Get result of a sampling task"
-    description: "Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks"
+    summary: "Get result of a sampling job"
+    description: "Gets a result of quantum job.<br/><br/> Any finished quantum job must generate a result. The result contains either simulation result (for successfully completed jobs) or reason why simulation outcome is not provided (for unsuccessful and cancelled jobs)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED jobs"
     operationId: getSamplingResult
     security:
       - BearerAuth: []
     parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: "Task identifier"
+          description: "Job identifier"
           schema: {type: string}
     responses:
       "200":
-        description: "Return quantum task result"
+        description: "Return quantum job result"
         content:
           application/json:
             schema:
@@ -24,7 +24,7 @@ results.sampling.taskId:
               success sampling:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "SUCCESS",
                     "result":
                       {
@@ -36,14 +36,14 @@ results.sampling.taskId:
               failure:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "FAILURE",
                     "reason": "Invalid device parameter in request"
                   }
               cancel:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "CANCELLED",
                     "reason": "User cancelled"
                   }
@@ -70,26 +70,26 @@ results.sampling.taskId:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: task not found
+              detail: job not found
 
-results.estimation.taskId:
+results.estimation.jobId:
   get:
     tags:
       - result
-    summary: "Get result of estimation task"
-    description: "Gets a result of quantum task.<br/><br/> Any finished quantum task must generate a result. The result contains either simulation result (for successfully completed tasks) or reason why simulation outcome is not provided (for unsuccessful and cancelled tasks)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED tasks"
+    summary: "Get result of estimation job"
+    description: "Gets a result of quantum job.<br/><br/> Any finished quantum job must generate a result. The result contains either simulation result (for successfully completed jobs) or reason why simulation outcome is not provided (for unsuccessful and cancelled jobs)<br/><br/>Operation is valid only for COMPLETED, FAILED and CANCELLED jobs"
     operationId: getEstimationResult
     security:
       - BearerAuth: []
     parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: "Task identifier"
+          description: "Job identifier"
           schema: {type: string}
     responses:
       "200":
-        description: "Return quantum task result"
+        description: "Return quantum job result"
         content:
           application/json:
             schema:
@@ -98,7 +98,7 @@ results.estimation.taskId:
               success estimation:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "SUCCESS",
                     "result": [1.5, 2.8],
                     "transpiledCode": "OPENQASM 3;include \"stdgates.inc\";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];"
@@ -106,14 +106,14 @@ results.estimation.taskId:
               failure:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "FAILURE",
                     "reason": "Invalid device parameter in request"
                   }
               cancel:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "CANCELLED",
                     "reason": "User cancelled"
                   }
@@ -140,4 +140,4 @@ results.estimation.taskId:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: task not found
+              detail: job not found

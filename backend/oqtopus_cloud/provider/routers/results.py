@@ -35,8 +35,8 @@ def create_result(
     request: ResultDef,
     db: Session = Depends(get_db),
 ) -> CreateResultResponse | ErrorResponse:
-    logger.info("invoked get_tasks")
-    task_id = request.taskId.root.bytes
+    logger.info("invoked get_jobs")
+    task_id = request.jobId.root.bytes
     if request.qubitAllocation is None:
         qubitAllocation = None
     try:

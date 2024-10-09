@@ -43,31 +43,31 @@ jobs:
               description: Simulator example
               value:
                 {
-                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                  name: "Bell State Sampling",
-                  device: "SVsim",
-                  nNodes: 12,
+                  description: "Bell State Sampling",
+                  note: "Bell State Sampling Example",
+                  device: "Kawasaki",
                   nShots: 1000,
-                  skipTranspilation: false,
-                  seedTranspilation: 873,
-                  seedSimulation: 39058567,
-                  nPerNode: 2,
-                  simulationOpt: {
-                    optimizationMethod: "light",
-                    optimizationBlockSize: 1,
-                    optimizationSwapLevel: 1
-                  },
-                  note: "Bell State Sampling Example"
+                  jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}",
+                  transpilerInfo: "",
+                  simulatorInfo: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}",
+                  mitigationInfo: "",
+                  status: "submitted",
+                  createdAt: "2022-10-19T11:45:34+09:00"
                 }
             qpu:
               description: QPU example
               value:
                 {
-                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                  name: "Bell State Sampling",
+                  description: "Bell State Sampling",
+                  note: "Bell State Sampling Example",
                   device: "Kawasaki",
                   nShots: 1000,
-                  note: "Bell State Sampling Example"
+                  jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}",
+                  transpilerInfo: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}",
+                  simulatorInfo: "",
+                  mitigationInfo: "{'roErrorMitigation': 'pseudo_inverse'}",
+                  status: "submitted",
+                  createdAt: "2022-10-19T11:45:34+09:00"
                 }
 
     responses:
@@ -117,7 +117,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
+              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
       "400":
         description: Bad Request
         content:
