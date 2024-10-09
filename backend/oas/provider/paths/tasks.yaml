@@ -23,7 +23,7 @@ tasks:
           schema: {type: integer, example: 1}
         - in: query
           name: timestamp
-          description: "Additional search parameter:<br/> Fetch tasks created after the specified timetsamp"
+          description: "Additional search parameter:<br/> Tasks created after the specified timetsamp"
           schema: {type: string, example: '2022-12-15 15:54:46'}
     responses:
       "200":
@@ -132,44 +132,3 @@ tasks.taskId:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
               detail: task not found
-
-tasks.unfetched:
-  get:
-    summary: "Fetch tasks for device"
-    description: "Fetches tasks for execution/cancel<br/><br/>Operation is valid only for task with status: QUEUED or CANCELLING. After the operation task status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)"
-    operationId: getUnfetchedTasks
-    security: []
-    tags:
-    - tasks
-    parameters:
-      - in: query
-        name: deviceId
-        required: true
-        description: "Device identifier"
-        schema: {type: string, example: "Kawasaki"}
-      - in: query
-        name: status
-        required: true
-        description: "Fetch tasks with specified status"
-        schema:
-          $ref: "../schemas/tasks.yaml#/tasks.InternalFetchableTaskStatus"
-      - in: query
-        name: maxResults
-        description: "Additional search parameter:<br/> Set max number of quantum tasks to return in single request"
-        schema: {type: integer, example: 1}
-
-    responses:
-      "200":
-        description: "List of tasks for execution (all task data) / cancel (taskIds only)"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/tasks.yaml#/tasks.UnfetchedTasksResponse"
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
-            example:
-              detail: Bad request malformed input data
