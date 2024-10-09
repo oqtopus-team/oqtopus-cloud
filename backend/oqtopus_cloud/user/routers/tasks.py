@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional, Tuple
 from fastapi import (
     APIRouter,
     Depends,
+    status,
 )
 from fastapi import Request as Event
 from pydantic import ValidationError
@@ -314,6 +315,7 @@ def get_resources(
 
 @router.post(
     "/tasks/sampling",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -407,7 +409,7 @@ def submit_sampling_tasks(
         )
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(status_code=201, taskId=TaskId(task.id))
+        return SubmitTaskResponse(taskId=TaskId(task.id))
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
