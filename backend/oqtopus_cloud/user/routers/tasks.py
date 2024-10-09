@@ -314,7 +314,6 @@ def get_resources(
 
 @router.post(
     "/tasks/sampling",
-    status_code=201,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -408,7 +407,7 @@ def submit_sampling_tasks(
         )
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+        return SubmitTaskResponse(status_code=201, taskId=TaskId(task.id))
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -449,7 +448,6 @@ def get_sampling_task(
 
 @router.delete(
     "/tasks/sampling/{taskId}",
-    status_code=204,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -603,7 +601,6 @@ def get_estimation_tasks(
 
 @router.post(
     "/tasks/estimation",
-    status_code=201,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -726,7 +723,7 @@ def submit_estimation_tasks(
         )
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+        return SubmitTaskResponse(status_code=201, taskId=TaskId(task.id))
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -769,7 +766,6 @@ def get_estimation_task(
 
 @router.delete(
     "/tasks/estimation/{taskId}",
-    status_code=204,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
