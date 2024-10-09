@@ -1,10 +1,10 @@
-tasks:
+jobs:
   get:
     tags:
-      - tasks
-    summary: Search tasks for a device
-    description: Search tasks for a device
-    operationId: gettasks
+      - jobs
+    summary: Search jobs for a device
+    description: Search jobs for a device
+    operationId: getjobs
     security: []
     parameters:
         - in: query
@@ -14,26 +14,26 @@ tasks:
           schema: {type: string, example: "Kawasaki"}
         - in: query
           name: status
-          description: "Additional search parameter:<br/> Search tasks with specified status only"
+          description: "Additional search parameter:<br/> Search jobs with specified status only"
           schema:
-            $ref: "../schemas/tasks.yaml#/tasks.InternalTaskStatus"
+            $ref: "../schemas/jobs.yaml#/jobs.InternalJobStatus"
         - in: query
           name: maxResults
-          description: "Additional search parameter:<br/> Set max number of quantum tasks to return in single request"
+          description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
           schema: {type: integer, example: 1}
         - in: query
           name: timestamp
-          description: "Additional search parameter:<br/> Fetch tasks created after the specified timetsamp"
+          description: "Additional search parameter:<br/> Fetch jobs created after the specified timetsamp"
           schema: {type: string, example: '2022-12-15 15:54:46'}
     responses:
       "200":
-        description: "List of tasks for a device"
+        description: "List of jobs for a device"
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: "../schemas/tasks.yaml#/tasks.TaskInfo"
+                $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
       '400':
         description: Bad Request
         content:
@@ -51,27 +51,27 @@ tasks:
             example:
               detail: Internal server error
 
-tasks.taskId:
+jobs.jobId:
   get:
-    summary: Get a task by ID
-    description: Get a task by ID
-    operationId: getTask
+    summary: Get a job by ID
+    description: Get a job by ID
+    operationId: getJob
     security: []
     tags:
-    - tasks
+    - jobs
     parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: "Task identifier"
+          description: "Job identifier"
           schema: {type: string}
     responses:
       "200":
-        description: "Return quantum task"
+        description: "Return quantum job"
         content:
           application/json:
             schema:
-              $ref: "../schemas/tasks.yaml#/tasks.TaskInfo"
+              $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
       '400':
         description: Bad Request
         content:
@@ -87,35 +87,35 @@ tasks.taskId:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: task not found
+              detail: job not found
   patch:
-    summary: "Modify selected quantum task (update status)."
-    description: "Used by device to set task status to \"RUNNING\".<br/>Other statuses are set by CloudAPI automatically when result is created"
-    operationId: patchTask
+    summary: "Modify selected quantum job (update status)."
+    description: "Used by device to set job status to \"RUNNING\".<br/>Other statuses are set by CloudAPI automatically when result is created"
+    operationId: patchJob
     security: []
     tags:
-      - tasks
+      - jobs
     parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: "Task identifier"
+          description: "Job identifier"
           schema: {type: string}
     requestBody:
-      description: "New task status. "
+      description: "New job status. "
       content:
         application/json:
           schema:
-            $ref: "../schemas/tasks.yaml#/tasks.TaskStatusUpdate"
+            $ref: "../schemas/jobs.yaml#/jobs.JobStatusUpdate"
     responses:
       '200':
-        description: task data updated
+        description: job data updated
         content:
           application/json:
             schema:
-              $ref: '../schemas/tasks.yaml#/tasks.TaskStatusUpdateResponse'
+              $ref: '../schemas/jobs.yaml#/jobs.JobStatusUpdateResponse'
             example:
-              message: task data updated
+              message: job data updated
       "400":
         description: Bad Request
         content:
@@ -131,16 +131,16 @@ tasks.taskId:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: task not found
+              detail: job not found
 
-tasks.unfetched:
+jobs.unfetched:
   get:
-    summary: "Fetch tasks for device"
-    description: "Fetches tasks for execution/cancel<br/><br/>Operation is valid only for task with status: QUEUED or CANCELLING. After the operation task status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)"
-    operationId: getUnfetchedTasks
+    summary: "Fetch jobs for device"
+    description: "Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: QUEUED or CANCELLING. After the operation job status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)"
+    operationId: getUnfetchedJobs
     security: []
     tags:
-    - tasks
+    - jobs
     parameters:
       - in: query
         name: deviceId
@@ -150,21 +150,21 @@ tasks.unfetched:
       - in: query
         name: status
         required: true
-        description: "Fetch tasks with specified status"
+        description: "Fetch jobs with specified status"
         schema:
-          $ref: "../schemas/tasks.yaml#/tasks.InternalFetchableTaskStatus"
+          $ref: "../schemas/jobs.yaml#/jobs.InternalFetchableJobStatus"
       - in: query
         name: maxResults
-        description: "Additional search parameter:<br/> Set max number of quantum tasks to return in single request"
+        description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
         schema: {type: integer, example: 1}
 
     responses:
       "200":
-        description: "List of tasks for execution (all task data) / cancel (taskIds only)"
+        description: "List of jobs for execution (all job data) / cancel (jobIds only)"
         content:
           application/json:
             schema:
-              $ref: "../schemas/tasks.yaml#/tasks.UnfetchedTasksResponse"
+              $ref: "../schemas/jobs.yaml#/jobs.UnfetchedJobsResponse"
       "400":
         description: Bad Request
         content:

@@ -1,0 +1,287 @@
+jobs:
+  get:
+    tags:
+      - job
+    summary: "List all quantum jobs"
+    description: "List all quantum jobs"
+    operationId: listJobs
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: "Return a list of submitted quantum jobs"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+  post:
+    tags:
+      - job
+    summary: "Submit a quantum job"
+    description: "Submit a quantum job"
+    operationId: submitJob
+    security:
+      - BearerAuth: []
+    requestBody:
+      description: "Quantum job to be submitted"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+          examples:
+            simulator:
+              description: Simulator example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Sampling",
+                  device: "SVsim",
+                  nNodes: 12,
+                  nShots: 1000,
+                  skipTranspilation: false,
+                  seedTranspilation: 873,
+                  seedSimulation: 39058567,
+                  nPerNode: 2,
+                  simulationOpt: {
+                    optimizationMethod: "light",
+                    optimizationBlockSize: 1,
+                    optimizationSwapLevel: 1
+                  },
+                  note: "Bell State Sampling Example"
+                }
+            qpu:
+              description: QPU example
+              value:
+                {
+                  code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                  name: "Bell State Sampling",
+                  device: "Kawasaki",
+                  nShots: 1000,
+                  note: "Bell State Sampling Example"
+                }
+
+    responses:
+      "200":
+        description: "Job submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.SubmitJobResponse"
+            example:
+              jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      '400':
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+
+jobs.jobId:
+  get:
+    tags:
+      - job
+    summary: "Get selected job"
+    description: "Get selected job"
+    operationId: getSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: jobId
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum job"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: job not found
+  delete:
+    tags:
+      - job
+    summary: "Delete job"
+    description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING jobs must be cancelled before deletion."
+    operationId: deleteSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: jobId
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Quantum job deleted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Quantum job deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: job not found
+
+jobs.jobId.status:
+  get:
+    tags:
+      - job
+    summary: "Get selected job's status"
+    description: "Get selected job's status"
+    operationId: getSamplingJobStatus
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: jobId
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum job status"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/jobs.yaml#/jobs.GetJobStatusResponse'
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: job not found
+
+jobs.jobId.cancel:
+  post:
+    tags:
+      - job
+    summary: "Cancel job"
+    description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: QUEUED or RUNNING."
+    operationId: cancelSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: jobId
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Job cancelled"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: cancel request accepted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+            example:
+              detail: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              detail: Unauthorized
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.NotFoundError'
+            example:
+              detail: job not found

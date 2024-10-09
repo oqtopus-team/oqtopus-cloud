@@ -5,7 +5,7 @@ info:
   contact:
     name: oqtopus-team
     email: oqtopus-team[at]googlegroups.com
-  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -13,13 +13,13 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /internal/devices/{deviceId}:
+  /devices/{deviceId}:
     $ref: ./paths/devices.yaml#/devices.deviceId
-  /internal/tasks:
-    $ref: ./paths/tasks.yaml#/tasks
-  /internal/tasks/{taskId}:
-    $ref: ./paths/tasks.yaml#/tasks.taskId
-  /internal/tasks/unfetched:
-    $ref: ./paths/tasks.yaml#/tasks.unfetched
-  /internal/results:
+  /jobs:
+    $ref: ./paths/jobs.yaml#/jobs
+  /jobs/{jobId}:
+    $ref: ./paths/jobs.yaml#/jobs.jobId
+  /jobs/unfetched:
+    $ref: ./paths/jobs.yaml#/jobs.unfetched
+  /results:
     $ref: ./paths/results.yaml#/results

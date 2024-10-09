@@ -1,9 +1,9 @@
 results:
   post:
-    summary: Submit a quantum task result
+    summary: Submit a quantum job result
     tags:
     - results
-    description: Submit a quantum task result
+    description: Submit a quantum job result
     operationId: postResult
     security: []
     requestBody:
@@ -16,7 +16,7 @@ results:
               success sampling:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "SUCCESS",
                     "result":
                       {
@@ -29,7 +29,7 @@ results:
               success estimation:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "SUCCESS",
                     "result": [1.5, 2.8],
                     "reason": null,
@@ -38,7 +38,7 @@ results:
               failure:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "FAILURE",
                     "result": null,
                     "reason": "Invalid device parameter in request",
@@ -47,7 +47,7 @@ results:
               cancel:
                 value:
                   {
-                    "taskId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+                    "jobId": "7af020f6-2e38-4d70-8cf0-4349650ea08c",
                     "status": "CANCELLED",
                     "result": null,
                     "reason": "User cancelled",
@@ -78,15 +78,15 @@ results:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: TaskID not found
+              detail: JobID not found
       "409":
-        description: "Result for taskId already exists"
+        description: "Result for jobId already exists"
         content:
           application/json:
             schema:
               $ref: '../schemas/error.yaml#/error.ConflictError'
             example:
-              detail: Result for taskId already exists
+              detail: Result for jobId already exists
       '500':
         description: Internal Server Error
         content:

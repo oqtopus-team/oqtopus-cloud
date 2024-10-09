@@ -5,7 +5,7 @@ info:
   contact:
     name: oqtopus-team
     email: oqtopus-team[at]googlegroups.com
-  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -17,27 +17,14 @@ paths:
     $ref: ./paths/devices.yaml#/devices
   /devices/{deviceId}:
     $ref: ./paths/devices.yaml#/devices.deviceId
-  /tasks/sampling:
-    $ref: ./paths/tasks.yaml#/tasks.sampling
-  /tasks/sampling/{taskId}:
-    $ref: ./paths/tasks.yaml#/tasks.sampling.taskId
-  /tasks/sampling/{taskId}/status:
-    $ref: ./paths/tasks.yaml#/tasks.sampling.taskId.status
-  /tasks/sampling/{taskId}/cancel:
-    $ref: ./paths/tasks.yaml#/tasks.sampling.taskId.cancel
-  /tasks/estimation:
-    $ref: ./paths/tasks.yaml#/tasks.estimation
-  /tasks/estimation/{taskId}:
-    $ref: ./paths/tasks.yaml#/tasks.estimation.taskId
-  /tasks/estimation/{taskId}/status:
-    $ref: ./paths/tasks.yaml#/tasks.estimation.taskId.status
-  /tasks/estimation/{taskId}/cancel:
-    $ref: ./paths/tasks.yaml#/tasks.estimation.taskId.cancel
-  /results/sampling/{taskId}:
-    $ref: ./paths/results.yaml#/results.sampling.taskId
-  /results/estimation/{taskId}:
-    $ref: ./paths/results.yaml#/results.estimation.taskId
-
+  /jobs:
+    $ref: ./paths/jobs.yaml#/jobs
+  /jobs/{jobId}:
+    $ref: ./paths/jobs.yaml#/jobs.jobId
+  /jobs/{jobId}/status:
+    $ref: ./paths/jobs.yaml#/jobs.jobId.status
+  /jobs/{jobId}/cancel:
+    $ref: ./paths/jobs.yaml#/jobs.jobId.cancel
 
 components:
   securitySchemes:

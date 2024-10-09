@@ -1,8 +1,8 @@
 results.ResultDef:
   type: object
   properties:
-    taskId:
-      $ref: "tasks.yaml#/tasks.TaskId"
+    jobId:
+      $ref: "jobs.yaml#/jobs.JobId"
     status:
       $ref: "#/results.ResultStatus"
     result:
@@ -23,7 +23,7 @@ results.ResultDef:
         "0": 0
         "1": 4
   required: [
-    taskId, status, result, reason, transpiledCode
+    jobId, status, result, reason, transpiledCode
   ]
 
 results.ResultStatus:

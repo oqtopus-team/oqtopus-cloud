@@ -5,7 +5,7 @@ info:
   contact:
     name: oqtopus-team
     email: oqtopus-team[at]googlegroups.com
-  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  description: OQTOPUS Cloud Provider API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -13,7 +13,7 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /internal/devices/{deviceId}:
+  /devices/{deviceId}:
     patch:
       tags:
         - devices
@@ -121,13 +121,13 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
-  /internal/tasks:
+  /jobs:
     get:
       tags:
-        - tasks
-      summary: Search tasks for a device
-      description: Search tasks for a device
-      operationId: gettasks
+        - jobs
+      summary: Search jobs for a device
+      description: Search jobs for a device
+      operationId: getjobs
       security: []
       parameters:
         - in: query
@@ -139,30 +139,30 @@ paths:
             example: Kawasaki
         - in: query
           name: status
-          description: Additional search parameter:<br/> Search tasks with specified status only
+          description: Additional search parameter:<br/> Search jobs with specified status only
           schema:
-            $ref: '#/components/schemas/tasks.InternalTaskStatus'
+            $ref: '#/components/schemas/jobs.InternalJobStatus'
         - in: query
           name: maxResults
-          description: Additional search parameter:<br/> Set max number of quantum tasks to return in single request
+          description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
           schema:
             type: integer
             example: 1
         - in: query
           name: timestamp
-          description: Additional search parameter:<br/> Fetch tasks created after the specified timetsamp
+          description: Additional search parameter:<br/> Fetch jobs created after the specified timetsamp
           schema:
             type: string
             example: '2022-12-15 15:54:46'
       responses:
         '200':
-          description: List of tasks for a device
+          description: List of jobs for a device
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/tasks.TaskInfo'
+                  $ref: '#/components/schemas/jobs.JobInfo'
         '400':
           description: Bad Request
           content:
@@ -179,28 +179,28 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
-  /internal/tasks/{taskId}:
+  /jobs/{jobId}:
     get:
-      summary: Get a task by ID
-      description: Get a task by ID
-      operationId: getTask
+      summary: Get a job by ID
+      description: Get a job by ID
+      operationId: getJob
       security: []
       tags:
-        - tasks
+        - jobs
       parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: Task identifier
+          description: Job identifier
           schema:
             type: string
       responses:
         '200':
-          description: Return quantum task
+          description: Return quantum job
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/tasks.TaskInfo'
+                $ref: '#/components/schemas/jobs.JobInfo'
         '400':
           description: Bad Request
           content:
@@ -216,36 +216,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: task not found
+                detail: job not found
     patch:
-      summary: Modify selected quantum task (update status).
-      description: Used by device to set task status to "RUNNING".<br/>Other statuses are set by CloudAPI automatically when result is created
-      operationId: patchTask
+      summary: Modify selected quantum job (update status).
+      description: Used by device to set job status to "RUNNING".<br/>Other statuses are set by CloudAPI automatically when result is created
+      operationId: patchJob
       security: []
       tags:
-        - tasks
+        - jobs
       parameters:
         - in: path
-          name: taskId
+          name: jobId
           required: true
-          description: Task identifier
+          description: Job identifier
           schema:
             type: string
       requestBody:
-        description: 'New task status. '
+        description: 'New job status. '
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/tasks.TaskStatusUpdate'
+              $ref: '#/components/schemas/jobs.JobStatusUpdate'
       responses:
         '200':
-          description: task data updated
+          description: job data updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/tasks.TaskStatusUpdateResponse'
+                $ref: '#/components/schemas/jobs.JobStatusUpdateResponse'
               example:
-                message: task data updated
+                message: job data updated
         '400':
           description: Bad Request
           content:
@@ -261,15 +261,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: task not found
-  /internal/tasks/unfetched:
+                detail: job not found
+  /jobs/unfetched:
     get:
-      summary: Fetch tasks for device
-      description: 'Fetches tasks for execution/cancel<br/><br/>Operation is valid only for task with status: QUEUED or CANCELLING. After the operation task status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
-      operationId: getUnfetchedTasks
+      summary: Fetch jobs for device
+      description: 'Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: QUEUED or CANCELLING. After the operation job status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
+      operationId: getUnfetchedJobs
       security: []
       tags:
-        - tasks
+        - jobs
       parameters:
         - in: query
           name: deviceId
@@ -281,22 +281,22 @@ paths:
         - in: query
           name: status
           required: true
-          description: Fetch tasks with specified status
+          description: Fetch jobs with specified status
           schema:
-            $ref: '#/components/schemas/tasks.InternalFetchableTaskStatus'
+            $ref: '#/components/schemas/jobs.InternalFetchableJobStatus'
         - in: query
           name: maxResults
-          description: Additional search parameter:<br/> Set max number of quantum tasks to return in single request
+          description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
           schema:
             type: integer
             example: 1
       responses:
         '200':
-          description: List of tasks for execution (all task data) / cancel (taskIds only)
+          description: List of jobs for execution (all job data) / cancel (jobIds only)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/tasks.UnfetchedTasksResponse'
+                $ref: '#/components/schemas/jobs.UnfetchedJobsResponse'
         '400':
           description: Bad Request
           content:
@@ -305,12 +305,12 @@ paths:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
                 detail: Bad request malformed input data
-  /internal/results:
+  /results:
     post:
-      summary: Submit a quantum task result
+      summary: Submit a quantum job result
       tags:
         - results
-      description: Submit a quantum task result
+      description: Submit a quantum job result
       operationId: postResult
       security: []
       requestBody:
@@ -322,7 +322,7 @@ paths:
             examples:
               success sampling:
                 value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
                   status: SUCCESS
                   result:
                     '11': 4980
@@ -331,7 +331,7 @@ paths:
                   transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
               success estimation:
                 value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
                   status: SUCCESS
                   result:
                     - 1.5
@@ -340,14 +340,14 @@ paths:
                   transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
               failure:
                 value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
                   status: FAILURE
                   result: null
                   reason: Invalid device parameter in request
                   transpiledCode: null
               cancel:
                 value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
                   status: CANCELLED
                   result: null
                   reason: User cancelled
@@ -376,15 +376,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: TaskID not found
+                detail: JobID not found
         '409':
-          description: Result for taskId already exists
+          description: Result for jobId already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                detail: Result for taskId already exists
+                detail: Result for jobId already exists
         '500':
           description: Internal Server Error
           content:
@@ -555,23 +555,21 @@ components:
           type: string
       required:
         - detail
-    tasks.InternalTaskStatus:
+    jobs.InternalJobStatus:
       type: string
       enum:
-        - QUEUED
-        - QUEUED_FETCHED
-        - RUNNING
-        - COMPLETED
-        - FAILED
-        - CANCELLING
-        - CANCELLING_FETCHED
-        - CANCELLED
-      example: QUEUED
-    tasks.TaskId:
+        - submitted
+        - ready
+        - running
+        - success
+        - failed
+        - cancelled
+      example: submitted
+    jobs.JobId:
       type: string
       format: uuid
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    tasks.SamplingAction:
+    jobs.SamplingAction:
       type: object
       properties:
         name:
@@ -586,7 +584,7 @@ components:
       required:
         - name
         - nShots
-    tasks.SingleOperator:
+    jobs.SingleOperator:
       type: array
       items:
         anyOf:
@@ -604,10 +602,10 @@ components:
               - 2.8
       minItems: 2
       maxItems: 2
-    tasks.Operator:
+    jobs.Operator:
       type: array
       items:
-        $ref: '#/components/schemas/tasks.SingleOperator'
+        $ref: '#/components/schemas/jobs.SingleOperator'
       example:
         - - X 0 X 1
           - - 1.5
@@ -615,7 +613,7 @@ components:
         - - Y 0 Z 1
           - - 1.2
             - -2.e-8
-    tasks.EstimationAction:
+    jobs.EstimationAction:
       type: object
       properties:
         name:
@@ -636,21 +634,21 @@ components:
           example: '1000'
           description: Parameter valid only for sampling method
         operator:
-          $ref: '#/components/schemas/tasks.Operator'
+          $ref: '#/components/schemas/jobs.Operator'
       required:
         - name
         - method
         - operator
-    tasks.Action:
+    jobs.Action:
       type: object
       oneOf:
-        - $ref: '#/components/schemas/tasks.SamplingAction'
-        - $ref: '#/components/schemas/tasks.EstimationAction'
-    tasks.TaskInfo:
+        - $ref: '#/components/schemas/jobs.SamplingAction'
+        - $ref: '#/components/schemas/jobs.EstimationAction'
+    jobs.JobInfo:
       type: object
       properties:
-        taskId:
-          $ref: '#/components/schemas/tasks.TaskId'
+        jobId:
+          $ref: '#/components/schemas/jobs.JobId'
         code:
           type: string
           example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
@@ -665,7 +663,7 @@ components:
           type: integer
           example: 12
         action:
-          $ref: '#/components/schemas/tasks.Action'
+          $ref: '#/components/schemas/jobs.Action'
         qubitAllocation:
           description: Parameter valid only for QPU devices
           type: object
@@ -706,13 +704,13 @@ components:
             optimizationBlockSize: 1
             optimizationSwapLevel: 1
         status:
-          $ref: '#/components/schemas/tasks.InternalTaskStatus'
+          $ref: '#/components/schemas/jobs.InternalJobStatus'
         createdAt:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required:
-        - taskId
+        - jobId
         - code
         - device
         - action
@@ -720,7 +718,7 @@ components:
         - status
         - createdAt
       example:
-        taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
         device: Kawasaki
         nQubits: null
@@ -740,7 +738,7 @@ components:
           optimizationSwapLevel: 1
         status: QUEUED_FETCHED
         createdAt: '2022-10-19T11:45:34+09:00'
-    tasks.TaskStatusUpdate:
+    jobs.JobStatusUpdate:
       type: object
       properties:
         status:
@@ -750,25 +748,25 @@ components:
           example: RUNNING
       required:
         - status
-    tasks.TaskStatusUpdateResponse:
+    jobs.JobStatusUpdateResponse:
       type: object
       properties:
         message:
           type: string
       required:
         - message
-    tasks.InternalFetchableTaskStatus:
+    jobs.InternalFetchableJobStatus:
       type: string
       enum:
         - QUEUED
         - CANCELLING
       example: QUEUED
-    tasks.UnfetchedTasksResponse:
+    jobs.UnfetchedJobsResponse:
       type: array
       items:
         oneOf:
-          - $ref: '#/components/schemas/tasks.TaskInfo'
-          - $ref: '#/components/schemas/tasks.TaskId'
+          - $ref: '#/components/schemas/jobs.JobInfo'
+          - $ref: '#/components/schemas/jobs.JobId'
     results.ResultStatus:
       type: string
       enum:
@@ -802,8 +800,8 @@ components:
     results.ResultDef:
       type: object
       properties:
-        taskId:
-          $ref: '#/components/schemas/tasks.TaskId'
+        jobId:
+          $ref: '#/components/schemas/jobs.JobId'
         status:
           $ref: '#/components/schemas/results.ResultStatus'
         result:
@@ -824,7 +822,7 @@ components:
             '0': 0
             '1': 4
       required:
-        - taskId
+        - jobId
         - status
         - result
         - reason

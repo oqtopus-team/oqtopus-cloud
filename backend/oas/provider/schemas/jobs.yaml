@@ -1,20 +1,20 @@
-tasks.TaskId:
+jobs.JobId:
   type: string
   format: uuid
   example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
 
-tasks.InternalTaskStatus:
+jobs.InternalJobStatus:
   type: string
-  enum: ["QUEUED", "QUEUED_FETCHED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLING_FETCHED", "CANCELLED"]
-  example: "QUEUED"
+  enum: ["submitted", "ready", "running", "success", "failed", "cancelled"]
+  example: "submitted"
 
-tasks.Action:
+jobs.Action:
   type: object
   oneOf:
-    - $ref: "#/tasks.SamplingAction"
-    - $ref: "#/tasks.EstimationAction"
+    - $ref: "#/jobs.SamplingAction"
+    - $ref: "#/jobs.EstimationAction"
 
-tasks.SamplingAction:
+jobs.SamplingAction:
   type: object
   properties:
     name:
@@ -30,7 +30,7 @@ tasks.SamplingAction:
     name, nShots
   ]
 
-tasks.EstimationAction:
+jobs.EstimationAction:
   type: object
   properties:
     name:
@@ -49,22 +49,22 @@ tasks.EstimationAction:
       example: "1000"
       description: "Parameter valid only for sampling method"
     operator:
-      $ref: "#/tasks.Operator"
+      $ref: "#/jobs.Operator"
   required: [
     name, method, operator
   ]
 
-tasks.Operator:
+jobs.Operator:
   type: array
   items:
-    $ref: "#/tasks.SingleOperator"
+    $ref: "#/jobs.SingleOperator"
   example:
     [
       ["X 0 X 1", [1.5, 2.8]],
       ["Y 0 Z 1", [1.2, -2e-8]],
     ]
 
-tasks.SingleOperator:
+jobs.SingleOperator:
   type: array
   items:
     anyOf:
@@ -81,11 +81,11 @@ tasks.SingleOperator:
   minItems: 2
   maxItems: 2
 
-tasks.TaskInfo:
+jobs.JobInfo:
   type: object
   properties:
-    taskId:
-      $ref: "#/tasks.TaskId"
+    jobId:
+      $ref: "#/jobs.JobId"
     code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
     device: {type: string, example: "Kawasaki"}
     nQubits:
@@ -96,7 +96,7 @@ tasks.TaskInfo:
       type: integer
       example: 12
     action:
-      $ref: "#/tasks.Action"
+      $ref: "#/jobs.Action"
     qubitAllocation:
       description: "Parameter valid only for QPU devices"
       type: object
@@ -135,16 +135,16 @@ tasks.TaskInfo:
           optimizationSwapLevel: 1
         }
     status:
-      $ref: "#/tasks.InternalTaskStatus"
+      $ref: "#/jobs.InternalJobStatus"
     createdAt:
       type: string
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
   required: [
-    taskId, code, device, action, skipTranspilation, status, createdAt
+    jobId, code, device, action, skipTranspilation, status, createdAt
   ]
   example:
-    taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
     device: Kawasaki
     nQubits: null
@@ -166,7 +166,7 @@ tasks.TaskInfo:
     status: QUEUED_FETCHED
     createdAt: "2022-10-19T11:45:34+09:00"
 
-tasks.TaskStatusUpdate:
+jobs.JobStatusUpdate:
   type: object
   properties:
     status:
@@ -177,7 +177,7 @@ tasks.TaskStatusUpdate:
     status
   ]
 
-tasks.TaskStatusUpdateResponse:
+jobs.JobStatusUpdateResponse:
   type: object
   properties:
     message:
@@ -185,14 +185,14 @@ tasks.TaskStatusUpdateResponse:
   required:
     - message
 
-tasks.UnfetchedTasksResponse:
+jobs.UnfetchedJobsResponse:
   type: array
   items:
     oneOf:
-      - $ref: '#/tasks.TaskInfo'
-      - $ref: '#/tasks.TaskId'
+      - $ref: '#/jobs.JobInfo'
+      - $ref: '#/jobs.JobId'
 
-tasks.InternalFetchableTaskStatus:
+jobs.InternalFetchableJobStatus:
   type: string
   enum: ["QUEUED", "CANCELLING"]
   example: "QUEUED"
