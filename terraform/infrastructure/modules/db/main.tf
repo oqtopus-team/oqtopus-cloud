@@ -23,43 +23,40 @@
 *
 */
 
-#trivy:ignore:AVD-AWS-0077 TODO: consider about backup_retention_period https://avd.aquasec.com/misconfig/avd-aws-0077
-#trivy:ignore:AVD-AWS-0133 TODO: consider about performance_insights https://avd.aquasec.com/misconfig/avd-aws-0133
-#trivy:ignore:AVD-AWS-0176 TODO: consider about IAM authentication https://avd.aquasec.com/misconfig/avd-aws-0176 related https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html
 resource "aws_db_instance" "this" {
-  identifier                            = "${var.product}-${var.org}-${var.env}"
-  allocated_storage                     = "20"
-  auto_minor_version_upgrade            = "true"
-  backup_retention_period               = "1"
-  backup_target                         = "region"
-  backup_window                         = "18:33-19:03"
-  ca_cert_identifier                    = "rds-ca-rsa2048-g1"
-  copy_tags_to_snapshot                 = "true"
-  db_name                               = var.db_name
-  db_subnet_group_name                  = aws_db_subnet_group.this.name
-  deletion_protection                   = "true"
-  engine                                = "mysql"
-  engine_version                        = "8.0.35"
-  iam_database_authentication_enabled   = "false"
-  instance_class                        = "db.t3.micro"
-  iops                                  = "0"
-  kms_key_id                            = aws_kms_key.db_storage.arn
-  manage_master_user_password           = true #追加 https://tech.dentsusoken.com/entry/terraform_manage_master_user_password
-  license_model                         = "general-public-license"
-  maintenance_window                    = "sat:16:23-sat:16:53"
-  max_allocated_storage                 = "1000"
-  monitoring_interval                   = "0"
-  multi_az                              = "true"
-  network_type                          = "IPV4"
-  option_group_name                     = "default:mysql-8-0"
-  parameter_group_name                  = aws_db_parameter_group.this.name
-  performance_insights_retention_period = "0"
-  port                                  = "3306"
-  storage_encrypted                     = "true"
-  storage_throughput                    = "0"
-  storage_type                          = "gp2"
-  username                              = var.user_name
-  vpc_security_group_ids                = var.db_security_group_ids
+  identifier                          = "${var.product}-${var.org}-${var.env}"
+  allocated_storage                   = "20"
+  auto_minor_version_upgrade          = "true"
+  backup_retention_period             = "5"
+  backup_target                       = "region"
+  backup_window                       = "18:33-19:03"
+  ca_cert_identifier                  = "rds-ca-rsa2048-g1"
+  copy_tags_to_snapshot               = "true"
+  db_name                             = var.db_name
+  db_subnet_group_name                = aws_db_subnet_group.this.name
+  deletion_protection                 = "true"
+  engine                              = "mysql"
+  engine_version                      = "8.0.35"
+  iam_database_authentication_enabled = "true"
+  instance_class                      = "db.t3.micro"
+  iops                                = "0"
+  kms_key_id                          = aws_kms_key.db_storage.arn
+  manage_master_user_password         = true #追加 https://tech.dentsusoken.com/entry/terraform_manage_master_user_password
+  license_model                       = "general-public-license"
+  maintenance_window                  = "sat:16:23-sat:16:53"
+  max_allocated_storage               = "1000"
+  monitoring_interval                 = "0"
+  multi_az                            = "true"
+  network_type                        = "IPV4"
+  option_group_name                   = "default:mysql-8-0"
+  parameter_group_name                = aws_db_parameter_group.this.name
+  performance_insights_enabled        = true
+  port                                = "3306"
+  storage_encrypted                   = "true"
+  storage_throughput                  = "0"
+  storage_type                        = "gp2"
+  username                            = var.user_name
+  vpc_security_group_ids              = var.db_security_group_ids
 }
 
 
