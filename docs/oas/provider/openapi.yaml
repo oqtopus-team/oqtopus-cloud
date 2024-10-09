@@ -367,7 +367,7 @@ components:
           description: Parameter mandatory and valid for status 'NOT_AVAILABLE'
           type: string
           format: date-time
-          example: '2023-09-10T14:00:00Z'
+          example: '2023-09-10T14:00:00+09:00'
     devices.DevicePendingTasksUpdate:
       type: object
       properties:
@@ -470,7 +470,7 @@ components:
           description: Parameter mandatory and valid if calibrationData not null
           type: string
           format: date-time
-          example: '2023-09-10T14:00:00Z'
+          example: '2023-09-10T14:00:00+09:00'
     devices.DeviceDataUpdate:
       discriminator:
         propertyName: command
@@ -665,7 +665,7 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: '2022-10-19 11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
       required:
         - taskId
         - code
@@ -694,7 +694,7 @@ components:
           optimizationBlockSize: 1
           optimizationSwapLevel: 1
         status: QUEUED
-        createdAt: '2022-10-19 11:45:34'
+        createdAt: '2022-10-19T11:45:34+09:00'
     tasks.TaskStatusUpdate:
       type: object
       properties:
