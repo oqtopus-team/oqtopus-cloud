@@ -31,7 +31,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_lambda_function" "this" {
   architectures = ["x86_64"]
 
-  environment {
+  environment { # TODO :Add module input variables
     variables = {
       DB_HOST                      = var.db_proxy_endpoint
       DB_NAME                      = "main"
@@ -39,6 +39,11 @@ resource "aws_lambda_function" "this" {
       SECRET_NAME                  = var.db_secret_arn
       POWERTOOLS_METRICS_NAMESPACE = "SampleAppc"
       POWERTOOLS_SERVICE_NAME      = "SampleAppc"
+      ALLOW_ORIGINS                = "*"
+      ALLOW_CREDENTIALS            = true
+      ALLOW_METHODS                = "*"
+      ALLOW_HEADERS                = "*"
+      LOG_LEVEL                    = "DEBUG"
     }
   }
 
