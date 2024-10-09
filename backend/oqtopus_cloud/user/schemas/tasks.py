@@ -167,8 +167,10 @@ class SubmitTaskResponse(BaseModel):
     """
 
     taskId: TaskId
-    createdAt: Annotated[AwareDatetime, Field(examples=["2022-10-19 11:45:34"])]
-    status: TaskStatus
+    createdAt: Annotated[
+        Optional[AwareDatetime], Field(None, examples=["2022-10-19T11:45:34+09:00"])
+    ]
+    status: Optional[TaskStatus] = None
 
 
 class GetSamplingTaskStatusResponse(BaseModel):
