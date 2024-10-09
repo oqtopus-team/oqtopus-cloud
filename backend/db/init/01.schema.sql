@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS main.tasks (
   simulation_opt text,
   ro_error_mitigation enum('none', 'pseudo_inverse', 'least_square'),
   note VARCHAR(1024),
-  status ENUM ('QUEUED', 'QUEUED_FETCHED', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLING', 'CANCELLING_FETCHED', 'CANCELLED') NOT NULL DEFAULT 'QUEUED',
+  status ENUM ('QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLING', 'CANCELLED') NOT NULL DEFAULT 'QUEUED',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (device) REFERENCES devices(id)
 );
