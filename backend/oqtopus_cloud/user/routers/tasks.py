@@ -450,7 +450,7 @@ def get_sampling_task(
 
 @router.delete(
     "/tasks/sampling/{taskId}",
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -459,7 +459,7 @@ def delete_sampling_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> None | ErrorResponse:
+) -> SuccessResponse | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
@@ -770,7 +770,7 @@ def get_estimation_task(
 
 @router.delete(
     "/tasks/estimation/{taskId}",
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -779,7 +779,7 @@ def delete_estimation_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) ->  None  | ErrorResponse:
+) ->  SuccessResponse  | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
