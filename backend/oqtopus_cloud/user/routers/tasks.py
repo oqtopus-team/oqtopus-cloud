@@ -459,7 +459,7 @@ def delete_sampling_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> None SuccessResponse | ErrorResponse:
+) -> SuccessResponse | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
