@@ -169,6 +169,8 @@ class SubmitTaskResponse(BaseModel):
     """
 
     taskId: TaskId
+    createdAt: Annotated[AwareDatetime, Field(examples=["2022-10-19 11:45:34"])]
+    status: TaskStatus
 
 
 class GetSamplingTaskStatusResponse(BaseModel):

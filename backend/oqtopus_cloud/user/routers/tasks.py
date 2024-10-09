@@ -405,9 +405,21 @@ def submit_sampling_tasks(
             note=note,
             created_at=datetime.now(),
         )
+
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+
+        task_get = db.get(Task, task.id)
+        if task_get is None:
+            return NotFoundErrorResponse(
+                detail=f"the created task {task.id} is not found"
+            )
+
+        return SubmitTaskResponse(
+            taskId=task.id,
+            createdAt=task.created_at.astimezone(jst),
+            status=task_get.status,
+        )
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -723,7 +735,18 @@ def submit_estimation_tasks(
         )
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+
+        task_get = db.get(Task, task.id)
+        if task_get is None:
+            return NotFoundErrorResponse(
+                detail=f"the created task {task.id} is not found"
+            )
+
+        return SubmitTaskResponse(
+            taskId=task.id,
+            createdAt=task.created_at.astimezone(jst),
+            status=task_get.status,
+        )
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
