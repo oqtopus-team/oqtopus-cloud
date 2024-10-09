@@ -37,13 +37,13 @@ resource "aws_lambda_function" "this" {
       DB_NAME                      = "main"
       DB_CONNECTOR                 = "mysql+pymysql"
       SECRET_NAME                  = var.db_secret_arn
-      POWERTOOLS_METRICS_NAMESPACE = "SampleAppc"
-      POWERTOOLS_SERVICE_NAME      = "SampleAppc"
-      ALLOW_ORIGINS                = "*"
-      ALLOW_CREDENTIALS            = true
-      ALLOW_METHODS                = "*"
-      ALLOW_HEADERS                = "*"
-      LOG_LEVEL                    = "DEBUG"
+      POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
+      POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
+      ALLOW_ORIGINS                = var.allow_origins
+      ALLOW_CREDENTIALS            = var.allow_credentials
+      ALLOW_METHODS                = var.allow_methods
+      ALLOW_HEADERS                = var.allow_headers
+      LOG_LEVEL                    = var.log_level
     }
   }
 
