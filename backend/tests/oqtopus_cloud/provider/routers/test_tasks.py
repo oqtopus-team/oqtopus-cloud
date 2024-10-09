@@ -12,7 +12,6 @@ from oqtopus_cloud.common.models.task import (
 from oqtopus_cloud.provider.routers.tasks import (
     get_task,
     get_tasks,
-    get_unfetched_tasks,
     update_task,
 )
 from oqtopus_cloud.provider.schemas.tasks import (
@@ -23,7 +22,6 @@ from oqtopus_cloud.provider.schemas.tasks import (
     TaskInfo,
     TaskStatusUpdate,
     TaskStatusUpdateResponse,
-    UnfetchedTasksResponse,
 )
 from zoneinfo import ZoneInfo
 
@@ -167,7 +165,7 @@ def test_update_task(test_db):
         "ro_error_mitigation": None,
         "n_per_node": None,
         "simulation_opt": None,
-        "status": "QUEUED_FETCHED",
+        "status": "QUEUED",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
     }
     # Arrange
@@ -179,60 +177,6 @@ def test_update_task(test_db):
     actual = update_task(taskId=taskId, request=request, db=test_db)
 
     expected = TaskStatusUpdateResponse(message="Task status updated")
-    # Assert
-
-    assert actual == expected
-
-
-def test_get_unfetched_tasks(test_db):
-    task_dict = {
-        "id": uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517").bytes,
-        "owner": "admin",
-        "code": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
-        "action": "sampling",
-        "shots": 1024,
-        "device": "SC2",
-        "n_qubits": 64,
-        "n_nodes": 112,
-        "qubit_allocation": None,
-        "skip_transpilation": True,
-        "seed_transpilation": None,
-        "seed_simulation": None,
-        "ro_error_mitigation": None,
-        "n_per_node": None,
-        "simulation_opt": None,
-        "status": "QUEUED",
-        "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-    }
-    # Arrange
-    test_db.add(_get_task_model(task_dict=task_dict))
-    test_db.add(_get_device_model())
-    test_db.commit()
-    deviceId = "SC2"
-    status = "QUEUED"
-    actual = get_unfetched_tasks(deviceId=deviceId, status=status, db=test_db)
-
-    expected = UnfetchedTasksResponse(
-        [
-            TaskInfo(
-                taskId=TaskId(root=uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517")),
-                code='OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
-                device="SC2",
-                nQubits=64,
-                nNodes=112,
-                action=Action(SamplingAction(name="sampling", nShots=1024)),
-                qubitAllocation=None,
-                skipTranspilation=True,
-                seedTranspilation=None,
-                seedSimulation=None,
-                roErrorMitigation=None,
-                nPerNode=None,
-                simulationOpt=None,
-                status=InternalTaskStatus("QUEUED_FETCHED"),
-                createdAt=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
-            )
-        ]
-    )
     # Assert
 
     assert actual == expected
