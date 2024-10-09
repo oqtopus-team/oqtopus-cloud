@@ -24,6 +24,7 @@ nav:
           - devices: schema/devices.md
           - results: schema/results.md
           - tasks: schema/tasks.md
+      - FAQ: developer_guidelines/faq.md
       - OpenAPI Specification:
           - User API: oas/user/README.md
           - Provider API: oas/provider/README.md
@@ -94,6 +95,7 @@ plugins:
             Terraform Guidelines: Terraformガイドライン
             Terraform Modules: Terraformモジュール
             DB Schema: DBスキーマ
+            FAQ: FAQ
 
             OpenAPI Specification: OpenAPI仕様書
             UserAPI: ユーザーAPI
