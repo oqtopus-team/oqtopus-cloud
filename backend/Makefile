@@ -43,16 +43,20 @@ export ENV=local
 export DB_HOST=localhost
 export DB_NAME=main
 export DB_CONNECTOR=mysql+pymysql
-
+export ALLOW_ORIGINS=http://127.0.0.1:8000# pass the allowed origins -> http://localhost:3000,http://localhost:3001
+export ALLOW_CREDENTIALS=true
+export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
+export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
+export LOG_LEVEL=DEBUG
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
-	poetry run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port 8080 --reload
+	poetry run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port 8080 --reload --log-level debug
 
 run-provider: ## Start the Provider API
 	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload
+	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
 up: ## Start the DB
 	@docker compose up
