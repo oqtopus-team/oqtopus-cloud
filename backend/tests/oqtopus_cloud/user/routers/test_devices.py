@@ -2,13 +2,13 @@ import json
 from datetime import datetime
 from typing import Dict
 
+from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
 )
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.routers.devices import get_device, model_to_schema
 from oqtopus_cloud.user.schemas.devices import CalibrationData, DeviceInfo
-from fastapi.testclient import TestClient
 from zoneinfo import ZoneInfo
 
 jst = ZoneInfo("Asia/Tokyo")
@@ -50,7 +50,7 @@ def _get_calibration_data() -> CalibrationData:
 def _get_model():
     mode_dict = {
         "id": "SVSim",
-        "device_type": "QPU",
+        "device_type": "simulator",
         "status": "AVAILABLE",
         "restart_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_tasks": 8,
@@ -76,7 +76,7 @@ def test_get_device(test_db):
     # Assert
     expected = DeviceInfo(
         deviceId="SVSim",
-        deviceType="QPU",
+        deviceType="simulator",
         status="AVAILABLE",
         restartAt=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
         nPendingTasks=8,
@@ -101,7 +101,7 @@ def test_model_to_shema():
     # Assert
     expected = DeviceInfo(
         deviceId="SVSim",
-        deviceType="QPU",
+        deviceType="simulator",
         status="AVAILABLE",
         restartAt=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
         nPendingTasks=8,
@@ -127,7 +127,7 @@ def test_get_device_hadler(test_db):
     # Assert
     expected = {
         "deviceId": "SVSim",
-        "deviceType": "QPU",
+        "deviceType": "simulator",
         "status": "AVAILABLE",
         "restartAt": "2023-01-02T12:34:56+09:00",
         "nPendingTasks": 8,
@@ -157,7 +157,7 @@ def test_get_task_200(
 ):
     device = Device(
         id="1",
-        device_type="QPU",
+        device_type="simulator",
         status="AVAILABLE",
         n_qubits=1,
         n_nodes=1,
