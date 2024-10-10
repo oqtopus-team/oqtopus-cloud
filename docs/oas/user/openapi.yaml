@@ -194,7 +194,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.JobInfo'
+                $ref: '#/components/schemas/jobs.JobInfoResponse'
         '400':
           description: Bad Request
           content:
@@ -594,120 +594,9 @@ components:
           type: string
       required:
         - detail
-    jobs.JobId:
-      type: string
-      format: uuid
-      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    jobs.JobStatus:
-      type: string
-      enum:
-        - submitted
-        - ready
-        - running
-        - success
-        - failed
-        - cancelled
-      example: submitted
     jobs.JobInfo:
-      type: object
-      properties:
-        jobId:
-          $ref: '#/components/schemas/jobs.JobId'
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        name:
-          type: string
-          example: Bell State Sampling
-        device:
-          type: string
-          example: Kawasaki
-        nQubits:
-          description: Parameter exclusive with nNodes
-          type: integer
-        nNodes:
-          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
-          type: integer
-          example: 12
-        nShots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-          example:
-            '0': 12
-            '1': 16
-        skipTranspilation:
-          type: boolean
-          example: false
-        seedTranspilation:
-          description: Parameter valid only if skipTranspilation is false
-          type: integer
-          example: 873
-        seedSimulation:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 39058567
-        roErrorMitigation:
-          description: Parameter valid only for QPU devices
-          type: string
-          enum:
-            - none
-            - pseudo_inverse
-            - least_square
-          example: pseudo_inverse
-        nPerNode:
-          description: Parameter valid only for simulator devices
-          type: integer
-          minimum: 1
-          example: 5
-        simulationOpt:
-          description: Parameter valid only for simulator devices
-          type: object
-          example:
-            optimizationMethod: light
-            optimizationBlockSize: 1
-            optimizationSwapLevel: 1
-        note:
-          type: string
-          example: Bell State Sampling Example
-        status:
-          $ref: '#/components/schemas/jobs.JobStatus'
-        createdAt:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-      required:
-        - jobId
-        - code
-        - device
-        - nShots
-        - skipTranspilation
-        - status
-        - createdAt
-      example:
-        jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        name: Bell State Sampling
-        device: Kawasaki
-        nNodes: 12
-        nShots: 1000
-        skipTranspilation: false
-        seedTranspilation: 387
-        seedSimulation: 39058567
-        nPerNode: 2
-        simulationOpt:
-          optimizationMethod: light
-          optimizationBlockSize: 1
-          optimizationSwapLevel: 1
-        note: Bell State Sampling Example
-        status: submitted
-        createdAt: '2022-10-19T11:45:34+09:00'
+      type: string
+      example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}''}'
     jobs.JobDef:
       type: object
       properties:
@@ -780,6 +669,10 @@ components:
         - code
         - device
         - nShots
+    jobs.JobId:
+      type: string
+      format: uuid
+      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.SubmitJobResponse:
       description: submit a job
       type: object
@@ -795,6 +688,116 @@ components:
           type: string
       required:
         - detail
+    jobs.TranspilerInfo:
+      type: string
+      example: '{}'
+    jobs.SimulatorInfo:
+      type: string
+      example: '{''nQubits'': 5, ''nNodes'': 12, ''nPerNode'': 2, ''simulationOpt'': {''optimizationMethod'': ''light'', ''optimizationBlockSize'': 1, ''optimizationSwapLevel'': 1}}'
+    jobs.JobStatus:
+      type: string
+      enum:
+        - submitted
+        - ready
+        - running
+        - success
+        - failed
+        - cancelled
+      example: submitted
+    jobs.JobInfoResponse:
+      type: object
+      properties:
+        jobId:
+          $ref: '#/components/schemas/jobs.JobId'
+        description:
+          type: string
+          example: Bell State Sampling
+        note:
+          type: string
+          example: Bell State Sampling Example
+        device:
+          type: string
+          example: Kawasaki
+        nShots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        JobInfo:
+          $ref: '#/components/schemas/jobs.JobInfo'
+        jobs.TranspilerInfo:
+          $ref: '#/components/schemas/jobs.TranspilerInfo'
+        jobs.SimulatorInfo:
+          $ref: '#/components/schemas/jobs.SimulatorInfo'
+        qubitAllocation:
+          description: Parameter valid only for QPU devices
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            '0': 12
+            '1': 16
+        skipTranspilation:
+          type: boolean
+          example: false
+        seedTranspilation:
+          description: Parameter valid only if skipTranspilation is false
+          type: integer
+          example: 873
+        seedSimulation:
+          description: Parameter valid only for 'simulator' devices
+          type: integer
+          example: 39058567
+        roErrorMitigation:
+          description: Parameter valid only for QPU devices
+          type: string
+          enum:
+            - none
+            - pseudo_inverse
+            - least_square
+          example: pseudo_inverse
+        nPerNode:
+          description: Parameter valid only for simulator devices
+          type: integer
+          minimum: 1
+          example: 5
+        simulationOpt:
+          description: Parameter valid only for simulator devices
+          type: object
+          example:
+            optimizationMethod: light
+            optimizationBlockSize: 1
+            optimizationSwapLevel: 1
+        status:
+          $ref: '#/components/schemas/jobs.JobStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+      required:
+        - jobId
+        - device
+        - nShots
+        - status
+        - createdAt
+      example:
+        jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        name: Bell State Sampling
+        device: Kawasaki
+        nNodes: 12
+        nShots: 1000
+        skipTranspilation: false
+        seedTranspilation: 387
+        seedSimulation: 39058567
+        nPerNode: 2
+        simulationOpt:
+          optimizationMethod: light
+          optimizationBlockSize: 1
+          optimizationSwapLevel: 1
+        note: Bell State Sampling Example
+        status: submitted
+        createdAt: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:
       type: object
       properties:
