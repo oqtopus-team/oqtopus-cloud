@@ -3,7 +3,7 @@ name = "backend"
 version = "0.1.0"
 description = "OQTOPUS Cloud is a project that provides the architecture of cloud quantum computers as an open-source software (OSS). By using it in conjunction with various OSS provided by [@oqtopus-team](https://github.com/oqtopus-team), you can build a cloud quantum computer system."
 authors = ["oqtopus-team <oqtopus-team[at]googlegroups.com>"]
-readme = "./docs/README.md"
+readme = "README.md"
 packages = [
   {include = "oqtopus_cloud", from = "backend"},
 ]
