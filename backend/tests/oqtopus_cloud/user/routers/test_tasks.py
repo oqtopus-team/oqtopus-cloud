@@ -84,7 +84,7 @@
 #     }
 
 
-# def test_post_task_200(
+# def test_post_task_201(
 #     test_db,
 # ):
 #     """_summary_
@@ -123,4 +123,4 @@
 #         note=None,
 #     )
 #     response = client.post("/tasks", content=body.model_dump_json())
-#     assert response.status_code == 200
+#     assert response.status_code == 201
