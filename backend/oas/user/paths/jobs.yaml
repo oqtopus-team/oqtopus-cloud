@@ -46,13 +46,13 @@ jobs:
                   description: "Bell State Sampling",
                   note: "Bell State Sampling Example",
                   device: "Kawasaki",
-                  nShots: 1000,
-                  jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}",
-                  transpilerInfo: "",
-                  simulatorInfo: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}",
-                  mitigationInfo: "",
+                  n_shots: 1000,
+                  job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}",
+                  transpiler_info: "",
+                  simulator_info: "{'n_qubits': 5, 'n_nodes': 12, 'n_per_node': 2, 'seed_simulation': 39058567, 'simulation_opt': {'optimization_method': 'light', 'optimization_block_size': 1, 'optimization_swap_level': 1}}",
+                  mitigation_info: "",
                   status: "submitted",
-                  createdAt: "2022-10-19T11:45:34+09:00"
+                  created_at: "2022-10-19T11:45:34+09:00"
                 }
             qpu:
               description: QPU example
@@ -61,13 +61,13 @@ jobs:
                   description: "Bell State Sampling",
                   note: "Bell State Sampling Example",
                   device: "Kawasaki",
-                  nShots: 1000,
-                  jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}",
-                  transpilerInfo: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}",
-                  simulatorInfo: "",
-                  mitigationInfo: "{'roErrorMitigation': 'pseudo_inverse'}",
+                  n_shots: 1000,
+                  job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}",
+                  transpiler_info: "{'qubit_allocation': {'0': 12, '1': 16}, 'skip_transpilation': false, 'seed_transpilation': 873}",
+                  simulator_info: "",
+                  mitigation_info: "{'ro_error_mitigation': 'pseudo_inverse'}",
                   status: "submitted",
-                  createdAt: "2022-10-19T11:45:34+09:00"
+                  created_at: "2022-10-19T11:45:34+09:00"
                 }
 
     responses:
@@ -78,7 +78,7 @@ jobs:
             schema:
               $ref: "../schemas/jobs.yaml#/jobs.SubmitJobResponse"
             example:
-              jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       '400':
         description: Bad Request
         content:
@@ -107,7 +107,7 @@ jobs.jobId:
       - BearerAuth: []
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}
@@ -152,7 +152,7 @@ jobs.jobId:
       - BearerAuth: []
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}
@@ -201,7 +201,7 @@ jobs.jobId.status:
       - BearerAuth: []
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}
@@ -248,7 +248,7 @@ jobs.jobId.cancel:
       - BearerAuth: []
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}

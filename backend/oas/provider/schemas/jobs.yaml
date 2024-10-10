@@ -10,24 +10,24 @@ jobs.InternalJobStatus:
 
 jobs.JobInfo:
   type: string
-  example: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}"
+  example: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}"
 
 jobs.TranspilerInfo:
   type: string
-  example: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}"
+  example: "{'qubit_allocation': {'0': 12, '1': 16}, 'skip_transpilation': false, 'seed_transpilation': 873}"
 
 jobs.SimulatorInfo:
   type: string
-  example: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}"
+  example: "{'n_qubits': 5, 'n_nodes': 12, 'n_per_node': 2, 'seed_simulation': 39058567, 'simulation_opt': {'optimization_method': 'light', 'optimization_block_size': 1, 'optimization_swap_level': 1}}"
 
 jobs.MitigationInfo:
   type: string
-  example: "{'roErrorMitigation': 'pseudo_inverse'}"
+  example: "{'ro_error_mitigation': 'pseudo_inverse'}"
 
 jobs.JobDef:
   type: object
   properties:
-    jobId:
+    job_id:
       $ref: "#/jobs.JobId"
     description:
       type: string
@@ -38,44 +38,44 @@ jobs.JobDef:
     device:
       type: string
       example: "Kawasaki"
-    nShots:
+    n_shots:
       type: integer
       minimum: 1
       maximum: 1e7
       example: "1000"
-    jobType:
+    job_type:
       type: string
       example: "'sampling' or 'estimation', 'sse'"
-    jobInfo:
+    job_info:
       $ref: "#/jobs.JobInfo"
-    transpilerInfo:
+    transpiler_info:
       $ref: "#/jobs.TranspilerInfo"
-    simulatorInfo:
+    simulator_info:
       $ref: "#/jobs.SimulatorInfo"
-    mitigationInfo:
+    mitigation_info:
       $ref: "#/jobs.MitigationInfo"
     status:
       $ref: "#/jobs.JobStatus"
-    createdAt:
+    created_at:
       type: string
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
   required: [
-    device, nShots, status, createdAt
+    device, n_shots, status, created_at
   ]
   example:
     {
-      jobId: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+      job_id: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
       description: "Bell State Sampling",
       note: "Bell State Sampling Example",
       device: "Kawasaki",
-      nShots: 1000,
-      jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}",
-      transpilerInfo: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}",
-      simulatorInfo: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}",
-      mitigationInfo: "{'roErrorMitigation': 'pseudo_inverse'}",
+      n_shots: 1000,
+      job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2'}",
+      transpiler_info: "{'qubit_allocation': {'0': 12, '1': 16}, 'skip_transpilation': false, 'seed_transpilation': 873}",
+      simulator_info: "{'n_qubits': 5, 'n_nodes': 12, 'n_per_node': 2, 'seed_simulation': 39058567, 'simulation_opt': {'optimization_method': 'light', 'optimization_block_size': 1, 'optimization_swap_level': 1}}",
+      mitigation_info: "{'ro_error_mitigation': 'pseudo_inverse'}",
       status: "submitted",
-      createdAt: "2022-10-19T11:45:34+09:00"
+      created_at: "2022-10-19T11:45:34+09:00"
     }
 
 jobs.JobStatusUpdate:
@@ -83,8 +83,8 @@ jobs.JobStatusUpdate:
   properties:
     status:
       type: string
-      enum: ["RUNNING"]
-      example: "RUNNING"
+      enum: ["running"]
+      example: "running"
   required: [
     status
   ]
@@ -106,6 +106,6 @@ jobs.UnfetchedJobsResponse:
 
 jobs.InternalFetchableJobStatus:
   type: string
-  enum: ["QUEUED", "CANCELLING"]
-  example: "QUEUED"
+  enum: ["queued", "cancelling"]
+  example: "queued"
 

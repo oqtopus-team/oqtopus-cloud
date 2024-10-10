@@ -13,11 +13,11 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /devices/{deviceId}:
+  /devices/{device_id}:
     $ref: ./paths/devices.yaml#/devices.deviceId
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
-  /jobs/{jobId}:
+  /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.jobId
   /jobs/unfetched:
     $ref: ./paths/jobs.yaml#/jobs.unfetched

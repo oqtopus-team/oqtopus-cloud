@@ -8,7 +8,7 @@ jobs:
     security: []
     parameters:
         - in: query
-          name: deviceId
+          name: device_id
           required: true
           description: "Device identifier"
           schema: {type: string, example: "Kawasaki"}
@@ -18,7 +18,7 @@ jobs:
           schema:
             $ref: "../schemas/jobs.yaml#/jobs.InternalJobStatus"
         - in: query
-          name: maxResults
+          name: max_results
           description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
           schema: {type: integer, example: 1}
         - in: query
@@ -61,7 +61,7 @@ jobs.jobId:
     - jobs
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}
@@ -97,7 +97,7 @@ jobs.jobId:
       - jobs
     parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: "Job identifier"
           schema: {type: string}
@@ -143,7 +143,7 @@ jobs.unfetched:
     - jobs
     parameters:
       - in: query
-        name: deviceId
+        name: device_id
         required: true
         description: "Device identifier"
         schema: {type: string, example: "Kawasaki"}
@@ -154,7 +154,7 @@ jobs.unfetched:
         schema:
           $ref: "../schemas/jobs.yaml#/jobs.InternalFetchableJobStatus"
       - in: query
-        name: maxResults
+        name: max_results
         description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
         schema: {type: integer, example: 1}
 

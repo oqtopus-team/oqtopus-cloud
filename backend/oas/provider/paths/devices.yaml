@@ -8,7 +8,7 @@ devices.deviceId:
       security: []
       parameters:
         - in: path
-          name: deviceId
+          name: device_id
           description: "Device ID"
           required: true
           schema:
@@ -21,36 +21,38 @@ devices.deviceId:
             schema:
               $ref: "../schemas/devices.yaml#/devices.DeviceDataUpdate"
             examples:
-              status update (NOT_AVAILABLE):
+              status update (unavailable):
                 value: {
                   "command": "DeviceStatusUpdate",
-                  "status": "NOT_AVAILABLE",
-                  "restartAt": "2023-09-10T14:00:00Z"
+                  "status": "unavailable",
+                  "restart_at": "2023-09-10T14:00:00Z"
                 }
-              status update (AVAILABLE):
+              status update (available):
                 value: {
                   "command": "DeviceStatusUpdate",
-                  "status": "AVAILABLE"
+                  "status": "available"
                 }
               pending tasks update:
                 value: {
                   "command": "DevicePendingTasksUpdate",
-                  "nPendingTasks": 6
+                  "n_pending_tasks": 6
                 }
               calibrationData update:
                 value: {
                   "command": "DeviceCalibrationUpdate",
-                  "calibrationData": {
-                  "qubitConnectivity": ["(1,4)", "(4,5)", "(5,8)"],
-                  "t1": {"0": 55.51, "1": 37.03, "2": 57.13},
-                  "t2": {"0": 99.31, "1": 111.03, "2": 30.12},
-                  "roError": {"0": 4.67e-2, "1": 1.8e-1, "2": 3.55e-1},
-                  "gateError": {"sx": {"0": 6.92e-3, "1": 2.96e-3, "2": 7.2e-2}},
-                  "measProb0As1": {"0": 6.08e-3, "1": 1.2e-2, "2": 2.48e-1},
-                  "measProb1As0": {"0": 2.81e-2, "1": 3.86e-1, "2": 8.11e-2},
-                  "gateDuration": {"sx": {"0": 29.3, "1": 50.9, "2": 45.4}}
-                  },
-                  calibratedAt: "2023-09-10T14:00:00Z"
+                  "device_info": "{
+                    'calibration_data': {
+                      'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'],
+                      't1': {'0': 55.51, '1': 37.03, '2': 57.13},
+                      't2': {'0': 99.31, '1': 111.03, '2': 30.12},
+                      'ro_error': {'0': 4.67e-2, '1': 1.8e-1, '2': 3.55e-1},
+                      'gate_error': {'sx': {'0': 6.92e-3, '1': 2.96e-3, '2': 7.2e-2}},
+                      'meas_prob0_as1': {'0': 6.08e-3, '1': 1.2e-2, '2': 2.48e-1},
+                      'meas_prob1_as0': {'0': 2.81e-2, '1': 3.86e-1, '2': 8.11e-2},
+                      'gate_duration': {'sx': {'0': 29.3, '1': 50.9, '2': 45.4}}
+                    },
+                  }",
+                  calibrated_at: "2023-09-10T14:00:00Z"
                 }
       responses:
         '200':

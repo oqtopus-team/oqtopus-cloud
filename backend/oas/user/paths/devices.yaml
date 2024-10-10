@@ -46,7 +46,7 @@ devices.deviceId:
     security:
       - BearerAuth: []
     parameters:
-      - name: deviceId
+      - name: device_id
         in: path
         description: "Device identifier"
         required: true
