@@ -45,6 +45,7 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 - [Terraform Guidelines](./developer_guidelines/terraform_guidelines.md)
 - [Terraform Modules](./terraform_modules/README.md)
 - [DB Schema](./schema/README.md)
+- [FAQ](./en/developer_guidelines/faq.md)
 
 ### OpenAPI Specifications
 
