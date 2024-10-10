@@ -8,163 +8,75 @@ jobs.InternalJobStatus:
   enum: ["submitted", "ready", "running", "success", "failed", "cancelled"]
   example: "submitted"
 
-jobs.Action:
-  type: object
-  oneOf:
-    - $ref: "#/jobs.SamplingAction"
-    - $ref: "#/jobs.EstimationAction"
-
-jobs.SamplingAction:
-  type: object
-  properties:
-    name:
-      type: string
-      pattern: "sampling"
-      example: "sampling"
-    nShots:
-      type: integer
-      minimum: 1
-      maximum: 1e7
-      example: "1000"
-  required: [
-    name, nShots
-  ]
-
-jobs.EstimationAction:
-  type: object
-  properties:
-    name:
-      type: string
-      pattern: "estimation"
-      example: "estimation"
-    method:
-      type: string
-      enum: ["state_vector", "sampling"]
-      example: "sampling"
-      description: "state_vector method valid only for 'simulator' devices"
-    nShots:
-      type: integer
-      minimum: 1
-      maximum: 1e7
-      example: "1000"
-      description: "Parameter valid only for sampling method"
-    operator:
-      $ref: "#/jobs.Operator"
-  required: [
-    name, method, operator
-  ]
-
-jobs.Operator:
-  type: array
-  items:
-    $ref: "#/jobs.SingleOperator"
-  example:
-    [
-      ["X 0 X 1", [1.5, 2.8]],
-      ["Y 0 Z 1", [1.2, -2e-8]],
-    ]
-
-jobs.SingleOperator:
-  type: array
-  items:
-    anyOf:
-      - type: string
-        description: "Pauli string"
-        example: "X 0 Y 1 Z 5 I 2"
-      - type: array
-        description: "Real and imaginary components of complex coef value"
-        items:
-          type: number
-        minItems: 2
-        maxItems: 2
-        example: [1.5, 2.8]
-  minItems: 2
-  maxItems: 2
-
 jobs.JobInfo:
+  type: string
+  example: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}"
+
+jobs.TranspilerInfo:
+  type: string
+  example: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}"
+
+jobs.SimulatorInfo:
+  type: string
+  example: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}"
+
+jobs.MitigationInfo:
+  type: string
+  example: "{'roErrorMitigation': 'pseudo_inverse'}"
+
+jobs.JobDef:
   type: object
   properties:
     jobId:
       $ref: "#/jobs.JobId"
-    code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
-    device: {type: string, example: "Kawasaki"}
-    nQubits:
-      type: integer
-      example: null
-    nNodes:
-      description: "Parameter valid only for 'simulator' devices"
-      type: integer
-      example: 12
-    action:
-      $ref: "#/jobs.Action"
-    qubitAllocation:
-      description: "Parameter valid only for QPU devices"
-      type: object
-      additionalProperties:
-        type: integer
-      example:
-        "0": 12
-        "1": 16
-    skipTranspilation:
-      type: boolean
-      example: false
-    seedTranspilation:
-      description: "Parameter valid only if skipTranspilation is false"
-      type: integer
-      example: 873
-    seedSimulation:
-      description: "Parameter valid only for 'simulator' devices"
-      type: integer
-      example: 39058567
-    roErrorMitigation:
-      description: "Parameter valid only for QPU devices"
+    description:
       type: string
-      enum: ["none", "pseudo_inverse", "least_square"]
-      example: "pseudo_inverse"
-    nPerNode:
-      description: "Parameter valid only for simulator devices"
+      example: "Bell State Sampling"
+    note:
+      type: string
+      example: "Bell State Sampling Example"
+    device:
+      type: string
+      example: "Kawasaki"
+    nShots:
       type: integer
       minimum: 1
-      example: 5
-    simulationOpt:
-      description: "Parameter valid only for simulator devices"
-      type: object
-      example: {
-          optimizationMethod: "light",
-          optimizationBlockSize: 1,
-          optimizationSwapLevel: 1
-        }
+      maximum: 1e7
+      example: "1000"
+    jobType:
+      type: string
+      example: "'sampling' or 'estimation', 'sse'"
+    jobInfo:
+      $ref: "#/jobs.JobInfo"
+    transpilerInfo:
+      $ref: "#/jobs.TranspilerInfo"
+    simulatorInfo:
+      $ref: "#/jobs.SimulatorInfo"
+    mitigationInfo:
+      $ref: "#/jobs.MitigationInfo"
     status:
-      $ref: "#/jobs.InternalJobStatus"
+      $ref: "#/jobs.JobStatus"
     createdAt:
       type: string
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
   required: [
-    jobId, code, device, action, skipTranspilation, status, createdAt
+    device, nShots, status, createdAt
   ]
   example:
-    jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-    device: Kawasaki
-    nQubits: null
-    nNodes: 12
-    action:
-      name: sampling
-      nShots: 1000
-    qubitAllocation: null
-    skipTranspilation: false
-    seedTranspilation: 873
-    seedSimulation: 39058567
-    roErrorMitigation: null
-    nPerNode: 2
-    simulationOpt: {
-      optimizationMethod: "light",
-      optimizationBlockSize: 1,
-      optimizationSwapLevel: 1
+    {
+      jobId: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
+      description: "Bell State Sampling",
+      note: "Bell State Sampling Example",
+      device: "Kawasaki",
+      nShots: 1000,
+      jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}",
+      transpilerInfo: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}",
+      simulatorInfo: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}",
+      mitigationInfo: "{'roErrorMitigation': 'pseudo_inverse'}",
+      status: "submitted",
+      createdAt: "2022-10-19T11:45:34+09:00"
     }
-    status: QUEUED_FETCHED
-    createdAt: "2022-10-19T11:45:34+09:00"
 
 jobs.JobStatusUpdate:
   type: object

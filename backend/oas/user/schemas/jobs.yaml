@@ -31,7 +31,7 @@ jobs.JobStatus:
 
 jobs.JobInfo:
   type: string
-  example: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}"
+  example: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}"
 
 jobs.TranspilerInfo:
   type: string
@@ -64,6 +64,9 @@ jobs.JobDef:
       minimum: 1
       maximum: 1e7
       example: "1000"
+    jobType:
+      type: string
+      example: "'sampling' or 'estimation', 'sse'"
     jobInfo:
       $ref: "#/jobs.JobInfo"
     transpilerInfo:
@@ -88,7 +91,7 @@ jobs.JobDef:
       note: "Bell State Sampling Example",
       device: "Kawasaki",
       nShots: 1000,
-      jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2'}",
+      jobInfo: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}",
       transpilerInfo: "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}",
       simulatorInfo: "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}",
       mitigationInfo: "{'roErrorMitigation': 'pseudo_inverse'}",
