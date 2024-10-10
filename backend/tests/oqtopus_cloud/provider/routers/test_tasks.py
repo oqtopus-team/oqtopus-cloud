@@ -53,7 +53,7 @@ def _get_device_model():
         "device_type": "QPU",
         "status": "AVAILABLE",
         "restart_at": datetime(2023, 1, 2, 12, 34, 56),
-        "pending_tasks": 8,
+        "pending_jobs": 8,
         "n_qubits": 39,
         "n_nodes": 512,
         "basis_gates": '["x", "sx", "rz", "cx"]',

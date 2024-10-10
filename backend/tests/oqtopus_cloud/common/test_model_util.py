@@ -10,7 +10,7 @@ def _get_model_dict():
         "device_type": "simulator",
         "status": "AVAILABLE",
         "restart_at": datetime(2023, 1, 2, 12, 34, 56),
-        "pending_tasks": 8,
+        "pending_jobs": 8,
         "n_qubits": 39,
         "n_nodes": 512,
         "basis_gates": ["x", "sx", "rz", "cx"],
@@ -44,7 +44,7 @@ def test_model_to_schema_dict():
         "device_type": "deviceType",  # transform field name
         "status": "status",
         "restart_at": "restart_at",
-        "pending_tasks": "pending_tasks",
+        "pending_jobs": "pending_jobs",
         "n_qubits": "n_qubits",
         "n_nodes": "n_nodes",
         "basis_gates": "basis_gates",

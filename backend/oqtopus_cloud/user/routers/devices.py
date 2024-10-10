@@ -84,7 +84,7 @@ MAP_MODEL_TO_SCHEMA = {
     "device_type": "device_type",
     "status": "status",
     "available_at": "available_at",
-    "pending_tasks": "n_pending_tasks",
+    "pending_jobs": "n_pending_jobs",
     "n_qubits": "n_qubits",
     "n_nodes": "n_nodes",
     "basis_gates": "basis_gates",

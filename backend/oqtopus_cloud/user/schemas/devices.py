@@ -24,7 +24,7 @@ class DeviceInfo(BaseModel):
     """
     Parameter mandatory and valid for 'unavailable' devices
     """
-    n_pending_tasks: Annotated[Optional[int], Field(None, examples=[8])]
+    n_pending_jobs: Annotated[Optional[int], Field(None, examples=[8])]
     n_qubits: Annotated[Optional[int], Field(None, examples=[39])]
     basis_gates: Annotated[
         Optional[list[str]],

@@ -28,7 +28,7 @@ class DevicePendingTasksUpdate(BaseModel):
         Literal["DevicePendingTasksUpdate"],
         Field(examples=["DevicePendingTasksUpdate"]),
     ]
-    n_pending_tasks: Optional[int] = None
+    n_pending_jobs: Optional[int] = None
 
 
 class DeviceCalibrationUpdate(BaseModel):

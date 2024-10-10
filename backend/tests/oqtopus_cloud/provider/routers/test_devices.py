@@ -7,7 +7,7 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.provider.routers.devices import (
     update_device_calibration,
-    update_device_pending_tasks,
+    update_device_pending_jobs,
     update_device_status,
 )
 from oqtopus_cloud.provider.schemas.devices import (
@@ -42,7 +42,7 @@ def _get_model():
         "device_type": "QPU",
         "status": "AVAILABLE",
         "restart_at": datetime(2023, 1, 2, 12, 34, 56),
-        "pending_tasks": 8,
+        "pending_jobs": 8,
         "n_qubits": 39,
         "n_nodes": 512,
         "basis_gates": '["x", "sx", "rz", "cx"]',
@@ -54,7 +54,7 @@ def _get_model():
     return Device(**mode_dict)
 
 
-def test_update_device_pending_tasks(test_db):
+def test_update_device_pending_jobs(test_db):
     # Arrange
     test_db.add(_get_model())
     test_db.commit()
@@ -63,7 +63,7 @@ def test_update_device_pending_tasks(test_db):
     request = DevicePendingTasksUpdate(
         command="DevicePendingTasksUpdate", nPendingTasks=8
     )
-    actual = update_device_pending_tasks(device=device, request=request, db=test_db)
+    actual = update_device_pending_jobs(device=device, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected

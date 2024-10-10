@@ -71,7 +71,7 @@ def update_device_status(
     return DeviceDataUpdateResponse(message="Device's data updated")
 
 
-def update_device_pending_tasks(
+def update_device_pending_jobs(
     device: Device, request: DevicePendingTasksUpdate, db: Session
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
@@ -88,12 +88,12 @@ def update_device_pending_tasks(
     Raises:
         BadRequest: If the new number of pending tasks is not provided or is less than 0.
     """
-    n_pending_tasks = request.nPendingTasks
-    if n_pending_tasks is None:
+    n_pending_jobs = request.nPendingTasks
+    if n_pending_jobs is None:
         return BadRequestResponse("nPendingTasks is required")
-    if n_pending_tasks < 0:
+    if n_pending_jobs < 0:
         return BadRequestResponse("nPendingTasks must be greater than or equal to 0")
-    device.pending_tasks = n_pending_tasks
+    device.pending_jobs = n_pending_jobs
     db.commit()
     return DeviceDataUpdateResponse(message="Device's data updated")
 
@@ -166,7 +166,7 @@ def update_device(
         if isinstance(request.root, DeviceStatusUpdate):
             return update_device_status(device, request.root, db)
         elif isinstance(request.root, DevicePendingTasksUpdate):
-            return update_device_pending_tasks(
+            return update_device_pending_jobs(
                 device,
                 request.root,
                 db,
