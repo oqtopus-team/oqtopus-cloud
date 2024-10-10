@@ -79,6 +79,8 @@ tasks.sampling:
               $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
             example:
               taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              createdAt: "2022-10-19T11:45:34+09:00"
+              status: "QUEUED"
       '400':
         description: Bad Request
         content:
@@ -379,6 +381,8 @@ tasks.estimation:
               $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
             example:
               taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              createdAt: "2022-10-19T11:45:34+09:00"
+              status: "QUEUED"
       "400":
         description: Bad Request
         content:

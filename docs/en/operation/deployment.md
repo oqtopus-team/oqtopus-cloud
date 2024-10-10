@@ -38,6 +38,12 @@ First, let's explain the procedure to deploy the infrastructure environment, suc
 aws s3api create-bucket --bucket tfstate.oqtopus-example-dev --profile example-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
 ```
 
+Next, create a DynamoDB table to lock the Terraform state file.
+
+```bash
+aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile example-dev --region ap-northeast-1
+```
+
 Next, prepare the Terraform configuration files. Create the following two files.
 
 ```hcl:infrastructure/example-dev/example-dev.tfbackend
@@ -47,6 +53,7 @@ key            = "infrastructure.tfstate"
 encrypt        = true
 profile        = "example-dev"
 region         = "ap-northeast-1"
+dynamodb_table = "terraform-lock"
 ```
 
 ```hcl:infrastructure/example-dev/terraform.tfvars
@@ -85,6 +92,7 @@ key            = "service.tfstate"
 encrypt        = true
 profile        = "example-dev"
 region         = "ap-northeast-1"
+dynamodb_table = "terraform-lock"
 ```
 
 ```hcl:service/example-dev/terraform.tfvars

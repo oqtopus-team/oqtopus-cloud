@@ -24,6 +24,7 @@ from oqtopus_cloud.provider.schemas.tasks import (
     TaskStatusUpdateResponse,
     UnfetchedTasksResponse,
 )
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -70,15 +71,16 @@ def get_tasks(
     db: Session = Depends(get_db),
 ) -> list[TaskInfo]:
     logger.info("invoked get_tasks")
-    query = db.query(Task).filter(Task.device == deviceId)
+    stmt = select(Task).filter(Task.device == deviceId)
     if status is not None:
-        query = query.filter(Task.status == status)
+        stmt = stmt.filter(Task.status == status)
     if timestamp is not None:
         time = datetime.fromisoformat(timestamp).astimezone(jst)
-        query = query.filter(Task.created_at > time)
+        stmt = stmt.filter(Task.created_at > time)
     if maxResults is not None:
-        query = query.limit(maxResults)
-    tasks = query.all()
+        stmt = stmt.limit(maxResults)
+
+    tasks = db.scalars(stmt).all()
     return [create_task_info(task, status=None) for task in tasks]
 
 
@@ -99,22 +101,20 @@ def get_unfetched_tasks(
         if status not in ["QUEUED", "CANCELLING"]:
             return BadRequestResponse("Invalid status")
         if status == "QUEUED":
-            query = (
-                db.query(Task)
-                .filter(Task.device == deviceId, Task.status == "QUEUED")
+            stmt = (
+                select(Task)
+                .where(Task.device == deviceId, Task.status == "QUEUED")
                 .order_by(Task.created_at)
             )
             update_status = "QUEUED_FETCHED"
         else:
-            query = (
-                db.query(Task).filter(Task.device == deviceId).order_by(Task.created_at)
-            )
+            stmt = select(Task).where(Task.device == deviceId).order_by(Task.created_at)
             update_status = "CANCELLING_FETCHED"
 
         if maxResults is not None:
-            query = query.limit(maxResults)
+            stmt = stmt.limit(maxResults)
 
-        tasks = query.all()
+        tasks = db.scalars(stmt).all()
         if len(tasks) != 0:
             for task in tasks:
                 task.status = update_status  # type: ignore
@@ -170,11 +170,7 @@ def update_task(
     except Exception:
         return BadRequestResponse("Invalid taskId")
     try:
-        task = (
-            db.query(Task)
-            .filter(Task.id == id, Task.status == "QUEUED_FETCHED")
-            .first()
-        )
+        task = db.scalars(select(Task).filter(Task.id == id)).first()
         if task is None:
             return NotFoundErrorResponse("Task not found")
         if request.status is not None:

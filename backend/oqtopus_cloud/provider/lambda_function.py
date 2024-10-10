@@ -3,6 +3,9 @@
 This module is the entry point of the development application. It creates the FastAPI
 """
 
+import os
+
+import setuptools._distutils.util
 from fastapi import FastAPI
 from mangum import (
     Mangum,
@@ -26,12 +29,20 @@ from starlette.middleware.cors import CORSMiddleware
 app: FastAPI = FastAPI()
 
 app.add_middleware(CustomMiddleware)
+
+ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "").split(",")
+ALLOW_CREDENTIALS = setuptools._distutils.util.strtobool(
+    os.getenv("ALLOW_CREDENTIALS", "false")
+)
+ALLOW_METHODS = os.getenv("ALLOW_METHODS", "").split(",")
+ALLOW_HEADERS = os.getenv("ALLOW_HEADERS", "").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=ALLOW_METHODS,
+    allow_headers=ALLOW_HEADERS,
 )
 
 app.include_router(

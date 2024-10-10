@@ -18,7 +18,7 @@ devices.DeviceInfo:
       description: "Parameter mandatory and valid for 'NOT_AVAILABLE' devices"
       type: string
       format: date-time
-      example: "2022-10-19 11:45:34"
+      example: "2022-10-19T11:45:34+09:00"
     nPendingTasks:
       type: integer
       example: 8
@@ -45,7 +45,7 @@ devices.DeviceInfo:
       description: "Parameter available only for 'QPU' devices with available calibration data"
       type: string
       format: date-time
-      example: "2022-10-19 11:45:34"
+      example: "2022-10-19T11:45:34+09:00"
     description:
       type: string
       example: "State vector-based quantum circuit simulator"

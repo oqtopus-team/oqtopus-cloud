@@ -39,7 +39,7 @@
 #     """
 #     device = Device(
 #         id="1",
-#         device_type="QPU",
+#         device_type="simulator",
 #         status="AVAILABLE",
 #         n_qubits=1,
 #         n_nodes=1,
@@ -94,7 +94,7 @@
 #     """
 #     device = Device(
 #         id="1",
-#         device_type="QPU",
+#         device_type="simulator",
 #         status="AVAILABLE",
 #         n_qubits=1,
 #         n_nodes=1,

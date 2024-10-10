@@ -33,8 +33,16 @@ tasks.SubmitTaskResponse:
   properties:
     taskId:
       $ref: '#/components/schemas/tasks.TaskId'
+    createdAt:
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+09:00"
+    status:
+      $ref: "#/tasks.TaskStatus"
+
   required:
     - taskId
+
 
 tasks.TaskStatus:
   type: string
@@ -110,7 +118,7 @@ tasks.SamplingTaskInfo:
     createdAt:
       type: string
       format: date-time
-      example: "2022-10-19 11:45:34"
+      example: "2022-10-19T11:45:34+09:00"
   required: [
     taskId, code, device, nShots, skipTranspilation, status, createdAt
   ]
@@ -133,7 +141,7 @@ tasks.SamplingTaskInfo:
       },
       note: "Bell State Sampling Example",
       status: "QUEUED",
-      createdAt: "2022-10-19 11:45:34"
+      createdAt: "2022-10-19T11:45:34+09:00"
     }
 
 tasks.SamplingTaskDef:
@@ -384,7 +392,7 @@ tasks.EstimationTaskInfo:
     createdAt:
       type: string
       format: date-time
-      example: "2022-10-19 11:45:34"
+      example: "2022-10-19T11:45:34+09:00"
   required: [
     taskId, code, device, method, operator, skipTranspilation, status, createdAt
   ]
@@ -413,5 +421,5 @@ tasks.EstimationTaskInfo:
       },
       note: "Bell State Estimation Example",
       status: "QUEUED",
-      createdAt: "2022-10-19 11:45:34"
+      createdAt: "2022-10-19T11:45:34+09:00"
     }

@@ -7,7 +7,7 @@ from oqtopus_cloud.common.models.device import Device
 def _get_model_dict():
     return {
         "id": "SVSim",
-        "device_type": "QPU",
+        "device_type": "simulator",
         "status": "AVAILABLE",
         "restart_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_tasks": 8,

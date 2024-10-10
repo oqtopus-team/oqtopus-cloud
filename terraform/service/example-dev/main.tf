@@ -11,33 +11,47 @@ data "terraform_remote_state" "infrastructure" {
 module "user_api" {
   source = "../modules/api-server"
 
-  product                   = var.product
-  org                       = var.org
-  env                       = var.env
-  identifier                = "user"
-  region                    = var.region
-  db_proxy_endpoint         = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
-  db_secret_arn             = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
-  lambda_handler            = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
-  lambda_subnet_ids         = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  cognito_user_pool_arns    = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  product                       = var.product
+  org                           = var.org
+  env                           = var.env
+  identifier                    = "user"
+  region                        = var.region
+  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                = "oqtopus_cloud.user.lambda_function.handler"
+  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  power_tools_metrics_namespace = "user-api"
+  power_tools_service_name      = "user-api"
+  allow_origins                 = "*"
+  allow_credentials             = "true"
+  allow_methods                 = "*"
+  allow_headers                 = "*"
+  log_level                     = "INFO"
 }
 
 module "provider_api" {
   source = "../modules/api-server"
 
-  product                   = var.product
-  org                       = var.org
-  env                       = var.env
-  identifier                = "provider"
-  region                    = var.region
-  db_proxy_endpoint         = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
-  db_secret_arn             = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
-  lambda_handler            = "oqtopus_cloud.provider.lambda_function.handler"
-  lambda_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
-  lambda_subnet_ids         = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  cognito_user_pool_arns    = [data.terraform_remote_state.infrastructure.outputs.provider_cognito.user_pool_arn]
+  product                       = var.product
+  org                           = var.org
+  env                           = var.env
+  identifier                    = "provider"
+  region                        = var.region
+  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                = "oqtopus_cloud.provider.lambda_function.handler"
+  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.provider_cognito.user_pool_arn]
+  power_tools_metrics_namespace = "provider-api"
+  power_tools_service_name      = "provider-api"
+  allow_origins                 = "*"
+  allow_credentials             = "true"
+  allow_methods                 = "*"
+  allow_headers                 = "*"
+  log_level                     = "INFO"
 }
 
 

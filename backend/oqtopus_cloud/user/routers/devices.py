@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -38,7 +39,7 @@ def list_devices(
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked list_devices")
-        devices = db.query(Device).all()
+        devices = db.scalars(select(Device)).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
@@ -66,7 +67,7 @@ def get_device(
     """
     # TODO implement error handling
     try:
-        device = db.query(Device).where(Device.id == deviceId).first()
+        device = db.scalars(select(Device).where(Device.id == deviceId)).first()
         logger.info("invoked get_device")
         if device:
             response = model_to_schema(device)

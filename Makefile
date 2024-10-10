@@ -38,8 +38,6 @@ copy: generate-oas terraform-docs
 	@cp .github/CONTRIBUTING.md ./docs/en/CONTRIBUTING.md
 	@cp .github/CODE_OF_CONDUCT.md ./docs/en/CODE_OF_CONDUCT.md
 	@cp .github/SECURITY.md ./docs/en/SECURITY.md
-	@cp ./docs/README.md ./docs/en/index.md
-	@cp ./docs/README.ja.md ./docs/ja/index.md
 
 docs: copy ## Build MkDocs
 	@poetry run mkdocs build
