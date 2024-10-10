@@ -108,11 +108,7 @@ def get_unfetched_tasks(
             )
             update_status = "QUEUED_FETCHED"
         else:
-            stmt = (
-                select(Task)
-                .where(Task.device == deviceId)
-                .order_by(Task.created_at)
-            )
+            stmt = select(Task).where(Task.device == deviceId).order_by(Task.created_at)
             update_status = "CANCELLING_FETCHED"
 
         if maxResults is not None:

@@ -515,7 +515,8 @@ def get_sampling_task_status(
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetSamplingTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
@@ -827,7 +828,8 @@ def get_estimation_task_status(
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetEstimationTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
