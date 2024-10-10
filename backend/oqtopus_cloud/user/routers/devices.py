@@ -45,19 +45,19 @@ def list_devices(
 
 
 @router.get(
-    "/devices/{deviceId}",
+    "/devices/{device_id}",
     response_model=DeviceInfo,
     responses={404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_device(
-    deviceId: str,
+    device_id: str,
     db: Session = Depends(get_db),
 ) -> DeviceInfo | ErrorResponse:
     """_summary_
 
     Args:
-        deviceId (str): _description_
+        device_id (str): _description_
         db (Session, optional): _description_. Defaults to Depends(get_db).
 
     Returns:
@@ -65,13 +65,13 @@ def get_device(
     """
     # TODO implement error handling
     try:
-        device = db.query(Device).where(Device.id == deviceId).first()
+        device = db.query(Device).where(Device.id == device_id).first()
         logger.info("invoked get_device")
         if device:
             response = model_to_schema(device)
             return response
         else:
-            detail = f"deviceId={deviceId} is not found."
+            detail = f"device_id={device_id} is not found."
             logger.info(detail)
             return NotFoundErrorResponse(detail=detail)
     except Exception as e:
@@ -80,17 +80,17 @@ def get_device(
 
 
 MAP_MODEL_TO_SCHEMA = {
-    "id": "deviceId",
-    "device_type": "deviceType",
+    "id": "device_id",
+    "device_type": "device_type",
     "status": "status",
-    "restart_at": "restartAt",
-    "pending_tasks": "nPendingTasks",
-    "n_qubits": "nQubits",
-    "n_nodes": "nNodes",
-    "basis_gates": "basisGates",
-    "instructions": "supportedInstructions",
-    "calibration_data": "calibrationData",
-    "calibrated_at": "calibratedAt",
+    "available_at": "available_at",
+    "pending_tasks": "n_pending_tasks",
+    "n_qubits": "n_qubits",
+    "n_nodes": "n_nodes",
+    "basis_gates": "basis_gates",
+    "instructions": "supported_instructions",
+    "device_info": "device_info",
+    "calibrated_at": "calibrated_at",
     "description": "description",
 }
 
@@ -99,17 +99,17 @@ def model_to_schema(model: Device) -> DeviceInfo:
     schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
 
     # load as json if not None.
-    if schema_dict["basisGates"]:
-        schema_dict["basisGates"] = json.loads(schema_dict["basisGates"])
-    if schema_dict["supportedInstructions"]:
-        schema_dict["supportedInstructions"] = json.loads(
-            schema_dict["supportedInstructions"]
+    if schema_dict["basis_gates"]:
+        schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
+    if schema_dict["supported_instructions"]:
+        schema_dict["supported_instructions"] = json.loads(
+            schema_dict["supported_instructions"]
         )
-    if schema_dict["calibrationData"]:
-        calibration_data_dict = json.loads(schema_dict["calibrationData"])
-        schema_dict["calibrationData"] = CalibrationData(**calibration_data_dict)
-    if schema_dict["restartAt"]:
-        schema_dict["restartAt"] = schema_dict["restartAt"].astimezone(jst)
+    # if schema_dict["device_info"]:
+    #     calibration_data_dict = json.loads(schema_dict["device_info"])
+    #     schema_dict["device_info"] = CalibrationData(**calibration_data_dict)
+    if schema_dict["available_at"]:
+        schema_dict["available_at"] = schema_dict["available_at"].astimezone(jst)
     if schema_dict["calibratedAt"]:
         schema_dict["calibratedAt"] = schema_dict["calibratedAt"].astimezone(jst)
     response = DeviceInfo(**schema_dict)
