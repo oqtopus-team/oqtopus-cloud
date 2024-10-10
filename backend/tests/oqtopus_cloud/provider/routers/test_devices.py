@@ -110,7 +110,7 @@ def test_update_device_calibration(test_db):
     request = DeviceCalibrationUpdate(
         command="DeviceCalibrationUpdate",
         calibrationData=CalibrationData(**_get_calibration_dict()),
-        calibratedAt=datetime.now(utc),
+        calibrated_at=datetime.now(utc),
     )
     actual = update_device_calibration(device=device, request=request, db=test_db)
     # Assert

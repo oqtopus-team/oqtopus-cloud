@@ -116,13 +116,13 @@ def update_device_calibration(
         BadRequest: If the device is not a QPU device, or if the calibration data or calibrated timestamp is missing.
     """
     calibration_data = request.calibrationData
-    calibrated_at = request.calibratedAt
+    calibrated_at = request.calibrated_at
     if device.device_type != DeviceType.QPU.value:
         return BadRequestResponse("Calibration is only supported for QPU devices")
     if calibration_data is None:
         return BadRequestResponse(detail="calibrationData is required")
     if calibrated_at is None:
-        return BadRequestResponse(detail="calibratedAt is required")
+        return BadRequestResponse(detail="calibrated_at is required")
     device.calibration_data = calibration_data.model_dump_json()
     device.calibrated_at = calibrated_at
     db.commit()

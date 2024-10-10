@@ -86,7 +86,6 @@ MAP_MODEL_TO_SCHEMA = {
     "available_at": "available_at",
     "pending_jobs": "n_pending_jobs",
     "n_qubits": "n_qubits",
-    "n_nodes": "n_nodes",
     "basis_gates": "basis_gates",
     "instructions": "supported_instructions",
     "device_info": "device_info",
@@ -110,7 +109,7 @@ def model_to_schema(model: Device) -> DeviceInfo:
     #     schema_dict["device_info"] = CalibrationData(**calibration_data_dict)
     if schema_dict["available_at"]:
         schema_dict["available_at"] = schema_dict["available_at"].astimezone(jst)
-    if schema_dict["calibratedAt"]:
-        schema_dict["calibratedAt"] = schema_dict["calibratedAt"].astimezone(jst)
+    if schema_dict["calibrated_at"]:
+        schema_dict["calibrated_at"] = schema_dict["calibrated_at"].astimezone(jst)
     response = DeviceInfo(**schema_dict)
     return response
