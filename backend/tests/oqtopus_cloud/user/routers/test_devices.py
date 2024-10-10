@@ -8,7 +8,7 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.routers.devices import get_device, model_to_schema
-from oqtopus_cloud.user.schemas.devices import CalibrationData, DeviceInfo
+from oqtopus_cloud.user.schemas.devices import DeviceInfo
 from zoneinfo import ZoneInfo
 
 jst = ZoneInfo("Asia/Tokyo")

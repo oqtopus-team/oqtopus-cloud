@@ -10,7 +10,6 @@ from oqtopus_cloud.provider.routers.devices import (
     update_device_pending_tasks,
     update_device_status,
 )
-from oqtopus_cloud.provider.schemas import CalibrationData
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,

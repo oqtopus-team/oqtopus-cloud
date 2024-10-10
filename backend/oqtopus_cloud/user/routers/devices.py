@@ -11,7 +11,6 @@ from oqtopus_cloud.common.session import (
 )
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.devices import (
-    CalibrationData,
     DeviceInfo,
 )
 from oqtopus_cloud.user.schemas.errors import (
