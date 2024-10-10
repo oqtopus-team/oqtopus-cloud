@@ -43,8 +43,8 @@ jobs:
               description: Simulator example
               value:
                 {
-                  description: "Bell State Sampling",
-                  note: "Bell State Sampling Example",
+                  name: "Bell State Sampling",
+                  description: "Bell State Sampling Example",
                   device: "Kawasaki",
                   n_shots: 1000,
                   job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}",
@@ -59,8 +59,8 @@ jobs:
               description: QPU example
               value:
                 {
-                  description: "Bell State Sampling",
-                  note: "Bell State Sampling Example",
+                  name: "Bell State Sampling",
+                  description: "Bell State Sampling Example",
                   device: "Kawasaki",
                   n_shots: 1000,
                   job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}",

@@ -45,7 +45,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /devices/{deviceId}:
+  /devices/{device_id}:
     get:
       tags:
         - device
@@ -55,7 +55,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: deviceId
+        - name: device_id
           in: path
           description: Device identifier
           required: true
@@ -125,28 +125,31 @@ paths:
               simulator:
                 description: Simulator example
                 value:
-                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-                  name: Bell State Sampling
-                  device: SVsim
-                  nNodes: 12
-                  nShots: 1000
-                  skipTranspilation: false
-                  seedTranspilation: 873
-                  seedSimulation: 39058567
-                  nPerNode: 2
-                  simulationOpt:
-                    optimizationMethod: light
-                    optimizationBlockSize: 1
-                    optimizationSwapLevel: 1
+                  description: Bell State Sampling
                   note: Bell State Sampling Example
+                  device: Kawasaki
+                  n_shots: 1000
+                  job_info: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
+                  transpiler_info: ''
+                  simulator_info: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
+                  mitigation_info: ''
+                  status: submitted
+                  created_at: '2022-10-19T11:45:34+09:00'
+                  updated_at: '2022-10-19T11:45:34+09:00'
               qpu:
                 description: QPU example
                 value:
-                  code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-                  name: Bell State Sampling
-                  device: Kawasaki
-                  nShots: 1000
+                  description: Bell State Sampling
                   note: Bell State Sampling Example
+                  device: Kawasaki
+                  n_shots: 1000
+                  job_info: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
+                  transpiler_info: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
+                  simulator_info: ''
+                  mitigation_info: '{''ro_error_mitigation'': ''pseudo_inverse''}'
+                  status: submitted
+                  created_at: '2022-10-19T11:45:34+09:00'
+                  updated_at: '2022-10-19T11:45:34+09:00'
       responses:
         '200':
           description: Job submitted
@@ -155,7 +158,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/jobs.SubmitJobResponse'
               example:
-                jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         '400':
           description: Bad Request
           content:
@@ -172,7 +175,7 @@ paths:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
                 detail: Unauthorized
-  /jobs/{jobId}:
+  /jobs/{job_id}:
     get:
       tags:
         - job
@@ -183,7 +186,7 @@ paths:
         - BearerAuth: []
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -194,7 +197,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.JobInfoResponse'
+                $ref: '#/components/schemas/jobs.JobDef'
         '400':
           description: Bad Request
           content:
@@ -229,7 +232,7 @@ paths:
         - BearerAuth: []
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -267,7 +270,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 detail: job not found
-  /jobs/{jobId}/status:
+  /jobs/{job_id}/status:
     get:
       tags:
         - job
@@ -278,7 +281,7 @@ paths:
         - BearerAuth: []
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -314,7 +317,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 detail: job not found
-  /jobs/{jobId}/cancel:
+  /jobs/{job_id}/cancel:
     post:
       tags:
         - job
@@ -325,7 +328,7 @@ paths:
         - BearerAuth: []
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -370,95 +373,13 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    devices.CalibrationData:
-      description: Calibration data available only for 'QPU' devices
-      type: object
-      properties:
-        qubitConnectivity:
-          type: array
-          items:
-            type: string
-            format: (number, number)
-          example:
-            - (1,4)
-            - (4,5)
-            - (5,8)
-        t1:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 55.51
-            '1': 37.03
-            '2': 57.13
-        t2:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 99.31
-            '1': 111.03
-            '2': 30.12
-        roError:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.0467
-            '1': 0.18
-            '2': 0.355
-        gateError:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: number
-              format: float
-          example:
-            sx:
-              '0': 0.00692
-              '1': 0.00296
-              '2': 0.072
-        measProb0As1:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.00608
-            '1': 0.012
-            '2': 0.248
-        measProb1As0:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.0281
-            '1': 0.386
-            '2': 0.0811
-        gateDuration:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: number
-              format: float
-          example:
-            sx:
-              '0': 29.3
-              '1': 50.9
-              '2': 45.4
     devices.DeviceInfo:
       type: object
       properties:
-        deviceId:
+        device_id:
           type: string
           example: SVSim
-        deviceType:
+        device_type:
           type: string
           enum:
             - QPU
@@ -467,25 +388,21 @@ components:
         status:
           type: string
           enum:
-            - AVAILABLE
-            - NOT_AVAILABLE
-          example: AVAILABLE
-        restartAt:
-          description: Parameter mandatory and valid for 'NOT_AVAILABLE' devices
+            - available
+            - unavailable
+          example: available
+        available_at:
+          description: Parameter mandatory and valid for 'unavailable' devices
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
-        nPendingTasks:
+        n_pending_tasks:
           type: integer
           example: 8
-        nQubits:
+        n_qubits:
           type: integer
           example: 39
-        nNodes:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 512
-        basisGates:
+        basis_gates:
           type: array
           items:
             type: string
@@ -512,7 +429,7 @@ components:
             - id
             - sx
             - sxdg
-        supportedInstructions:
+        supported_instructions:
           type: array
           items:
             type: string
@@ -520,9 +437,11 @@ components:
             - measure
             - barrier
             - reset
-        calibrationData:
-          $ref: '#/components/schemas/devices.CalibrationData'
-        calibratedAt:
+        device_info:
+          description: json format calibration_data and n_nodes etc
+          type: string
+          example: '{''n_nodes'': 512, ''calibration_data'': {''qubit_connectivity'': [''(1,4)'', ''(4,5)'', ''(5,8)''], ''t1'': {''0'': 55.51, ''1'': 37.03, ''2'': 57.13}}'
+        calibrated_at:
           description: Parameter available only for 'QPU' devices with available calibration data
           type: string
           format: date-time
@@ -539,13 +458,13 @@ components:
         - supportedInstructions
         - description
       example:
-        - deviceId: SVSim
-          deviceType: simulator
+        - device_id: SVSim
+          device_type: simulator
           status: AVAILABLE
-          nPendingTasks: 8
-          nQubits: 39
-          nNodes: 512
-          basisGates:
+          n_pending_tasks: 8
+          n_qubits: 39
+          n_nodes: 512
+          basis_gates:
             - x
             - 'y'
             - z
@@ -568,10 +487,12 @@ components:
             - id
             - sx
             - sxdg
-          supportedInstructions:
+          supported_instructions:
             - measure
             - barrier
             - reset
+          device_info: '{''n_nodes'': 512, ''calibration_data'': {''qubit_connectivity'': [''(1,4)'', ''(4,5)'', ''(5,8)''], ''t1'': {''0'': 55.51, ''1'': 37.03, ''2'': 57.13}}'
+          calibrated_at: '2022-10-19T11:45:34+09:00'
           description: State vector-based quantum circuit simulator
     error.UnauthorizedError:
       type: object
@@ -596,104 +517,20 @@ components:
         - detail
     jobs.JobInfo:
       type: string
-      example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}''}'
-    jobs.JobDef:
-      type: object
-      properties:
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        name:
-          type: string
-          example: Bell State Sampling
-        device:
-          type: string
-          example: Kawasaki
-        nQubits:
-          description: Parameter exclusive with nNodes
-          type: integer
-        nNodes:
-          description: Parameter exclusive with nQubits<br/>Parameter valid only for 'simulator' devices
-          type: integer
-          example: 12
-        nShots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-          example:
-            '0': 12
-            '1': 16
-        skipTranspilation:
-          type: boolean
-          default: false
-          example: false
-        seedTranspilation:
-          description: Parameter valid only if skipTranspilation is false
-          type: integer
-          example: 873
-        seedSimulation:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 39058567
-        roErrorMitigation:
-          description: Parameter valid only for QPU devices
-          type: string
-          enum:
-            - none
-            - pseudo_inverse
-            - least_square
-          default: none
-          example: pseudo_inverse
-        nPerNode:
-          description: Parameter valid only for simulator devices
-          type: integer
-          minimum: 1
-          example: 5
-        simulationOpt:
-          description: Parameter valid only for simulator devices
-          type: object
-          example:
-            optimizationMethod: light
-            optimizationBlockSize: 1
-            optimizationSwapLevel: 1
-        note:
-          type: string
-          example: Bell State Sampling Example
-      required:
-        - code
-        - device
-        - nShots
+      example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''Operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiledCode'': '''', ''reason'': ''''}'
     jobs.JobId:
       type: string
       format: uuid
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    jobs.SubmitJobResponse:
-      description: submit a job
-      type: object
-      properties:
-        jobId:
-          $ref: '#/components/schemas/jobs.JobId'
-      required:
-        - jobId
-    error.BadRequest:
-      type: object
-      properties:
-        detail:
-          type: string
-      required:
-        - detail
     jobs.TranspilerInfo:
       type: string
-      example: '{}'
+      example: '{''qubitAllocation'': {''0'': 12, ''1'': 16}, ''skipTranspilation'': false, ''seedTranspilation'': 873}'
     jobs.SimulatorInfo:
       type: string
-      example: '{''nQubits'': 5, ''nNodes'': 12, ''nPerNode'': 2, ''simulationOpt'': {''optimizationMethod'': ''light'', ''optimizationBlockSize'': 1, ''optimizationSwapLevel'': 1}}'
+      example: '{''nQubits'': 5, ''nNodes'': 12, ''nPerNode'': 2, ''seedSimulation'': 39058567, ''simulationOpt'': {''optimizationMethod'': ''light'', ''optimizationBlockSize'': 1, ''optimizationSwapLevel'': 1}}'
+    jobs.MitigationInfo:
+      type: string
+      example: '{''roErrorMitigation'': ''pseudo_inverse''}'
     jobs.JobStatus:
       type: string
       enum:
@@ -704,100 +541,79 @@ components:
         - failed
         - cancelled
       example: submitted
-    jobs.JobInfoResponse:
+    jobs.JobDef:
       type: object
       properties:
-        jobId:
+        job_id:
           $ref: '#/components/schemas/jobs.JobId'
-        description:
+        name:
           type: string
           example: Bell State Sampling
-        note:
+        description:
           type: string
           example: Bell State Sampling Example
         device:
           type: string
           example: Kawasaki
-        nShots:
+        n_shots:
           type: integer
           minimum: 1
           maximum: 10000000
           example: '1000'
-        JobInfo:
-          $ref: '#/components/schemas/jobs.JobInfo'
-        jobs.TranspilerInfo:
-          $ref: '#/components/schemas/jobs.TranspilerInfo'
-        jobs.SimulatorInfo:
-          $ref: '#/components/schemas/jobs.SimulatorInfo'
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-          example:
-            '0': 12
-            '1': 16
-        skipTranspilation:
-          type: boolean
-          example: false
-        seedTranspilation:
-          description: Parameter valid only if skipTranspilation is false
-          type: integer
-          example: 873
-        seedSimulation:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 39058567
-        roErrorMitigation:
-          description: Parameter valid only for QPU devices
+        job_type:
           type: string
-          enum:
-            - none
-            - pseudo_inverse
-            - least_square
-          example: pseudo_inverse
-        nPerNode:
-          description: Parameter valid only for simulator devices
-          type: integer
-          minimum: 1
-          example: 5
-        simulationOpt:
-          description: Parameter valid only for simulator devices
-          type: object
-          example:
-            optimizationMethod: light
-            optimizationBlockSize: 1
-            optimizationSwapLevel: 1
+          example: '''sampling'' or ''estimation'', ''sse'''
+        job_info:
+          $ref: '#/components/schemas/jobs.JobInfo'
+        transpiler_info:
+          $ref: '#/components/schemas/jobs.TranspilerInfo'
+        simulator_info:
+          $ref: '#/components/schemas/jobs.SimulatorInfo'
+        mitigation_info:
+          $ref: '#/components/schemas/jobs.MitigationInfo'
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
-        createdAt:
+        created_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        updated_at:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required:
-        - jobId
         - device
-        - nShots
+        - n_shots
         - status
-        - createdAt
+        - created_at
       example:
-        jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
+        description: Bell State Sampling Example
         device: Kawasaki
-        nNodes: 12
-        nShots: 1000
-        skipTranspilation: false
-        seedTranspilation: 387
-        seedSimulation: 39058567
-        nPerNode: 2
-        simulationOpt:
-          optimizationMethod: light
-          optimizationBlockSize: 1
-          optimizationSwapLevel: 1
-        note: Bell State Sampling Example
+        n_shots: 1000
+        job_info: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''Operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
+        transpiler_info: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
+        simulator_info: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
+        mitigation_info: '{''ro_error_mitigation'': ''pseudo_inverse''}'
         status: submitted
-        createdAt: '2022-10-19T11:45:34+09:00'
+        created_at: '2022-10-19T11:45:34+09:00'
+        updated_at: '2022-10-19T11:45:34+09:00'
+    jobs.SubmitJobResponse:
+      description: submit a job
+      type: object
+      properties:
+        job_id:
+          $ref: '#/components/schemas/jobs.JobId'
+      required:
+        - job_id
+    error.BadRequest:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
     success.SuccessResponse:
       type: object
       properties:
@@ -809,10 +625,10 @@ components:
       description: job status
       type: object
       properties:
-        jobId:
+        job_id:
           $ref: '#/components/schemas/jobs.JobId'
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
       required:
-        - jobId
+        - job_id
         - status

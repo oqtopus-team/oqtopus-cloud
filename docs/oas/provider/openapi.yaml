@@ -13,7 +13,7 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /devices/{deviceId}:
+  /devices/{device_id}:
     patch:
       tags:
         - devices
@@ -23,7 +23,7 @@ paths:
       security: []
       parameters:
         - in: path
-          name: deviceId
+          name: device_id
           description: Device ID
           required: true
           schema:
@@ -36,58 +36,24 @@ paths:
             schema:
               $ref: '#/components/schemas/devices.DeviceDataUpdate'
             examples:
-              status update (NOT_AVAILABLE):
+              status update (unavailable):
                 value:
                   command: DeviceStatusUpdate
-                  status: NOT_AVAILABLE
-                  restartAt: '2023-09-10T14:00:00Z'
-              status update (AVAILABLE):
+                  status: unavailable
+                  restart_at: '2023-09-10T14:00:00Z'
+              status update (available):
                 value:
                   command: DeviceStatusUpdate
-                  status: AVAILABLE
+                  status: available
               pending tasks update:
                 value:
                   command: DevicePendingTasksUpdate
-                  nPendingTasks: 6
+                  n_pending_tasks: 6
               calibrationData update:
                 value:
                   command: DeviceCalibrationUpdate
-                  calibrationData:
-                    qubitConnectivity:
-                      - (1,4)
-                      - (4,5)
-                      - (5,8)
-                    t1:
-                      '0': 55.51
-                      '1': 37.03
-                      '2': 57.13
-                    t2:
-                      '0': 99.31
-                      '1': 111.03
-                      '2': 30.12
-                    roError:
-                      '0': 0.0467
-                      '1': 0.18
-                      '2': 0.355
-                    gateError:
-                      sx:
-                        '0': 0.00692
-                        '1': 0.00296
-                        '2': 0.072
-                    measProb0As1:
-                      '0': 0.00608
-                      '1': 0.012
-                      '2': 0.248
-                    measProb1As0:
-                      '0': 0.0281
-                      '1': 0.386
-                      '2': 0.0811
-                    gateDuration:
-                      sx:
-                        '0': 29.3
-                        '1': 50.9
-                        '2': 45.4
-                  calibratedAt: '2023-09-10T14:00:00Z'
+                  device_info: '{ ''calibration_data'': { ''qubit_connectivity'': [''(1,4)'', ''(4,5)'', ''(5,8)''], ''t1'': {''0'': 55.51, ''1'': 37.03, ''2'': 57.13}, ''t2'': {''0'': 99.31, ''1'': 111.03, ''2'': 30.12}, ''ro_error'': {''0'': 4.67e-2, ''1'': 1.8e-1, ''2'': 3.55e-1}, ''gate_error'': {''sx'': {''0'': 6.92e-3, ''1'': 2.96e-3, ''2'': 7.2e-2}}, ''meas_prob0_as1'': {''0'': 6.08e-3, ''1'': 1.2e-2, ''2'': 2.48e-1}, ''meas_prob1_as0'': {''0'': 2.81e-2, ''1'': 3.86e-1, ''2'': 8.11e-2}, ''gate_duration'': {''sx'': {''0'': 29.3, ''1'': 50.9, ''2'': 45.4}} }, }'
+                  calibrated_at: '2023-09-10T14:00:00Z'
       responses:
         '200':
           description: Device's data updated
@@ -131,7 +97,7 @@ paths:
       security: []
       parameters:
         - in: query
-          name: deviceId
+          name: device_id
           required: true
           description: Device identifier
           schema:
@@ -143,7 +109,7 @@ paths:
           schema:
             $ref: '#/components/schemas/jobs.InternalJobStatus'
         - in: query
-          name: maxResults
+          name: max_results
           description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
           schema:
             type: integer
@@ -179,7 +145,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
-  /jobs/{jobId}:
+  /jobs/{job_id}:
     get:
       summary: Get a job by ID
       description: Get a job by ID
@@ -189,7 +155,7 @@ paths:
         - jobs
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -226,7 +192,7 @@ paths:
         - jobs
       parameters:
         - in: path
-          name: jobId
+          name: job_id
           required: true
           description: Job identifier
           schema:
@@ -272,7 +238,7 @@ paths:
         - jobs
       parameters:
         - in: query
-          name: deviceId
+          name: device_id
           required: true
           description: Device identifier
           schema:
@@ -285,7 +251,7 @@ paths:
           schema:
             $ref: '#/components/schemas/jobs.InternalFetchableJobStatus'
         - in: query
-          name: maxResults
+          name: max_results
           description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
           schema:
             type: integer
@@ -305,94 +271,6 @@ paths:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
                 detail: Bad request malformed input data
-  /results:
-    post:
-      summary: Submit a quantum job result
-      tags:
-        - results
-      description: Submit a quantum job result
-      operationId: postResult
-      security: []
-      requestBody:
-        description: Result to be submitted
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/results.ResultDef'
-            examples:
-              success sampling:
-                value:
-                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: SUCCESS
-                  result:
-                    '11': 4980
-                    '00': 5020
-                  reason: null
-                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
-              success estimation:
-                value:
-                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: SUCCESS
-                  result:
-                    - 1.5
-                    - 2.8
-                  reason: null
-                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
-              failure:
-                value:
-                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: FAILURE
-                  result: null
-                  reason: Invalid device parameter in request
-                  transpiledCode: null
-              cancel:
-                value:
-                  jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: CANCELLED
-                  result: null
-                  reason: User cancelled
-                  transpiledCode: null
-      responses:
-        '200':
-          description: Results submitted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/results.CreateResultResponse'
-              example:
-                message: Results submitted
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                detail: Bad request malformed input data
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                detail: JobID not found
-        '409':
-          description: Result for jobId already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ConflictError'
-              example:
-                detail: Result for jobId already exists
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                detail: Internal server error
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -404,10 +282,10 @@ components:
         status:
           type: string
           enum:
-            - AVAILABLE
-            - NOT_AVAILABLE
-        restartAt:
-          description: Parameter mandatory and valid for status 'NOT_AVAILABLE'
+            - available
+            - unavailable
+        restart_at:
+          description: Parameter mandatory and valid for status 'unavailable'
           type: string
           format: date-time
           example: '2023-09-10T14:00:00+09:00'
@@ -417,99 +295,19 @@ components:
         command:
           type: string
           example: DevicePendingTasksUpdate
-        nPendingTasks:
+        n_pending_tasks:
           type: integer
-    CalibrationData:
-      description: Calibration data available only for 'QPU' devices
-      type: object
-      properties:
-        qubitConnectivity:
-          type: array
-          items:
-            type: string
-            format: (number, number)
-          example:
-            - (1,4)
-            - (4,5)
-            - (5,8)
-        t1:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 55.51
-            '1': 37.03
-            '2': 57.13
-        t2:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 99.31
-            '1': 111.03
-            '2': 30.12
-        roError:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.0467
-            '1': 0.18
-            '2': 0.355
-        gateError:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: number
-              format: float
-          example:
-            sx:
-              '0': 0.00692
-              '1': 0.00296
-              '2': 0.072
-        measProb0As1:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.00608
-            '1': 0.012
-            '2': 0.248
-        measProb1As0:
-          type: object
-          additionalProperties:
-            type: number
-            format: float
-          example:
-            '0': 0.0281
-            '1': 0.386
-            '2': 0.0811
-        gateDuration:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: number
-              format: float
-          example:
-            sx:
-              '0': 29.3
-              '1': 50.9
-              '2': 45.4
     devices.DeviceCalibrationUpdate:
       type: object
       properties:
         command:
           type: string
           example: DeviceCalibrationUpdate
-        calibrationData:
-          $ref: '#/components/schemas/CalibrationData'
-        calibratedAt:
+        device_info:
+          description: json format calibration_data and n_nodes etc
+          type: string
+          example: '{''n_nodes'': 512, ''calibration_data'': {''qubit_connectivity'': [''(1,4)'', ''(4,5)'', ''(5,8)''], ''t1'': {''0'': 55.51, ''1'': 37.03, ''2'': 57.13}}'
+        calibrated_at:
           description: Parameter mandatory and valid if calibrationData not null
           type: string
           format: date-time
@@ -565,187 +363,17 @@ components:
         - failed
         - cancelled
       example: submitted
-    jobs.JobId:
-      type: string
-      format: uuid
-      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    jobs.SamplingAction:
-      type: object
-      properties:
-        name:
-          type: string
-          pattern: sampling
-          example: sampling
-        nShots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-      required:
-        - name
-        - nShots
-    jobs.SingleOperator:
-      type: array
-      items:
-        anyOf:
-          - type: string
-            description: Pauli string
-            example: X 0 Y 1 Z 5 I 2
-          - type: array
-            description: Real and imaginary components of complex coef value
-            items:
-              type: number
-            minItems: 2
-            maxItems: 2
-            example:
-              - 1.5
-              - 2.8
-      minItems: 2
-      maxItems: 2
-    jobs.Operator:
-      type: array
-      items:
-        $ref: '#/components/schemas/jobs.SingleOperator'
-      example:
-        - - X 0 X 1
-          - - 1.5
-            - 2.8
-        - - Y 0 Z 1
-          - - 1.2
-            - -2.e-8
-    jobs.EstimationAction:
-      type: object
-      properties:
-        name:
-          type: string
-          pattern: estimation
-          example: estimation
-        method:
-          type: string
-          enum:
-            - state_vector
-            - sampling
-          example: sampling
-          description: state_vector method valid only for 'simulator' devices
-        nShots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-          description: Parameter valid only for sampling method
-        operator:
-          $ref: '#/components/schemas/jobs.Operator'
-      required:
-        - name
-        - method
-        - operator
-    jobs.Action:
-      type: object
-      oneOf:
-        - $ref: '#/components/schemas/jobs.SamplingAction'
-        - $ref: '#/components/schemas/jobs.EstimationAction'
     jobs.JobInfo:
-      type: object
-      properties:
-        jobId:
-          $ref: '#/components/schemas/jobs.JobId'
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        device:
-          type: string
-          example: Kawasaki
-        nQubits:
-          type: integer
-          example: null
-        nNodes:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 12
-        action:
-          $ref: '#/components/schemas/jobs.Action'
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-          example:
-            '0': 12
-            '1': 16
-        skipTranspilation:
-          type: boolean
-          example: false
-        seedTranspilation:
-          description: Parameter valid only if skipTranspilation is false
-          type: integer
-          example: 873
-        seedSimulation:
-          description: Parameter valid only for 'simulator' devices
-          type: integer
-          example: 39058567
-        roErrorMitigation:
-          description: Parameter valid only for QPU devices
-          type: string
-          enum:
-            - none
-            - pseudo_inverse
-            - least_square
-          example: pseudo_inverse
-        nPerNode:
-          description: Parameter valid only for simulator devices
-          type: integer
-          minimum: 1
-          example: 5
-        simulationOpt:
-          description: Parameter valid only for simulator devices
-          type: object
-          example:
-            optimizationMethod: light
-            optimizationBlockSize: 1
-            optimizationSwapLevel: 1
-        status:
-          $ref: '#/components/schemas/jobs.InternalJobStatus'
-        createdAt:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-      required:
-        - jobId
-        - code
-        - device
-        - action
-        - skipTranspilation
-        - status
-        - createdAt
-      example:
-        jobId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-        code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        device: Kawasaki
-        nQubits: null
-        nNodes: 12
-        action:
-          name: sampling
-          nShots: 1000
-        qubitAllocation: null
-        skipTranspilation: false
-        seedTranspilation: 873
-        seedSimulation: 39058567
-        roErrorMitigation: null
-        nPerNode: 2
-        simulationOpt:
-          optimizationMethod: light
-          optimizationBlockSize: 1
-          optimizationSwapLevel: 1
-        status: QUEUED_FETCHED
-        createdAt: '2022-10-19T11:45:34+09:00'
+      type: string
+      example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''Operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
     jobs.JobStatusUpdate:
       type: object
       properties:
         status:
           type: string
           enum:
-            - RUNNING
-          example: RUNNING
+            - running
+          example: running
       required:
         - status
     jobs.JobStatusUpdateResponse:
@@ -758,88 +386,16 @@ components:
     jobs.InternalFetchableJobStatus:
       type: string
       enum:
-        - QUEUED
-        - CANCELLING
-      example: QUEUED
+        - queued
+        - cancelling
+      example: queued
+    jobs.JobId:
+      type: string
+      format: uuid
+      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.UnfetchedJobsResponse:
       type: array
       items:
         oneOf:
           - $ref: '#/components/schemas/jobs.JobInfo'
           - $ref: '#/components/schemas/jobs.JobId'
-    results.ResultStatus:
-      type: string
-      enum:
-        - SUCCESS
-        - FAILURE
-        - CANCELLED
-      default: SUCCESS
-      example: SUCCESS
-    results.SamplingResult:
-      type: object
-      additionalProperties:
-        type: integer
-      minProperties: 2
-      example:
-        '11': 4980
-        '00': 5020
-    results.EstimationResult:
-      type: array
-      items:
-        type: number
-      minItems: 2
-      maxItems: 2
-      example:
-        - 1.5
-        - 2.8
-    results.Result:
-      oneOf:
-        - type: 'null'
-        - $ref: '#/components/schemas/results.SamplingResult'
-        - $ref: '#/components/schemas/results.EstimationResult'
-    results.ResultDef:
-      type: object
-      properties:
-        jobId:
-          $ref: '#/components/schemas/jobs.JobId'
-        status:
-          $ref: '#/components/schemas/results.ResultStatus'
-        result:
-          $ref: '#/components/schemas/results.Result'
-        reason:
-          type: string
-          nullable: true
-        transpiledCode:
-          type: string
-          nullable: true
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-            nullable: true
-          example:
-            '0': 0
-            '1': 4
-      required:
-        - jobId
-        - status
-        - result
-        - reason
-        - transpiledCode
-    results.CreateResultResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
-      example:
-        message: Results submitted
-    error.ConflictError:
-      type: object
-      properties:
-        detail:
-          type: string
-      required:
-        - detail
