@@ -4,6 +4,7 @@ from ast import literal_eval
 from fastapi import APIRouter, Depends
 from fastapi import Request as Event
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -110,21 +111,18 @@ def get_sampling_result(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        print(task_id)
-        task = db.query(Task).filter(Task.id == task_id).first()
-        print(task)
-        res = db.query(ResultModel).filter(ResultModel.task_id == task_id).first()
-        print(res)
-        result = (
-            db.query(ResultModel)
+
+        stmt = (
+            select(ResultModel)
             .join(Task, ResultModel.task_id == Task.id)
             .filter(
                 Task.owner == owner,
                 ResultModel.task_id == task_id,
                 Task.action == "sampling",
             )
-            .first()
         )
+        result = db.scalars(stmt).first()
+
         if result is None:
             return NotFoundErrorResponse("result not found")
         return create_sampling_result(result)
@@ -156,21 +154,18 @@ def get_estimation_result(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        print(task_id)
-        task = db.query(Task).filter(Task.id == task_id).first()
-        print(task)
-        res = db.query(ResultModel).filter(ResultModel.task_id == task_id).first()
-        print(res)
-        result = (
-            db.query(ResultModel)
+
+        stmt = (
+            select(ResultModel)
             .join(Task, ResultModel.task_id == Task.id)
             .filter(
                 Task.owner == owner,
                 ResultModel.task_id == task_id,
                 Task.action == "estimation",
             )
-            .first()
         )
+        result = db.scalars(stmt).first()
+
         if result is None:
             return NotFoundErrorResponse("result not found")
         return create_estimation_result(result)

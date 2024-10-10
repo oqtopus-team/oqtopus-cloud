@@ -10,6 +10,7 @@ from fastapi import (
 )
 from fastapi import Request as Event
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
@@ -163,12 +164,12 @@ def get_sampling_tasks(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        tasks = (
-            db.query(Task)
+        stmt = (
+            select(Task)
             .filter(Task.action == "sampling", Task.owner == owner)
             .order_by(Task.created_at)
-            .all()
         )
+        tasks = db.scalars(stmt).all()
         return [create_sampling_task_info(task) for task in tasks]
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -445,11 +446,10 @@ def get_sampling_task(
         task_id = uuid.UUID(taskId).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        task = (
-            db.query(Task)
-            .filter(Task.id == task_id, Task.owner == owner, Task.action == "sampling")
-            .first()
+        stmt = select(Task).filter(
+            Task.id == task_id, Task.owner == owner, Task.action == "sampling"
         )
+        task = db.scalars(stmt).first()
         if task is None:
             return NotFoundErrorResponse(detail="task not found with the given id")
         return create_sampling_task_info(task)
@@ -518,19 +518,17 @@ def get_sampling_task_status(
         return BadRequestResponse(detail="invalid task id")
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
-    task = (
-        db.query(Task.id, Task.status)
-        .filter(
-            Task.id == uuid.UUID(taskId).bytes,
-            Task.action == "sampling",
-            Task.owner == owner,
-        )
-        .first()
+    stmt = select(Task).filter(
+        Task.id == uuid.UUID(taskId).bytes,
+        Task.action == "sampling",
+        Task.owner == owner,
     )
+    task = db.scalars(stmt).first()
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetSamplingTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
@@ -599,12 +597,12 @@ def get_estimation_tasks(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        tasks = (
-            db.query(Task)
+        stmt = (
+            select(Task)
             .filter(Task.action == "estimation", Task.owner == owner)
             .order_by(Task.created_at)
-            .all()
         )
+        tasks = db.scalars(stmt).all()
         return [create_estimation_task_info(task) for task in tasks]
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -772,13 +770,10 @@ def get_estimation_task(
         task_id = uuid.UUID(taskId).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        task = (
-            db.query(Task)
-            .filter(
-                Task.id == task_id, Task.owner == owner, Task.action == "estimation"
-            )
-            .first()
+        stmt = select(Task).filter(
+            Task.id == task_id, Task.owner == owner, Task.action == "estimation"
         )
+        task = db.scalars(stmt).first()
         if task is None:
             return NotFoundErrorResponse(detail="task not found with the given id")
         return create_estimation_task_info(task)
@@ -847,19 +842,17 @@ def get_estimation_task_status(
         return BadRequestResponse(detail="invalid task id")
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
-    task = (
-        db.query(Task.id, Task.status)
-        .filter(
-            Task.id == uuid.UUID(taskId).bytes,
-            Task.action == "estimation",
-            Task.owner == owner,
-        )
-        .first()
+    stmt = select(Task).filter(
+        Task.id == uuid.UUID(taskId).bytes,
+        Task.action == "estimation",
+        Task.owner == owner,
     )
+    task = db.scalars(stmt).first()
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetEstimationTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
