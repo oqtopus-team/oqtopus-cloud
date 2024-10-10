@@ -22,3 +22,8 @@ variable "db_user_name" {
   description = "db user name"
   type        = string
 }
+
+variable "profile" {
+  description = "aws profile"
+  type        = string
+}
