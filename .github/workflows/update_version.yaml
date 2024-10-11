@@ -1,0 +1,39 @@
+name: Update pyproject.toml Version
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  update-version:
+    if: startsWith(github.event.comment.body, 'update-version=')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from comment
+        id: extract_version
+        run: |
+          echo "Requested comment: ${{ github.event.comment.body }}"
+          VERSION=$(echo "${{ github.event.comment.body }}" | sed 's/update-version=//')
+          echo "VERSION: $VERSION"
+          echo "::set-output name=version::$VERSION"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i 's/version = "[^"]*"/version = "${{ steps.extract_version.outputs.version }}"/' pyproject.toml
+
+      - name: Display pyproject.toml after modification
+        run: cat pyproject.toml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-version-${{ steps.extract_version.outputs.version }}
+          base: develop
+          title: "release: update version to ${{ steps.extract_version.outputs.version }}"
+          body: "This PR updates the version in pyproject.toml to ${{ steps.extract_version.outputs.version }}."
