@@ -21,7 +21,7 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 ## Documentation
 
-- [Documentation Home](https://readthedocs.org/projects/oqtopus-cloud/)
+- [Documentation Home](https://oqtopus-cloud.readthedocs.io/)
 
 ## CITATION
 
