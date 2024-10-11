@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional, Tuple
 from fastapi import (
     APIRouter,
     Depends,
+    status,
 )
 from fastapi import Request as Event
 from pydantic import ValidationError
@@ -315,6 +316,7 @@ def get_resources(
 
 @router.post(
     "/tasks/sampling",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -460,7 +462,8 @@ def get_sampling_task(
 
 @router.delete(
     "/tasks/sampling/{taskId}",
-    response_model=SuccessResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -468,7 +471,7 @@ def delete_sampling_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> SuccessResponse | ErrorResponse:
+) -> None | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
@@ -494,7 +497,7 @@ def delete_sampling_task(
 
         db.delete(task)
         db.commit()
-        return SuccessResponse(message="task deleted")
+        return
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -611,6 +614,7 @@ def get_estimation_tasks(
 
 @router.post(
     "/tasks/estimation",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -784,7 +788,8 @@ def get_estimation_task(
 
 @router.delete(
     "/tasks/estimation/{taskId}",
-    response_model=SuccessResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -792,7 +797,7 @@ def delete_estimation_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> SuccessResponse | ErrorResponse:
+) -> None | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
@@ -818,7 +823,7 @@ def delete_estimation_task(
 
         db.delete(task)
         db.commit()
-        return SuccessResponse(message="task deleted")
+        return
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
