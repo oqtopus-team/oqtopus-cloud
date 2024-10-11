@@ -71,7 +71,7 @@ tasks.sampling:
                 }
 
     responses:
-      "200":
+      "201":
         description: "Task submitted"
         content:
           application/json:
@@ -79,6 +79,8 @@ tasks.sampling:
               $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
             example:
               taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              createdAt: "2022-10-19T11:45:34+09:00"
+              status: "QUEUED"
       '400':
         description: Bad Request
         content:
@@ -157,7 +159,7 @@ tasks.sampling.taskId:
           description: "Task identifier"
           schema: {type: string}
     responses:
-      "200":
+      "204":
         description: "Quantum task deleted"
         content:
           application/json:
@@ -371,7 +373,7 @@ tasks.estimation:
                 }
 
     responses:
-      "200":
+      "201":
         description: "Task submitted"
         content:
           application/json:
@@ -379,6 +381,8 @@ tasks.estimation:
               $ref: "../schemas/tasks.yaml#/tasks.SubmitTaskResponse"
             example:
               taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              createdAt: "2022-10-19T11:45:34+09:00"
+              status: "QUEUED"
       "400":
         description: Bad Request
         content:
@@ -483,7 +487,7 @@ tasks.estimation.taskId:
           description: "Task identifier"
           schema: {type: string}
     responses:
-      "200":
+      "204":
         description: "Quantum task deleted"
         content:
           application/json:

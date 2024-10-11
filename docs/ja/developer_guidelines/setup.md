@@ -10,7 +10,7 @@
 |------------------------------------------------|--------------------------|-------------------------------|
 | [Docker](https://docs.docker.com/get-docker/)  | -                        | コンテナ仮想化プラットフォーム |
 | [Docker Compose](https://docs.docker.com/compose/install/) | -            | 複数のDockerコンテナの管理   |
-| [Python](https://www.python.org/downloads/)    | 3.12.4                   | Pythonのプログラミング言語    |
+| [Python](https://www.python.org/downloads/)    | 3.12.3                   | Pythonのプログラミング言語    |
 | [Pyenv](https://github.com/pyenv/pyenv) (Optional) | -              | Pythonのバージョン管理ツール |
 | [Poetry](https://python-poetry.org/)           | -                        | Pythonの依存関係管理ツール    |
 
@@ -44,7 +44,7 @@ make doctor
 make doctor
 Checking the environment...
 Aqua version: aqua version 2.29.0 (9ff65378f0c6197e3130a20f6d978b8a3042b463)
-Python version: Python 3.12.4
+Python version: Python 3.12.3
 Poetry version: Poetry (version 1.8.3)
 Docker version: Docker version 26.1.4, build 5650f9b
 
@@ -54,16 +54,16 @@ Docker version: Docker version 26.1.4, build 5650f9b
 
 ### Pyenv(推奨)
 
-Python 3.12.4をインストールするには、以下のコマンドを実行します：
+Python 3.12.3をインストールするには、以下のコマンドを実行します：
 
 ```bash
-pyenv install 3.12.4
+pyenv install 3.12.3
 ```
 
-次に、Pythonのバージョンを3.12.4に設定します：
+次に、Pythonのバージョンを3.12.3に設定します：
 
 ```bash
-pyenv local 3.12.4
+pyenv local 3.12.3
 ```
 
 ### Poetry

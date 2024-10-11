@@ -1,6 +1,7 @@
 site_name: OQTOPUS
 repo_url: "https://github.com/oqtopus-team/oqtopus-cloud"
 nav:
+  - Home: index.md
   - Architecture:
       - AWS System Architecture Diagram: architecture/aws_system_architecture_diagram.md
       - Task State Transition Diagram: architecture/task_state_transition_diagram.md
@@ -15,6 +16,7 @@ nav:
           - Overview: terraform_modules/README.md
           - network: terraform_modules/network/README.md
           - security-group: terraform_modules/security-group/README.md
+          - cognito: terraform_modules/cognito/README.md
           - db: terraform_modules/db/README.md
           - management: terraform_modules/management/README.md
           - api-server: terraform_modules/api-server/README.md
@@ -24,6 +26,7 @@ nav:
           - devices: schema/devices.md
           - results: schema/results.md
           - tasks: schema/tasks.md
+      - FAQ: developer_guidelines/faq.md
       - OpenAPI Specification:
           - User API: oas/user/README.md
           - Provider API: oas/provider/README.md
@@ -70,15 +73,16 @@ plugins:
       docs_structure: folder
       languages:
         - locale: en
-          default: false
           name: English
           build: true
-        - locale: ja
           default: true
+        - locale: ja
           name: 日本語
           build: true
+          default: false
           nav_translations:
             site_name: OQTOPUS
+            Home: ホーム
             Overview: 概要
 
             Architecture: アーキテクチャ
@@ -94,6 +98,7 @@ plugins:
             Terraform Guidelines: Terraformガイドライン
             Terraform Modules: Terraformモジュール
             DB Schema: DBスキーマ
+            FAQ: FAQ
 
             OpenAPI Specification: OpenAPI仕様書
             UserAPI: ユーザーAPI
