@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends
+from oqtopus_cloud.common.model_util import model_to_schema_dict
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -35,7 +36,7 @@ jst = ZoneInfo("Asia/Tokyo")
 
 @router.get(
     "/jobs",
-    response_model=list[JobId],
+    response_model=list[JobDef],
 )
 @tracer.capture_method
 def get_jobs(
@@ -55,7 +56,7 @@ def get_jobs(
     if max_results is not None:
         query = query.limit(max_results)
     jobs = query.all()
-    return jobs
+    return [model_to_schema(job) for job in jobs]
 
 
 @router.get(
@@ -104,22 +105,18 @@ def get_unfetched_jobs(
 
 
 @router.get(
-    "/jobs/{jobId}",
+    "/jobs/{job_id}",
     response_model=JobId,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_job(
-    jobId: str,
+    job_id: str,
     db: Session = Depends(get_db),
 ) -> JobId | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        id = uuid.UUID(jobId).bytes
-    except Exception:
-        return BadRequestResponse("Invalid jobId")
-    try:
-        job = db.get(Job, id)
+        job = db.get(Job, job_id)
         if job is None:
             return NotFoundErrorResponse("Job not found")
         return job.id
@@ -128,25 +125,23 @@ def get_job(
 
 
 @router.patch(
-    "/jobs/{jobId}",
+    "/jobs/{job_id}",
     response_model=JobStatusUpdateResponse,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def update_job(
-    jobId: str,
+    job_id: str,
     request: JobStatusUpdate,
     db: Session = Depends(get_db),
 ) -> JobStatusUpdateResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        id = uuid.UUID(jobId).bytes
-    except Exception:
-        return BadRequestResponse("Invalid jobId")
-    try:
         job = (
             db.query(Job)
-            .filter(Job.id == id, or_(Job.status == "ready", Job.status == "running"))
+            .filter(
+                Job.id == job_id, or_(Job.status == "ready", Job.status == "running")
+            )
             .first()
         )
         if job is None:
@@ -157,3 +152,38 @@ def update_job(
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+MAP_MODEL_TO_SCHEMA = {
+    "id": "id",
+    "owner": "owner",
+    "status": "status",
+    "name": "name",
+    "description": "description",
+    "device_id": "device_id",
+    "job_info": "job_info",
+    "transpiler_info": "transpiler_info",
+    "simulator_info": "simulator_info",
+    "mitigation_info": "mitigation_info",
+    "job_type": "job_type",
+    "shots": "shots",
+    "status": "status",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+}
+
+
+def model_to_schema(model: Job) -> JobDef:
+    schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
+
+    # load as json if not None.
+    # if schema_dict["basis_gates"]:
+    #     schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
+    # logger.info("schema_dict!!!:", schema_dict)
+    if schema_dict["created_at"]:
+        schema_dict["created_at"] = schema_dict["created_at"].astimezone(jst)
+    if schema_dict["updated_at"]:
+        schema_dict["updated_at"] = schema_dict["updated_at"].astimezone(jst)
+
+    response = JobDef(**schema_dict)
+    return response

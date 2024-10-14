@@ -63,14 +63,7 @@ def get_jobs(
         logger.info("invoked!", extra={"owner": owner})
         stmt = select(Job).filter(Job.owner == owner).order_by(Job.created_at)
         jobs = db.scalars(stmt).all()
-        # TODO: get_jobsでの詰替え
-        # 外向け（for UI）と内部（for edge）でデータの出し分けをした方がよい
         return [model_to_schema(job) for job in jobs]
-        # for job in jobs:
-        #     logger.info(f"job: {job.device_id}")
-        #     #yield model_to_schema(job)
-
-        # return None
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))

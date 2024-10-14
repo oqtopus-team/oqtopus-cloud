@@ -112,6 +112,6 @@ jobs.UnfetchedJobsResponse:
 
 jobs.InternalFetchableJobStatus:
   type: string
-  enum: ["queued", "cancelling"]
-  example: "queued"
+  enum: ["submitted", "cancelling"]
+  example: "submitted"
 
