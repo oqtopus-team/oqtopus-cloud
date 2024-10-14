@@ -3,11 +3,11 @@ devices.DeviceDataUpdate:
     propertyName: command
     mapping:
       DeviceStatusUpdate: '#/devices.DeviceStatusUpdate'
-      DevicePendingTasksUpdate: '#/devices.DevicePendingTasksUpdate'
+      DevicePendingJobsUpdate: '#/devices.DevicePendingJobsUpdate'
       DeviceCalibrationUpdate: '#/devices.DeviceCalibrationUpdate'
   oneOf:
   - $ref: '#/devices.DeviceStatusUpdate'
-  - $ref: '#/devices.DevicePendingTasksUpdate'
+  - $ref: '#/devices.DevicePendingJobsUpdate'
   - $ref: '#/devices.DeviceCalibrationUpdate'
 
 
@@ -36,13 +36,13 @@ devices.DeviceStatusUpdate:
           format: date-time
           example: "2023-09-10T14:00:00+09:00"
 
-devices.DevicePendingTasksUpdate:
+devices.DevicePendingJobsUpdate:
       type: object
       properties:
         command:
           type: string
-          example: DevicePendingTasksUpdate
-        n_pending_tasks:
+          example: DevicePendingJobsUpdate
+        n_pending_jobs:
           type: integer
 
 devices.DeviceCalibrationUpdate:

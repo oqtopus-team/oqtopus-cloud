@@ -55,7 +55,7 @@ devices.deviceId:
         example: "Kawasaki"
     responses:
       '200':
-        description: task response
+        description: job response
         content:
           application/json:
             schema:

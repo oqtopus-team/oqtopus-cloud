@@ -55,7 +55,7 @@ jobs.JobDef:
     mitigation_info:
       $ref: "#/jobs.MitigationInfo"
     status:
-      $ref: "#/jobs.JobStatus"
+      $ref: "#/jobs.InternalJobStatus"
     created_at:
       type: string
       format: date-time
@@ -107,7 +107,7 @@ jobs.UnfetchedJobsResponse:
   type: array
   items:
     oneOf:
-      - $ref: '#/jobs.JobInfo'
+      - $ref: '#/jobs.JobDef'
       - $ref: '#/jobs.JobId'
 
 jobs.InternalFetchableJobStatus:

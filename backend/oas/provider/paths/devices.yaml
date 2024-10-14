@@ -3,7 +3,7 @@ devices.deviceId:
       tags:
       - devices
       summary: "Update data of selected device"
-      description: "Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending tasks  (all device types)<br/>- calibrationData (QPU devices only)"
+      description: "Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)"
       operationId: patchDeviceData
       security: []
       parameters:
@@ -32,10 +32,10 @@ devices.deviceId:
                   "command": "DeviceStatusUpdate",
                   "status": "available"
                 }
-              pending tasks update:
+              pending jobs update:
                 value: {
-                  "command": "DevicePendingTasksUpdate",
-                  "n_pending_tasks": 6
+                  "command": "DevicePendingJobsUpdate",
+                  "n_pending_jobs": 6
                 }
               calibrationData update:
                 value: {

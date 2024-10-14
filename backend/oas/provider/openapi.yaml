@@ -18,7 +18,7 @@ paths:
       tags:
         - devices
       summary: Update data of selected device
-      description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending tasks  (all device types)<br/>- calibrationData (QPU devices only)
+      description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)
       operationId: patchDeviceData
       security: []
       parameters:
@@ -45,10 +45,10 @@ paths:
                 value:
                   command: DeviceStatusUpdate
                   status: available
-              pending tasks update:
+              pending jobs update:
                 value:
-                  command: DevicePendingTasksUpdate
-                  n_pending_tasks: 6
+                  command: DevicePendingJobsUpdate
+                  n_pending_jobs: 6
               calibrationData update:
                 value:
                   command: DeviceCalibrationUpdate
@@ -128,7 +128,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobInfo'
+                  $ref: '#/components/schemas/jobs.JobDef'
         '400':
           description: Bad Request
           content:
@@ -166,7 +166,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.JobInfo'
+                $ref: '#/components/schemas/jobs.JobDef'
         '400':
           description: Bad Request
           content:
@@ -289,13 +289,13 @@ components:
           type: string
           format: date-time
           example: '2023-09-10T14:00:00+09:00'
-    devices.DevicePendingTasksUpdate:
+    devices.DevicePendingJobsUpdate:
       type: object
       properties:
         command:
           type: string
-          example: DevicePendingTasksUpdate
-        n_pending_tasks:
+          example: DevicePendingJobsUpdate
+        n_pending_jobs:
           type: integer
     devices.DeviceCalibrationUpdate:
       type: object
@@ -317,11 +317,11 @@ components:
         propertyName: command
         mapping:
           DeviceStatusUpdate: '#/components/schemas/devices.DeviceStatusUpdate'
-          DevicePendingTasksUpdate: '#/components/schemas/devices.DevicePendingTasksUpdate'
+          DevicePendingJobsUpdate: '#/components/schemas/devices.DevicePendingJobsUpdate'
           DeviceCalibrationUpdate: '#/components/schemas/devices.DeviceCalibrationUpdate'
       oneOf:
         - $ref: '#/components/schemas/devices.DeviceStatusUpdate'
-        - $ref: '#/components/schemas/devices.DevicePendingTasksUpdate'
+        - $ref: '#/components/schemas/devices.DevicePendingJobsUpdate'
         - $ref: '#/components/schemas/devices.DeviceCalibrationUpdate'
     devices.DeviceDataUpdateResponse:
       type: object
@@ -363,9 +363,81 @@ components:
         - failed
         - cancelled
       example: submitted
+    jobs.JobId:
+      type: string
+      format: uuid
+      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.JobInfo:
       type: string
       example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''Operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
+    jobs.TranspilerInfo:
+      type: string
+      example: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
+    jobs.SimulatorInfo:
+      type: string
+      example: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
+    jobs.MitigationInfo:
+      type: string
+      example: '{''ro_error_mitigation'': ''pseudo_inverse''}'
+    jobs.JobDef:
+      type: object
+      properties:
+        job_id:
+          $ref: '#/components/schemas/jobs.JobId'
+        name:
+          type: string
+          example: Bell State Sampling
+        description:
+          type: string
+          example: Bell State Sampling Example
+        device_id:
+          type: string
+          example: Kawasaki
+        shots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        job_type:
+          type: string
+          example: '''sampling'' or ''estimation'', ''sse'''
+        job_info:
+          $ref: '#/components/schemas/jobs.JobInfo'
+        transpiler_info:
+          $ref: '#/components/schemas/jobs.TranspilerInfo'
+        simulator_info:
+          $ref: '#/components/schemas/jobs.SimulatorInfo'
+        mitigation_info:
+          $ref: '#/components/schemas/jobs.MitigationInfo'
+        status:
+          $ref: '#/components/schemas/jobs.InternalJobStatus'
+        created_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+      required:
+        - device_id
+        - shots
+        - status
+        - created_at
+      example:
+        job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        name: Bell State Sampling
+        description: Bell State Sampling Example
+        device_id: Kawasaki
+        job_info: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''operator'': ''X 0 Y 1 Z 5 I 2''}'
+        transpiler_info: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
+        simulator_info: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
+        mitigation_info: '{''ro_error_mitigation'': ''pseudo_inverse''}'
+        job_type: sampling
+        shots: 1000
+        status: submitted
+        created_at: '2022-10-19T11:45:34+09:00'
+        updated_at: '2022-10-19T11:45:34+09:00'
     jobs.JobStatusUpdate:
       type: object
       properties:
@@ -389,13 +461,9 @@ components:
         - queued
         - cancelling
       example: queued
-    jobs.JobId:
-      type: string
-      format: uuid
-      example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.UnfetchedJobsResponse:
       type: array
       items:
         oneOf:
-          - $ref: '#/components/schemas/jobs.JobInfo'
+          - $ref: '#/components/schemas/jobs.JobDef'
           - $ref: '#/components/schemas/jobs.JobId'

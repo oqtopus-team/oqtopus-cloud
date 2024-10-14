@@ -11,9 +11,9 @@ from oqtopus_cloud.common.session import (
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceCalibrationUpdate,
+    DevicePendingJobsUpdate,
     DeviceDataUpdate,
     DeviceDataUpdateResponse,
-    DevicePendingJobsUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.errors import (

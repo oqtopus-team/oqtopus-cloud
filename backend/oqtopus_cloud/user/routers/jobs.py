@@ -216,9 +216,7 @@ def get_job_status(
     )
     if job is None:
         return NotFoundErrorResponse(detail="job not found with the given id")
-    return GetJobStatusResponse(
-        job_id=JobId(job_id), status=JobStatus(job.status)
-    )
+    return GetJobStatusResponse(job_id=JobId(job_id), status=JobStatus(job.status))
 
 
 @router.post(

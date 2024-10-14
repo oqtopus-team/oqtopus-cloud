@@ -33,7 +33,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
+                $ref: "../schemas/jobs.yaml#/jobs.JobDef"
       '400':
         description: Bad Request
         content:
@@ -71,7 +71,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobInfo"
+              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
       '400':
         description: Bad Request
         content:

@@ -19,7 +19,7 @@ devices.DeviceInfo:
       type: string
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
-    n_pending_tasks:
+    n_pending_jobs:
       type: integer
       example: 8
     n_qubits:
@@ -48,13 +48,13 @@ devices.DeviceInfo:
       type: string
       example: "State vector-based quantum circuit simulator"
   required: [
-    deviceId, deviceType, status, nPendingTasks, basisGates, supportedInstructions, description
+    deviceId, deviceType, status, nPendingJobs, basisGates, supportedInstructions, description
   ]
   example:
     - device_id: "SVSim"
       device_type: "simulator"
       status: "AVAILABLE"
-      n_pending_tasks: 8
+      n_pending_jobs: 8
       n_qubits: 39
       n_nodes: 512
       basis_gates: ["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]
