@@ -126,8 +126,8 @@ def test_get_device_hadler(test_db):
     assert actual.status_code == 200
     # Assert
     expected = {
-        "deviceId": "SVSim",
-        "deviceType": "simulator",
+        "device_id": "SVSim",
+        "device_type": "simulator",
         "status": "available",
         "available_at": "2023-01-02T12:34:56+09:00",
         "n_pending_tasks": 8,

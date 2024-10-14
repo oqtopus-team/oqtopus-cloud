@@ -165,7 +165,7 @@ def update_device(
     try:
         device = db.get(Device, device_id)
         if device is None:
-            return NotFoundErrorResponse(f"deviceId={device_id} is not found.")
+            return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         if isinstance(request.root, DeviceStatusUpdate):
             return update_device_status(device, request.root, db)
         elif isinstance(request.root, DevicePendingTasksUpdate):
