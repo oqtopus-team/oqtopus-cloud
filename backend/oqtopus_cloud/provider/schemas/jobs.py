@@ -41,8 +41,8 @@ class JobStatusUpdateResponse(BaseModel):
     message: str
 
 
-class InternalFetchableJobStatus(RootModel[Literal["queued", "cancelling"]]):
-    root: Annotated[Literal["queued", "cancelling"], Field(examples=["queued"])]
+class InternalFetchableJobStatus(RootModel[Literal["submitted", "cancelling"]]):
+    root: Annotated[Literal["submitted", "cancelling"], Field(examples=["submitted"])]
 
 
 class JobId(RootModel[UUID]):

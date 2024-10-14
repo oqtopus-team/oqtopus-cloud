@@ -242,7 +242,7 @@ def cancel_job(
             return NotFoundErrorResponse(detail="job not found with the given id")
         if job.owner != owner or job.status not in ["ready", "submitted", "running"]:
             return NotFoundErrorResponse(
-                detail=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
+                detail=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
             )
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
