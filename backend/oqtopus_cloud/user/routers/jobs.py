@@ -222,7 +222,7 @@ def get_job_status(
 
 
 @router.post(
-    "/jobs/{jobId}/cancel",
+    "/jobs/{job_id}/cancel",
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
