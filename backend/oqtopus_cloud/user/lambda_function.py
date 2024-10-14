@@ -15,9 +15,6 @@ from oqtopus_cloud.user.routers import (
     devices as device_router,
 )
 from oqtopus_cloud.user.routers import (
-    results as result_router,
-)
-from oqtopus_cloud.user.routers import (
     tasks as task_router,
 )
 
@@ -39,10 +36,6 @@ app.include_router(
 app.include_router(
     task_router.router,
     tags=["task"],
-)
-app.include_router(
-    result_router.router,
-    tags=["result"],
 )
 
 handler: Mangum = Mangum(

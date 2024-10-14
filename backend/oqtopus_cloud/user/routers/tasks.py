@@ -16,8 +16,7 @@ from sqlalchemy.orm import (
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
-from oqtopus_cloud.common.models.result import Result
-from oqtopus_cloud.common.models.task import Task
+from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -59,9 +58,9 @@ class BadRequest(Exception):
 def create_sampling_task_info(task: Task) -> SamplingTaskInfo:
     status = task.status
     if task.status == "QUEUED_FETCHED":
-        status = "QUEUED"
+        status = "submitted"
     elif task.status == "CANCELIING_FETCHED":
-        status = "CANCELLING"
+        status = "cancelling"
     return SamplingTaskInfo(
         taskId=TaskId(task.id),
         code=task.code,
@@ -123,9 +122,9 @@ def serialize_operator(operator: Operator) -> str | BadRequestResponse:
 def create_estimation_task_info(task: Task) -> EstimationTaskInfo:
     status = task.status
     if task.status == "QUEUED_FETCHED":
-        status = "QUEUED"
+        status = "submitted"
     elif task.status == "CANCELIING_FETCHED":
-        status = "CANCELLING"
+        status = "cancelling"
 
     return EstimationTaskInfo(
         taskId=TaskId(task.id),
@@ -550,13 +549,13 @@ def cancel_sampling_task(
         if (
             task.owner != owner
             or task.action != "sampling"
-            or task.status not in ["QUEUED_FETCHED", "QUEUED", "RUNNING"]
+            or task.status not in ["QUEUED_FETCHED", "submitted", "RUNNING"]
         ):
             return NotFoundErrorResponse(
-                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'QUEUED' and 'RUNNING')"
+                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
             )
-        if task.status == "QUEUED":
-            logger.info("task is in QUEUED state, so it will be cancelled")
+        if task.status == "submitted":
+            logger.info("task is in submitted state, so it will be cancelled")
             result = Result(
                 task_id=task_id, status="CANCELLED", reason="user cancelled"
             )
@@ -564,9 +563,9 @@ def cancel_sampling_task(
             db.commit()
         elif task.status in ["QUEUED_FETCHED", "RUNNING"]:
             logger.info(
-                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as CANCELLING"
+                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as cancelling"
             )
-            task.status = "CANCELLING"
+            task.status = "cancelling"
             db.commit()
         return SuccessResponse(message="cancel request accepted")
     except Exception as e:
@@ -868,13 +867,13 @@ def cancel_estimation_task(
         if (
             task.owner != owner
             or task.action != "estimation"
-            or task.status not in ["QUEUED_FETCHED", "QUEUED", "RUNNING"]
+            or task.status not in ["QUEUED_FETCHED", "submitted", "RUNNING"]
         ):
             return NotFoundErrorResponse(
-                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'QUEUED' and 'RUNNING')"
+                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
             )
-        if task.status == "QUEUED":
-            logger.info("task is in QUEUED state, so it will be cancelled")
+        if task.status == "submitted":
+            logger.info("task is in submitted state, so it will be cancelled")
             result = Result(
                 task_id=task_id, status="CANCELLED", reason="user cancelled"
             )
@@ -882,9 +881,9 @@ def cancel_estimation_task(
             db.commit()
         elif task.status in ["QUEUED_FETCHED", "RUNNING"]:
             logger.info(
-                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as CANCELLING"
+                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as cancelling"
             )
-            task.status = "CANCELLING"
+            task.status = "cancelling"
             db.commit()
         return SuccessResponse(message="cancell request accepted")
     except Exception as e:

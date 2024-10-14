@@ -12,8 +12,8 @@ from oqtopus_cloud.common.models.base import (
 from oqtopus_cloud.common.models.device import (
     Device,
 )
-from oqtopus_cloud.common.models.task import (
-    Task,
+from oqtopus_cloud.common.models.job import (
+    Job,
 )
 from oqtopus_cloud.common.session import (
     get_db,

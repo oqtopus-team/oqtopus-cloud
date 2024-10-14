@@ -4,6 +4,7 @@ import enum
 from sqlalchemy import (
     Enum,
     String,
+    TIMESTAMP
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -76,4 +77,12 @@ class Device(Base):
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        default="CURRENT_TIMESTAMP",
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        default="CURRENT_TIMESTAMP",
     )

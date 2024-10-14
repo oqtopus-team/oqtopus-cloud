@@ -148,7 +148,7 @@ jobs.jobId:
     tags:
       - job
     summary: "Delete job"
-    description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: COMPLETED, FAILED and CANCELLED. QUEUED and RUNNING jobs must be cancelled before deletion."
+    description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: COMPLETED, FAILED and CANCELLED. submitted and RUNNING jobs must be cancelled before deletion."
     operationId: deleteSamplingJob
     security:
       - BearerAuth: []
@@ -244,7 +244,7 @@ jobs.jobId.cancel:
     tags:
       - job
     summary: "Cancel job"
-    description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: QUEUED or RUNNING."
+    description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted or RUNNING."
     operationId: cancelSamplingJob
     security:
       - BearerAuth: []

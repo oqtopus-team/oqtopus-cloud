@@ -12,7 +12,7 @@ from oqtopus_cloud.common.models.base import (
 from oqtopus_cloud.common.models.device import (
     Device,
 )
-from oqtopus_cloud.common.models.task import (
+from backend.oqtopus_cloud.common.models.job import (
     Task,
 )
 from oqtopus_cloud.common.session import (

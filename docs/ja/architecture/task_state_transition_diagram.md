@@ -4,9 +4,9 @@ RUNNING 状態に滞在する時間は非常に短いため、スキップされ
 
 ```mermaid
 stateDiagram-v2
-    [*] --> QUEUED :task submitted
+    [*] --> submitted :task submitted
 
-    QUEUED --> QUEUED_FETCHED :fetched
+    submitted --> QUEUED_FETCHED :fetched
     QUEUED_FETCHED --> RUNNING : execution started
     
     state join_state <<join>>
@@ -16,13 +16,13 @@ stateDiagram-v2
     state join_state <<fork>>
     join_state --> COMPLETED :execution succeeded
     join_state --> FAILED :execution failed
-    join_state --> CANCELLING :cancel requested
+    join_state --> cancelling :cancel requested
     
     COMPLETED --> [*] :deleted
     FAILED --> [*] :deleted
-    CANCELLING --> CANCELLING_FETCHED :fetched
+    cancelling --> CANCELLING_FETCHED :fetched
     CANCELLING_FETCHED --> CANCELLED :cancelled in a gateway
-    QUEUED --> CANCELLED :cancelled requested ( cancelled in the cloud PF)
+    submitted --> CANCELLED :cancelled requested ( cancelled in the cloud PF)
     CANCELLED --> [*] :deleted
 ```
 

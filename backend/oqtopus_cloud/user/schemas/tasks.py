@@ -17,12 +17,12 @@ class TaskId(RootModel[UUID]):
 
 class TaskStatus(
     RootModel[
-        Literal["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"]
+        Literal["submitted", "RUNNING", "COMPLETED", "FAILED", "cancelling", "CANCELLED"]
     ]
 ):
     root: Annotated[
-        Literal["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"],
-        Field(examples=["QUEUED"]),
+        Literal["submitted", "RUNNING", "COMPLETED", "FAILED", "cancelling", "CANCELLED"],
+        Field(examples=["submitted"]),
     ]
 
 

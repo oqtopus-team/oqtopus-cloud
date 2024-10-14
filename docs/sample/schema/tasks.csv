@@ -12,7 +12,7 @@ cx q[0], q[1];
 barrier q[0], q[1];
 meas[0] = measure q[0];
 meas[1] = measure q[1];",estimation,sampling,1024,"[[""I"", [1.0, 0.0]], [""X 0"", [1.0, 0.0]], [""X 0 X 1"", [0.5, 0.0]], [""Y 0 Y 1"", [0.5, 0.0]], [""Z 0 Z 1"", [-1.5, 0.0]]]",null,0,null,null,1,null,null,null,FAILED,2024-06-25 07:17:36
-c89d6302-fa42-40be-b9ab-7bb04a8514b1,alice,sampling task,SC,null,null,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,100,null,null,1,null,null,null,null,none,sampling task example,QUEUED,2024-05-28 13:50:04
+c89d6302-fa42-40be-b9ab-7bb04a8514b1,alice,sampling task,SC,null,null,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,100,null,null,1,null,null,null,null,none,sampling task example,submitted,2024-05-28 13:50:04
 d4a56fd4-a5bb-4450-a5fb-716ef26e33c5,alice,My sampling circuit,SVSim,null,null,"OPENQASM 3.0; include ""stdgates.inc""; qubit[2] q; bit[1] c; h q[0]; cx q[0], q[1];",sampling,null,100,null,null,0,0,1214,1,null,null,null,COMPLETED,2024-06-18 02:40:49
 da7a2b86-a87a-4ea6-a6ca-fdd96810f7c9,bob,sampling task,SVSim,null,1,"OPENQASM 3.0;include ""stdgates.inc"";qubit[2] q;h q[0];cx q[0], q[1];",sampling,null,100,null,null,1,null,456,1,"{""optimizationMethod"": ""normal"", ""optimizationBlockSize"": 1, ""optimizationSwapLevel"": 1}",null,sampling task example,COMPLETED,2024-06-27 00:25:58
 eb25ef48-9056-460d-820c-249e8edef0cc,alice,null,SVSim,null,null,"OPENQASM 3;

@@ -26,7 +26,7 @@ CREATE TABLE `tasks` (
   `simulation_opt` text COLLATE utf8mb4_unicode_ci,
   `ro_error_mitigation` enum('none','pseudo_inverse','least_square') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `note` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('QUEUED','QUEUED_FETCHED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLING_FETCHED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QUEUED',
+  `status` enum('submitted','QUEUED_FETCHED','RUNNING','COMPLETED','FAILED','cancelling','CANCELLING_FETCHED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `device` (`device`),
@@ -59,7 +59,7 @@ CREATE TABLE `tasks` (
 | simulation_opt | text |  | true |  |  |  |  |
 | ro_error_mitigation | enum('none','pseudo_inverse','least_square') |  | true |  |  |  |  |
 | note | varchar(1024) |  | true |  |  |  |  |
-| status | enum('QUEUED','QUEUED_FETCHED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLING_FETCHED','CANCELLED') | QUEUED | false |  |  |  |  |
+| status | enum('submitted','QUEUED_FETCHED','RUNNING','COMPLETED','FAILED','cancelling','CANCELLING_FETCHED','CANCELLED') | submitted | false |  |  |  |  |
 | created_at | timestamp | CURRENT_TIMESTAMP | true | DEFAULT_GENERATED |  |  |  |
 
 ## Constraints

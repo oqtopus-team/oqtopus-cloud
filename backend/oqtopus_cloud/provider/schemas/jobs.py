@@ -22,15 +22,15 @@ class InternalJobStatus(
     ]
 
 
-class JobInfo(RootModel[str]):
-    root: Annotated[
-        str,
-        Field(
-            examples=[
-                "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}"
-            ]
-        ),
-    ]
+# class JobInfo(RootModel[str]):
+#     root: Annotated[
+#         str,
+#         Field(
+#             examples=[
+#                 "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiled_code': '', 'reason': ''}"
+#             ]
+#         ),
+#     ]
 
 
 class JobStatusUpdate(BaseModel):
@@ -49,5 +49,5 @@ class JobId(RootModel[UUID]):
     root: Annotated[UUID, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
 
 
-class UnfetchedJobsResponse(RootModel[list[Union[JobInfo, JobId]]]):
-    root: list[Union[JobInfo, JobId]]
+class UnfetchedJobsResponse(RootModel[list[JobId]]):
+    root: list[JobId]

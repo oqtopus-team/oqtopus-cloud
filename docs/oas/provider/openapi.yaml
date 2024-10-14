@@ -231,7 +231,7 @@ paths:
   /jobs/unfetched:
     get:
       summary: Fetch jobs for device
-      description: 'Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: QUEUED or CANCELLING. After the operation job status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
+      description: 'Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: submitted or cancelling. After the operation job status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
       operationId: getUnfetchedJobs
       security: []
       tags:
