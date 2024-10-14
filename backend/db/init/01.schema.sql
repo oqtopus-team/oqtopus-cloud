@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   name varchar(256) DEFAULT '' NOT NULL,
   description VARCHAR(1024),
   device_id VARCHAR(64) NOT NULL,
-  job_detail TEXT,
+  job_info TEXT,
   transpiler_info TEXT,
   simulator_info TEXT,
   mitigation_info TEXT,

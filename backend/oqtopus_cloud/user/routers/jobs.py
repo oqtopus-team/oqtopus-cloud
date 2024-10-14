@@ -78,14 +78,14 @@ def get_jobs(
 
 def validate_name(request: JobDef) -> str | None:
     if request.name is not None:
-        request.name
-    return None
+        return request.name
+    return ""
 
 
 def validate_description(
     request: JobDef,
 ) -> str | None:
-    return request.description if (request.description is not None) else None
+    return request.description if (request.description is not None) else ""
 
 
 @router.post(
@@ -117,12 +117,12 @@ def submit_jobs(
 
         job = Job(
             # TODO: UUIDv7
-            id=uuid.uuid4().bytes,
+            id=uuid.uuid4(),
             owner=owner,
             name=name,
             description=description,
             device_id=request.device_id,
-            job_detail=request.job_detail,
+            job_info=request.job_info,
             transpiler_info=request.transpiler_info,
             simulator_info=request.simulator_info,
             mitigation_info=request.mitigation_info,
@@ -139,7 +139,7 @@ def submit_jobs(
 
 
 @router.get(
-    "/jobs/{jobId}",
+    "/jobs/{job_id}",
     response_model=JobDef,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -150,14 +150,8 @@ def get_job(
     db: Session = Depends(get_db),
 ) -> JobDef | ErrorResponse:
     try:
-        JobId(root=uuid.UUID(job_id))
-    except ValidationError:
-        logger.info(f"invalid job id: {job_id}")
-        return BadRequestResponse(detail="invalid job id")
-    try:
-        job_id = uuid.UUID(job_id).bytes
         owner = event.state.owner
-        logger.info("invoked!", extra={"owner": owner})
+        logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
@@ -168,7 +162,7 @@ def get_job(
 
 
 @router.delete(
-    "/jobs/{jobId}",
+    "/jobs/{job_id}",
     response_model=SuccessResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -179,12 +173,6 @@ def delete_job(
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        JobId(root=uuid.UUID(job_id))
-    except ValidationError:
-        logger.info(f"invalid job id: {job_id}")
-        return BadRequestResponse(detail="invalid job id")
-    try:
-        job_id = uuid.UUID(job_id).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
         job = db.get(Job, job_id)
@@ -194,7 +182,7 @@ def delete_job(
 
         if job.owner != owner or job.status not in ["success", "failed", "cancelled"]:
             return NotFoundErrorResponse(
-                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'COMPLETED', 'FAILED' and 'CANCELLED')"
+                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'success', 'failed' and 'cancelled')"
             )
 
         db.delete(job)
@@ -206,27 +194,22 @@ def delete_job(
 
 
 @router.get(
-    "/jobs/{jobId}/status",
-    response_model=str,
+    "/jobs/{job_id}/status",
+    response_model=GetJobStatusResponse,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_job_status(
     event: Event,
-    jobId: str,
+    job_id: str,
     db: Session = Depends(get_db),
-) -> str | ErrorResponse:
-    try:
-        JobId(root=uuid.UUID(jobId))
-    except ValidationError:
-        logger.info(f"invalid job id: {jobId}")
-        return BadRequestResponse(detail="invalid job id")
+) -> GetJobStatusResponse | ErrorResponse:
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
     job = (
         db.query(Job.id, Job.status)
         .filter(
-            Job.id == uuid.UUID(jobId).bytes,
+            Job.id == job_id,
             Job.owner == owner,
         )
         .first()
@@ -234,7 +217,7 @@ def get_job_status(
     if job is None:
         return NotFoundErrorResponse(detail="job not found with the given id")
     return GetJobStatusResponse(
-        jobId=JobId(uuid.UUID(jobId)), status=JobStatus(root=job.status)
+        job_id=JobId(job_id), status=JobStatus(job.status)
     )
 
 
@@ -246,16 +229,10 @@ def get_job_status(
 @tracer.capture_method
 def cancel_job(
     event: Event,
-    jobId: str,
+    job_id: str,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        JobId(root=uuid.UUID(jobId))
-    except ValidationError:
-        logger.info(f"invalid job id: {jobId}")
-        return BadRequestResponse(detail="invalid job id")
-    try:
-        job_id = uuid.UUID(jobId).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
@@ -265,7 +242,7 @@ def cancel_job(
             return NotFoundErrorResponse(detail="job not found with the given id")
         if job.owner != owner or job.status not in ["ready", "submitted", "running"]:
             return NotFoundErrorResponse(
-                detail=f"{jobId} job is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
+                detail=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
             )
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
@@ -286,7 +263,7 @@ MAP_MODEL_TO_SCHEMA = {
     "name": "name",
     "description": "description",
     "device_id": "device_id",
-    "job_detail": "job_detail",
+    "job_info": "job_info",
     "transpiler_info": "transpiler_info",
     "simulator_info": "simulator_info",
     "mitigation_info": "mitigation_info",

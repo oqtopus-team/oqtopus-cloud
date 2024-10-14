@@ -80,9 +80,7 @@ class Device(Base):
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        default="CURRENT_TIMESTAMP",
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        default="CURRENT_TIMESTAMP",
     )
