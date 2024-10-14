@@ -16,7 +16,7 @@ from oqtopus_cloud.provider.routers import (
     hello as hello_router,
 )
 from oqtopus_cloud.provider.routers import (
-    jobs as task_router,
+    jobs as job_router,
 )
 from starlette.middleware.cors import CORSMiddleware
 
@@ -40,8 +40,8 @@ app.include_router(
     tags=["device"],
 )
 app.include_router(
-    task_router.router,
-    tags=["task"],
+    job_router.router,
+    tags=["job"],
 )
 
 handler: Mangum = Mangum(

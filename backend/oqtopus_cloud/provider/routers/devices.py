@@ -13,7 +13,7 @@ from oqtopus_cloud.provider.schemas.devices import (
     DeviceCalibrationUpdate,
     DeviceDataUpdate,
     DeviceDataUpdateResponse,
-    DevicePendingTasksUpdate,
+    DevicePendingJobsUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.errors import (
@@ -74,27 +74,27 @@ def update_device_status(
 
 
 def update_device_pending_jobs(
-    device: Device, request: DevicePendingTasksUpdate, db: Session
+    device: Device, request: DevicePendingJobsUpdate, db: Session
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
-    Update the number of pending tasks for a device.
+    Update the number of pending jobs for a device.
 
     Args:
         device (Device): The device to update.
-        request (DevicePendingTasksUpdate): The request object containing the new number of pending tasks.
+        request (DevicePendingJobsUpdate): The request object containing the new number of pending jobs.
         db (Session): The database session.
 
     Returns:
         DeviceDataUpdateResponse: The response object indicating the success of the update.
 
     Raises:
-        BadRequest: If the new number of pending tasks is not provided or is less than 0.
+        BadRequest: If the new number of pending jobs is not provided or is less than 0.
     """
-    n_pending_jobs = request.n_pending_tasks
+    n_pending_jobs = request.n_pending_jobs
     if n_pending_jobs is None:
-        return BadRequestResponse("n_pending_tasks is required")
+        return BadRequestResponse("n_pending_jobs is required")
     if n_pending_jobs < 0:
-        return BadRequestResponse("n_pending_tasks must be greater than or equal to 0")
+        return BadRequestResponse("n_pending_jobs must be greater than or equal to 0")
     device.pending_jobs = n_pending_jobs
     db.commit()
     return DeviceDataUpdateResponse(message="Device's data updated")
@@ -168,7 +168,7 @@ def update_device(
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         if isinstance(request.root, DeviceStatusUpdate):
             return update_device_status(device, request.root, db)
-        elif isinstance(request.root, DevicePendingTasksUpdate):
+        elif isinstance(request.root, DevicePendingJobsUpdate):
             return update_device_pending_jobs(
                 device,
                 request.root,

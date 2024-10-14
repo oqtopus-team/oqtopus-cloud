@@ -10,6 +10,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
+from oqtopus_cloud.common.models.job import Job
 
 class JobInfo(RootModel[str]):
     root: Annotated[
@@ -72,7 +73,7 @@ class JobDef(BaseModel):
     device: Annotated[str, Field(examples=["Kawasaki"])]
     n_shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
     job_type: Annotated[
-        Optional[str], Field(None, examples=["'sampling' or 'estimation', 'sse'"])
+        Optional[str], Field(None, examples=["'sampling' or 'estimation' or 'sse'"])
     ]
     job_info: Optional[JobInfo] = None
     transpiler_info: Optional[TranspilerInfo] = None
@@ -100,3 +101,12 @@ class GetJobStatusResponse(BaseModel):
 
     job_id: JobId
     status: JobStatus
+
+
+class GetJobResponse(BaseModel):
+    """
+    job status
+    """
+
+    job_id: JobId
+    job: JobDef

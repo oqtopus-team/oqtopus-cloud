@@ -23,12 +23,12 @@ class DeviceStatusUpdate(BaseModel):
     """
 
 
-class DevicePendingTasksUpdate(BaseModel):
+class DevicePendingJobsUpdate(BaseModel):
     command: Annotated[
-        Literal["DevicePendingTasksUpdate"],
-        Field(examples=["DevicePendingTasksUpdate"]),
+        Literal["DevicePendingJobsUpdate"],
+        Field(examples=["DevicePendingJobsUpdate"]),
     ]
-    n_pending_tasks: Optional[int] = None
+    n_pending_jobs: Optional[int] = None
 
 
 class DeviceCalibrationUpdate(BaseModel):
@@ -57,11 +57,11 @@ class DeviceCalibrationUpdate(BaseModel):
 
 class DeviceDataUpdate(
     RootModel[
-        Union[DeviceStatusUpdate, DevicePendingTasksUpdate, DeviceCalibrationUpdate]
+        Union[DeviceStatusUpdate, DevicePendingJobsUpdate, DeviceCalibrationUpdate]
     ]
 ):
     root: Annotated[
-        Union[DeviceStatusUpdate, DevicePendingTasksUpdate, DeviceCalibrationUpdate],
+        Union[DeviceStatusUpdate, DevicePendingJobsUpdate, DeviceCalibrationUpdate],
         Field(discriminator="command"),
     ]
 

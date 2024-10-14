@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS main.devices (
 
 drop table main.jobs;
 CREATE TABLE IF NOT EXISTS main.jobs (
-  id VARBINARY(64) PRIMARY KEY,
+  id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
   name varchar(256) DEFAULT '' NOT NULL,
   description VARCHAR(1024),

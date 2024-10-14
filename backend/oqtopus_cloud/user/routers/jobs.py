@@ -1,0 +1,293 @@
+import re
+import uuid
+from ast import literal_eval
+from datetime import datetime
+from typing import Any, Literal, Optional, Tuple
+
+from fastapi import (
+    APIRouter,
+    Depends,
+)
+from fastapi import Request as Event
+from pydantic import ValidationError
+from sqlalchemy import select
+from sqlalchemy.orm import (
+    Session,
+)
+from zoneinfo import ZoneInfo
+
+from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.session import (
+    get_db,
+)
+from oqtopus_cloud.user.conf import logger, tracer
+from oqtopus_cloud.user.schemas.jobs import (
+    GetJobStatusResponse,
+    GetJobResponse
+)
+from oqtopus_cloud.user.schemas.errors import (
+    BadRequestResponse,
+    Detail,
+    ErrorResponse,
+    InternalServerErrorResponse,
+    NotFoundErrorResponse,
+)
+from oqtopus_cloud.user.schemas.success import SuccessResponse
+from oqtopus_cloud.user.schemas.jobs import (
+    SubmitJobResponse,
+    JobId,
+    JobStatus,
+    JobDef
+)
+
+from . import LoggerRouteHandler
+
+jst = ZoneInfo("Asia/Tokyo")
+utc = ZoneInfo("UTC")
+
+router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+class BadRequest(Exception):
+    def __init__(self, detail: str):
+        self.detail = detail
+
+
+@router.get(
+    "/jobs",
+    response_model=list[JobDef],
+    responses={500: {"model": Detail}},
+)
+@tracer.capture_method
+def get_jobs(
+    event: Event,
+    db: Session = Depends(get_db),
+) -> list[JobDef] | ErrorResponse:
+    try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+        stmt = (
+            select(Job)
+            .filter(Job.owner == owner)
+            .order_by(Job.created_at)
+        )
+        jobs = db.scalars(stmt).all()
+        # TODO: get_jobsでの詰替え
+        return [job for job in jobs]
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(detail=str(e))
+
+
+def validate_name(request: JobDef) -> str | None:
+    if request.name is not None:
+        request.name
+    return None
+
+
+def validate_description(
+    request: JobDef,
+) -> str | None:
+    return request.description if (request.description is not None) else None
+
+
+@router.post(
+    "/jobs",
+    response_model=SubmitJobResponse,
+    responses={400: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def submit_jobs(
+    event: Event,
+    request: JobDef,
+    db: Session = Depends(get_db),
+) -> SubmitJobResponse | ErrorResponse:
+    try:
+        device = db.get(Device, request.device_id)  # type: ignore
+        if device is None:
+            return BadRequestResponse(detail="device not found")
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+        if device.status != "AVAILABLE":
+            return BadRequestResponse(f"device {device.id} is not available")
+
+        # NOTE: method and operator is validated by pydantic
+        shots = request.n_shots
+        # name is optional
+        name = validate_name(request)
+        # description is optional
+        description = validate_description(request)
+
+        job = Job(
+            # TODO: UUIDv7
+            id=uuid.uuid4().bytes,
+            owner=owner,
+            name=name,
+            description=description,
+            device_id=request.device_id,
+            job_detail=request.job_detail,
+            transpiler_info=request.transpiler_info,
+            simulator_info=request.simulator_info,
+            mitigation_info=request.mitigation_info,
+            job_type=request.job_type,
+            shots=shots,
+            created_at=datetime.now(),
+        )
+        db.add(job)
+        db.commit()
+        return SubmitJobResponse(job_id=JobId(job.id))
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(detail=str(e))
+
+
+@router.get(
+    "/jobs/{jobId}",
+    response_model=GetJobResponse,
+    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def get_job(
+    event: Event,
+    job_id: str,
+    db: Session = Depends(get_db),
+) -> GetJobResponse | ErrorResponse:
+    try:
+        JobId(root=uuid.UUID(job_id))
+    except ValidationError:
+        logger.info(f"invalid job id: {job_id}")
+        return BadRequestResponse(detail="invalid job id")
+    try:
+        job_id = uuid.UUID(job_id).bytes
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+        job = (
+            db.query(Job)
+            .filter(Job.id == job_id, Job.owner == owner)
+            .first()
+        )
+        if job is None:
+            return NotFoundErrorResponse(detail="job not found with the given id")
+        return GetJobResponse(job)
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(detail=str(e))
+
+
+@router.delete(
+    "/jobs/{jobId}",
+    response_model=SuccessResponse,
+    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def delete_job(
+    event: Event,
+    job_id: str,
+    db: Session = Depends(get_db),
+) -> SuccessResponse | ErrorResponse:
+    try:
+        JobId(root=uuid.UUID(job_id))
+    except ValidationError:
+        logger.info(f"invalid job id: {job_id}")
+        return BadRequestResponse(detail="invalid job id")
+    try:
+        job_id = uuid.UUID(job_id).bytes
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+        job = db.get(Job, job_id)
+
+        if job is None:
+            return NotFoundErrorResponse(detail="job not found with the given id")
+
+        if (
+            job.owner != owner
+            or job.status not in ["success", "failed", "cancelled"]
+        ):
+            return NotFoundErrorResponse(
+                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'COMPLETED', 'FAILED' and 'CANCELLED')"
+            )
+
+        db.delete(job)
+        db.commit()
+        return SuccessResponse(message="job deleted")
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(detail=str(e))
+
+
+@router.get(
+    "/jobs/{jobId}/status",
+    response_model=str,
+    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def get_job_status(
+    event: Event,
+    jobId: str,
+    db: Session = Depends(get_db),
+) -> str | ErrorResponse:
+    try:
+        JobId(root=uuid.UUID(jobId))
+    except ValidationError:
+        logger.info(f"invalid job id: {jobId}")
+        return BadRequestResponse(detail="invalid job id")
+    owner = event.state.owner
+    logger.info("invoked!", extra={"owner": owner})
+    job = (
+        db.query(Job.id, Job.status)
+        .filter(
+            Job.id == uuid.UUID(jobId).bytes,
+            Job.owner == owner,
+        )
+        .first()
+    )
+    if job is None:
+        return NotFoundErrorResponse(detail="job not found with the given id")
+    return GetJobStatusResponse(
+        jobId=JobId(uuid.UUID(jobId)), status=JobStatus(root=job.status)
+    )
+
+
+@router.post(
+    "/jobs/{jobId}/cancel",
+    response_model=SuccessResponse,
+    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def cancel_job(
+    event: Event,
+    jobId: str,
+    db: Session = Depends(get_db),
+) -> SuccessResponse | ErrorResponse:
+    try:
+        JobId(root=uuid.UUID(jobId))
+    except ValidationError:
+        logger.info(f"invalid job id: {jobId}")
+        return BadRequestResponse(detail="invalid job id")
+    try:
+        job_id = uuid.UUID(jobId).bytes
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job = db.get(Job, job_id)
+
+        if job is None:
+            return NotFoundErrorResponse(detail="job not found with the given id")
+        if (
+            job.owner != owner
+            or job.status not in ["ready", "submitted", "running"]
+        ):
+            return NotFoundErrorResponse(
+                detail=f"{jobId} job is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
+            )
+        if job.status in ["submitted", "ready", "running"]:
+            logger.info(
+                "job is in submitted or ready or running state, so it will be marked as cancelling"
+            )
+            job.status = "cancelled"
+            db.commit()
+        return SuccessResponse(message="cancel request accepted")
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(detail=str(e))

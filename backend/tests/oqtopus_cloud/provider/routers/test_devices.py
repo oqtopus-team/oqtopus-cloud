@@ -13,7 +13,7 @@ from oqtopus_cloud.provider.routers.devices import (
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,
-    DevicePendingTasksUpdate,
+    DevicePendingJobsUpdate,
     DeviceStatusUpdate,
 )
 from zoneinfo import ZoneInfo
@@ -59,8 +59,8 @@ def test_update_device_pending_jobs(test_db):
     test_db.commit()
     device = test_db.get(Device, "SC2")
     # Act
-    request = DevicePendingTasksUpdate(
-        command="DevicePendingTasksUpdate", nPendingTasks=8
+    request = DevicePendingJobsUpdate(
+        command="DevicePendingJobsUpdate", nPendingTasks=8
     )
     actual = update_device_pending_jobs(device=device, request=request, db=test_db)
     # Assert

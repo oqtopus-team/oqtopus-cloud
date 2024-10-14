@@ -1,11 +1,10 @@
 import datetime
 import enum
-import uuid
-from typing import Any, Literal
 
-from sqlalchemy import JSON, TIMESTAMP, Boolean, Enum, ForeignKey, Integer, String
-from sqlalchemy.dialects.mysql import (
-    VARBINARY,
+from sqlalchemy import (
+    Enum,
+    String,
+    TIMESTAMP
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,7 +20,7 @@ class Job(Base):
     See https://github.com/sqlalchemy/sqlalchemy/issues/5613 for the reason why we need to use nullable=True for some columns.
 
     Attributes:
-        id (UUID): The unique identifier of the job.
+        id (str): The unique identifier of the job.
         owner (str): The owner of the job.
         name (str): The name of the job.
         description (str): Additional notes for the job.
@@ -40,8 +39,8 @@ class Job(Base):
 
     __tablename__ = "jobs"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        VARBINARY(16),
+    id: Mapped[str] = mapped_column(
+        String(64),
         primary_key=True,
     )
     owner: Mapped[str] = mapped_column(
@@ -52,7 +51,6 @@ class Job(Base):
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
     device_id: Mapped[str] = mapped_column(
         String(64),
-        ForeignKey("devices.id"),
         nullable=False,
     )
     job_detail: Mapped[str]
