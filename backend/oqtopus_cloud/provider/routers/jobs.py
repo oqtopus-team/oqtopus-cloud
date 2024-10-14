@@ -16,6 +16,7 @@ from oqtopus_cloud.provider.schemas.errors import (
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     JobId,
+    JobDef,
     JobStatusUpdate,
     JobStatusUpdateResponse,
     UnfetchedJobsResponse,
@@ -31,6 +32,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
 jst = ZoneInfo("Asia/Tokyo")
 
+
 @router.get(
     "/jobs",
     response_model=list[JobId],
@@ -42,9 +44,9 @@ def get_jobs(
     max_results: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[Job]:
+) -> list[JobDef]:
     logger.info("invoked get_jobs")
-    query = db.query(Job).filter(Job.device == device_id)
+    query = db.query(Job).filter(Job.device_id == device_id)
     if status is not None:
         query = query.filter(Job.status == status)
     if timestamp is not None:
@@ -75,13 +77,15 @@ def get_unfetched_jobs(
         if status == "submitted":
             query = (
                 db.query(Job)
-                .filter(Job.device == device_id, Job.status == "submitted")
+                .filter(Job.device_id == device_id, Job.status == "submitted")
                 .order_by(Job.created_at)
             )
             update_status = "ready"
         else:
             query = (
-                db.query(Job).filter(Job.device == device_id).order_by(Job.created_at)
+                db.query(Job)
+                .filter(Job.device_id == device_id)
+                .order_by(Job.created_at)
             )
             update_status = "cancelled"
 

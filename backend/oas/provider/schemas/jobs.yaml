@@ -35,10 +35,10 @@ jobs.JobDef:
     description:
       type: string
       example: "Bell State Sampling Example"
-    device:
+    device_id:
       type: string
       example: "Kawasaki"
-    n_shots:
+    shots:
       type: integer
       minimum: 1
       maximum: 1e7
@@ -65,15 +65,15 @@ jobs.JobDef:
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
   required: [
-    device, n_shots, status, created_at
+    device_id, shots, status, created_at
   ]
   example:
     {
       job_id: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
       name: "Bell State Sampling",
       description: "Bell State Sampling Example",
-      device: "Kawasaki",
-      n_shots: 1000,
+      device_id: "Kawasaki",
+      shots: 1000,
       job_info: "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'operator': 'X 0 Y 1 Z 5 I 2'}",
       transpiler_info: "{'qubit_allocation': {'0': 12, '1': 16}, 'skip_transpilation': false, 'seed_transpilation': 873}",
       simulator_info: "{'n_qubits': 5, 'n_nodes': 12, 'n_per_node': 2, 'seed_simulation': 39058567, 'simulation_opt': {'optimization_method': 'light', 'optimization_block_size': 1, 'optimization_swap_level': 1}}",

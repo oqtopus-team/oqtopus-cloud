@@ -32,11 +32,11 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
     "/devices", response_model=list[DeviceInfo], responses={500: {"model": Detail}}
 )
 @tracer.capture_method
-def list_devices(
+def get_devices(
     db: Session = Depends(get_db),
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
-        logger.info("invoked list_devices")
+        logger.info("invoked get_devices")
         devices = db.query(Device).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:

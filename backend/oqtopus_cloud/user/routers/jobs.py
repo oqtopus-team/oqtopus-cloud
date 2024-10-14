@@ -1,4 +1,5 @@
-import re
+import json
+
 import uuid
 from ast import literal_eval
 from datetime import datetime
@@ -16,16 +17,14 @@ from sqlalchemy.orm import (
 )
 from zoneinfo import ZoneInfo
 
+from oqtopus_cloud.common.model_util import model_to_schema_dict
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.user.conf import logger, tracer
-from oqtopus_cloud.user.schemas.jobs import (
-    GetJobStatusResponse,
-    GetJobResponse
-)
+from oqtopus_cloud.user.schemas.jobs import GetJobStatusResponse
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
     Detail,
@@ -34,12 +33,7 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
-from oqtopus_cloud.user.schemas.jobs import (
-    SubmitJobResponse,
-    JobId,
-    JobStatus,
-    JobDef
-)
+from oqtopus_cloud.user.schemas.jobs import SubmitJobResponse, JobId, JobStatus, JobDef
 
 from . import LoggerRouteHandler
 
@@ -67,14 +61,16 @@ def get_jobs(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        stmt = (
-            select(Job)
-            .filter(Job.owner == owner)
-            .order_by(Job.created_at)
-        )
+        stmt = select(Job).filter(Job.owner == owner).order_by(Job.created_at)
         jobs = db.scalars(stmt).all()
         # TODO: get_jobsでの詰替え
-        return [job for job in jobs]
+        # 外向け（for UI）と内部（for edge）でデータの出し分けをした方がよい
+        return [model_to_schema(job) for job in jobs]
+        # for job in jobs:
+        #     logger.info(f"job: {job.device_id}")
+        #     #yield model_to_schema(job)
+
+        # return None
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -109,11 +105,11 @@ def submit_jobs(
             return BadRequestResponse(detail="device not found")
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        if device.status != "AVAILABLE":
+        if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
 
         # NOTE: method and operator is validated by pydantic
-        shots = request.n_shots
+        shots = request.shots
         # name is optional
         name = validate_name(request)
         # description is optional
@@ -144,7 +140,7 @@ def submit_jobs(
 
 @router.get(
     "/jobs/{jobId}",
-    response_model=GetJobResponse,
+    response_model=JobDef,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -152,7 +148,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> GetJobResponse | ErrorResponse:
+) -> JobDef | ErrorResponse:
     try:
         JobId(root=uuid.UUID(job_id))
     except ValidationError:
@@ -162,14 +158,10 @@ def get_job(
         job_id = uuid.UUID(job_id).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        job = (
-            db.query(Job)
-            .filter(Job.id == job_id, Job.owner == owner)
-            .first()
-        )
+        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
-        return GetJobResponse(job)
+        return model_to_schema(job)
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -200,10 +192,7 @@ def delete_job(
         if job is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
 
-        if (
-            job.owner != owner
-            or job.status not in ["success", "failed", "cancelled"]
-        ):
+        if job.owner != owner or job.status not in ["success", "failed", "cancelled"]:
             return NotFoundErrorResponse(
                 detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'COMPLETED', 'FAILED' and 'CANCELLED')"
             )
@@ -274,10 +263,7 @@ def cancel_job(
 
         if job is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
-        if (
-            job.owner != owner
-            or job.status not in ["ready", "submitted", "running"]
-        ):
+        if job.owner != owner or job.status not in ["ready", "submitted", "running"]:
             return NotFoundErrorResponse(
                 detail=f"{jobId} job is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'submitted' and 'RUNNING')"
             )
@@ -291,3 +277,38 @@ def cancel_job(
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
+
+
+MAP_MODEL_TO_SCHEMA = {
+    "id": "id",
+    "owner": "owner",
+    "status": "status",
+    "name": "name",
+    "description": "description",
+    "device_id": "device_id",
+    "job_detail": "job_detail",
+    "transpiler_info": "transpiler_info",
+    "simulator_info": "simulator_info",
+    "mitigation_info": "mitigation_info",
+    "job_type": "job_type",
+    "shots": "shots",
+    "status": "status",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+}
+
+
+def model_to_schema(model: Job) -> JobDef:
+    schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
+
+    # load as json if not None.
+    # if schema_dict["basis_gates"]:
+    #     schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
+    # logger.info("schema_dict!!!:", schema_dict)
+    if schema_dict["created_at"]:
+        schema_dict["created_at"] = schema_dict["created_at"].astimezone(jst)
+    if schema_dict["updated_at"]:
+        schema_dict["updated_at"] = schema_dict["updated_at"].astimezone(jst)
+
+    response = JobDef(**schema_dict)
+    return response

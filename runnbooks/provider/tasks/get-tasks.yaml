@@ -15,4 +15,4 @@ steps:
       # status code is 200
       current.res.status == 200
       # body is as expected
-      && compare(current.res.body, [{"action":{"n_shots":1024,"name":"sampling"},"code":"OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -\u003e c[0];\nmeasure q[1] -\u003e c[1];","createdAt":"2024-03-28T16:50:27+09:00","device":"Kawasaki","nNodes":12,"nPerNode":1,"nQubits":2,"qubitAllocation":null,"roErrorMitigation":"none","seedSimulation":null,"seedTranspilation":null,"simulationOpt":null,"skipTranspilation":false,"status":"submitted","taskId":"7af020f6-2e38-4d70-8cf0-4349650ea08c"}])
+      && compare(current.res.body, [{"action":{"shots":1024,"name":"sampling"},"code":"OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -\u003e c[0];\nmeasure q[1] -\u003e c[1];","createdAt":"2024-03-28T16:50:27+09:00","device_id":"Kawasaki","nNodes":12,"nPerNode":1,"nQubits":2,"qubitAllocation":null,"roErrorMitigation":"none","seedSimulation":null,"seedTranspilation":null,"simulationOpt":null,"skipTranspilation":false,"status":"submitted","taskId":"7af020f6-2e38-4d70-8cf0-4349650ea08c"}])
