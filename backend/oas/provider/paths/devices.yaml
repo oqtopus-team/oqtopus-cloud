@@ -25,7 +25,7 @@ devices.deviceId:
                 value: {
                   "command": "DeviceStatusUpdate",
                   "status": "unavailable",
-                  "restart_at": "2023-09-10T14:00:00Z"
+                  "available_at": "2023-09-10T14:00:00Z"
                 }
               status update (available):
                 value: {

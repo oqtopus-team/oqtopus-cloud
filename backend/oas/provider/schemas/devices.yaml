@@ -30,7 +30,7 @@ devices.DeviceStatusUpdate:
         status:
           type: string
           enum: ["available", "unavailable"]
-        restart_at:
+        available_at:
           description: "Parameter mandatory and valid for status 'unavailable'"
           type: string
           format: date-time

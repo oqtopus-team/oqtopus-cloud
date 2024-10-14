@@ -9,13 +9,12 @@ def _get_model_dict():
         "id": "SVSim",
         "device_type": "simulator",
         "status": "AVAILABLE",
-        "restart_at": datetime(2023, 1, 2, 12, 34, 56),
+        "available_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_jobs": 8,
         "n_qubits": 39,
-        "n_nodes": 512,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "instructions": ["measure", "barrier", "reset"],
-        "calibration_data": ["measure", "barrier", "reset"],
+        "device_info": "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
     }
@@ -40,16 +39,15 @@ def test_model_to_schema_dict():
 
     # "description" is not mapped
     map_model_to_schema = {
-        "id": "deviceId",  # transform field name
+        "id": "device_id",  # transform field name
         "device_type": "deviceType",  # transform field name
         "status": "status",
-        "restart_at": "restart_at",
+        "available_at": "available_at",
         "pending_jobs": "pending_jobs",
         "n_qubits": "n_qubits",
-        "n_nodes": "n_nodes",
         "basis_gates": "basis_gates",
         "instructions": "instructions",
-        "calibration_data": "calibration_data",
+        "device_info": "device_info",
         "calibrated_at": "calibrated_at",
     }
 
@@ -58,7 +56,7 @@ def test_model_to_schema_dict():
 
     # Assert
     expected = _get_model_dict()
-    expected["deviceId"] = expected["id"]
+    expected["device_id"] = expected["id"]
     del expected["id"]
     expected["deviceType"] = expected["device_type"]
     del expected["device_type"]

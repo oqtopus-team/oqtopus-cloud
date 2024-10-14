@@ -51,14 +51,14 @@ def _get_model():
     mode_dict = {
         "id": "SVSim",
         "device_type": "simulator",
-        "status": "AVAILABLE",
-        "restart_at": datetime(2023, 1, 2, 12, 34, 56),
+        "status": "available",
+        "available_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_jobs": 8,
         "n_qubits": 39,
         "n_nodes": 512,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "calibration_data": json.dumps(_get_calibration_dict()),  # str
+        #"calibration_data": json.dumps(_get_calibration_dict()),  # str
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
     }
@@ -75,17 +75,17 @@ def test_get_device(test_db):
 
     # Assert
     expected = DeviceInfo(
-        deviceId="SVSim",
-        deviceType="simulator",
-        status="AVAILABLE",
-        restartAt=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
-        nPendingTasks=8,
-        nQubits=39,
-        nNodes=512,
-        basisGates=["x", "sx", "rz", "cx"],
-        supportedInstructions=["measure", "barrier", "reset"],
-        calibrationData=CalibrationData(**_get_calibration_dict()),
-        calibratedAt=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
+        device_id="SVSim",
+        device_type="simulator",
+        status="available",
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
+        n_pending_tasks=8,
+        n_qubits=39,
+        basis_gates=["x", "sx", "rz", "cx"],
+        supported_instructions=["measure", "barrier", "reset"],
+        #device_info=CalibrationData(**_get_calibration_dict()),
+        device_info="",
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -100,17 +100,17 @@ def test_model_to_shema():
 
     # Assert
     expected = DeviceInfo(
-        deviceId="SVSim",
-        deviceType="simulator",
-        status="AVAILABLE",
-        restartAt=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
-        nPendingTasks=8,
-        nQubits=39,
-        nNodes=512,
-        basisGates=["x", "sx", "rz", "cx"],
-        supportedInstructions=["measure", "barrier", "reset"],
-        calibrationData=CalibrationData(**_get_calibration_dict()),
-        calibratedAt=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
+        device_id="SVSim",
+        device_type="simulator",
+        status="available",
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
+        n_pending_tasks=8,
+        n_qubits=39,
+        basis_gates=["x", "sx", "rz", "cx"],
+        supported_instructions=["measure", "barrier", "reset"],
+        #calibrationData=CalibrationData(**_get_calibration_dict()),
+        device_info="",
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -128,15 +128,15 @@ def test_get_device_hadler(test_db):
     expected = {
         "deviceId": "SVSim",
         "deviceType": "simulator",
-        "status": "AVAILABLE",
-        "restartAt": "2023-01-02T12:34:56+09:00",
-        "nPendingTasks": 8,
-        "nQubits": 39,
-        "nNodes": 512,
-        "basisGates": ["x", "sx", "rz", "cx"],
-        "supportedInstructions": ["measure", "barrier", "reset"],
-        "calibrationData": _get_calibration_dict(),
-        "calibratedAt": "2024-03-04T12:34:56+09:00",
+        "status": "available",
+        "available_at": "2023-01-02T12:34:56+09:00",
+        "n_pending_tasks": 8,
+        "n_qubits": 39,
+        "basis_gates": ["x", "sx", "rz", "cx"],
+        "supported_instructions": ["measure", "barrier", "reset"],
+        #"calibrationData": _get_calibration_dict(),
+        "device_info": "",
+        "calibrated_at": "2024-03-04T12:34:56+09:00",
         "description": "State vector-based quantum circuit simulator",
     }
     assert actual.json() == expected

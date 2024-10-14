@@ -44,14 +44,13 @@ def _get_device_model():
     mode_dict = {
         "id": "SC2",
         "device_type": "QPU",
-        "status": "AVAILABLE",
-        "restart_at": datetime(2023, 1, 2, 12, 34, 56),
+        "status": "available",
+        "available_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_jobs": 8,
         "n_qubits": 39,
-        "n_nodes": 512,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "calibration_data": json.dumps(_get_calibration_dict()),  # str
+        "device_info": "",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
     }

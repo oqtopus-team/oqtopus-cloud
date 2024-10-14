@@ -29,8 +29,8 @@ from . import LoggerRouteHandler
 
 
 class DeviceStatus(Enum):
-    AVAILABLE = "AVAILABLE"
-    NOT_AVAILABLE = "NOT_AVAILABLE"
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
 
 
 class DeviceType(Enum):
@@ -56,17 +56,19 @@ def update_device_status(
         DeviceDataUpdateResponse: The response containing the update message.
     """
     status = request.status
-    restart_at = request.restartAt
-    if status == DeviceStatus.NOT_AVAILABLE.value:
-        if not restart_at:
-            return BadRequestResponse("restartAt is required for status NOT_AVAILABLE")
+    available_at = request.available_at
+    if status == DeviceStatus.UNAVAILABLE.value:
+        if not available_at:
+            return BadRequestResponse("available_at is required for status unavailable")
         device.status = status  # type: ignore
-        device.restart_at = restart_at
+        device.available_at = available_at
     else:
-        if restart_at:
-            return BadRequestResponse("restartAt is not required for status AVAILABLE")
+        if available_at:
+            return BadRequestResponse(
+                "available_at is not required for status available"
+            )
         device.status = status  # type: ignore
-        device.restart_at = None  # type: ignore
+        device.available_at = None  # type: ignore
     db.commit()
     return DeviceDataUpdateResponse(message="Device's data updated")
 
@@ -88,11 +90,11 @@ def update_device_pending_jobs(
     Raises:
         BadRequest: If the new number of pending tasks is not provided or is less than 0.
     """
-    n_pending_jobs = request.nPendingTasks
+    n_pending_jobs = request.n_pending_tasks
     if n_pending_jobs is None:
-        return BadRequestResponse("nPendingTasks is required")
+        return BadRequestResponse("n_pending_tasks is required")
     if n_pending_jobs < 0:
-        return BadRequestResponse("nPendingTasks must be greater than or equal to 0")
+        return BadRequestResponse("n_pending_tasks must be greater than or equal to 0")
     device.pending_jobs = n_pending_jobs
     db.commit()
     return DeviceDataUpdateResponse(message="Device's data updated")
@@ -115,22 +117,23 @@ def update_device_calibration(
     Raises:
         BadRequest: If the device is not a QPU device, or if the calibration data or calibrated timestamp is missing.
     """
-    calibration_data = request.calibrationData
+    device_info = request.device_info
     calibrated_at = request.calibrated_at
     if device.device_type != DeviceType.QPU.value:
         return BadRequestResponse("Calibration is only supported for QPU devices")
-    if calibration_data is None:
-        return BadRequestResponse(detail="calibrationData is required")
+    if device_info is None:
+        return BadRequestResponse(detail="device_info is required")
     if calibrated_at is None:
         return BadRequestResponse(detail="calibrated_at is required")
-    device.calibration_data = calibration_data.model_dump_json()
+    # device.calibration_data = calibration_data.model_dump_json()
+    device.device_info = device_info
     device.calibrated_at = calibrated_at
     db.commit()
     return DeviceDataUpdateResponse(message="Device's data updated")
 
 
 @router.patch(
-    "/internal/devices/{deviceId}",
+    "/devices/{device_id}",
     response_model=DeviceDataUpdateResponse,
     responses={
         400: {"model": Detail},
@@ -140,13 +143,13 @@ def update_device_calibration(
 )
 @tracer.capture_method
 def update_device(
-    deviceId: str, request: DeviceDataUpdate, db: Session = Depends(get_db)
+    device_id: str, request: DeviceDataUpdate, db: Session = Depends(get_db)
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
     Update device information based on the given device ID and request data.
 
     Args:
-        deviceId (str): The ID of the device to be updated.
+        device_id (str): The ID of the device to be updated.
         request (DeviceDataUpdate): The request data containing the updated device information.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -160,9 +163,9 @@ def update_device(
     """
     logger.info("invoked update_device")
     try:
-        device = db.get(Device, deviceId)
+        device = db.get(Device, device_id)
         if device is None:
-            return NotFoundErrorResponse(f"deviceId={deviceId} is not found.")
+            return NotFoundErrorResponse(f"deviceId={device_id} is not found.")
         if isinstance(request.root, DeviceStatusUpdate):
             return update_device_status(device, request.root, db)
         elif isinstance(request.root, DevicePendingTasksUpdate):
