@@ -45,7 +45,7 @@ After running the above steps, you will get output similar to the following:
 make doctor
 Checking the environment...
 Aqua version: aqua version 2.29.0 (9ff65378f0c6197e3130a20f6d978b8a3042b463)
-Python version: Python 3.12.4
+Python version: Python 3.12.3
 Poetry version: Poetry (version 1.8.3)
 Docker version: Docker version 26.1.4, build 5650f9b
 
@@ -55,16 +55,16 @@ Docker version: Docker version 26.1.4, build 5650f9b
 
 ### Pyenv (Recommended)
 
-To install Python 3.12.4, run the following command:
+To install Python 3.12.3, run the following command:
 
 ```bash
-pyenv install 3.12.4
+pyenv install 3.12.3
 ```
 
-Next, set the Python version to 3.12.4:
+Next, set the Python version to 3.12.3:
 
 ```bash
-pyenv local 3.12.4
+pyenv local 3.12.3
 ```
 
 ### Poetry

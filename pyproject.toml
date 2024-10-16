@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "backend"
-version = "0.1.0"
+version = "0.1.4"
 description = "OQTOPUS Cloud is a project that provides the architecture of cloud quantum computers as an open-source software (OSS). By using it in conjunction with various OSS provided by [@oqtopus-team](https://github.com/oqtopus-team), you can build a cloud quantum computer system."
 authors = ["oqtopus-team <oqtopus-team[at]googlegroups.com>"]
-readme = "./docs/README.md"
+readme = "README.md"
 packages = [
   {include = "oqtopus_cloud", from = "backend"},
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12.4"
+python = "^3.12.3"
 mangum = "^0.17.0"
 pymysql = "^1.1.0"
 aws-lambda-powertools = "^2.41.0"

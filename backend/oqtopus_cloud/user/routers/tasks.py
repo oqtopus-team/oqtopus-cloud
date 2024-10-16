@@ -7,9 +7,11 @@ from typing import Any, Literal, Optional, Tuple
 from fastapi import (
     APIRouter,
     Depends,
+    status,
 )
 from fastapi import Request as Event
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
@@ -163,12 +165,12 @@ def get_sampling_tasks(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        tasks = (
-            db.query(Task)
+        stmt = (
+            select(Task)
             .filter(Task.action == "sampling", Task.owner == owner)
             .order_by(Task.created_at)
-            .all()
         )
+        tasks = db.scalars(stmt).all()
         return [create_sampling_task_info(task) for task in tasks]
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -314,6 +316,7 @@ def get_resources(
 
 @router.post(
     "/tasks/sampling",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -405,9 +408,21 @@ def submit_sampling_tasks(
             note=note,
             created_at=datetime.now(),
         )
+
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+
+        task_get = db.get(Task, task.id)
+        if task_get is None:
+            return NotFoundErrorResponse(
+                detail=f"the created task {task.id} is not found"
+            )
+
+        return SubmitTaskResponse(
+            taskId=task.id,
+            createdAt=task.created_at.astimezone(jst),
+            status=task_get.status,
+        )
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -433,11 +448,10 @@ def get_sampling_task(
         task_id = uuid.UUID(taskId).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        task = (
-            db.query(Task)
-            .filter(Task.id == task_id, Task.owner == owner, Task.action == "sampling")
-            .first()
+        stmt = select(Task).filter(
+            Task.id == task_id, Task.owner == owner, Task.action == "sampling"
         )
+        task = db.scalars(stmt).first()
         if task is None:
             return NotFoundErrorResponse(detail="task not found with the given id")
         return create_sampling_task_info(task)
@@ -448,7 +462,8 @@ def get_sampling_task(
 
 @router.delete(
     "/tasks/sampling/{taskId}",
-    response_model=SuccessResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -456,7 +471,7 @@ def delete_sampling_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> SuccessResponse | ErrorResponse:
+) -> None | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
@@ -482,7 +497,7 @@ def delete_sampling_task(
 
         db.delete(task)
         db.commit()
-        return SuccessResponse(message="task deleted")
+        return
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -506,19 +521,17 @@ def get_sampling_task_status(
         return BadRequestResponse(detail="invalid task id")
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
-    task = (
-        db.query(Task.id, Task.status)
-        .filter(
-            Task.id == uuid.UUID(taskId).bytes,
-            Task.action == "sampling",
-            Task.owner == owner,
-        )
-        .first()
+    stmt = select(Task).filter(
+        Task.id == uuid.UUID(taskId).bytes,
+        Task.action == "sampling",
+        Task.owner == owner,
     )
+    task = db.scalars(stmt).first()
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetSamplingTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
@@ -587,12 +600,12 @@ def get_estimation_tasks(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        tasks = (
-            db.query(Task)
+        stmt = (
+            select(Task)
             .filter(Task.action == "estimation", Task.owner == owner)
             .order_by(Task.created_at)
-            .all()
         )
+        tasks = db.scalars(stmt).all()
         return [create_estimation_task_info(task) for task in tasks]
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -601,6 +614,7 @@ def get_estimation_tasks(
 
 @router.post(
     "/tasks/estimation",
+    status_code=status.HTTP_201_CREATED,
     response_model=SubmitTaskResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -723,7 +737,18 @@ def submit_estimation_tasks(
         )
         db.add(task)
         db.commit()
-        return SubmitTaskResponse(taskId=TaskId(task.id))
+
+        task_get = db.get(Task, task.id)
+        if task_get is None:
+            return NotFoundErrorResponse(
+                detail=f"the created task {task.id} is not found"
+            )
+
+        return SubmitTaskResponse(
+            taskId=task.id,
+            createdAt=task.created_at.astimezone(jst),
+            status=task_get.status,
+        )
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -749,13 +774,10 @@ def get_estimation_task(
         task_id = uuid.UUID(taskId).bytes
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        task = (
-            db.query(Task)
-            .filter(
-                Task.id == task_id, Task.owner == owner, Task.action == "estimation"
-            )
-            .first()
+        stmt = select(Task).filter(
+            Task.id == task_id, Task.owner == owner, Task.action == "estimation"
         )
+        task = db.scalars(stmt).first()
         if task is None:
             return NotFoundErrorResponse(detail="task not found with the given id")
         return create_estimation_task_info(task)
@@ -766,7 +788,8 @@ def get_estimation_task(
 
 @router.delete(
     "/tasks/estimation/{taskId}",
-    response_model=SuccessResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -774,7 +797,7 @@ def delete_estimation_task(
     event: Event,
     taskId: str,
     db: Session = Depends(get_db),
-) -> SuccessResponse | ErrorResponse:
+) -> None | ErrorResponse:
     try:
         TaskId(root=uuid.UUID(taskId))
     except ValidationError:
@@ -800,7 +823,7 @@ def delete_estimation_task(
 
         db.delete(task)
         db.commit()
-        return SuccessResponse(message="task deleted")
+        return
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -824,19 +847,17 @@ def get_estimation_task_status(
         return BadRequestResponse(detail="invalid task id")
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
-    task = (
-        db.query(Task.id, Task.status)
-        .filter(
-            Task.id == uuid.UUID(taskId).bytes,
-            Task.action == "estimation",
-            Task.owner == owner,
-        )
-        .first()
+    stmt = select(Task).filter(
+        Task.id == uuid.UUID(taskId).bytes,
+        Task.action == "estimation",
+        Task.owner == owner,
     )
+    task = db.scalars(stmt).first()
     if task is None:
         return NotFoundErrorResponse(detail="task not found with the given id")
     return GetEstimationTaskStatusResponse(
-        taskId=TaskId(uuid.UUID(taskId)), status=TaskStatus(root=task.status)
+        taskId=TaskId(uuid.UUID(taskId)),
+        status=TaskStatus(root=task.status),  # type: ignore
     )
 
 
