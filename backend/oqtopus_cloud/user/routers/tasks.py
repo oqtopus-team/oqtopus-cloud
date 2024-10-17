@@ -568,9 +568,7 @@ def cancel_sampling_task(
             db.add(result)
             db.commit()
         elif task.status in ["RUNNING"]:
-            logger.info(
-                "task is in RUNNING state, so it will be marked as CANCELLING"
-            )
+            logger.info("task is in RUNNING state, so it will be marked as CANCELLING")
             task.status = "CANCELLING"
             db.commit()
         return SuccessResponse(message="cancel request accepted")
@@ -894,9 +892,7 @@ def cancel_estimation_task(
             db.add(result)
             db.commit()
         elif task.status in ["RUNNING"]:
-            logger.info(
-                "task is in RUNNING state, so it will be marked as CANCELLING"
-            )
+            logger.info("task is in RUNNING state, so it will be marked as CANCELLING")
             task.status = "CANCELLING"
             db.commit()
         return SuccessResponse(message="cancell request accepted")
