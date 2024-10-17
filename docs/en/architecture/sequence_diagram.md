@@ -26,9 +26,9 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SC&status=QUEUED
+    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SC&status=submitted
     Note over Cloud: The statuses of fetched tasks are updated to QUEUED_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
@@ -61,7 +61,7 @@ The above diagram shows one iteration of the repeated process.
 
 > [!NOTE]
 > Cloud exposes the information on whether a task is fetched (i.e., whether the status has the suffix of _FETCHED) to Provider only; Cloud does not expose it to User.
-> For example, if User requests information of a task in QUEUED_FETCHED status from Cloud, the value of the task status is QUEUED in the response from Cloud.
+> For example, if User requests information of a task in QUEUED_FETCHED status from Cloud, the value of the task status is submitted in the response from Cloud.
 > In contrast, the value of the task status is QUEUED_FETCHED in a response to Provider.
 
 ### Data in the DB at Each Time Point
@@ -102,9 +102,9 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=QUEUED
+    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=submitted
     Note over Cloud: The statuses of fetched tasks are updated to QUEUED_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
@@ -160,13 +160,13 @@ sequenceDiagram
 
     User->>Cloud: POST /tasks/<task ID-1>/cancel
     Note right of User: User sends a cancel requests for the task <task ID-1>.
-    Note over Cloud: The task status is updated to CANCELLING
+    Note over Cloud: The task status is updated to cancelling
     Cloud-->>User: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLING" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelling" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=CANCELLING
+    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=cancelling
     Note over Cloud: The statuses of fetched tasks are updated to CANCELLING_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
@@ -184,7 +184,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
 ```
 
-Provider periodically repeats the process of fetching cancel requests (i.e., tasks in CANCELLING status), cancelling task executions, and sending the cancellation results.
+Provider periodically repeats the process of fetching cancel requests (i.e., tasks in cancelling status), cancelling task executions, and sending the cancellation results.
 The above diagram shows one iteration of the repeated process.
 
 ### Data in the DB at Each Time Point
@@ -207,6 +207,6 @@ The numbers below correspond to the circled numbers in the sequence diagram.
   - results table: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
 
 > [!NOTE]
-> If the task is in QUEUED status (i.e., before Provider fetches the task) at (1), Cloud immediately changes the task status to CANCELLED.
+> If the task is in submitted status (i.e., before Provider fetches the task) at (1), Cloud immediately changes the task status to CANCELLED.
 > It means the task state transitions from (1) to (8) directly.
 > In this case, the task is never fetched by Provider.

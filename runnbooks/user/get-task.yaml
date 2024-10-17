@@ -14,4 +14,4 @@ steps:
     # status code is 200
     current.res.status == 200
     # body is as expected
-    && compare(current.res.body, {"code":"OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -\u003e c[0];\nmeasure q[1] -\u003e c[1];","device":"Kawasaki","n_nodes":12,"n_per_node":1,"n_qubits":2,"qubit_allocation":null,"ro_error_mitigation":"none","seed_simulation":null,"seed_transpilation":null,"simulation_opt":null,"skip_transpilation":false,"task_id":"7af020f6-2e38-4d70-8cf0-4349650ea08c"})
+    && compare(current.res.body, {"code":"OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -\u003e c[0];\nmeasure q[1] -\u003e c[1];","device_id":"Kawasaki","n_nodes":12,"n_per_node":1,"n_qubits":2,"qubit_allocation":null,"ro_error_mitigation":"none","seed_simulation":null,"seed_transpilation":null,"simulation_opt":null,"skip_transpilation":false,"task_id":"7af020f6-2e38-4d70-8cf0-4349650ea08c"})

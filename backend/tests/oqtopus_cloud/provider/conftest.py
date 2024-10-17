@@ -12,8 +12,8 @@ from oqtopus_cloud.common.models.base import (
 from oqtopus_cloud.common.models.device import (
     Device,
 )
-from oqtopus_cloud.common.models.task import (
-    Task,
+from oqtopus_cloud.common.models.job import (
+    Job,
 )
 from oqtopus_cloud.common.session import (
     get_db,
@@ -53,14 +53,14 @@ def insert_initial_data(db: Session):
         Device(
             id="Kawasaki",
             device_type="QPU",
-            status="NOT_AVAILABLE",
-            restart_at=datetime(2024, 3, 4, 12, 34, 56),
-            pending_tasks=0,
+            status="unavailable",
+            available_at=datetime(2024, 3, 4, 12, 34, 56),
+            pending_jobs=0,
             n_qubits=64,
             n_nodes=0,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
-            calibration_data="{}",
+            device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
             description="Superconducting quantum computer",
         ),
