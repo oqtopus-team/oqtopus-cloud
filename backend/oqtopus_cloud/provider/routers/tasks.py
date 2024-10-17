@@ -58,7 +58,7 @@ def create_task_info(task: Task, status=None) -> TaskInfo:
 
 
 @router.get(
-    "/internal/tasks",
+    "/tasks",
     response_model=list[TaskInfo],
 )
 @tracer.capture_method
@@ -82,9 +82,9 @@ def get_tasks(
     tasks = db.scalars(stmt).all()
     return [create_task_info(task, status=None) for task in tasks]
 
-
+  
 @router.get(
-    "/internal/tasks/{taskId}",
+    "/tasks/{taskId}",
     response_model=TaskInfo,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -108,7 +108,7 @@ def get_task(
 
 
 @router.patch(
-    "/internal/tasks/{taskId}",
+    "/tasks/{taskId}",
     response_model=TaskStatusUpdateResponse,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )

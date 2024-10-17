@@ -13,7 +13,7 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /internal/devices/{deviceId}:
+  /devices/{deviceId}:
     patch:
       tags:
         - devices
@@ -121,7 +121,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
-  /internal/tasks:
+  /tasks:
     get:
       tags:
         - tasks
@@ -179,7 +179,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 detail: Internal server error
-  /internal/tasks/{taskId}:
+  /tasks/{taskId}:
     get:
       summary: Get a task by ID
       description: Get a task by ID
@@ -262,7 +262,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 detail: task not found
-  /internal/results:
+  /results:
     post:
       summary: Submit a quantum task result
       tags:
