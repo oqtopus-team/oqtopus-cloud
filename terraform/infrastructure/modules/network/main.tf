@@ -44,6 +44,78 @@ resource "aws_vpc" "this" {
   }
 }
 
+resource "aws_flow_log" "this" {
+  iam_role_arn    = aws_iam_role.vpc_flow_log.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_log_group.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.this.id
+}
+
+resource "aws_cloudwatch_log_group" "vpc_flow_log_group" {
+  name              = "/aws/vpc-flow-log/${var.product}-${var.org}-${var.env}"
+  retention_in_days = 14
+  kms_key_id        = aws_kms_key.vpc_flow_log.arn
+}
+
+data "aws_iam_policy_document" "vpc_flow_logs_assume_role_policy" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+data "aws_iam_policy_document" "vpc_flow_log_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams",
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "vpc_flow_log" {
+  name   = "${var.product}-${var.org}-${var.env}-vpc-flow-log"
+  policy = data.aws_iam_policy_document.vpc_flow_log_policy.json
+  path   = "/service-role/"
+}
+
+resource "aws_iam_role" "vpc_flow_log" {
+  assume_role_policy   = data.aws_iam_policy_document.vpc_flow_logs_assume_role_policy.json
+  description          = "Allows aws_flow_log to access ClowdWatchLogs"
+  managed_policy_arns  = [aws_iam_policy.vpc_flow_log.arn]
+  max_session_duration = "3600"
+  name                 = "${var.product}-${var.org}-${var.env}-vpc-flow-log"
+  path                 = "/service-role/"
+}
+
+resource "aws_iam_role_policy_attachment" "db_proxy" {
+  role       = aws_iam_role.vpc_flow_log.name
+  policy_arn = aws_iam_policy.vpc_flow_log.arn
+}
+
+resource "aws_kms_key" "vpc_flow_log" {
+  description             = "key to encrypt vpc flow logs"
+  key_usage               = "ENCRYPT_DECRYPT"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}"
+  }
+}
+
 ## Private Subnets
 resource "aws_subnet" "private" {
   for_each                            = var.private_subnets
