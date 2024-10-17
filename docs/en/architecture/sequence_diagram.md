@@ -28,23 +28,23 @@ sequenceDiagram
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SC&status=QUEUED
+    Provider->>Cloud: GET /tasks/unfetched?deviceId=SC&status=QUEUED
     Note over Cloud: The statuses of fetched tasks are updated to QUEUED_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
     Note over Provider: Provider starts execution of the fetched tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /internal/tasks/<task ID-1> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
-    Provider->>Cloud: PATCH /internal/tasks/<task ID-N> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "RUNNING" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "RUNNING" }
     Note over Provider: The execution of the task <task ID-1> is successfully completed.
-    Provider->>Cloud: POST /internal/results { "taskId": <task ID-1>, "status": "SUCCESS", result: ... }
+    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "SUCCESS", result: ... }
 
     Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to COMPLETED (via a DB trigger).
     Cloud-->>Provider: HTTP 200 OK
@@ -104,16 +104,16 @@ sequenceDiagram
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=QUEUED
+    Provider->>Cloud: GET /tasks/unfetched?deviceId=SVSim&status=QUEUED
     Note over Cloud: The statuses of fetched tasks are updated to QUEUED_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
     Note over Provider: Provider starts execution of the fetched tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /internal/tasks/<task ID-1> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
-    Provider->>Cloud: PATCH /internal/tasks/<task ID-N> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "RUNNING" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
@@ -122,7 +122,7 @@ sequenceDiagram
 
     rect rgb(255, 240, 240)
         Note over Provider: The execution of the task <task ID-1> is failed.
-        Provider->>Cloud: POST /internal/results { "taskId": <task ID-1>, "status": "FAILURE", "reason": ... }
+        Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "FAILURE", "reason": ... }
         Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to FAILED (via a DB trigger).
         Cloud-->>Provider: HTTP 200 OK
   
@@ -166,13 +166,13 @@ sequenceDiagram
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLING" }
 
-    Provider->>Cloud: GET /internal/tasks/unfetched?deviceId=SVSim&status=CANCELLING
+    Provider->>Cloud: GET /tasks/unfetched?deviceId=SVSim&status=CANCELLING
     Note over Cloud: The statuses of fetched tasks are updated to CANCELLING_FETCHED.
     Cloud-->>Provider: HTTP 200 OK {[ {"taskId": <task ID-1>, ... }, { "taskId: <task ID-2>, ... }, ... ]}
 
     Note over Provider: Provider tries to cancel the executions of the fetched tasks.
     Note over Provider: The execution of the task <task ID-1> is successfully cancelled.
-    Provider->>Cloud: POST /internal/results { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
+    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
 
     Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to CANCELLED (via a DB trigger).
     Cloud-->>Provider: HTTP 200 OK

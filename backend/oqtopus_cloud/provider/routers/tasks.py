@@ -59,7 +59,7 @@ def create_task_info(task: Task, status=None) -> TaskInfo:
 
 
 @router.get(
-    "/internal/tasks",
+    "/tasks",
     response_model=list[TaskInfo],
 )
 @tracer.capture_method
@@ -85,7 +85,7 @@ def get_tasks(
 
 
 @router.get(
-    "/internal/tasks/unfetched",
+    "/tasks/unfetched",
     response_model=UnfetchedTasksResponse,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -130,7 +130,7 @@ def get_unfetched_tasks(
 
 
 @router.get(
-    "/internal/tasks/{taskId}",
+    "/tasks/{taskId}",
     response_model=TaskInfo,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
@@ -154,7 +154,7 @@ def get_task(
 
 
 @router.patch(
-    "/internal/tasks/{taskId}",
+    "/tasks/{taskId}",
     response_model=TaskStatusUpdateResponse,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
