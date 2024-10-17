@@ -150,7 +150,7 @@ paths:
             example: 1
         - in: query
           name: timestamp
-          description: Additional search parameter:<br/> Fetch tasks created after the specified timetsamp
+          description: Additional search parameter:<br/> Tasks created after the specified timetsamp
           schema:
             type: string
             example: '2022-12-15 15:54:46'
@@ -262,49 +262,6 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 detail: task not found
-  /internal/tasks/unfetched:
-    get:
-      summary: Fetch tasks for device
-      description: 'Fetches tasks for execution/cancel<br/><br/>Operation is valid only for task with status: QUEUED or CANCELLING. After the operation task status is changed to appropriate FETCHED state (QUEUED_FETCHED or CANCELLING_FETCHED)'
-      operationId: getUnfetchedTasks
-      security: []
-      tags:
-        - tasks
-      parameters:
-        - in: query
-          name: deviceId
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: Kawasaki
-        - in: query
-          name: status
-          required: true
-          description: Fetch tasks with specified status
-          schema:
-            $ref: '#/components/schemas/tasks.InternalFetchableTaskStatus'
-        - in: query
-          name: maxResults
-          description: Additional search parameter:<br/> Set max number of quantum tasks to return in single request
-          schema:
-            type: integer
-            example: 1
-      responses:
-        '200':
-          description: List of tasks for execution (all task data) / cancel (taskIds only)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tasks.UnfetchedTasksResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                detail: Bad request malformed input data
   /internal/results:
     post:
       summary: Submit a quantum task result
@@ -559,12 +516,10 @@ components:
       type: string
       enum:
         - QUEUED
-        - QUEUED_FETCHED
         - RUNNING
         - COMPLETED
         - FAILED
         - CANCELLING
-        - CANCELLING_FETCHED
         - CANCELLED
       example: QUEUED
     tasks.TaskId:
@@ -738,7 +693,7 @@ components:
           optimizationMethod: light
           optimizationBlockSize: 1
           optimizationSwapLevel: 1
-        status: QUEUED_FETCHED
+        status: QUEUED
         createdAt: '2022-10-19T11:45:34+09:00'
     tasks.TaskStatusUpdate:
       type: object
@@ -757,18 +712,6 @@ components:
           type: string
       required:
         - message
-    tasks.InternalFetchableTaskStatus:
-      type: string
-      enum:
-        - QUEUED
-        - CANCELLING
-      example: QUEUED
-    tasks.UnfetchedTasksResponse:
-      type: array
-      items:
-        oneOf:
-          - $ref: '#/components/schemas/tasks.TaskInfo'
-          - $ref: '#/components/schemas/tasks.TaskId'
     results.ResultStatus:
       type: string
       enum:

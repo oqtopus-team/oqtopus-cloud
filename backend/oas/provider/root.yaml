@@ -19,7 +19,5 @@ paths:
     $ref: ./paths/tasks.yaml#/tasks
   /internal/tasks/{taskId}:
     $ref: ./paths/tasks.yaml#/tasks.taskId
-  /internal/tasks/unfetched:
-    $ref: ./paths/tasks.yaml#/tasks.unfetched
   /internal/results:
     $ref: ./paths/results.yaml#/results

@@ -60,10 +60,6 @@ class BadRequest(Exception):
 
 def create_sampling_task_info(task: Task) -> SamplingTaskInfo:
     status = task.status
-    if task.status == "QUEUED_FETCHED":
-        status = "QUEUED"
-    elif task.status == "CANCELIING_FETCHED":
-        status = "CANCELLING"
     return SamplingTaskInfo(
         taskId=TaskId(task.id),
         code=task.code,
@@ -124,10 +120,6 @@ def serialize_operator(operator: Operator) -> str | BadRequestResponse:
 
 def create_estimation_task_info(task: Task) -> EstimationTaskInfo:
     status = task.status
-    if task.status == "QUEUED_FETCHED":
-        status = "QUEUED"
-    elif task.status == "CANCELIING_FETCHED":
-        status = "CANCELLING"
 
     return EstimationTaskInfo(
         taskId=TaskId(task.id),
@@ -563,10 +555,10 @@ def cancel_sampling_task(
         if (
             task.owner != owner
             or task.action != "sampling"
-            or task.status not in ["QUEUED_FETCHED", "QUEUED", "RUNNING"]
+            or task.status not in ["QUEUED", "RUNNING"]
         ):
             return NotFoundErrorResponse(
-                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'QUEUED' and 'RUNNING')"
+                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED' and 'RUNNING')"
             )
         if task.status == "QUEUED":
             logger.info("task is in QUEUED state, so it will be cancelled")
@@ -575,9 +567,9 @@ def cancel_sampling_task(
             )
             db.add(result)
             db.commit()
-        elif task.status in ["QUEUED_FETCHED", "RUNNING"]:
+        elif task.status in ["RUNNING"]:
             logger.info(
-                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as CANCELLING"
+                "task is in RUNNING state, so it will be marked as CANCELLING"
             )
             task.status = "CANCELLING"
             db.commit()
@@ -889,10 +881,10 @@ def cancel_estimation_task(
         if (
             task.owner != owner
             or task.action != "estimation"
-            or task.status not in ["QUEUED_FETCHED", "QUEUED", "RUNNING"]
+            or task.status not in ["QUEUED", "RUNNING"]
         ):
             return NotFoundErrorResponse(
-                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED_FETCHED', 'QUEUED' and 'RUNNING')"
+                detail=f"{taskId} task is not in valid status for cancellation (valid statuses for cancellation: 'QUEUED' and 'RUNNING')"
             )
         if task.status == "QUEUED":
             logger.info("task is in QUEUED state, so it will be cancelled")
@@ -901,9 +893,9 @@ def cancel_estimation_task(
             )
             db.add(result)
             db.commit()
-        elif task.status in ["QUEUED_FETCHED", "RUNNING"]:
+        elif task.status in ["RUNNING"]:
             logger.info(
-                "task is in QUEUED_FETCHED or RUNNING state, so it will be marked as CANCELLING"
+                "task is in RUNNING state, so it will be marked as CANCELLING"
             )
             task.status = "CANCELLING"
             db.commit()
