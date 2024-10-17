@@ -51,6 +51,7 @@ resource "aws_db_instance" "this" {
   option_group_name                   = "default:mysql-8-0"
   parameter_group_name                = aws_db_parameter_group.this.name
   performance_insights_enabled        = true
+  performance_insights_kms_key_id     = aws_kms_key.db_peformance_insights.arn
   port                                = "3306"
   storage_encrypted                   = "true"
   storage_throughput                  = "0"
@@ -62,6 +63,16 @@ resource "aws_db_instance" "this" {
 
 resource "aws_kms_key" "db_storage" {
   description             = "key to encrypt db storage."
+  key_usage               = "ENCRYPT_DECRYPT"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}"
+  }
+}
+
+resource "aws_kms_key" "db_peformance_insights" {
+  description             = "key to encrypt performance insights"
   key_usage               = "ENCRYPT_DECRYPT"
   deletion_window_in_days = 7
   enable_key_rotation     = true
