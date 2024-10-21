@@ -51,6 +51,33 @@ resource "aws_flow_log" "this" {
   vpc_id          = aws_vpc.this.id
 }
 
+data "aws_caller_identity" "current" {}
+
+resource "aws_kms_key" "vpc_flow_log" {
+  description             = "key to encrypt vpc flow logs"
+  key_usage               = "ENCRYPT_DECRYPT"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}"
+  }
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Id" : "key-default-1",
+    "Statement" : [
+      {
+        "Sid" : "Enable IAM User Permissions",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+          "Service" : "logs.ap-northeast-1.amazonaws.com"
+        },
+        "Action" : "kms:*",
+        "Resource" : "*"
+      }
+    ]
+  })
+}
 resource "aws_cloudwatch_log_group" "vpc_flow_log_group" {
   name              = "/aws/vpc-flow-log/${var.product}-${var.org}-${var.env}"
   retention_in_days = 14
@@ -101,19 +128,9 @@ resource "aws_iam_role" "vpc_flow_log" {
   path                 = "/service-role/"
 }
 
-resource "aws_iam_role_policy_attachment" "db_proxy" {
+resource "aws_iam_role_policy_attachment" "vpc_flow_log" {
   role       = aws_iam_role.vpc_flow_log.name
   policy_arn = aws_iam_policy.vpc_flow_log.arn
-}
-
-resource "aws_kms_key" "vpc_flow_log" {
-  description             = "key to encrypt vpc flow logs"
-  key_usage               = "ENCRYPT_DECRYPT"
-  deletion_window_in_days = 7
-  enable_key_rotation     = true
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}"
-  }
 }
 
 ## Private Subnets
