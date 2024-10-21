@@ -6,7 +6,7 @@
   <thead>
     <tr>
       <th style="text-align:center"><a href="../">🇺🇸English</a></th>
-      <th style="text-align:center"><a href="../jp/">🇯🇵日本語</a></th>
+      <th style="text-align:center"><a href="./">🇯🇵日本語</a></th>
     </tr>
   </thead>
 </table>
