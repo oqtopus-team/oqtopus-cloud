@@ -28,7 +28,7 @@ module "security_group" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.57.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.57.0 |
 
 ## Resources
 

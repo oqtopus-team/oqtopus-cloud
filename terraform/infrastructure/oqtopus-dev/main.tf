@@ -44,7 +44,7 @@ module "db" {
   db_name                         = "main"
   user_name                       = var.db_user_name
   db_proxy_security_group_ids     = module.security_group.db_proxy_security_group_ids
-  db_performance_insights_enabled = var.db_performance_insights_enabled
+  db_performance_insights_enabled = true
 }
 
 module "management" {
