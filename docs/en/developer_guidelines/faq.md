@@ -24,7 +24,7 @@ credential_process = aws configure export-credentials --profile myprofile
 Use `myprofile-tf` in each Terraform configuration file. Set it as follows:
 
 ```bash
-# terraform/infrastructure/example-dev/example-dev.tfbackend
+# terraform/infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 bucket         = "xxxxxxxxxxxxxx"
 key            = "xxxxxxxxxxxxxx"
 encrypt        = true
@@ -34,7 +34,7 @@ dynamodb_table = "xxxxxxxxxxxxx"
 ```
 
 ```bash
-# terraform/infrastructure/example-dev/terraform.tfvars
+# terraform/infrastructure/oqtopus-dev/terraform.tfvars
 product = "oqtopus"
 org     = "example"
 env     = "dev"
@@ -43,6 +43,6 @@ db_user_name = "xxxxxxxxxxxxx"
 profile = "myprofile-tf"
 ```
 
-After running `terraform init -backend-config=example-dev.tfbackend -reconfigure` under `terraform/infrastructure/example-dev`, you can execute `terraform plan` to run Terraform with MFA authentication.
+After running `terraform init -backend-config=oqtopus-dev.tfbackend -reconfigure` under `terraform/infrastructure/oqtopus-dev`, you can execute `terraform plan` to run Terraform with MFA authentication.
 
 See details in here: [Terraform AWS Provider Issue #2420](https://github.com/hashicorp/terraform-provider-aws/issues/2420#issuecomment-1899137746)

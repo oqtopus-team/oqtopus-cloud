@@ -15,12 +15,12 @@ terraformディレクトリには、プロジェクトのAWS環境をデプロ�
 ├── infrastructure
 │   ├── Makefile
 │   ├── README.md
-│   ├── example-dev
+│   ├── oqtopus-dev
 │   └── modules
 └── service
     ├── Makefile
     ├── README.md
-    ├── example-dev
+    ├── oqtopus-dev
     └── modules
 
 7 directories, 6 files
@@ -33,33 +33,33 @@ infrastructureディレクトリには、ネットワークやデータストア
 
 ### インフラ層のデプロイ
 
-terraform/infrastructure/example-devが各環境のデプロイメントディレクトリです。
+terraform/infrastructure/oqtopus-devが各環境のデプロイメントディレクトリです。
 stateファイルはS3で管理されるため、S3バケットを作成する必要があります。
 以下のコマンドを実行して、S3バケットを作成します。
 
 ```bash
-aws s3api create-bucket --bucket tfstate.oqtopus-example-dev --profile example-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
+aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-dev --profile oqtopus-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
 ```
 
 次にTerraformのStateフアイルをロックするためのDynamoDBテーブルを作成します。
 
 ```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile example-dev --region ap-northeast-1
+aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
 ```
 
 次に、terraformの設定ファイルを用意します。以下の2つのファイルを作成します。
 
-```hcl:infrastructure/example-dev/example-dev.tfbackend
-# infrastructure/example-dev.tfbackend
-bucket         = "tfstate.oqtopus-example-dev"
+```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+# infrastructure/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
 key            = "infrastructure.tfstate"
 encrypt        = true
-profile        = "example-dev"
+profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table     = "terraform-lock"
 ```
 
-```hcl:infrastructure/example-dev/terraform.tfvars
+```hcl:infrastructure/oqtopus-dev/terraform.tfvars
 # infrastructure/terraform.tfvars
 product="oqtopus"
 org="example"
@@ -72,8 +72,8 @@ region = "ap-northeast-1"
 `terraform init`で初期化を行います。以下のコマンドを実行します。
 
 ```bash
-cd infrastructure/example-dev
-terraform init -backend-config=example-dev.tfbackend
+cd infrastructure/oqtopus-dev
+terraform init -backend-config=oqtopus-dev.tfbackend
 ```
 
 その後`terrafom apply`でデプロイを行います。
@@ -88,32 +88,32 @@ terraform apply
 
 先ほどと同様に、terraformの設定ファイルを用意します。以下の2つのファイルを作成します。
 
-```hcl:service/example-dev/example-dev.tfbackend
-# service/example-dev.tfbackend
-bucket         = "tfstate.oqtopus-example-dev"
+```hcl:service/oqtopus-dev/oqtopus-dev.tfbackend
+# service/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
 key            = "service.tfstate"
 encrypt        = true
-profile        = "example-dev"
+profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table     = "terraform-lock"
 ```
 
-```hcl:service/example-dev/terraform.tfvars
+```hcl:service/oqtopus-dev/terraform.tfvars
 # service/terraform.tfvars
 product          = "oqtopus"
 org              = "example"
 env              = "dev"
 region           = "ap-northeast-1"
-state_bucket     = "tfstate.oqtopus-example-dev"
+state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
-profile          = "example-dev"
+profile          = "oqtopus-dev"
 ```
 
 `terraform init`で初期化を行います。以下のコマンドを実行します。
 
 ```bash
-cd service/example-dev
-terraform init -backend-config=example-dev.tfbackend
+cd service/oqtopus-dev
+terraform init -backend-config=oqtopus-dev.tfbackend
 ```
 
 ## アプリケーションのデプロイ
@@ -124,7 +124,7 @@ terraform init -backend-config=example-dev.tfbackend
 
 ```bash
 ├── README.md
-├── example-dev
+├── oqtopus-dev
 │   ├── Makefile
 │   └── .env
 └── foo-dev
