@@ -64,10 +64,10 @@ The numbers below correspond to the circled numbers in the sequence diagram.
 - (2)
   - tasks table: [success-case-tasks-02.csv](../../sample/architecture/success-case-tasks-02.csv)
   - results table: no data
-- (10)
+- (8)
   - tasks table: [success-case-tasks-10.csv](../../sample/architecture/success-case-tasks-10.csv)
   - results table: no data
-- (14)
+- (12)
   - tasks table: [success-case-tasks-14.csv](../../sample/architecture/success-case-tasks-14.csv)
   - results table: [success-case-results-14.csv](../../sample/architecture/success-case-results-14.csv)
 
@@ -124,9 +124,9 @@ The followings show sample data in the DB at each point in the sequence diagram,
 where there is one task submission to the endpoint `/tasks/estimation`.
 The numbers below correspond to the circled numbers in the sequence diagram.
 
-- (2), (6), (10)
+- (2), (6), (8)
   - Omitted, as they are the same as in the successful case.
-- (14)
+- (12)
   - tasks table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
   - results table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
 
@@ -179,10 +179,10 @@ The numbers below correspond to the circled numbers in the sequence diagram.
 - (2)
   - tasks table: [cancel-case-tasks-02.csv](../../sample/architecture/cancel-case-tasks-02.csv)
   - results table: no data
-- (8)
+- (6)
   - tasks table: [cancel-case-tasks-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
   - results table: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
 
 > [!NOTE]
 > If the task is in QUEUED status at (1), Cloud immediately changes the task status to CANCELLED.
-> It means the task state transitions from (1) to (8) directly.
+> It means the task state transitions from (1) to (6) directly.

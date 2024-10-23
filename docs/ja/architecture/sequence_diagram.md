@@ -11,7 +11,7 @@
 ## タスク実行のシーケンス (成功ケース)
 
 タスクの実行が成功した場合のシーケンスを以下に示します。
-User によるタスクの送信、Provider によるタスクのフェッチと実行、User による結果の取得の一連の流れを示しています。
+User によるタスクの送信、Provider によるタスクの実行、User による結果の取得の一連の流れを示しています。
 
 ```mermaid
 sequenceDiagram
@@ -52,7 +52,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "SUCCESS", "result": ... }
 ```
 
-Provider は定期的に、タスクのフェッチ・タスクの実行・実行結果の送信、の流れを繰り返します。
+Provider は定期的に、タスクの実行・実行結果の送信、の流れを繰り返します。
 上図では 1 回分の流れを記載しています。
 
 ### 各時点における DB 内のデータ
@@ -123,7 +123,7 @@ sequenceDiagram
 `/tasks/estimation` エンドポイントに対してタスクを送信した場合の例となっています。  
 以下の数字は、シーケンス図中の丸数字と対応しています。
 
-- (2), (4), (6)
+- (2), (6), (8)
   - 成功ケースの場合と同様であるため省略。
 - (12)
   - tasks テーブル: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
@@ -163,7 +163,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
 ```
 
-Provider は定期的に、キャンセルリクエスト (status が CANCELLING のタスク) のフェッチ・タスク実行のキャンセル・キャンセル結果の送信、の流れを繰り返します。
+Provider は定期的に、タスク実行のキャンセル・キャンセル結果の送信、の流れを繰り返します。
 上図では 1 回分の流れを記載しています。
 
 ### 各時点における DB 内のデータ
@@ -178,10 +178,10 @@ Provider は定期的に、キャンセルリクエスト (status が CANCELLING
 - (2)
   - tasks テーブル: [cancel-case-tasks-02.csv](../../sample/architecture/cancel-case-tasks-02.csv)
   - results テーブル: データ無し
-- (8)
+- (6)
   - tasks テーブル: [cancel-case-tasks-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
   - results テーブル: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
 
 > [!NOTE]
 > (1) の時点でタスクが QUEUED 状態の場合、Cloud は即座にタスクを CANCELLED 状態に変更します。
-> 上記のシーケンス図だと、(1) から (8) の状態に即座に遷移することになります。
+> 上記のシーケンス図だと、(1) から (6) の状態に即座に遷移することになります。
