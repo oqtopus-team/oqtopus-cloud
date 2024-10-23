@@ -23,6 +23,11 @@ variable "db_user_name" {
   type        = string
 }
 
+variable "db_performance_insights_enabled" {
+  description = "DB performance insights enabled"
+  type        = bool
+}
+
 variable "profile" {
   description = "aws profile"
   type        = string

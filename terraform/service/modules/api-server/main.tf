@@ -180,10 +180,36 @@ resource "aws_api_gateway_deployment" "this" {
   ]
 }
 
-#trivy:ignore:AVD-AWS-0017 TODO: consider about kms https://avd.aquasec.com/misconfig/avd-aws-0017
+resource "aws_kms_key" "api_gateway_log" {
+  description             = "key to encrypt api_gateway logs"
+  key_usage               = "ENCRYPT_DECRYPT"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}"
+  }
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Id" : "key-default-1",
+    "Statement" : [
+      {
+        "Sid" : "Enable IAM User Permissions",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+          "Service" : "logs.ap-northeast-1.amazonaws.com"
+        },
+        "Action" : "kms:*",
+        "Resource" : "*"
+      }
+    ]
+  })
+}
+
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/api-gateway/${var.product}-${var.org}-${var.env}-${var.identifier}"
   retention_in_days = 14
+  kms_key_id        = aws_kms_key.api_gateway_log.arn
 }
 
 
@@ -258,16 +284,16 @@ resource "aws_api_gateway_method" "this" {
   }
 }
 
-#trivy:ignore:AVD-AWS-0002 TODO: consider about Cache data encryption https://avd.aquasec.com/misconfig/avd-aws-0002
 resource "aws_api_gateway_method_settings" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
   stage_name  = aws_api_gateway_stage.this.stage_name
   method_path = "*/*"
 
   settings {
-    caching_enabled = true
-    metrics_enabled = true
-    logging_level   = "ERROR"
+    caching_enabled      = true
+    metrics_enabled      = true
+    logging_level        = "ERROR"
+    cache_data_encrypted = true
   }
 
   depends_on = [aws_api_gateway_account.this]
