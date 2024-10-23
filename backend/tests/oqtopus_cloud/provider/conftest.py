@@ -107,7 +107,7 @@ def insert_initial_data(db: Session):
             simulation_opt=None,
             ro_error_mitigation="none",
             note=None,
-            status="QUEUED_FETCHED",
+            status="QUEUED",
             created_at=datetime(2024, 3, 4, 12, 34, 56),
         ),
     ]

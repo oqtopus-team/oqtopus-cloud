@@ -40,7 +40,7 @@ class Task(Base):
         simulation_opt (str): The simulation optimization used for the task.
         ro_error_mitigation (str): The error mitigation method used for readout errors.
         note (str): Additional notes for the task.
-        status (str): The status of the task (QUEUED, QUEUED_FETCHED, RUNNING, COMPLETED, FAILED, CANCELLING, CANCELLING_FETCHED, CANCELLED).
+        status (str): The status of the task (QUEUED, RUNNING, COMPLETED, FAILED, CANCELLING, CANCELLED).
         created_at (datetime): The timestamp when the task was created.
     """
 
@@ -121,12 +121,10 @@ class Task(Base):
     status: Mapped[enum.Enum] = mapped_column(
         Enum(
             "QUEUED",
-            "QUEUED_FETCHED",
             "RUNNING",
             "COMPLETED",
             "FAILED",
             "CANCELLING",
-            "CANCELLING_FETCHED",
             "CANCELLED",
         ),
         nullable=False,

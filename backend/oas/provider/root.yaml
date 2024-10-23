@@ -13,13 +13,11 @@ servers:
   - url: http://localhost:8888
     description: Local server url
 paths:
-  /internal/devices/{deviceId}:
+  /devices/{deviceId}:
     $ref: ./paths/devices.yaml#/devices.deviceId
-  /internal/tasks:
+  /tasks:
     $ref: ./paths/tasks.yaml#/tasks
-  /internal/tasks/{taskId}:
+  /tasks/{taskId}:
     $ref: ./paths/tasks.yaml#/tasks.taskId
-  /internal/tasks/unfetched:
-    $ref: ./paths/tasks.yaml#/tasks.unfetched
-  /internal/results:
+  /results:
     $ref: ./paths/results.yaml#/results
