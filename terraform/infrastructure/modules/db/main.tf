@@ -38,7 +38,7 @@ resource "aws_db_instance" "this" {
   engine                                = "mysql"
   engine_version                        = "8.0.35"
   iam_database_authentication_enabled   = "true"
-  instance_class                        = "db.t3.medium"
+  instance_class                        = var.db_performance_insights_enabled == true ? "db.t3.medium" : "db.t3.micro"
   iops                                  = "0"
   kms_key_id                            = aws_kms_key.db_storage.arn
   manage_master_user_password           = true #追加 https://tech.dentsusoken.com/entry/terraform_manage_master_user_password
@@ -50,9 +50,9 @@ resource "aws_db_instance" "this" {
   network_type                          = "IPV4"
   option_group_name                     = "default:mysql-8-0"
   parameter_group_name                  = aws_db_parameter_group.this.name
-  performance_insights_enabled          = true
-  performance_insights_kms_key_id       = aws_kms_key.db_peformance_insights.arn
-  performance_insights_retention_period = 7
+  performance_insights_enabled          = var.db_performance_insights_enabled
+  performance_insights_kms_key_id       = var.db_performance_insights_enabled == true ? aws_kms_key.db_performance_insights[0].arn : null
+  performance_insights_retention_period = var.db_performance_insights_enabled == true ? 7 : null
   port                                  = "3306"
   storage_encrypted                     = "true"
   storage_throughput                    = "0"
@@ -72,7 +72,8 @@ resource "aws_kms_key" "db_storage" {
   }
 }
 
-resource "aws_kms_key" "db_peformance_insights" {
+resource "aws_kms_key" "db_performance_insights" {
+  count                   = var.db_performance_insights_enabled == true ? 1 : 0
   description             = "key to encrypt performance insights"
   key_usage               = "ENCRYPT_DECRYPT"
   deletion_window_in_days = 7
