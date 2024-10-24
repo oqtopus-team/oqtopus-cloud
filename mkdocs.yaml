@@ -120,4 +120,10 @@ extra_css:
 extra:
   toc:
     include: 2
-
+  alternate:
+    - name: "English"
+      link: ""
+      lang: en
+    - name: "日本語"
+      link: "ja/"
+      lang: ja
