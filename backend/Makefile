@@ -27,8 +27,9 @@ generate:
 	--use-field-description \
 	--input ${INPUT} \
 	--input-file-type openapi \
+	--collapse-root-models \
+	--custom-file-header-path "oqtopus_cloud/common/datamodel-codegen-template.j2" \
 	--output-model-type pydantic_v2.BaseModel \
-	--enum-field-as-literal all \
 	--disable-timestamp \
 	--use-standard-collections \
 	--strict-nullable \

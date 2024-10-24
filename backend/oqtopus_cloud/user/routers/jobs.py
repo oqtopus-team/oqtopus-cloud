@@ -1,16 +1,11 @@
-import json
-
 import uuid
-from ast import literal_eval
 from datetime import datetime
-from typing import Any, Literal, Optional, Tuple
 
 from fastapi import (
     APIRouter,
     Depends,
 )
 from fastapi import Request as Event
-from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
@@ -24,7 +19,6 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.user.conf import logger, tracer
-from oqtopus_cloud.user.schemas.jobs import GetJobStatusResponse
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
     Detail,
@@ -32,8 +26,13 @@ from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
     NotFoundErrorResponse,
 )
+from oqtopus_cloud.user.schemas.jobs import (
+    GetJobStatusResponse,
+    JobDef,
+    JobStatus,
+    SubmitJobResponse,
+)
 from oqtopus_cloud.user.schemas.success import SuccessResponse
-from oqtopus_cloud.user.schemas.jobs import SubmitJobResponse, JobId, JobStatus, JobDef
 
 from . import LoggerRouteHandler
 
@@ -125,7 +124,7 @@ def submit_jobs(
         )
         db.add(job)
         db.commit()
-        return SubmitJobResponse(job_id=JobId(job.id))
+        return SubmitJobResponse(job_id=job.id)
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -209,7 +208,7 @@ def get_job_status(
     )
     if job is None:
         return NotFoundErrorResponse(detail="job not found with the given id")
-    return GetJobStatusResponse(job_id=JobId(job_id), status=JobStatus(job.status))
+    return GetJobStatusResponse(job_id=job_id, status=job.status)
 
 
 @router.post(
@@ -239,7 +238,7 @@ def cancel_job(
             logger.info(
                 "job is in submitted or ready or running state, so it will be marked as cancelling"
             )
-            job.status = "cancelled"
+            job.status = JobStatus.cancelled
             db.commit()
         return SuccessResponse(message="cancel request accepted")
     except Exception as e:
@@ -260,7 +259,6 @@ MAP_MODEL_TO_SCHEMA = {
     "mitigation_info": "mitigation_info",
     "job_type": "job_type",
     "shots": "shots",
-    "status": "status",
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
