@@ -1,4 +1,4 @@
-desc: get internal tasks test
+desc: get tasks test
 runners:
   req: ${API_URL}
   openapi3: docs/provider/openapi.yaml
@@ -6,7 +6,7 @@ steps:
   -
     desc: get tasks
     req:
-      /v1/internal/tasks?deviceId=Kawasaki:
+      /v1/tasks?deviceId=Kawasaki:
         get:
           headers:
             Authorization: Bearer ${IdToken}

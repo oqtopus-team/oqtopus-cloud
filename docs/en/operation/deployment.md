@@ -15,12 +15,12 @@ The `terraform` directory contains the code for deploying the AWS environment fo
 ├── infrastructure
 │   ├── Makefile
 │   ├── README.md
-│   ├── example-dev
+│   ├── oqtopus-dev
 │   └── modules
 └── service
     ├── Makefile
     ├── README.md
-    ├── example-dev
+    ├── oqtopus-dev
     └── modules
 
 7 directories, 6 files
@@ -32,31 +32,31 @@ First, let's explain the procedure to deploy the infrastructure environment, suc
 
 ### Deploying the Infrastructure Layer
 
-`terraform/infrastructure/example-dev` is the deployment directory for each environment. Since the state file is managed by S3, an S3 bucket needs to be created. Run the following command to create an S3 bucket.
+`terraform/infrastructure/oqtopus-dev` is the deployment directory for each environment. Since the state file is managed by S3, an S3 bucket needs to be created. Run the following command to create an S3 bucket.
 
 ```bash
-aws s3api create-bucket --bucket tfstate.oqtopus-example-dev --profile example-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
+aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-dev --profile oqtopus-dev --region ap-northeast-1 --create-bucket-configuration LocationConstraint=ap-northeast-1
 ```
 
 Next, create a DynamoDB table to lock the Terraform state file.
 
 ```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile example-dev --region ap-northeast-1
+aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
 ```
 
 Next, prepare the Terraform configuration files. Create the following two files.
 
-```hcl:infrastructure/example-dev/example-dev.tfbackend
-# infrastructure/example-dev.tfbackend
-bucket         = "tfstate.oqtopus-example-dev"
+```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+# infrastructure/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
 key            = "infrastructure.tfstate"
 encrypt        = true
-profile        = "example-dev"
+profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 ```
 
-```hcl:infrastructure/example-dev/terraform.tfvars
+```hcl:infrastructure/oqtopus-dev/terraform.tfvars
 # infrastructure/terraform.tfvars
 product="oqtopus"
 org="example"
@@ -69,8 +69,8 @@ These files set the storage location for the state file and environment variable
 Initialize with `terraform init`. Run the following command:
 
 ```bash
-cd infrastructure/example-dev
-terraform init -backend-config=example-dev.tfbackend
+cd infrastructure/oqtopus-dev
+terraform init -backend-config=oqtopus-dev.tfbackend
 ```
 
 Then deploy with `terraform apply`.
@@ -85,32 +85,32 @@ Next, let's explain the service deployment.
 
 Prepare the Terraform configuration files similarly as before. Create the following two files:
 
-```hcl:service/example-dev/example-dev.tfbackend
-# service/example-dev.tfbackend
-bucket         = "tfstate.oqtopus-example-dev"
+```hcl:service/oqtopus-dev/oqtopus-dev.tfbackend
+# service/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
 key            = "service.tfstate"
 encrypt        = true
-profile        = "example-dev"
+profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 ```
 
-```hcl:service/example-dev/terraform.tfvars
+```hcl:service/oqtopus-dev/terraform.tfvars
 # service/terraform.tfvars
 product          = "oqtopus"
 org              = "example"
 env              = "dev"
 region           = "ap-northeast-1"
-state_bucket     = "tfstate.oqtopus-example-dev"
+state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
-profile          = "example-dev"
+profile          = "oqtopus-dev"
 ```
 
 Initialize with `terraform init`. Run the following command:
 
 ```bash
-cd service/example-dev
-terraform init -backend-config=example-dev.tfbackend
+cd service/oqtopus-dev
+terraform init -backend-config=oqtopus-dev.tfbackend
 ```
 
 ## Application Deployment
@@ -121,7 +121,7 @@ To deploy in a multi-account configuration, we separate directories by environme
 
 ```bash
 ├── README.md
-├── example-dev
+├── oqtopus-dev
 │   ├── Makefile
 │   └── .env
 └── foo-dev

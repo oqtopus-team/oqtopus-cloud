@@ -5,7 +5,7 @@ tasks.TaskId:
 
 tasks.InternalTaskStatus:
   type: string
-  enum: ["QUEUED", "QUEUED_FETCHED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLING_FETCHED", "CANCELLED"]
+  enum: ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"]
   example: "QUEUED"
 
 tasks.Action:
@@ -163,7 +163,7 @@ tasks.TaskInfo:
       optimizationBlockSize: 1,
       optimizationSwapLevel: 1
     }
-    status: QUEUED_FETCHED
+    status: QUEUED
     createdAt: "2022-10-19T11:45:34+09:00"
 
 tasks.TaskStatusUpdate:
@@ -184,16 +184,4 @@ tasks.TaskStatusUpdateResponse:
       type: string
   required:
     - message
-
-tasks.UnfetchedTasksResponse:
-  type: array
-  items:
-    oneOf:
-      - $ref: '#/tasks.TaskInfo'
-      - $ref: '#/tasks.TaskId'
-
-tasks.InternalFetchableTaskStatus:
-  type: string
-  enum: ["QUEUED", "CANCELLING"]
-  example: "QUEUED"
 

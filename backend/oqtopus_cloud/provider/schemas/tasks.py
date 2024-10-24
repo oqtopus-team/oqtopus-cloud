@@ -11,29 +11,11 @@ from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 class InternalTaskStatus(
     RootModel[
-        Literal[
-            "QUEUED",
-            "QUEUED_FETCHED",
-            "RUNNING",
-            "COMPLETED",
-            "FAILED",
-            "CANCELLING",
-            "CANCELLING_FETCHED",
-            "CANCELLED",
-        ]
+        Literal["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"]
     ]
 ):
     root: Annotated[
-        Literal[
-            "QUEUED",
-            "QUEUED_FETCHED",
-            "RUNNING",
-            "COMPLETED",
-            "FAILED",
-            "CANCELLING",
-            "CANCELLING_FETCHED",
-            "CANCELLED",
-        ],
+        Literal["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"],
         Field(examples=["QUEUED"]),
     ]
 
@@ -153,11 +135,3 @@ class TaskStatusUpdate(BaseModel):
 
 class TaskStatusUpdateResponse(BaseModel):
     message: str
-
-
-class InternalFetchableTaskStatus(RootModel[Literal["QUEUED", "CANCELLING"]]):
-    root: Annotated[Literal["QUEUED", "CANCELLING"], Field(examples=["QUEUED"])]
-
-
-class UnfetchedTasksResponse(RootModel[list[Union[TaskInfo, TaskId]]]):
-    root: list[Union[TaskInfo, TaskId]]
