@@ -5,9 +5,34 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional, Union
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
+
+
+class JobInfoEstimation(BaseModel):
+    job_type: Literal["estimation"]
+    code: Annotated[
+        str,
+        Field(
+            examples=[
+                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+            ]
+        ),
+    ]
+    operator: Annotated[str, Field(examples=["X 0 Y 1 Z 5 I 2"])]
+
+
+class JobInfoSampling(BaseModel):
+    job_type: Literal["sampling"]
+    code: Annotated[
+        str,
+        Field(
+            examples=[
+                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+            ]
+        ),
+    ]
 
 
 class JobStatus(Enum):
@@ -29,16 +54,22 @@ class JobDef(BaseModel):
     ]
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
     shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_type: Annotated[
-        Optional[str], Field(None, examples=["'sampling' or 'estimation', 'sse'"])
-    ]
     job_info: Annotated[
-        Optional[str],
+        Union[JobInfoEstimation, JobInfoSampling],
         Field(
-            None,
             examples=[
-                "{'code': '{type: string, example: \"OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;\"}', 'Operator': 'X 0 Y 1 Z 5 I 2', 'result': {'00': 5020, '11': 4980}, 'transpiledCode': '', 'reason': ''}"
-            ],
+                [
+                    {
+                        "job_type": "sampling",
+                        "code": "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                    },
+                    {
+                        "job_type": "estimation",
+                        "code": "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                        "operator": "X 0 Y 1 Z 5 I 2",
+                    },
+                ]
+            ]
         ),
     ]
     transpiler_info: Annotated[

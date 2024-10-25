@@ -104,9 +104,9 @@ def submit_jobs(
         shots = request.shots
         # name is optional
         name = validate_name(request)
+
         # description is optional
         description = validate_description(request)
-
         job = Job(
             # TODO: UUIDv7
             id=uuid.uuid4(),
@@ -118,7 +118,7 @@ def submit_jobs(
             transpiler_info=request.transpiler_info,
             simulator_info=request.simulator_info,
             mitigation_info=request.mitigation_info,
-            job_type=request.job_type,
+            job_type=request.job_info.job_type,
             shots=shots,
             created_at=datetime.now(),
         )

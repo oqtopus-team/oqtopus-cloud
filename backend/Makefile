@@ -28,8 +28,8 @@ generate:
 	--input ${INPUT} \
 	--input-file-type openapi \
 	--collapse-root-models \
+	--enum-field-as-literal one \
 	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
-	--custom-template-dir "oqtopus_cloud/datamodel_codegen/template" \
 	--output-model-type pydantic_v2.BaseModel \
 	--disable-timestamp \
 	--use-standard-collections \
