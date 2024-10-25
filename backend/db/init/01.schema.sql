@@ -1,4 +1,4 @@
-drop table main.devices;
+drop table if exists main.devices;
 CREATE TABLE IF NOT EXISTS main.devices (
   id VARCHAR(64) PRIMARY KEY,
   device_type VARCHAR(32) DEFAULT 'QPU' NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS main.devices (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-drop table main.jobs;
+drop table if exists  main.jobs;
 CREATE TABLE IF NOT EXISTS main.jobs (
   id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
