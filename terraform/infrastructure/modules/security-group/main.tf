@@ -171,16 +171,6 @@ resource "aws_vpc_security_group_egress_rule" "ec2_bastion_to_secret_manager" {
   }
 }
 
-resource "aws_vpc_security_group_egress_rule" "ec2_bastion_to_anywhere" {
-  security_group_id = aws_security_group.ec2_bastion.id
-  ip_protocol       = "-1"
-  cidr_ipv4         = "0.0.0.0/0"
-  description       = "Internet access"
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-ec2-bastion-to-anywhere"
-  }
-}
-
 resource "aws_vpc_security_group_egress_rule" "eic_to_ec2_bastion" {
   security_group_id            = aws_security_group.eic.id
   referenced_security_group_id = aws_security_group.ec2_bastion.id

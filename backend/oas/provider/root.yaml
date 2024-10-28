@@ -19,5 +19,5 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.jobId
-  /jobs/unfetched:
-    $ref: ./paths/jobs.yaml#/jobs.unfetched
+  /results:
+    $ref: ./paths/results.yaml#/results

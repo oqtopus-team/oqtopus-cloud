@@ -23,7 +23,6 @@
 | Inbound  | EIC Endpoint        | 22        | 22      | tcp      | EIC endpoint access   |
 | Outbound | DB Proxy            | 3306      | 3306    | tcp      | DB proxy access       |
 | Outbound | Secret Manager      | 443       | 443     | tcp      | Secret Manager access |
-| Outbound | Anywhere (Internet) | -1        | -1      | -1       | Internet access       |
 
 ## 3. DB Proxy Security Group
 

@@ -13,7 +13,7 @@ endif
 endif
 
 init: ## Run terraform init
-	@terraform init -backend-config=example-dev.tfbackend
+	@terraform init -backend-config=oqtopus-dev.tfbackend
 
 lint: ## Run tflint
 	@tflint --init

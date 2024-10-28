@@ -32,7 +32,12 @@ zip:
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
 	@poetry export -f requirements.txt --output requirements.txt
-	@docker run --platform linux/x86_64 -u $(id -u):$(id -g) -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} -v ./requirements.txt:/requirements.txt -v ~/.cache/pip:/.cache/pip python:3.12 pip install -r /requirements.txt -t /${DEPLOY_PACKAGES_DIR}
+	@docker run --platform linux/x86_64 --user $(id -u):$(id -g) \
+  -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
+  -v ./requirements.txt:/requirements.txt \
+  python:3.12 /bin/bash -c "\
+  curl -fsSL https://astral.sh/uv/install.sh | bash && \
+  /root/.cargo/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}"
 	@cd ${DEPLOY_PACKAGES_DIR} && rm -rf __pycache__ && zip -r ../${BIN}/lambda.zip * -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q

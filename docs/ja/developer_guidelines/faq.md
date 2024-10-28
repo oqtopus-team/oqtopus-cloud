@@ -25,7 +25,7 @@ credential_process = aws configure export-credentials --profile myprofile
 terraformの各設定ファイルでは`myprofile-tf`を利用します。下記のように設定してください。
 
 ```bash
-# terraform/infrastructure/example-dev/example-dev.tfbackend
+# terraform/infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 bucket         = "xxxxxxxxxxxxxx"
 key            = "xxxxxxxxxxxxxx"
 encrypt        = true
@@ -35,7 +35,7 @@ dynamodb_table  = "xxxxxxxxxxxxx"
 ```
 
 ```bash
-# terraform/infrastructure/example-dev/terraform.tfvars
+# terraform/infrastructure/oqtopus-dev/terraform.tfvars
 product = "oqtopus"
 org     = "example"
 env     = "dev"
@@ -44,6 +44,6 @@ db_user_name = "xxxxxxxxxxxxx"
 profile = "myprofile-tf"
 ```
 
-`terraform/infrastructure/example-dev`配下で`terraform init -backend-config=example-dev.tfbackend -reconfigure`を実行後、`terraform plan`を実行することでMFA認証付きでのTerraform実行が可能です。
+`terraform/infrastructure/oqtopus-dev`配下で`terraform init -backend-config=oqtopus-dev.tfbackend -reconfigure`を実行後、`terraform plan`を実行することでMFA認証付きでのTerraform実行が可能です。
 
 詳細は以下を参照してください。 : [Terraform AWS Provider Issue #2420](https://github.com/hashicorp/terraform-provider-aws/issues/2420#issuecomment-1899137746)

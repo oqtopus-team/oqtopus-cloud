@@ -38,3 +38,8 @@ variable "db_proxy_security_group_ids" {
   description = "The security group IDs for the RDS proxy"
   type        = list(string)
 }
+
+variable "db_performance_insights_enabled" {
+  description = "DB performance insights enabled"
+  type        = bool
+}

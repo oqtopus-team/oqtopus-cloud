@@ -85,30 +85,3 @@ resource "aws_iam_instance_profile" "ec2_bastion" {
   name = "${var.product}-${var.org}-${var.env}-ec2-bastion"
   role = aws_iam_role.ec2_bastion.name
 }
-
-
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.ap-northeast-1.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = var.ec2_bastion_route_table_ids
-  policy            = data.aws_iam_policy_document.s3_vpc_endpoint.json
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-s3-vpc-endpoint"
-  }
-}
-
-data "aws_iam_policy_document" "s3_vpc_endpoint" {
-  statement {
-    actions   = ["*"]
-    effect    = "Allow"
-    resources = ["*"]
-    principals {
-      type = "*"
-      identifiers = [
-        "*",
-      ]
-    }
-  }
-}
-

@@ -1,17 +1,15 @@
 # Task State Transition
 
 The time to stay in the RUNNING state can be very short, so it can be skipped.
-For example, QUEUED_FETCHED tasks can be transitioned to COMPLETED directly.
+For example, QUEUED state tasks can be transitioned to COMPLETED directly.
 
 ```mermaid
 stateDiagram-v2
   [*] --> submitted :task submitted
 
-  submitted --> QUEUED_FETCHED :fetched
-  QUEUED_FETCHED --> RUNNING :execution started
+  QUEUED --> RUNNING :execution started
   
   state join_state <<join>>
-  QUEUED_FETCHED --> join_state
   RUNNING --> join_state
   
   state join_state <<fork>>
@@ -21,8 +19,7 @@ stateDiagram-v2
   
   COMPLETED --> [*] :deleted
   FAILED --> [*] :deleted
-  cancelling --> CANCELLING_FETCHED :fetched
-  CANCELLING_FETCHED --> CANCELLED :cancelled in a gateway
-  submitted --> CANCELLED :cancelled requested (cancelled in the cloud PF)
+  CANCELLING --> CANCELLED :cancelled in a gateway
+  QUEUED --> CANCELLED :cancelled requested (cancelled in the cloud PF)
   CANCELLED --> [*] :deleted
 ```

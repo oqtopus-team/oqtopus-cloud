@@ -116,7 +116,7 @@ paths:
             example: 1
         - in: query
           name: timestamp
-          description: Additional search parameter:<br/> Fetch jobs created after the specified timetsamp
+          description: Additional search parameter:<br/> Jobs created after the specified timetsamp
           schema:
             type: string
             example: '2022-12-15 15:54:46'
@@ -227,42 +227,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
-  /jobs/unfetched:
-    get:
-      summary: Fetch jobs for device
-      description: 'Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: submitted or cancelling. After the operation job status is changed to appropriate ready state (submitted or cancelled)'
-      operationId: getUnfetchedJobs
-      security: []
+                detail: task not found
+  /results:
+    post:
+      summary: Submit a quantum job result
       tags:
-        - jobs
-      parameters:
-        - in: query
-          name: device_id
-          required: true
-          description: Device identifier
-          schema:
-            type: string
-            example: Kawasaki
-        - in: query
-          name: status
-          required: true
-          description: Fetch jobs with specified status
-          schema:
-            $ref: '#/components/schemas/jobs.InternalFetchableJobStatus'
-        - in: query
-          name: max_results
-          description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
-          schema:
-            type: integer
-            example: 1
+        - results
+      description: Submit a quantum job result
+      operationId: postResult
+      security: []
+      requestBody:
+        description: Result to be submitted
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/results.ResultDef'
+            examples:
+              success sampling:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: SUCCESS
+                  result:
+                    '11': 4980
+                    '00': 5020
+                  reason: null
+                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+              success estimation:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: SUCCESS
+                  result:
+                    - 1.5
+                    - 2.8
+                  reason: null
+                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
+              failure:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: FAILURE
+                  result: null
+                  reason: Invalid device parameter in request
+                  transpiledCode: null
+              cancel:
+                value:
+                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  status: CANCELLED
+                  result: null
+                  reason: User cancelled
+                  transpiledCode: null
       responses:
         '200':
-          description: List of jobs for execution (all job data) / cancel (jobIds only)
+          description: Results submitted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.UnfetchedJobsResponse'
+                $ref: '#/components/schemas/results.CreateResultResponse'
+              example:
+                message: Results submitted
         '400':
           description: Bad Request
           content:

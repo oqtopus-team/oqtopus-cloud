@@ -23,7 +23,7 @@ jobs:
           schema: {type: integer, example: 1}
         - in: query
           name: timestamp
-          description: "Additional search parameter:<br/> Fetch jobs created after the specified timetsamp"
+          description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
           schema: {type: string, example: '2022-12-15 15:54:46'}
     responses:
       "200":
@@ -131,45 +131,4 @@ jobs.jobId:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
-              detail: job not found
-
-jobs.unfetched:
-  get:
-    summary: "Fetch jobs for device"
-    description: "Fetches jobs for execution/cancel<br/><br/>Operation is valid only for job with status: submitted or cancelling. After the operation job status is changed to appropriate ready state (submitted or cancelled)"
-    operationId: getUnfetchedJobs
-    security: []
-    tags:
-    - jobs
-    parameters:
-      - in: query
-        name: device_id
-        required: true
-        description: "Device identifier"
-        schema: {type: string, example: "Kawasaki"}
-      - in: query
-        name: status
-        required: true
-        description: "Fetch jobs with specified status"
-        schema:
-          $ref: "../schemas/jobs.yaml#/jobs.InternalFetchableJobStatus"
-      - in: query
-        name: max_results
-        description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
-        schema: {type: integer, example: 1}
-
-    responses:
-      "200":
-        description: "List of jobs for execution (all job data) / cancel (jobIds only)"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/jobs.yaml#/jobs.UnfetchedJobsResponse"
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
-            example:
-              detail: Bad request malformed input data
+              detail: Job not found
