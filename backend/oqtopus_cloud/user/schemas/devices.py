@@ -4,38 +4,38 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import BaseModel, Field
 
 
-class DeviceType(Enum):
+class DeviceType(str, Enum):
     QPU = "QPU"
     simulator = "simulator"
 
 
-class Status(Enum):
+class Status(str, Enum):
     available = "available"
     unavailable = "unavailable"
 
 
 class DeviceInfo(BaseModel):
-    device_id: Annotated[Optional[str], Field(None, examples=["SVSim"])]
-    device_type: Annotated[Optional[DeviceType], Field(None, examples=["simulator"])]
+    device_id: Annotated[str | None, Field(examples=["SVSim"])] = None
+    device_type: Annotated[DeviceType | None, Field(examples=["simulator"])] = None
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        Optional[AwareDatetime], Field(None, examples=["2022-10-19T11:45:34+09:00"])
-    ]
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
     """
-    n_pending_jobs: Annotated[Optional[int], Field(None, examples=[8])]
-    n_qubits: Annotated[Optional[int], Field(None, examples=[39])]
+    n_pending_jobs: Annotated[int | None, Field(examples=[8])] = None
+    n_qubits: Annotated[int | None, Field(examples=[39])] = None
     basis_gates: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         Field(
-            None,
             examples=[
                 [
                     "x",
@@ -61,27 +61,26 @@ class DeviceInfo(BaseModel):
                     "sx",
                     "sxdg",
                 ]
-            ],
+            ]
         ),
-    ]
+    ] = None
     supported_instructions: Annotated[
-        Optional[list[str]], Field(None, examples=[["measure", "barrier", "reset"]])
-    ]
+        list[str] | None, Field(examples=[["measure", "barrier", "reset"]])
+    ] = None
     device_info: Annotated[
-        Optional[str],
+        str | None,
         Field(
-            None,
             examples=[
                 "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}"
-            ],
+            ]
         ),
-    ]
+    ] = None
     """
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        Optional[AwareDatetime], Field(None, examples=["2022-10-19T11:45:34+09:00"])
-    ]
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
     """
     Parameter available only for 'QPU' devices with available calibration data
     """

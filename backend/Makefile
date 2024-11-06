@@ -29,6 +29,8 @@ generate:
 	--input-file-type openapi \
 	--collapse-root-models \
 	--enum-field-as-literal one \
+	--use-union-operator \
+	--use-subclass-enum \
 	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
 	--output-model-type pydantic_v2.BaseModel \
 	--disable-timestamp \

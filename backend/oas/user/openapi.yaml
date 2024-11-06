@@ -120,7 +120,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/jobs.JobDef'
+              $ref: '#/components/schemas/jobs.SubmitJobRequest'
             examples:
               simulator:
                 description: Simulator example
@@ -202,7 +202,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.JobDef'
+                $ref: '#/components/schemas/jobs.JobFullDef'
         '400':
           description: Bad Request
           content:
@@ -523,55 +523,12 @@ components:
     jobs.JobId:
       type: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    jobs.JobInfoEstimation:
-      type: object
-      properties:
-        job_type:
-          type: string
-          enum:
-            - estimation
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        operator:
-          type: string
-          example: X 0 Y 1 Z 5 I 2
-      required:
-        - job_type
-        - code
-        - operator
-    jobs.JobInfoSampling:
-      type: object
-      properties:
-        job_type:
-          type: string
-          enum:
-            - sampling
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-      required:
-        - job_type
-        - code
-    jobs.JobInfo:
-      oneOf:
-        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
-        - $ref: '#/components/schemas/jobs.JobInfoSampling'
-      example:
-        - job_type: sampling
-          code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        - job_type: estimation
-          code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          operator: X 0 Y 1 Z 5 I 2
-    jobs.TranspilerInfo:
+    jobs.JobType:
       type: string
-      example: '{''qubitAllocation'': {''0'': 12, ''1'': 16}, ''skipTranspilation'': false, ''seedTranspilation'': 873}'
-    jobs.SimulatorInfo:
-      type: string
-      example: '{''nQubits'': 5, ''nNodes'': 12, ''nPerNode'': 2, ''seedSimulation'': 39058567, ''simulationOpt'': {''optimizationMethod'': ''light'', ''optimizationBlockSize'': 1, ''optimizationSwapLevel'': 1}}'
-    jobs.MitigationInfo:
-      type: string
-      example: '{''roErrorMitigation'': ''pseudo_inverse''}'
+      enum:
+        - estimation
+        - sampling
+      example: sampling
     jobs.JobStatus:
       type: string
       enum:
@@ -593,38 +550,15 @@ components:
         description:
           type: string
           example: Bell State Sampling Example
-        device_id:
-          type: string
-          example: Kawasaki
-        shots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-        job_info:
-          $ref: '#/components/schemas/jobs.JobInfo'
-        transpiler_info:
-          $ref: '#/components/schemas/jobs.TranspilerInfo'
-        simulator_info:
-          $ref: '#/components/schemas/jobs.SimulatorInfo'
-        mitigation_info:
-          $ref: '#/components/schemas/jobs.MitigationInfo'
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
       required:
-        - device_id
-        - shots
+        - job_id
+        - name
+        - job_type
         - status
-        - created_at
-        - job_info
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
@@ -641,6 +575,96 @@ components:
         status: submitted
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
+    jobs.JobInfoEstimation:
+      type: object
+      description: The descriptor of estimation jobs
+      properties:
+        job_type:
+          type: string
+          enum:
+            - estimation
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        operator:
+          type: string
+          example: X 0 Y 1 Z 5 I 2
+      required:
+        - job_type
+        - code
+        - operator
+    jobs.JobInfoSampling:
+      type: object
+      description: The descriptor of sampling jobs
+      properties:
+        job_type:
+          type: string
+          enum:
+            - sampling
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+      required:
+        - job_type
+        - code
+    jobs.JobInfoDesc:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
+        - $ref: '#/components/schemas/jobs.JobInfoSampling'
+    jobs.SubmitJobRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Bell State Sampling
+        description:
+          type: string
+          example: An example of Bell state sampling job
+        device_id:
+          type: string
+          example: Kawasaki
+        job_info:
+          $ref: '#/components/schemas/jobs.JobInfoDesc'
+        transpiler_info:
+          type: string
+          example: ''
+        simulator_info:
+          type: string
+          example: |-
+            {
+              "n_qubits": 5,
+              "n_nodes": 12,
+              "n_per_node": 2,
+              "seed_simulation": 39058567,
+              "simulation_opt": {
+                "optimization_method": "light",
+                "optimization_block_size": 1,
+                "optimization_swap_level": 1
+              }
+            }
+        mitigation_info:
+          type: string
+          example: ''
+        shots:
+          type: integer
+          example: 1000
+        status:
+          $ref: '#/components/schemas/jobs.JobStatus'
+          example: submitted
+        created_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+      required:
+        - name
+        - device_id
+        - shots
+        - job_info
     jobs.SubmitJobResponse:
       description: submit a job
       type: object
@@ -656,6 +680,67 @@ components:
           type: string
       required:
         - detail
+    jobs.JobInfo:
+      type: object
+      properties:
+        desc:
+          $ref: '#/components/schemas/jobs.JobInfoDesc'
+        transpiled_code:
+          type: string
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        result:
+          type: string
+          description: The result of quantum computation, set only if the computation is successful.
+          example: '{ ''11'': 4980, ''00'': 5020 }'
+        reason:
+          type: string
+          description: The reason indicating why there is no result
+      required:
+        - desc
+    jobs.TranspilerInfo:
+      type: string
+      example: '{''qubitAllocation'': {''0'': 12, ''1'': 16}, ''skipTranspilation'': false, ''seedTranspilation'': 873}'
+    jobs.SimulatorInfo:
+      type: string
+      example: '{''nQubits'': 5, ''nNodes'': 12, ''nPerNode'': 2, ''seedSimulation'': 39058567, ''simulationOpt'': {''optimizationMethod'': ''light'', ''optimizationBlockSize'': 1, ''optimizationSwapLevel'': 1}}'
+    jobs.MitigationInfo:
+      type: string
+      example: '{''roErrorMitigation'': ''pseudo_inverse''}'
+    jobs.JobDetail:
+      type: object
+      properties:
+        device_id:
+          type: string
+          example: Kawasaki
+        shots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        job_info:
+          $ref: '#/components/schemas/jobs.JobInfo'
+        transpiler_info:
+          $ref: '#/components/schemas/jobs.TranspilerInfo'
+        simulator_info:
+          $ref: '#/components/schemas/jobs.SimulatorInfo'
+        mitigation_info:
+          $ref: '#/components/schemas/jobs.MitigationInfo'
+        created_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+      required:
+        - device_id
+        - shots
+        - job_info
+    jobs.JobFullDef:
+      allOf:
+        - $ref: '#/components/schemas/jobs.JobDef'
+        - $ref: '#/components/schemas/jobs.JobDetail'
     success.SuccessResponse:
       type: object
       properties:

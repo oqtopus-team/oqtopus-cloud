@@ -37,7 +37,7 @@ jobs:
       content:
         application/json:
           schema:
-            $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+            $ref: "../schemas/jobs.yaml#/jobs.SubmitJobRequest"
           examples:
             simulator:
               description: Simulator example
@@ -126,7 +126,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+              $ref: "../schemas/jobs.yaml#/jobs.JobFullDef"
       "400":
         description: Bad Request
         content:

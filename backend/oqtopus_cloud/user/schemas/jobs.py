@@ -4,13 +4,42 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel
+
+
+class JobType(str, Enum):
+    estimation = "estimation"
+    sampling = "sampling"
+
+
+class JobStatus(str, Enum):
+    submitted = "submitted"
+    ready = "ready"
+    running = "running"
+    success = "success"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
+class JobDef(BaseModel):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    description: Annotated[
+        str | None, Field(examples=["Bell State Sampling Example"])
+    ] = None
+    job_type: JobType
+    status: JobStatus
 
 
 class JobInfoEstimation(BaseModel):
+    """
+    The descriptor of estimation jobs
+    """
+
     job_type: Literal["estimation"]
     code: Annotated[
         str,
@@ -24,6 +53,10 @@ class JobInfoEstimation(BaseModel):
 
 
 class JobInfoSampling(BaseModel):
+    """
+    The descriptor of sampling jobs
+    """
+
     job_type: Literal["sampling"]
     code: Annotated[
         str,
@@ -35,69 +68,31 @@ class JobInfoSampling(BaseModel):
     ]
 
 
-class JobStatus(Enum):
-    submitted = "submitted"
-    ready = "ready"
-    running = "running"
-    success = "success"
-    failed = "failed"
-    cancelled = "cancelled"
-
-
-class JobDef(BaseModel):
-    job_id: Annotated[
-        Optional[str], Field(None, examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
-    ]
-    name: Annotated[Optional[str], Field(None, examples=["Bell State Sampling"])]
+class SubmitJobRequest(BaseModel):
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
     description: Annotated[
-        Optional[str], Field(None, examples=["Bell State Sampling Example"])
-    ]
+        str | None, Field(examples=["An example of Bell state sampling job"])
+    ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_info: Annotated[
-        Union[JobInfoEstimation, JobInfoSampling],
+    job_info: JobInfoEstimation | JobInfoSampling
+    transpiler_info: Annotated[str | None, Field(examples=[""])] = None
+    simulator_info: Annotated[
+        str | None,
         Field(
             examples=[
-                [
-                    {
-                        "job_type": "sampling",
-                        "code": "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                    },
-                    {
-                        "job_type": "estimation",
-                        "code": "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                        "operator": "X 0 Y 1 Z 5 I 2",
-                    },
-                ]
+                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
             ]
         ),
-    ]
-    transpiler_info: Annotated[
-        Optional[str],
-        Field(
-            None,
-            examples=[
-                "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}"
-            ],
-        ),
-    ]
-    simulator_info: Annotated[
-        Optional[str],
-        Field(
-            None,
-            examples=[
-                "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}"
-            ],
-        ),
-    ]
-    mitigation_info: Annotated[
-        Optional[str], Field(None, examples=["{'roErrorMitigation': 'pseudo_inverse'}"])
-    ]
-    status: JobStatus
-    created_at: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
+    ] = None
+    mitigation_info: Annotated[str | None, Field(examples=[""])] = None
+    shots: Annotated[int, Field(examples=[1000])]
+    status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
     updated_at: Annotated[
-        Optional[AwareDatetime], Field(None, examples=["2022-10-19T11:45:34+09:00"])
-    ]
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class SubmitJobResponse(BaseModel):
@@ -106,6 +101,61 @@ class SubmitJobResponse(BaseModel):
     """
 
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+
+
+class JobInfo(BaseModel):
+    desc: JobInfoEstimation | JobInfoSampling
+    transpiled_code: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
+    result: Annotated[str | None, Field(examples=["{ '11': 4980, '00': 5020 }"])] = None
+    """
+    The result of quantum computation, set only if the computation is successful.
+    """
+    reason: str | None = None
+    """
+    The reason indicating why there is no result
+    """
+
+
+class JobDetail(BaseModel):
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_info: JobInfo
+    transpiler_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "{'qubitAllocation': {'0': 12, '1': 16}, 'skipTranspilation': false, 'seedTranspilation': 873}"
+            ]
+        ),
+    ] = None
+    simulator_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "{'nQubits': 5, 'nNodes': 12, 'nPerNode': 2, 'seedSimulation': 39058567, 'simulationOpt': {'optimizationMethod': 'light', 'optimizationBlockSize': 1, 'optimizationSwapLevel': 1}}"
+            ]
+        ),
+    ] = None
+    mitigation_info: Annotated[
+        str | None, Field(examples=["{'roErrorMitigation': 'pseudo_inverse'}"])
+    ] = None
+    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
+        None
+    )
+    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
+        None
+    )
+
+
+class JobFullDef(JobDef, JobDetail):
+    pass
 
 
 class GetJobStatusResponse(BaseModel):

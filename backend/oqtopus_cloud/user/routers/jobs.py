@@ -1,5 +1,7 @@
+import json
 import uuid
 from datetime import datetime
+from typing import Any
 
 from fastapi import (
     APIRouter,
@@ -12,7 +14,6 @@ from sqlalchemy.orm import (
 )
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.model_util import model_to_schema_dict
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import (
@@ -29,7 +30,11 @@ from oqtopus_cloud.user.schemas.errors import (
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobStatusResponse,
     JobDef,
+    JobFullDef,
+    JobInfo,
     JobStatus,
+    JobType,
+    SubmitJobRequest,
     SubmitJobResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
@@ -62,7 +67,14 @@ def get_jobs(
         logger.info("invoked!", extra={"owner": owner})
         stmt = select(Job).filter(Job.owner == owner).order_by(Job.created_at)
         jobs = db.scalars(stmt).all()
-        return [model_to_schema(job) for job in jobs]
+        results: list[JobDef] = []
+        for job_model, job in [(job, model_to_schema(job)) for job in jobs]:
+            if job is None:
+                logger.warning(f"Failed to encode job model to schema: {job_model.id}")
+            else:
+                results.append(job)
+        return results
+
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -88,7 +100,7 @@ def validate_description(
 @tracer.capture_method
 def submit_jobs(
     event: Event,
-    request: JobDef,
+    request: SubmitJobRequest,
     db: Session = Depends(get_db),
 ) -> SubmitJobResponse | ErrorResponse:
     try:
@@ -107,6 +119,7 @@ def submit_jobs(
 
         # description is optional
         description = validate_description(request)
+
         job = Job(
             # TODO: UUIDv7
             id=uuid.uuid4(),
@@ -114,7 +127,7 @@ def submit_jobs(
             name=name,
             description=description,
             device_id=request.device_id,
-            job_info=request.job_info,
+            job_info=json.dumps({"desc": request.job_info.model_dump()}),
             transpiler_info=request.transpiler_info,
             simulator_info=request.simulator_info,
             mitigation_info=request.mitigation_info,
@@ -132,7 +145,7 @@ def submit_jobs(
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=JobDef,
+    response_model=JobFullDef,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -140,14 +153,18 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | ErrorResponse:
+) -> JobFullDef | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
-        if job is None:
+        job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        if job_model is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
-        return model_to_schema(job)
+        job = model_to_schema_full(job_model)
+        if job is None:
+            logger.warning("warn: Failed to encode job model to schema.")
+            return NotFoundErrorResponse(detail="job not found with the given id")
+        return job
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -264,17 +281,44 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def model_to_schema(model: Job) -> JobDef:
-    schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
+def decode_job_info(j: Any) -> JobInfo | None:
+    try:
+        return JobInfo.model_validate(j)
+    except Exception as _:
+        return None
 
-    # load as json if not None.
-    # if schema_dict["basis_gates"]:
-    #     schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
-    # logger.info("schema_dict!!!:", schema_dict)
-    if schema_dict["created_at"]:
-        schema_dict["created_at"] = schema_dict["created_at"].astimezone(jst)
-    if schema_dict["updated_at"]:
-        schema_dict["updated_at"] = schema_dict["updated_at"].astimezone(jst)
 
-    response = JobDef(**schema_dict)
-    return response
+def model_to_schema(model: Job) -> JobDef | None:
+    job_info = decode_job_info(json.loads(model.job_info))
+    if job_info is None:
+        return None
+
+    return JobDef(
+        job_id=model.id,
+        name=model.name,
+        description=model.description,
+        job_type=JobType(job_info.desc.job_type),
+        status=JobStatus(model.status),
+    )
+
+
+def model_to_schema_full(model: Job) -> JobFullDef | None:
+    job_info = decode_job_info(json.loads(model.job_info))
+    if job_info is None:
+        return None
+
+    return JobFullDef(
+        job_id=model.id,
+        name=model.name,
+        description=model.description,
+        device_id=model.device_id,
+        shots=model.shots,
+        job_type=JobType(job_info.desc.job_type),
+        job_info=job_info,
+        status=JobStatus(model.status),
+        transpiler_info=model.transpiler_info,
+        mitigation_info=model.mitigation_info,
+        simulator_info=model.simulator_info,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
