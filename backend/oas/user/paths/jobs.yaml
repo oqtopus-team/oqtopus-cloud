@@ -126,7 +126,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobFullDef"
+              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
       "400":
         description: Bad Request
         content:

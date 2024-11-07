@@ -30,7 +30,6 @@ from oqtopus_cloud.user.schemas.errors import (
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobStatusResponse,
     JobDef,
-    JobFullDef,
     JobInfo,
     JobStatus,
     JobType,
@@ -145,7 +144,7 @@ def submit_jobs(
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=JobFullDef,
+    response_model=JobDef,
     responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -153,14 +152,14 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobFullDef | ErrorResponse:
+) -> JobDef | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
-        job = model_to_schema_full(job_model)
+        job = model_to_schema(job_model)
         if job is None:
             logger.warning("warn: Failed to encode job model to schema.")
             return NotFoundErrorResponse(detail="job not found with the given id")
@@ -294,20 +293,6 @@ def model_to_schema(model: Job) -> JobDef | None:
         return None
 
     return JobDef(
-        job_id=model.id,
-        name=model.name,
-        description=model.description,
-        job_type=JobType(job_info.desc.job_type),
-        status=JobStatus(model.status),
-    )
-
-
-def model_to_schema_full(model: Job) -> JobFullDef | None:
-    job_info = decode_job_info(json.loads(model.job_info))
-    if job_info is None:
-        return None
-
-    return JobFullDef(
         job_id=model.id,
         name=model.name,
         description=model.description,
