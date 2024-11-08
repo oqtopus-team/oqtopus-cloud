@@ -16,7 +16,7 @@ jobs:
           name: status
           description: "Additional search parameter:<br/> Search jobs with specified status only"
           schema:
-            $ref: "../schemas/jobs.yaml#/jobs.InternalJobStatus"
+            $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
         - in: query
           name: max_results
           description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"

@@ -1,7 +1,6 @@
-import uuid
-from ast import literal_eval
+import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.model_util import model_to_schema_dict
@@ -16,11 +15,11 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    JobId,
     JobDef,
+    JobInfo,
+    JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
-    UnfetchedJobsResponse,
 )
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -32,6 +31,8 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 utc = ZoneInfo("UTC")
 jst = ZoneInfo("Asia/Tokyo")
+
+JobId = str
 
 
 @router.get(
@@ -55,53 +56,13 @@ def get_jobs(
         query = query.filter(Job.created_at > time)
     if max_results is not None:
         query = query.limit(max_results)
-    jobs = query.all()
-    return [model_to_schema(job) for job in jobs]
-
-
-@router.get(
-    "/jobs/unfetched",
-    response_model=UnfetchedJobsResponse,
-    responses={400: {"model": Detail}, 500: {"model": Detail}},
-)
-@tracer.capture_method
-def get_unfetched_jobs(
-    device_id: str,
-    status: str,
-    max_results: Optional[int] = None,
-    db: Session = Depends(get_db),
-) -> UnfetchedJobsResponse | ErrorResponse:
-    logger.info("invoked get_job")
-    try:
-        if status not in ["submitted", "cancelling"]:
-            return BadRequestResponse("Invalid status")
-        if status == "submitted":
-            query = (
-                db.query(Job)
-                .filter(Job.device_id == device_id, Job.status == "submitted")
-                .order_by(Job.created_at)
-            )
-            update_status = "ready"
-        else:
-            query = (
-                db.query(Job)
-                .filter(Job.device_id == device_id)
-                .order_by(Job.created_at)
-            )
-            update_status = "cancelled"
-
-        if max_results is not None:
-            query = query.limit(max_results)
-
-        jobs = query.all()
-        if len(jobs) != 0:
-            for job in jobs:
-                job.status = update_status  # type: ignore
-            db.commit()
-        job_ids = [JobId(job.id) for job in jobs]
-        return UnfetchedJobsResponse(root=job_ids)  # type: ignore
-    except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+    models = query.all()
+    jobs: list[JobDef] = []
+    for model in models:
+        job = model_to_schema(model)
+        if job is not None:
+            jobs.append(job)
+    return jobs
 
 
 @router.get(
@@ -167,23 +128,33 @@ MAP_MODEL_TO_SCHEMA = {
     "mitigation_info": "mitigation_info",
     "job_type": "job_type",
     "shots": "shots",
-    "status": "status",
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
 
 
-def model_to_schema(model: Job) -> JobDef:
-    schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
+def model_to_schema(model: Job) -> JobDef | None:
+    def decode_job_info(j: Any) -> JobInfo | None:
+        try:
+            return JobInfo.model_validate(j)
+        except Exception as _:
+            return None
 
-    # load as json if not None.
-    # if schema_dict["basis_gates"]:
-    #     schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
-    # logger.info("schema_dict!!!:", schema_dict)
-    if schema_dict["created_at"]:
-        schema_dict["created_at"] = schema_dict["created_at"].astimezone(jst)
-    if schema_dict["updated_at"]:
-        schema_dict["updated_at"] = schema_dict["updated_at"].astimezone(jst)
+    job_info = decode_job_info(json.loads(model.job_info))
+    if job_info is None:
+        return None
 
-    response = JobDef(**schema_dict)
-    return response
+    return JobDef(
+        job_id=model.id,
+        name=model.name,
+        description=model.description,
+        device_id=model.device_id,
+        shots=model.shots,
+        job_info=job_info,
+        status=JobStatus(model.status),
+        transpiler_info=model.transpiler_info,
+        mitigation_info=model.mitigation_info,
+        simulator_info=model.simulator_info,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )

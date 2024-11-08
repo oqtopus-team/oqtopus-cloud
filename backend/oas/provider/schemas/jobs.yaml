@@ -1,11 +1,17 @@
 jobs.JobId:
   type: string
-  format: uuid
+  format: string
   example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
 
-jobs.InternalJobStatus:
+jobs.JobStatus:
   type: string
-  enum: ["submitted", "ready", "running", "success", "failed", "cancelled"]
+  enum:
+    - submitted
+    - ready
+    - running
+    - success
+    - failed
+    - cancelled
   example: "submitted"
 
 jobs.JobInfoSampling:
@@ -109,8 +115,6 @@ jobs.JobDef:
       minimum: 1
       maximum: 1e7
       example: "1000"
-    job_type:
-      $ref: "#/jobs.JobType"
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
@@ -144,9 +148,8 @@ jobs.JobDef:
         {
           "ro_error_mitigation": "pseudo_inverse"
         }
-
     status:
-      $ref: "#/jobs.InternalJobStatus"
+      $ref: "#/jobs.JobStatus"
     created_at:
       type: string
       format: date-time
@@ -155,9 +158,13 @@ jobs.JobDef:
       type: string
       format: date-time
       example: "2022-10-19T11:45:34+09:00"
-  required: [
-    device_id, shots, status, created_at
-  ]
+  required:
+    - job_id
+    - device_id
+    - job_info
+    - shots
+    - status
+    - created_at
   example:
     {
       job_id: "7af020f6-2e38-4d70-8cf0-4349650ea08c",
