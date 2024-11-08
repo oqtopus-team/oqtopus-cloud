@@ -1,11 +1,7 @@
 import datetime
 import enum
 
-from sqlalchemy import (
-    Enum,
-    String,
-    TIMESTAMP
-)
+from sqlalchemy import TIMESTAMP, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -68,15 +64,8 @@ class Job(Base):
     shots: Mapped[int] = mapped_column(
         nullable=True,
     )
-    status: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "submitted",
-            "ready",
-            "running",
-            "success",
-            "failed",
-            "cancelled",
-        ),
+    status: Mapped[str] = mapped_column(
+        String(32),
         nullable=False,
         default="submitted",
     )

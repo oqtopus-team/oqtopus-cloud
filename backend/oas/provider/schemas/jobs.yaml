@@ -209,15 +209,3 @@ jobs.JobStatusUpdateResponse:
   required:
     - message
 
-jobs.UnfetchedJobsResponse:
-  type: array
-  items:
-    oneOf:
-      - $ref: '#/jobs.JobDef'
-      - $ref: '#/jobs.JobId'
-
-jobs.InternalFetchableJobStatus:
-  type: string
-  enum: ["submitted", "cancelling"]
-  example: "submitted"
-

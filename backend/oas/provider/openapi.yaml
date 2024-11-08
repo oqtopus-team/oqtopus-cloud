@@ -212,14 +212,6 @@ paths:
                 $ref: '#/components/schemas/jobs.JobStatusUpdateResponse'
               example:
                 message: job data updated
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                detail: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -228,6 +220,14 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 detail: Job not found
+        '409':
+          description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ConflictError'
+              example:
+                detail: The specified job is not in a status thatt allows transition to the requested status.
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -484,3 +484,10 @@ components:
           type: string
       required:
         - message
+    error.ConflictError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail

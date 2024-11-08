@@ -116,14 +116,6 @@ jobs.jobId:
               $ref: '../schemas/jobs.yaml#/jobs.JobStatusUpdateResponse'
             example:
               message: job data updated
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
-            example:
-              detail: Bad request malformed input data
       "404":
         description: Not Found
         content:
@@ -132,3 +124,11 @@ jobs.jobId:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
             example:
               detail: Job not found
+      "409":
+        description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.ConflictError'
+            example:
+              detail: The specified job is not in a status thatt allows transition to the requested status.

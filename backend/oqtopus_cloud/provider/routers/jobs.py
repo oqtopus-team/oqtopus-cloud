@@ -3,12 +3,11 @@ from datetime import datetime
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
-from oqtopus_cloud.common.model_util import model_to_schema_dict
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
-    BadRequestResponse,
+    ConflictErrorResponse,
     Detail,
     ErrorResponse,
     InternalServerErrorResponse,
@@ -21,7 +20,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobStatusUpdate,
     JobStatusUpdateResponse,
 )
-from sqlalchemy import or_
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -60,27 +59,34 @@ def get_jobs(
     jobs: list[JobDef] = []
     for model in models:
         job = model_to_schema(model)
-        if job is not None:
+        if isinstance(job, ValueError):
+            logger.warning(str(job))
+        else:
             jobs.append(job)
     return jobs
 
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=JobId,
+    response_model=JobDef,
     responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobId | ErrorResponse:
+) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        job = db.get(Job, job_id)
-        if job is None:
+        model = db.get(Job, job_id)
+        if model is None:
             return NotFoundErrorResponse("Job not found")
-        return job.id
+        job = model_to_schema(model)
+        if isinstance(job, ValueError):
+            logger.warning(str(job))
+            return NotFoundErrorResponse("Job not found")
+        else:
+            return job
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
@@ -88,7 +94,11 @@ def get_job(
 @router.patch(
     "/jobs/{job_id}",
     response_model=JobStatusUpdateResponse,
-    responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        404: {"model": Detail},
+        409: {"model": Detail},
+        500: {"model": Detail},
+    },
 )
 @tracer.capture_method
 def update_job(
@@ -98,17 +108,17 @@ def update_job(
 ) -> JobStatusUpdateResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        job = (
-            db.query(Job)
-            .filter(
-                Job.id == job_id, or_(Job.status == "ready", Job.status == "running")
-            )
-            .first()
-        )
-        if job is None:
+        stmt = select(Job).where(Job.id == job_id)
+        model = db.execute(stmt).scalar_one_or_none()
+        if model is None:
             return NotFoundErrorResponse("Job not found")
-        if request.status is not None:
-            job.status = request.status  # type: ignore
+
+        if decode_job_status(model.status) != JobStatus.ready:
+            return ConflictErrorResponse(
+                f"The specified job is not a status thatt allows transition to the status {request.status}"
+            )
+
+        model.status = request.status
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
@@ -133,17 +143,28 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def model_to_schema(model: Job) -> JobDef | None:
-    def decode_job_info(j: Any) -> JobInfo | None:
+def decode_job_status(s: str) -> JobStatus | ValueError:
+    try:
+        return JobStatus(s)
+    except Exception as err:
+        return ValueError(f"Failed to decode JobStatus: {str(err)}")
+
+
+def model_to_schema(model: Job) -> JobDef | ValueError:
+    def decode_job_info(j: Any) -> JobInfo | ValueError:
         try:
-            return JobInfo.model_validate(j)
-        except Exception as _:
-            return None
+            jobinfo = JobInfo.model_validate(j)
+            return jobinfo
+        except Exception as e:
+            return ValueError(f"Failed to decode job_info: {str(e)}")
+
+    status = decode_job_status(model.status)
+    if isinstance(status, ValueError):
+        return status
 
     job_info = decode_job_info(json.loads(model.job_info))
-    if job_info is None:
-        return None
-
+    if isinstance(job_info, ValueError):
+        return job_info
     return JobDef(
         job_id=model.id,
         name=model.name,
@@ -151,7 +172,7 @@ def model_to_schema(model: Job) -> JobDef | None:
         device_id=model.device_id,
         shots=model.shots,
         job_info=job_info,
-        status=JobStatus(model.status),
+        status=status,
         transpiler_info=model.transpiler_info,
         mitigation_info=model.mitigation_info,
         simulator_info=model.simulator_info,

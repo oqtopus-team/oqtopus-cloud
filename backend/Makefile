@@ -84,8 +84,8 @@ lint-common: ## Run common linters
 	@poetry run mypy -p oqtopus_cloud.common
 
 lint-user: ## Run user linters
-	@poetry run ruff check oqtopus_cloud/user
 	@poetry run mypy -p oqtopus_cloud.user
+	@poetry run ruff check oqtopus_cloud/user
 
 lint-provider: ## Run provider linters
 	@poetry run ruff check oqtopus_cloud/provider
