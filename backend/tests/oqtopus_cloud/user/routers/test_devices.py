@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from typing import Dict
 
@@ -8,10 +7,9 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.routers.devices import get_device, model_to_schema
-from oqtopus_cloud.user.schemas.devices import DeviceInfo
+from oqtopus_cloud.user.schemas.devices import DeviceInfo, DeviceType, Status
 from zoneinfo import ZoneInfo
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 client = TestClient(app)
 
@@ -55,12 +53,12 @@ def _get_model():
         "available_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_jobs": 8,
         "n_qubits": 39,
-        "n_nodes": 512,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        #"calibration_data": json.dumps(_get_calibration_dict()),  # str
+        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
+        "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
     return Device(**mode_dict)
 
@@ -76,16 +74,16 @@ def test_get_device(test_db):
     # Assert
     expected = DeviceInfo(
         device_id="SVSim",
-        device_type="simulator",
-        status="available",
-        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
-        n_pending_tasks=8,
+        device_type=DeviceType.simulator,
+        status=Status.available,
+        available_at=datetime(2023, 1, 2, 12, 34, 56),
+        n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        #device_info=CalibrationData(**_get_calibration_dict()),
-        device_info="",
-        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
+        # device_info=CalibrationData(**_get_calibration_dict()),
+        device_info="{}",
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -101,16 +99,16 @@ def test_model_to_shema():
     # Assert
     expected = DeviceInfo(
         device_id="SVSim",
-        device_type="simulator",
-        status="available",
-        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=jst),
-        n_pending_tasks=8,
+        device_type=DeviceType.simulator,
+        status=Status.available,
+        available_at=datetime(2023, 1, 2, 12, 34, 56),
+        n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        #calibrationData=CalibrationData(**_get_calibration_dict()),
-        device_info="",
-        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=jst),
+        # calibrationData=CalibrationData(**_get_calibration_dict()),
+        device_info="{}",
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -129,14 +127,14 @@ def test_get_device_hadler(test_db):
         "device_id": "SVSim",
         "device_type": "simulator",
         "status": "available",
-        "available_at": "2023-01-02T12:34:56+09:00",
-        "n_pending_tasks": 8,
+        "available_at": "2023-01-02T12:34:56",
+        "n_pending_jobs": 8,
         "n_qubits": 39,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "supported_instructions": ["measure", "barrier", "reset"],
-        #"calibrationData": _get_calibration_dict(),
-        "device_info": "",
-        "calibrated_at": "2024-03-04T12:34:56+09:00",
+        # "calibrationData": _get_calibration_dict(),
+        "device_info": "{}",
+        "calibrated_at": "2024-03-04T12:34:56",
         "description": "State vector-based quantum circuit simulator",
     }
     assert actual.json() == expected
@@ -160,7 +158,6 @@ def test_get_task_200(
         device_type="simulator",
         status="AVAILABLE",
         n_qubits=1,
-        n_nodes=1,
         basis_gates="basis_gates",
         instructions="instructions",
         description="description",

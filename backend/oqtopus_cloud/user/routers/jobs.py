@@ -121,7 +121,7 @@ def submit_jobs(
 
         job = Job(
             # TODO: UUIDv7
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             owner=owner,
             name=name,
             description=description,

@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.model_util import model_to_schema_dict
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.session import (
     get_db,
@@ -96,21 +95,17 @@ MAP_MODEL_TO_SCHEMA = {
 
 
 def model_to_schema(model: Device) -> DeviceInfo:
-    schema_dict = model_to_schema_dict(model, MAP_MODEL_TO_SCHEMA)
-
-    # load as json if not None.
-    if schema_dict["basis_gates"]:
-        schema_dict["basis_gates"] = json.loads(schema_dict["basis_gates"])
-    if schema_dict["supported_instructions"]:
-        schema_dict["supported_instructions"] = json.loads(
-            schema_dict["supported_instructions"]
-        )
-    # if schema_dict["device_info"]:
-    #     calibration_data_dict = json.loads(schema_dict["device_info"])
-    #     schema_dict["device_info"] = CalibrationData(**calibration_data_dict)
-    if schema_dict["available_at"]:
-        schema_dict["available_at"] = schema_dict["available_at"].astimezone(jst)
-    if schema_dict["calibrated_at"]:
-        schema_dict["calibrated_at"] = schema_dict["calibrated_at"].astimezone(jst)
-    response = DeviceInfo(**schema_dict)
-    return response
+    dict = {
+        "device_id": getattr(model, "id", None),
+        "device_type": getattr(model, "device_type", None),
+        "status": model.status,
+        "available_at": getattr(model, "available_at", None),
+        "n_pending_jobs": getattr(model, "pending_jobs", None),
+        "n_qubits": getattr(model, "n_qubits", None),
+        "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
+        "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
+        "device_info": getattr(model, "device_info", None),
+        "calibrated_at": getattr(model, "calibrated_at", None),
+        "description": model.description,
+    }
+    return DeviceInfo.model_validate(dict)

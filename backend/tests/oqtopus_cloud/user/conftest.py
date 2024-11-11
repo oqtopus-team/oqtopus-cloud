@@ -1,5 +1,5 @@
+import json
 import os
-import uuid
 from datetime import datetime
 from typing import (
     Generator,
@@ -53,60 +53,90 @@ def insert_initial_data(db: Session):
         Device(
             id="Kawasaki",
             device_type="QPU",
-            status="NOT_AVAILABLE",
+            status="available",
             available_at=datetime(2024, 3, 4, 12, 34, 56),
-            pending_jobs=0,
+            pending_jobs=2,
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
             device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
             description="Superconducting quantum computer",
+            created_at=datetime(2024, 3, 4, 12, 34, 56),
         ),
-        # Task(
-        #     id=uuid.UUID("7af020f6-2e38-4d70-8cf0-4349650ea08c").bytes,
+        # Job(
+        #     id="7af020f6-2e38-4d70-8cf0-4349650ea08c",
         #     owner="admin",
-        #     name="Test task 1",
-        #     device="Kawasaki",
-        #     code='OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
-        #     n_qubits=2,
-        #     n_nodes=12,
-        #     action="sampling",
-        #     method="state_vector",
-        #     shots=1024,
-        #     operator="Z0*Z1",
-        #     qubit_allocation=None,
-        #     skip_transpilation=0,
-        #     seed_transpilation=None,
-        #     seed_simulation=None,
-        #     n_per_node=1,
-        #     simulation_opt=None,
-        #     ro_error_mitigation="none",
-        #     note=None,
-        #     status="COMPLETED",
+        #     name="Bell State Sampling Example",
+        #     description="An example of Bell state sampling job",
+        #     device_id="Kawasaki",
+        #     job_type="sampling",
+        #     job_info=json.dumps(
+        #         {
+        #             "desc": {
+        #                 "job_type": "sampling",
+        #                 "code": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
+        #             },
+        #             "result": None,
+        #             "transpiled_code": None,
+        #             "reason": None,
+        #         }
+        #     ),
+        #     simulator_info=json.dumps(
+        #         {
+        #             "n_qubits": 5,
+        #             "n_nodes": 12,
+        #             "n_per_node": 2,
+        #             "seed_simulation": 39058567,
+        #             "simulation_opt": {
+        #                 "optimization_method": "light",
+        #                 "optimization_block_size": 1,
+        #                 "optimization_swap_level": 1,
+        #             },
+        #         }
+        #     ),
+        #     transpiler_info="",
+        #     mitigation_info="",
+        #     shots=1000,
+        #     status="submitted",
         #     created_at=datetime(2024, 3, 4, 12, 34, 56),
         # ),
-        # Task(
-        #     id=uuid.UUID("7af020f6-2e38-4d70-8cf0-4349650ea08d").bytes,
+        # Job(
+        #     id="01927422-86d4-7cbf-98d3-32f5f1263cd9",
         #     owner="admin",
-        #     name="Test task 2",
-        #     device="Kawasaki",
-        #     code='OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
-        #     n_qubits=2,
-        #     n_nodes=12,
-        #     action="sampling",
-        #     method="state_vector",
-        #     shots=1024,
-        #     operator="Z0*Z1",
-        #     qubit_allocation=None,
-        #     skip_transpilation=0,
-        #     seed_transpilation=None,
-        #     seed_simulation=None,
-        #     n_per_node=1,
-        #     simulation_opt=None,
-        #     ro_error_mitigation="none",
-        #     note=None,
-        #     status="QUEUED",
+        #     name="Bell State Estimation Example",
+        #     description="An example of Bell state estimation job",
+        #     device_id="Kawasaki",
+        #     job_type="estimation",
+        #     job_info=json.dumps(
+        #         {
+        #             "desc": {
+        #                 "job_type": "estimation",
+        #                 "code": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
+        #                 "operator": "X 0 X 1",
+        #             },
+        #             "result": None,
+        #             "transpiled_code": None,
+        #             "reason": None,
+        #         }
+        #     ),
+        #     simulator_info=json.dumps(
+        #         {
+        #             "n_qubits": 5,
+        #             "n_nodes": 12,
+        #             "n_per_node": 2,
+        #             "seed_simulation": 39058567,
+        #             "simulation_opt": {
+        #                 "optimization_method": "light",
+        #                 "optimization_block_size": 1,
+        #                 "optimization_swap_level": 1,
+        #             },
+        #         }
+        #     ),
+        #     transpiler_info="",
+        #     mitigation_info="",
+        #     shots=1000,
+        #     status="submitted",
         #     created_at=datetime(2024, 3, 4, 12, 34, 56),
         # ),
     ]

@@ -1,5 +1,6 @@
 import datetime
 import enum
+from typing import Optional
 
 from sqlalchemy import TIMESTAMP, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -72,8 +73,8 @@ class Job(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
     )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        TIMESTAMP, nullable=True
     )
 
 

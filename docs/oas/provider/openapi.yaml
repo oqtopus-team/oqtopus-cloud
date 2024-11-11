@@ -107,7 +107,7 @@ paths:
           name: status
           description: Additional search parameter:<br/> Search jobs with specified status only
           schema:
-            $ref: '#/components/schemas/jobs.InternalJobStatus'
+            $ref: '#/components/schemas/jobs.JobStatus'
         - in: query
           name: max_results
           description: Additional search parameter:<br/> Set max number of quantum jobs to return in single request
@@ -212,14 +212,6 @@ paths:
                 $ref: '#/components/schemas/jobs.JobStatusUpdateResponse'
               example:
                 message: job data updated
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                detail: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -227,95 +219,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: task not found
-  /results:
-    post:
-      summary: Submit a quantum job result
-      tags:
-        - results
-      description: Submit a quantum job result
-      operationId: postResult
-      security: []
-      requestBody:
-        description: Result to be submitted
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/results.ResultDef'
-            examples:
-              success sampling:
-                value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: SUCCESS
-                  result:
-                    '11': 4980
-                    '00': 5020
-                  reason: null
-                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
-              success estimation:
-                value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: SUCCESS
-                  result:
-                    - 1.5
-                    - 2.8
-                  reason: null
-                  transpiledCode: OPENQASM 3;include "stdgates.inc";qubit[2] _all_qubits;let q = _all_qubits[0:1];h q[0];cx q[0], q[1];
-              failure:
-                value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: FAILURE
-                  result: null
-                  reason: Invalid device parameter in request
-                  transpiledCode: null
-              cancel:
-                value:
-                  taskId: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  status: CANCELLED
-                  result: null
-                  reason: User cancelled
-                  transpiledCode: null
-      responses:
-        '200':
-          description: Results submitted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/results.CreateResultResponse'
-              example:
-                message: Results submitted
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                detail: Bad request malformed input data
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                detail: JobID not found
+                detail: Job not found
         '409':
-          description: Result for jobId already exists
+          description: Returned when the specified job is not in a status thatt allows transition to the requested status.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                detail: Result for jobId already exists
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                detail: Internal server error
+                detail: The specified job is not in a status thatt allows transition to the requested status.
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -398,7 +310,7 @@ components:
           type: string
       required:
         - detail
-    jobs.InternalJobStatus:
+    jobs.JobStatus:
       type: string
       enum:
         - submitted
@@ -410,20 +322,62 @@ components:
       example: submitted
     jobs.JobId:
       type: string
-      format: uuid
+      format: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    jobs.JobInfoEstimation:
+      type: object
+      description: The descriptor of estimation jobs
+      properties:
+        job_type:
+          type: string
+          enum:
+            - estimation
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        operator:
+          type: string
+          example: X 0 Y 1 Z 5 I 2
+      required:
+        - job_type
+        - code
+        - operator
+    jobs.JobInfoSampling:
+      type: object
+      description: The descriptor of sampling jobs
+      properties:
+        job_type:
+          type: string
+          enum:
+            - sampling
+        code:
+          type: string
+          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+      required:
+        - job_type
+        - code
+    jobs.JobInfoDesc:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
+        - $ref: '#/components/schemas/jobs.JobInfoSampling'
     jobs.JobInfo:
-      type: string
-      example: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''Operator'': ''X 0 Y 1 Z 5 I 2'', ''result'': {''00'': 5020, ''11'': 4980}, ''transpiled_code'': '''', ''reason'': ''''}'
-    jobs.TranspilerInfo:
-      type: string
-      example: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
-    jobs.SimulatorInfo:
-      type: string
-      example: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
-    jobs.MitigationInfo:
-      type: string
-      example: '{''ro_error_mitigation'': ''pseudo_inverse''}'
+      type: object
+      properties:
+        desc:
+          $ref: '#/components/schemas/jobs.JobInfoDesc'
+        transpiled_code:
+          type: string
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        result:
+          type: string
+          description: The result of quantum computation, set only if the computation is successful.
+          example: '{ ''11'': 4980, ''00'': 5020 }'
+        reason:
+          type: string
+          description: The reason indicating why there is no result
+      required:
+        - desc
     jobs.JobDef:
       type: object
       properties:
@@ -443,19 +397,41 @@ components:
           minimum: 1
           maximum: 10000000
           example: '1000'
-        job_type:
-          type: string
-          example: '''sampling'' or ''estimation'', ''sse'''
         job_info:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
-          $ref: '#/components/schemas/jobs.TranspilerInfo'
+          type: string
+          example: |-
+            {
+              "qubit_allocation": {
+                "0"": 12,
+                "1": 16
+              },
+              "skip_transpilation": false,
+              "seed_transpilation": 873
+            }
         simulator_info:
-          $ref: '#/components/schemas/jobs.SimulatorInfo'
+          type: string
+          example: |-
+            {
+              "n_qubits": 5,
+              "n_nodes": 12,
+              "n_per_node": 2,
+              "seed_simulation": 39058567,
+              "simulation_opt": {
+                "optimization_method": "light",
+                "optimization_block_size": 1,
+                "optimization_swap_level": 1
+              }
+            }
         mitigation_info:
-          $ref: '#/components/schemas/jobs.MitigationInfo'
+          type: string
+          example: |-
+            {
+              "ro_error_mitigation": "pseudo_inverse"
+            }
         status:
-          $ref: '#/components/schemas/jobs.InternalJobStatus'
+          $ref: '#/components/schemas/jobs.JobStatus'
         created_at:
           type: string
           format: date-time
@@ -465,7 +441,9 @@ components:
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required:
+        - job_id
         - device_id
+        - job_info
         - shots
         - status
         - created_at
@@ -474,7 +452,13 @@ components:
         name: Bell State Sampling
         description: Bell State Sampling Example
         device_id: Kawasaki
-        job_info: '{''code'': ''{type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}'', ''operator'': ''X 0 Y 1 Z 5 I 2''}'
+        job_info:
+          desc:
+            job_type: sampling
+            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          transpiled_code: null
+          result: null
+          reason: null
         transpiler_info: '{''qubit_allocation'': {''0'': 12, ''1'': 16}, ''skip_transpilation'': false, ''seed_transpilation'': 873}'
         simulator_info: '{''n_qubits'': 5, ''n_nodes'': 12, ''n_per_node'': 2, ''seed_simulation'': 39058567, ''simulation_opt'': {''optimization_method'': ''light'', ''optimization_block_size'': 1, ''optimization_swap_level'': 1}}'
         mitigation_info: '{''ro_error_mitigation'': ''pseudo_inverse''}'
@@ -500,75 +484,6 @@ components:
           type: string
       required:
         - message
-    results.ResultStatus:
-      type: string
-      enum:
-        - SUCCESS
-        - FAILURE
-        - CANCELLED
-      default: SUCCESS
-      example: SUCCESS
-    results.SamplingResult:
-      type: object
-      additionalProperties:
-        type: integer
-      minProperties: 2
-      example:
-        '11': 4980
-        '00': 5020
-    results.EstimationResult:
-      type: array
-      items:
-        type: number
-      minItems: 2
-      maxItems: 2
-      example:
-        - 1.5
-        - 2.8
-    results.Result:
-      oneOf:
-        - type: 'null'
-        - $ref: '#/components/schemas/results.SamplingResult'
-        - $ref: '#/components/schemas/results.EstimationResult'
-    results.ResultDef:
-      type: object
-      properties:
-        taskId:
-          $ref: '#/components/schemas/tasks.TaskId'
-        status:
-          $ref: '#/components/schemas/results.ResultStatus'
-        result:
-          $ref: '#/components/schemas/results.Result'
-        reason:
-          type: string
-          nullable: true
-        transpiledCode:
-          type: string
-          nullable: true
-        qubitAllocation:
-          description: Parameter valid only for QPU devices
-          type: object
-          additionalProperties:
-            type: integer
-            nullable: true
-          example:
-            '0': 0
-            '1': 4
-      required:
-        - taskId
-        - status
-        - result
-        - reason
-        - transpiledCode
-    results.CreateResultResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
-      example:
-        message: Results submitted
     error.ConflictError:
       type: object
       properties:

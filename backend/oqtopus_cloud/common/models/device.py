@@ -1,11 +1,8 @@
 import datetime
 import enum
+from typing import Optional
 
-from sqlalchemy import (
-    Enum,
-    String,
-    TIMESTAMP
-)
+from sqlalchemy import TIMESTAMP, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -54,7 +51,7 @@ class Device(Base):
         nullable=False,
         default="unavailable",
     )
-    available_at: Mapped[datetime.datetime] = mapped_column(
+    available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
@@ -80,7 +77,9 @@ class Device(Base):
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
+        nullable=False,
     )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,
+        nullable=True,
     )
