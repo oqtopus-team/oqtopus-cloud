@@ -3,7 +3,6 @@ import json
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.session import (
@@ -21,9 +20,6 @@ from oqtopus_cloud.user.schemas.errors import (
 )
 
 from . import LoggerRouteHandler
-
-utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 

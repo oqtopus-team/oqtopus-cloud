@@ -12,7 +12,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
-from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
@@ -39,9 +38,6 @@ from oqtopus_cloud.user.schemas.jobs import (
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
 from . import LoggerRouteHandler
-
-jst = ZoneInfo("Asia/Tokyo")
-utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 

@@ -21,12 +21,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
 from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
 
-# sqlite does not support jst timezone
-# utc = ZoneInfo("UTC")
-utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
-
-
 # def _get_calibration_dict() -> Dict:
 #     calib_dict = {
 #         "qubitConnectivity": ["(1,4)", "(4,5)", "(5,8)"],

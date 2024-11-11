@@ -22,14 +22,10 @@ from oqtopus_cloud.provider.schemas.jobs import (
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from zoneinfo import ZoneInfo
 
 from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
-
-utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 JobId = str
 
@@ -51,7 +47,7 @@ def get_jobs(
     if status is not None:
         query = query.filter(Job.status == status)
     if timestamp is not None:
-        time = datetime.fromisoformat(timestamp).astimezone(jst)
+        time = datetime.fromisoformat(timestamp)
         query = query.filter(Job.created_at > time)
     if max_results is not None:
         query = query.limit(max_results)
