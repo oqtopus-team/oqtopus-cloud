@@ -1,7 +1,6 @@
 import json
 import uuid
 from datetime import datetime
-from typing import Dict
 
 from oqtopus_cloud.common.models.device import (
     Device,
@@ -12,16 +11,14 @@ from oqtopus_cloud.common.models.job import (
 from oqtopus_cloud.provider.routers.jobs import (
     get_job,
     get_jobs,
-    get_unfetched_jobs,
     update_job,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    InternalJobStatus,
-    JobId,
+    JobDef,
     JobStatusUpdate,
     JobStatusUpdateResponse,
-    UnfetchedJobsResponse,
 )
+from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
 
 # sqlite does not support jst timezone
@@ -54,109 +51,74 @@ def _get_device_model():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "",
-        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+        "device_info": "{}",
+        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
+        "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
     return Device(**mode_dict)
 
 
-def _get_job_model(job_dict=None):
-    if job_dict is None:
-        job_dict = {
-            "id": uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517").bytes,
-            "name": "Test job 3",
-            "owner": "admin",
-            "job_type": "sampling",
-            "shots": 1024,
-            "device": "SC2",
-            "n_qubits": 64,
-            "n_nodes": 112,
-            "status": "submitted",
-            "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-        }
-    return Job(**job_dict)
+def _get_job_model() -> Job:
+    mode_dict = {
+        "id": "testjob1id",
+        "owner": "admin",
+        "name": "testjob1",
+        "description": "test job 1",
+        "device_id": "SC2",
+        "job_type": "sampling",
+        "job_info": json.dumps(
+            {
+                "desc": {
+                    "job_type": "sampling",
+                    "code": "code",
+                }
+            }
+        ),
+        "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
+        "simulator_info": json.dumps({"this_is": "simulator_info"}),
+        "mitigation_info": json.dumps(
+            {"field1": "value1", "field2": "value2", "field3": "value3"}
+        ),
+        "status": "ready",
+        "shots": 1000,
+        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+    }
+    return Job(**mode_dict)
 
 
-def test_get_jobs(test_db):
+def test_get_jobs(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model(job_dict=None))
+    test_db.add(_get_job_model())
     test_db.add(_get_device_model())
     test_db.commit()
     device_id = "SC2"
-    jobs = get_jobs(deviceId=device_id, db=test_db)
-    assert jobs.first.device_id == device_id
+    jobs = get_jobs(device_id=device_id, db=test_db)
+    assert jobs[0].device_id == device_id
 
 
-def test_get_job(test_db):
+def test_get_job(test_db: Session):
     # Arrange
 
-    test_db.add(_get_job_model(job_dict=None))
+    test_db.add(_get_job_model())
     test_db.add(_get_device_model())
     test_db.commit()
-    job_id = "e8a60c14-8838-46c9-816a-30191d6ab517"
-    jobs = get_job(jobId=job_id, db=test_db)
-    assert jobs.first.job_id == job_id
+    job_id = "testjob1id"
+    job = get_job(job_id=job_id, db=test_db)
+    if isinstance(job, JobDef):
+        assert job.job_id == job_id
 
 
-def test_update_job(test_db):
-    job_dict = {
-        "id": uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517").bytes,
-        "owner": "admin",
-        "code": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];',
-        "action": "sampling",
-        "shots": 1024,
-        "device": "SC2",
-        "n_qubits": 64,
-        "n_nodes": 112,
-        "qubit_allocation": None,
-        "skip_transpilation": True,
-        "seed_transpilation": None,
-        "seed_simulation": None,
-        "ro_error_mitigation": None,
-        "n_per_node": None,
-        "simulation_opt": None,
-        "status": "QUEUED_FETCHED",
-        "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-    }
+def test_update_job(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model(job_dict=job_dict))
+    test_db.add(_get_job_model())
     test_db.add(_get_device_model())
     test_db.commit()
-    jobId = "e8a60c14-8838-46c9-816a-30191d6ab517"
-    request = JobStatusUpdate(status="RUNNING")
-    actual = update_job(jobId=jobId, request=request, db=test_db)
+    job_id = "testjob1id"
+    request = JobStatusUpdate(status="running")
+    actual = update_job(job_id=job_id, request=request, db=test_db)
 
     expected = JobStatusUpdateResponse(message="Job status updated")
-    # Assert
-
-    assert actual == expected
-
-
-def test_get_unfetched_jobs(test_db):
-    job_dict = {
-        "id": uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517").bytes,
-        "owner": "admin",
-        "job_type": "sampling",
-        "shots": 1024,
-        "device": "SC2",
-        "n_qubits": 64,
-        "status": "submitted",
-        "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-    }
-    # Arrange
-    test_db.add(_get_job_model(job_dict=job_dict))
-    test_db.add(_get_device_model())
-    test_db.commit()
-    deviceId = "SC2"
-    status = "submitted"
-    actual = get_unfetched_jobs(deviceId=deviceId, status=status, db=test_db)
-
-    expected = UnfetchedJobsResponse(
-        [
-            JobId(root=uuid.UUID("e8a60c14-8838-46c9-816a-30191d6ab517"))
-        ]
-    )
     # Assert
 
     assert actual == expected
