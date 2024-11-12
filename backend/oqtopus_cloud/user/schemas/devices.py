@@ -22,19 +22,19 @@ class Status(str, Enum):
 
 
 class DeviceInfo(BaseModel):
-    device_id: Annotated[str | None, Field(examples=["SVSim"])] = None
-    device_type: Annotated[DeviceType | None, Field(examples=["simulator"])] = None
+    device_id: Annotated[str, Field(examples=["SVSim"])]
+    device_type: Annotated[DeviceType, Field(examples=["simulator"])]
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
     """
-    n_pending_jobs: Annotated[int | None, Field(examples=[8])] = None
+    n_pending_jobs: Annotated[int, Field(examples=[8])]
     n_qubits: Annotated[int | None, Field(examples=[39])] = None
     basis_gates: Annotated[
-        list[str] | None,
+        list[str],
         Field(
             examples=[
                 [
@@ -63,15 +63,15 @@ class DeviceInfo(BaseModel):
                 ]
             ]
         ),
-    ] = None
+    ]
     supported_instructions: Annotated[
-        list[str] | None, Field(examples=[["measure", "barrier", "reset"]])
-    ] = None
+        list[str], Field(examples=[["measure", "barrier", "reset"]])
+    ]
     device_info: Annotated[
         str | None,
         Field(
             examples=[
-                "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}"
+                '{\n  "n_nodes": 512,\n  "calibration_data": {\n    "qubit_connectivity": ["(1,4)", "(4,5)", "(5,8)"],\n    "t1": {\n      "0": 55.51,\n      "1": 37.03,\n      "2": 57.13\n    }\n  }\n}'
             ]
         ),
     ] = None
@@ -79,10 +79,10 @@ class DeviceInfo(BaseModel):
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
-    Parameter available only for 'QPU' devices with available calibration data
+    Parameter available only for `QPU` devices with available calibration data
     """
     description: Annotated[
         str, Field(examples=["State vector-based quantum circuit simulator"])

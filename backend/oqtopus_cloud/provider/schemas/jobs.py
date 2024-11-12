@@ -63,7 +63,9 @@ class JobInfo(BaseModel):
             ]
         ),
     ] = None
-    result: Annotated[str | None, Field(examples=["{ '11': 4980, '00': 5020 }"])] = None
+    result: Annotated[
+        str | None, Field(examples=['{\n  "11": 4980,\n  "00": 5020\n}'])
+    ] = None
     """
     The result of quantum computation, set only if the computation is successful.
     """
@@ -99,13 +101,13 @@ class JobDef(BaseModel):
         ),
     ] = None
     mitigation_info: Annotated[
-        str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
+        str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
     ] = None
     status: JobStatus
     created_at: Annotated[datetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    updated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
+    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
+        None
+    )
 
 
 class JobStatusUpdate(BaseModel):

@@ -22,10 +22,10 @@ class DeviceStatusUpdate(BaseModel):
     ]
     status: Status | None = None
     available_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00+09:00"])
+        datetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None
     """
-    Parameter mandatory and valid for status 'unavailable'
+    Parameter mandatory and valid for status `unavailable`
     """
 
 
@@ -44,15 +44,15 @@ class DeviceCalibrationUpdate(BaseModel):
         str | None,
         Field(
             examples=[
-                "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}"
+                '{\n  "n_nodes": 512,\n  "calibration_data": {\n    "qubit_connectivity": [\n      "(1,4)",\n      "(4,5)",\n      "(5,8)"\n    ],\n    "t1": {\n      "0": 55.51,\n      "1": 37.03,\n      "2": 57.13\n    }\n  }\n}'
             ]
         ),
     ] = None
     """
-    json format calibration_data and n_nodes etc
+    Calibration_data and n_nodes etc. Make sure that the value is valid JSON format.
     """
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00+09:00"])
+        datetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None
     """
     Parameter mandatory and valid if calibrationData not null

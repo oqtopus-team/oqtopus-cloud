@@ -21,7 +21,7 @@ jobs:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
   post:
@@ -50,13 +50,13 @@ jobs:
                     job_type: "sampling",
                     code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
                   },
-                  transpiler_info: "",
-                  simulator_info: "{'n_qubits': 5, 'n_nodes': 12, 'n_per_node': 2, 'seed_simulation': 39058567, 'simulation_opt': {'optimization_method': 'light', 'optimization_block_size': 1, 'optimization_swap_level': 1}}",
-                  mitigation_info: "",
+                  transpiler_info: '{}',
+                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}',
+                  mitigation_info: '{}',
                   shots: 1000,
                   status: "submitted",
-                  created_at: "2022-10-19T11:45:34+09:00",
-                  updated_at: "2022-10-19T11:45:34+09:00"
+                  created_at: "2022-10-19T11:45:34",
+                  updated_at: "2022-10-19T11:45:34"
                 }
             qpu:
               description: QPU example
@@ -70,13 +70,13 @@ jobs:
                     code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
                     operator: "X 0 Y 1 Z 5 I 2"
                   },
-                  transpiler_info: "{'qubit_allocation': {'0': 12, '1': 16}, 'skip_transpilation': false, 'seed_transpilation': 873}",
-                  simulator_info: "",
-                  mitigation_info: "{'ro_error_mitigation': 'pseudo_inverse'}",
+                  transpiler_info: '{"qubit_allocation": {"0": 12, "1": 16}, "skip_transpilation": false, "seed_transpilation": 873}',
+                  simulator_info: '{}',
+                  mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}',
                   shots: 1000,
                   status: "submitted",
-                  created_at: "2022-10-19T11:45:34+09:00",
-                  updated_at: "2022-10-19T11:45:34+09:00"
+                  created_at: "2022-10-19T11:45:34",
+                  updated_at: "2022-10-19T11:45:34"
                 }
 
     responses:
@@ -88,12 +88,12 @@ jobs:
               $ref: "../schemas/jobs.yaml#/jobs.SubmitJobResponse"
             example:
               job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-      '400':
+      "400":
         description: Bad Request
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
       "401":
@@ -101,7 +101,7 @@ jobs:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
 
@@ -132,7 +132,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
       "401":
@@ -140,15 +140,15 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
-      '404':
+      "404":
         description: Not Found
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: job not found
   delete:
@@ -179,7 +179,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
       "401":
@@ -187,15 +187,15 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
-      '404':
+      "404":
         description: Not Found
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: job not found
 
@@ -220,13 +220,13 @@ jobs.jobId.status:
         content:
           application/json:
             schema:
-              $ref: '../schemas/jobs.yaml#/jobs.GetJobStatusResponse'
+              $ref: "../schemas/jobs.yaml#/jobs.GetJobStatusResponse"
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
       "401":
@@ -234,15 +234,15 @@ jobs.jobId.status:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
-      '404':
+      "404":
         description: Not Found
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: job not found
 
@@ -275,7 +275,7 @@ jobs.jobId.cancel:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
       "401":
@@ -283,14 +283,14 @@ jobs.jobId.cancel:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               detail: Unauthorized
-      '404':
+      "404":
         description: Not Found
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: job not found

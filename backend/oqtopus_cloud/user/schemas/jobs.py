@@ -68,7 +68,7 @@ class JobInfo(BaseModel):
             ]
         ),
     ] = None
-    result: Annotated[str | None, Field(examples=["{ '11': 4980, '00': 5020 }"])] = None
+    result: Annotated[str | None, Field(examples=['{ "11": 4980, "00": 5020 }'])] = None
     """
     The result of quantum computation, set only if the computation is successful.
     """
@@ -93,7 +93,7 @@ class JobDef(BaseModel):
         str | None,
         Field(
             examples=[
-                '{\n  "qubitAllocation": {\n    "0": 12,\n    "1": 16\n  },\n  "skipTranspilation": false,\n  "seedTranspilation": 873\n}'
+                '{\n  "qubit_allocation": {\n    "0": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
             ]
         ),
     ] = None
@@ -101,12 +101,12 @@ class JobDef(BaseModel):
         str | None,
         Field(
             examples=[
-                '{\n  "nQubits": 5,\n  "nNodes": 12,\n  "nPerNode": 2,\n  "seedSimulation": 39058567,\n  "simulationOpt": {\n    "optimizationMethod": "light",\n    "optimizationBlockSize": 1,\n    "optimizationSwapLevel": 1\n  }\n}'
+                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
             ]
         ),
     ] = None
     mitigation_info: Annotated[
-        str | None, Field(examples=['{\n  "roErrorMitigation": "pseudo_inverse"\n}'])
+        str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
     ] = None
     created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
         None
@@ -123,7 +123,10 @@ class SubmitJobRequest(BaseModel):
     ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
     job_info: JobInfoEstimation | JobInfoSampling
-    transpiler_info: Annotated[str | None, Field(examples=[""])] = None
+    transpiler_info: Annotated[str | None, Field(examples=["{}"])] = None
+    """
+    When specified, valid JSON string is required.
+    """
     simulator_info: Annotated[
         str | None,
         Field(
@@ -132,15 +135,18 @@ class SubmitJobRequest(BaseModel):
             ]
         ),
     ] = None
-    mitigation_info: Annotated[str | None, Field(examples=[""])] = None
+    mitigation_info: Annotated[str | None, Field(examples=["{}"])] = None
+    """
+    When specified, valid JSON string is required
+    """
     shots: Annotated[int, Field(examples=[1000])]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
-    created_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
+    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
+        None
+    )
+    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
+        None
+    )
 
 
 class SubmitJobResponse(BaseModel):

@@ -16,8 +16,8 @@ devices.DeviceDataUpdateResponse:
   properties:
     message:
       type: string
-      default: "Device's data updated"
-      example: "Device's data updated"
+      default: Device's data updated
+      example: Device's data updated
   required:
     - message
 
@@ -29,12 +29,14 @@ devices.DeviceStatusUpdate:
           example: DeviceStatusUpdate
         status:
           type: string
-          enum: ["available", "unavailable"]
+          enum:
+            - available
+            - unavailable
         available_at:
-          description: "Parameter mandatory and valid for status 'unavailable'"
+          description: Parameter mandatory and valid for status `unavailable`
           type: string
           format: date-time
-          example: "2023-09-10T14:00:00+09:00"
+          example: 2023-09-10T14:00:00
 
 devices.DevicePendingJobsUpdate:
       type: object
@@ -52,11 +54,26 @@ devices.DeviceCalibrationUpdate:
           type: string
           example: DeviceCalibrationUpdate
         device_info:
-          description: "json format calibration_data and n_nodes etc"
+          description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
-          example: "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}"
+          example: >-
+            {
+              "n_nodes": 512,
+              "calibration_data": {
+                "qubit_connectivity": [
+                  "(1,4)",
+                  "(4,5)",
+                  "(5,8)"
+                ],
+                "t1": {
+                  "0": 55.51,
+                  "1": 37.03,
+                  "2": 57.13
+                }
+              }
+            }
         calibrated_at:
-          description: "Parameter mandatory and valid if calibrationData not null"
+          description: Parameter mandatory and valid if calibrationData not null
           type: string
           format: date-time
-          example: "2023-09-10T14:00:00+09:00"
+          example: 2023-09-10T14:00:00
