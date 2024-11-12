@@ -68,7 +68,9 @@ class JobInfo(BaseModel):
             ]
         ),
     ] = None
-    result: Annotated[str | None, Field(examples=['{ "11": 4980, "00": 5020 }'])] = None
+    result: Annotated[str | None, Field(examples=['{ "11": 4980, "00": 5020 }\n'])] = (
+        None
+    )
     """
     The result of quantum computation, set only if the computation is successful.
     """
