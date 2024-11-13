@@ -27,8 +27,12 @@ generate:
 	--use-field-description \
 	--input ${INPUT} \
 	--input-file-type openapi \
+	--collapse-root-models \
+	--enum-field-as-literal one \
+	--use-union-operator \
+	--use-subclass-enum \
+	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
 	--output-model-type pydantic_v2.BaseModel \
-	--enum-field-as-literal all \
 	--disable-timestamp \
 	--use-standard-collections \
 	--strict-nullable \
@@ -80,8 +84,8 @@ lint-common: ## Run common linters
 	@poetry run mypy -p oqtopus_cloud.common
 
 lint-user: ## Run user linters
-	@poetry run ruff check oqtopus_cloud/user
 	@poetry run mypy -p oqtopus_cloud.user
+	@poetry run ruff check oqtopus_cloud/user
 
 lint-provider: ## Run provider linters
 	@poetry run ruff check oqtopus_cloud/provider

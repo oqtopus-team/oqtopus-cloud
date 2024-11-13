@@ -5,7 +5,7 @@ For example, QUEUED state tasks can be transitioned to COMPLETED directly.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> QUEUED :task submitted
+  [*] --> submitted :task submitted
 
   QUEUED --> RUNNING :execution started
   
@@ -15,7 +15,7 @@ stateDiagram-v2
   state join_state <<fork>>
   join_state --> COMPLETED :execution succeeded
   join_state --> FAILED :execution failed
-  join_state --> CANCELLING :cancel requested
+  join_state --> cancelling :cancel requested
   
   COMPLETED --> [*] :deleted
   FAILED --> [*] :deleted

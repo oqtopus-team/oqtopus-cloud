@@ -26,7 +26,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
     Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
     Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
@@ -89,7 +89,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
     Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
     Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
@@ -143,11 +143,11 @@ sequenceDiagram
 
     User->>Cloud: POST /tasks/<task ID-1>/cancel
     Note right of User: User sends a cancel requests for the task <task ID-1>.
-    Note over Cloud: The task status is updated to CANCELLING
+    Note over Cloud: The task status is updated to cancelling
     Cloud-->>User: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLING" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelling" }
 
     Note over Provider: Provider tries to cancel the executions of the tasks.
     Note over Provider: The execution of the task <task ID-1> is successfully cancelled.

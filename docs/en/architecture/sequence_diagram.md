@@ -10,8 +10,8 @@ Each sequence shows a series of steps from sending a request of task execution o
 
 ## Sequence of Task Execution (Success Case)
 
-The following shows a sequence of successful task execution.
-It shows the steps of task submission by User, task execution by Provider, and retrieval of the execution result by User.
+The following shows a sequence of successful job execution.
+It shows the steps of job submission by User, job execution by Provider, and retrieval of the execution result by User.
 
 ```mermaid
 sequenceDiagram
@@ -29,7 +29,7 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
 
     Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "running" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
@@ -45,10 +45,10 @@ sequenceDiagram
     Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to COMPLETED (via a DB trigger).
     Cloud-->>Provider: HTTP 200 OK
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
+    User->>Cloud: GET /jobs/<job ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "COMPLETED" }
 
-    User->>Cloud: GET /results/<task ID-1>
+    User->>Cloud: GET /jobs/<job ID-1>
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "SUCCESS", "result": ... }
 ```
 
@@ -90,10 +90,10 @@ sequenceDiagram
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "QUEUED" }
+    Cloud-->>User: HTTP 200 OK { "jobId": <job ID-1>, "status": "submitted" }
 
     Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
+    Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "RUNNING" }
     Note over Cloud: The task status is updated to RUNNING.
     Cloud-->>Provider: HTTP 200 OK
 
@@ -130,10 +130,10 @@ The numbers below correspond to the circled numbers in the sequence diagram.
   - tasks table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
   - results table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
 
-## Sequence of Task Cancellation
+## Sequence of Job Cancellation
 
-The following shows a sequence of task cancellation,
-where User tries to cancel a task.
+The following shows a sequence of job cancellation,
+where User tries to cancel a job.
 
 ```mermaid
 sequenceDiagram
@@ -142,9 +142,9 @@ sequenceDiagram
     participant Cloud as Cloud (Backend)
     participant Provider as Provider (Device ID is 'SVSim')
 
-    User->>Cloud: POST /tasks/<task ID-1>/cancel
+    User->>Cloud: POST /jobs/<JOB ID-1>/cancel
     Note right of User: User sends a cancel requests for the task <task ID-1>.
-    Note over Cloud: The task status is updated to CANCELLING
+    Note over Cloud: The task status is updated to cancelling
     Cloud-->>User: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status

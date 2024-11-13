@@ -18,10 +18,7 @@ from oqtopus_cloud.user.routers import (
     devices as device_router,
 )
 from oqtopus_cloud.user.routers import (
-    results as result_router,
-)
-from oqtopus_cloud.user.routers import (
-    tasks as task_router,
+    jobs as job_router,
 )
 
 app: FastAPI = FastAPI()
@@ -48,12 +45,8 @@ app.include_router(
     tags=["device"],
 )
 app.include_router(
-    task_router.router,
-    tags=["task"],
-)
-app.include_router(
-    result_router.router,
-    tags=["result"],
+    job_router.router,
+    tags=["job"],
 )
 
 handler: Mangum = Mangum(

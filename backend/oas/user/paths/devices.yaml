@@ -46,7 +46,7 @@ devices.deviceId:
     security:
       - BearerAuth: []
     parameters:
-      - name: deviceId
+      - name: device_id
         in: path
         description: "Device identifier"
         required: true
@@ -55,13 +55,13 @@ devices.deviceId:
         example: "Kawasaki"
     responses:
       '200':
-        description: task response
+        description: job response
         content:
           application/json:
             schema:
               $ref: '../schemas/devices.yaml#/devices.DeviceInfo'
       '404':
-        description: "Device with deviceId not found"
+        description: "Device with device_id not found"
         content:
           application/json:
             schema:
