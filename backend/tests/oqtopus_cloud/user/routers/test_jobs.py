@@ -69,6 +69,29 @@ def test_get_job_404(
     assert response.json() == {"detail": "job not found with the given id"}
 
 
+def test_job_sortedness(test_db):
+    def mk_job(n: int) -> SubmitJobRequest:
+        return SubmitJobRequest(
+            name=f"test-job-{n}",
+            device_id="1",
+            status=JobStatus.submitted,
+            job_info=JobInfoSampling(job_type="sampling", code="code"),
+            shots=1000,
+        )
+
+    def is_sorted(xs: list[str]) -> bool:
+        return xs == sorted(xs)
+
+    test_db.flush()
+    job_ids: list[str] = []
+    for n in range(1, 10):
+        submit_resp = client.post("/jobs", content=mk_job(n).model_dump_json())
+        job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
+        job_ids.append(job_id)
+
+    assert is_sorted(job_ids)
+
+
 def test_get_jobs_handler(
     test_db,
 ):

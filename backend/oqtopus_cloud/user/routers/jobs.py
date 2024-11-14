@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -12,6 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
+
+# from uuid_extensions import uuid7
+from uuid_v7.base import uuid7
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
@@ -120,8 +122,8 @@ def submit_jobs(
         description = validate_description(request)
 
         job = Job(
-            # TODO: UUIDv7
-            id=str(uuid.uuid4()),
+            # id=uuid7(as_type="str"),
+            id=str(uuid7()),
             owner=owner,
             name=name,
             description=description,

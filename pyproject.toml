@@ -22,6 +22,8 @@ fastapi = "^0.110.0"
 aws-xray-sdk = "^2.13.0"
 setuptools = "^75.1.0"
 types-setuptools = "^75.1.0.20240917"
+uuid7 = "^0.1.0"
+uuid-v7 = "^1.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
