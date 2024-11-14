@@ -11,9 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
-
-# from uuid_extensions import uuid7
-from uuid_v7.base import uuid7
+from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
@@ -122,8 +120,7 @@ def submit_jobs(
         description = validate_description(request)
 
         job = Job(
-            # id=uuid7(as_type="str"),
-            id=str(uuid7()),
+            id=uuid7(as_type="str"),
             owner=owner,
             name=name,
             description=description,

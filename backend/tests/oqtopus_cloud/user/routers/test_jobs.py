@@ -73,9 +73,12 @@ def test_job_sortedness(test_db):
     def mk_job(n: int) -> SubmitJobRequest:
         return SubmitJobRequest(
             name=f"test-job-{n}",
-            device_id="1",
+            device_id="Kawasaki",
             status=JobStatus.submitted,
             job_info=JobInfoSampling(job_type="sampling", code="code"),
+            simulator_info="{}",
+            transpiler_info="{}",
+            mitigation_info="{}",
             shots=1000,
         )
 
@@ -86,6 +89,7 @@ def test_job_sortedness(test_db):
     job_ids: list[str] = []
     for n in range(1, 10):
         submit_resp = client.post("/jobs", content=mk_job(n).model_dump_json())
+        print(f"submit_resp={submit_resp.json()}")
         job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
         job_ids.append(job_id)
 
