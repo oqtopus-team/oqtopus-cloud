@@ -228,6 +228,54 @@ paths:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
                 detail: The specified job is not in a status thatt allows transition to the requested status.
+  /jobs/{job_id}/job_info:
+    patch:
+      summary: Update selected quantum job's job_info by placing job results
+      description: |
+        Used by device to set results or error details in job_info、accompanied by appropriate status updating.
+        Note that job info descriptor (sampling, estimation, etc) cannot be modified.
+      operationId: patchJobInfo
+      security: []
+      tags:
+        - jobs
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      requestBody:
+        description: Modification to Job info (excluding jobinfo descriptor.)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/jobs.UpdateJobInfoRequest'
+      responses:
+        '200':
+          description: job info updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobs.UpdateJobInfoResponse'
+              example:
+                message: Job info updated.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                detail: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: Job not found
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -261,7 +309,7 @@ components:
           type: string
           example: DeviceCalibrationUpdate
         device_info:
-          description: Calibration_data and n_nodes etc. Make sure that the value is valid JSON format.
+          description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
           example: |-
             {
@@ -528,3 +576,19 @@ components:
           type: string
       required:
         - detail
+    jobs.UpdateJobInfoRequest:
+      type: object
+      properties:
+        transpiled_code:
+          type: string
+        result:
+          type: string
+        reason:
+          type: string
+    jobs.UpdateJobInfoResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
