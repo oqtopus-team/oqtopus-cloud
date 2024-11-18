@@ -7,6 +7,7 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
+    BadRequestResponse,
     ConflictErrorResponse,
     Detail,
     ErrorResponse,
@@ -19,6 +20,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    UpdateJobInfoRequest,
+    UpdateJobInfoResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -121,6 +124,58 @@ def update_job(
         model.status = request.status
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
+    except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.patch(
+    "/jobs/{job_id}/job_info",
+    response_model=UpdateJobInfoResponse,
+    responses={
+        400: {"model": Detail},
+        404: {"model": Detail},
+        500: {"model": Detail},
+    },
+)
+@tracer.capture_method
+def update_job_info(
+    job_id: str,
+    request: UpdateJobInfoRequest,
+    db: Session = Depends(get_db),
+) -> UpdateJobInfoResponse | ErrorResponse:
+    logger.info("invoked: update_job_info")
+    logger.info(
+        f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
+    )
+
+    def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
+        job_info.transpiled_code = request.transpiled_code
+
+        if request.result is not None:
+            job_info.result = request.result
+            job_info.reason = None
+            return (JobStatus.success, job_info)
+
+        elif request.reason is not None:
+            job_info.reason = request.reason
+            job_info.result = None
+            return (JobStatus.failed, job_info)
+
+        return (None, job_info)
+
+    try:
+        stmt = select(Job).where(Job.id == job_id)
+        model = db.execute(stmt).scalar_one_or_none()
+        if model is None:
+            return NotFoundErrorResponse("Job not found")
+        (status, job_info) = patch_job_info(
+            JobInfo.model_validate(json.loads(model.job_info))
+        )
+        model.job_info = JobInfo.model_dump_json(job_info)
+        if status is not None:
+            model.status = status
+        db.commit()
+        return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
