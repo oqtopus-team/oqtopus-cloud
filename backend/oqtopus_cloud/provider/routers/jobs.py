@@ -163,6 +163,11 @@ def update_job_info(
 
         return (None, job_info)
 
+    if request.reason is not None and request.result is not None:
+        return BadRequestResponse(
+            detail="You cannot specify both a result and a reason."
+        )
+
     try:
         stmt = select(Job).where(Job.id == job_id)
         model = db.execute(stmt).scalar_one_or_none()
