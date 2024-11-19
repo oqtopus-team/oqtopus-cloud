@@ -246,7 +246,7 @@ paths:
           schema:
             type: string
       requestBody:
-        description: Modification to Job info (excluding jobinfo descriptor.)
+        description: Modifications applied to Job info
         content:
           application/json:
             schema:
