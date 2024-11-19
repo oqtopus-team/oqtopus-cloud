@@ -116,3 +116,13 @@ class JobStatusUpdate(BaseModel):
 
 class JobStatusUpdateResponse(BaseModel):
     message: str
+
+
+class UpdateJobInfoRequest(BaseModel):
+    transpiled_code: str | None = None
+    result: str | None = None
+    reason: str | None = None
+
+
+class UpdateJobInfoResponse(BaseModel):
+    message: str

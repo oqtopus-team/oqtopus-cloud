@@ -49,7 +49,7 @@ class DeviceCalibrationUpdate(BaseModel):
         ),
     ] = None
     """
-    Calibration_data and n_nodes etc. Make sure that the value is valid JSON format.
+    Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
     """
     calibrated_at: Annotated[
         datetime | None, Field(examples=["2023-09-10T14:00:00"])

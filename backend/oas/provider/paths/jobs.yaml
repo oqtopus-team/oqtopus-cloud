@@ -7,24 +7,24 @@ jobs:
     operationId: getjobs
     security: []
     parameters:
-        - in: query
-          name: device_id
-          required: true
-          description: "Device identifier"
-          schema: {type: string, example: "Kawasaki"}
-        - in: query
-          name: status
-          description: "Additional search parameter:<br/> Search jobs with specified status only"
-          schema:
-            $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
-        - in: query
-          name: max_results
-          description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
-          schema: {type: integer, example: 1}
-        - in: query
-          name: timestamp
-          description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
-          schema: {type: string, example: '2022-12-15 15:54:46'}
+      - in: query
+        name: device_id
+        required: true
+        description: "Device identifier"
+        schema: { type: string, example: "Kawasaki" }
+      - in: query
+        name: status
+        description: "Additional search parameter:<br/> Search jobs with specified status only"
+        schema:
+          $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
+      - in: query
+        name: max_results
+        description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
+        schema: { type: integer, example: 1 }
+      - in: query
+        name: timestamp
+        description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
+        schema: { type: string, example: "2022-12-15 15:54:46" }
     responses:
       "200":
         description: "List of jobs for a device"
@@ -34,20 +34,20 @@ jobs:
               type: array
               items:
                 $ref: "../schemas/jobs.yaml#/jobs.JobDef"
-      '400':
+      "400":
         description: Bad Request
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
-      '500':
+      "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.InternalServerError'
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
               detail: Internal server error
 
@@ -58,13 +58,13 @@ jobs.jobId:
     operationId: getJob
     security: []
     tags:
-    - jobs
+      - jobs
     parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: "Job identifier"
-          schema: {type: string}
+      - in: path
+        name: job_id
+        required: true
+        description: "Job identifier"
+        schema: { type: string }
     responses:
       "200":
         description: "Return quantum job"
@@ -72,35 +72,35 @@ jobs.jobId:
           application/json:
             schema:
               $ref: "../schemas/jobs.yaml#/jobs.JobDef"
-      '400':
+      "400":
         description: Bad Request
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.BadRequest'
+              $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
               detail: Bad request malformed input data
-      '404':
+      "404":
         description: Not Found
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: job not found
   patch:
     summary: "Modify selected quantum job (update status)."
-    description: "Used by device to set job status to \"RUNNING\".<br/>Other statuses are set by CloudAPI automatically when result is created"
+    description: 'Used by device to set job status to "RUNNING".<br/>Other statuses are set by CloudAPI automatically when result is created'
     operationId: patchJob
     security: []
     tags:
       - jobs
     parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: "Job identifier"
-          schema: {type: string}
+      - in: path
+        name: job_id
+        required: true
+        description: "Job identifier"
+        schema: { type: string }
     requestBody:
       description: "New job status. "
       content:
@@ -108,12 +108,12 @@ jobs.jobId:
           schema:
             $ref: "../schemas/jobs.yaml#/jobs.JobStatusUpdate"
     responses:
-      '200':
+      "200":
         description: job data updated
         content:
           application/json:
             schema:
-              $ref: '../schemas/jobs.yaml#/jobs.JobStatusUpdateResponse'
+              $ref: "../schemas/jobs.yaml#/jobs.JobStatusUpdateResponse"
             example:
               message: job data updated
       "404":
@@ -121,7 +121,7 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               detail: Job not found
       "409":
@@ -129,6 +129,53 @@ jobs.jobId:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.ConflictError'
+              $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
               detail: The specified job is not in a status thatt allows transition to the requested status.
+jobs.jobInfo:
+  patch:
+    summary: "Update selected quantum job's job_info by placing job results"
+    description: |
+      Used by device to set results or error details in job_info、accompanied by appropriate status updating.
+      Note that job info descriptor (sampling, estimation, etc) cannot be modified.
+    operationId: patchJobInfo
+    security: []
+    tags:
+      - jobs
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        description: "Job identifier"
+        schema: { type: string }
+    requestBody:
+      description: "Modifications applied to Job info"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoRequest"
+    responses:
+      "200":
+        description: job info updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoResponse"
+            example:
+              message: Job info updated.
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              detail: Bad request malformed input data
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              detail: Job not found

@@ -233,3 +233,20 @@ jobs.JobStatusUpdateResponse:
   required:
     - message
 
+jobs.UpdateJobInfoRequest:
+  type: object
+  properties:
+    transpiled_code:
+      type: string
+    result:
+      type: string
+    reason:
+      type: string
+
+jobs.UpdateJobInfoResponse:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message

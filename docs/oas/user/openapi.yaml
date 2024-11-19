@@ -609,7 +609,8 @@ components:
         result:
           type: string
           description: The result of quantum computation, set only if the computation is successful.
-          example: '{ "11": 4980, "00": 5020 }'
+          example: |
+            { "11": 4980, "00": 5020 }
         reason:
           type: string
           description: The reason indicating why there is no result

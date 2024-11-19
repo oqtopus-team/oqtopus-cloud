@@ -2,12 +2,14 @@ import json
 import uuid
 from datetime import datetime
 
+from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
 )
 from oqtopus_cloud.common.models.job import (
     Job,
 )
+from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.jobs import (
     get_job,
     get_jobs,
@@ -15,8 +17,11 @@ from oqtopus_cloud.provider.routers.jobs import (
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     JobDef,
+    JobInfo,
+    JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    UpdateJobInfoRequest,
 )
 from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
@@ -26,6 +31,7 @@ from zoneinfo import ZoneInfo
 utc = ZoneInfo("UTC")
 jst = ZoneInfo("Asia/Tokyo")
 
+client = TestClient(app)
 
 # def _get_calibration_dict() -> Dict:
 #     calib_dict = {
@@ -122,6 +128,77 @@ def test_update_job(test_db: Session):
     # Assert
 
     assert actual == expected
+
+
+def test_update_job_info_400(test_db: Session):
+    job_model = _get_job_model()
+    test_db.add(_get_device_model())
+    test_db.add(job_model)
+    test_db.commit()
+
+    # Submitting
+    result = json.dumps({"field1": "value", "field2": "value2"})
+    reason = "Oops! Job failed!"
+    body = UpdateJobInfoRequest(
+        result=result,
+        reason=reason,
+    )
+    submit_resp = client.patch(
+        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+    )
+    assert submit_resp.status_code == 400
+
+
+def test_update_job_info_result(test_db: Session):
+    job_model = _get_job_model()
+    bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+    test_db.add(_get_device_model())
+    test_db.add(job_model)
+    test_db.commit()
+
+    # Submitting
+    result = json.dumps({"field1": "value", "field2": "value2"})
+    transpiled_code = "transpiled_code"
+    body = UpdateJobInfoRequest(
+        result=result,
+        transpiled_code=transpiled_code,
+    )
+    submit_resp = client.patch(
+        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+    )
+    assert submit_resp.status_code == 200
+    get_resp = client.get(f"/jobs/{job_model.id}")
+    aft_job = JobDef.model_validate(get_resp.json())
+    aft_job_info = aft_job.job_info
+    assert bef_job_info.desc == aft_job_info.desc
+    assert aft_job_info.result == result
+    assert aft_job_info.reason is None
+    assert aft_job.status == JobStatus.success
+
+
+def test_update_job_info_reason(test_db: Session):
+    job_model = _get_job_model()
+    bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+    test_db.add(_get_device_model())
+    test_db.add(job_model)
+    test_db.commit()
+
+    # Submitting
+    reason = "Oops, job failed!"
+    body = UpdateJobInfoRequest(
+        reason=reason,
+    )
+    submit_resp = client.patch(
+        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+    )
+    assert submit_resp.status_code == 200
+    get_resp = client.get(f"/jobs/{job_model.id}")
+    aft_job = JobDef.model_validate(get_resp.json())
+    aft_job_info = aft_job.job_info
+    assert bef_job_info.desc == aft_job_info.desc
+    assert aft_job_info.reason == reason
+    assert aft_job_info.result is None
+    assert aft_job.status == JobStatus.failed
 
 
 # TODO: add invalid test cases
