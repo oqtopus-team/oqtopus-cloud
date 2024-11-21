@@ -1,4 +1,4 @@
-# Task State Transition
+# Job State Transition
 
 The time to stay in the RUNNING state can be very short, so it can be skipped.
 For example, QUEUED state tasks can be transitioned to COMPLETED directly.
