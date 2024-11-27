@@ -134,7 +134,7 @@
         },
         {
           "name": "status",
-          "type": "enum('SUCCESS','FAILURE','CANCELLED')",
+          "type": "enum('succeeded','failed','cancelled')",
           "nullable": false,
           "default": null,
           "comment": ""
@@ -210,11 +210,11 @@
       "triggers": [
         {
           "name": "update_tasks_status_trigger",
-          "def": "CREATE TRIGGER update_tasks_status_trigger AFTER INSERT ON results\nFOR EACH ROW\nBEGIN\n\tIF NEW.status = 'SUCCESS' THEN\n  \t\tUPDATE main.tasks SET status = 'COMPLETED' WHERE id = NEW.task_id;\n  \tELSEIF NEW.status = 'FAILURE' THEN\n  \t\tUPDATE main.tasks SET status = 'FAILED' WHERE id = NEW.task_id;\n  \tELSEIF NEW.status = 'CANCELLED' THEN\n  \t\tUPDATE main.tasks SET status = 'CANCELLED' WHERE id = NEW.task_id;\n  \tEND IF;\nEND",
+          "def": "CREATE TRIGGER update_tasks_status_trigger AFTER INSERT ON results\nFOR EACH ROW\nBEGIN\n\tIF NEW.status = 'succeeded' THEN\n  \t\tUPDATE main.tasks SET status = 'succeeded' WHERE id = NEW.task_id;\n  \tELSEIF NEW.status = 'failed' THEN\n  \t\tUPDATE main.tasks SET status = 'failed' WHERE id = NEW.task_id;\n  \tEND IF;\nEND",
           "comment": ""
         }
       ],
-      "def": "CREATE TABLE `results` (\n  `task_id` varbinary(16) NOT NULL,\n  `status` enum('SUCCESS','FAILURE','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `result` text COLLATE utf8mb4_unicode_ci,\n  `reason` text COLLATE utf8mb4_unicode_ci,\n  `transpiled_code` text COLLATE utf8mb4_unicode_ci,\n  `qubit_allocation` text COLLATE utf8mb4_unicode_ci,\n  PRIMARY KEY (`task_id`),\n  CONSTRAINT `results_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+      "def": "CREATE TABLE `results` (\n  `task_id` varbinary(16) NOT NULL,\n  `status` enum('succeeded','failed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `result` text COLLATE utf8mb4_unicode_ci,\n  `reason` text COLLATE utf8mb4_unicode_ci,\n  `transpiled_code` text COLLATE utf8mb4_unicode_ci,\n  `qubit_allocation` text COLLATE utf8mb4_unicode_ci,\n  PRIMARY KEY (`task_id`),\n  CONSTRAINT `results_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     },
     {
       "name": "jobs",
@@ -356,9 +356,9 @@
         },
         {
           "name": "status",
-          "type": "enum('QUEUED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLED')",
+          "type": "enum('submitted','ready','running','succeeded','failed','cancelled')",
           "nullable": false,
-          "default": "QUEUED",
+          "default": "submitted",
           "comment": ""
         },
         {
@@ -419,7 +419,7 @@
         }
       ],
       "triggers": [],
-      "def": "CREATE TABLE `tasks` (\n  `id` varbinary(16) NOT NULL,\n  `owner` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `name` varchar(256) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `device` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `n_qubits` int DEFAULT NULL,\n  `n_nodes` int DEFAULT NULL,\n  `code` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `action` enum('sampling','estimation') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `method` enum('state_vector','sampling') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `shots` int DEFAULT NULL,\n  `operator` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `qubit_allocation` text COLLATE utf8mb4_unicode_ci,\n  `skip_transpilation` tinyint(1) NOT NULL DEFAULT '0',\n  `seed_transpilation` int DEFAULT NULL,\n  `seed_simulation` int DEFAULT NULL,\n  `n_per_node` int unsigned DEFAULT NULL,\n  `simulation_opt` text COLLATE utf8mb4_unicode_ci,\n  `ro_error_mitigation` enum('none','pseudo_inverse','least_square') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `note` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('QUEUED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QUEUED',\n  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `device` (`device`),\n  CONSTRAINT `tasks_ibfk_1` FOREIGN KEY (`device`) REFERENCES `devices` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+      "def": "CREATE TABLE `tasks` (\n  `id` varbinary(16) NOT NULL,\n  `owner` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `name` varchar(256) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `device` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `n_qubits` int DEFAULT NULL,\n  `n_nodes` int DEFAULT NULL,\n  `code` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `action` enum('sampling','estimation') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `method` enum('state_vector','sampling') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `shots` int DEFAULT NULL,\n  `operator` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `qubit_allocation` text COLLATE utf8mb4_unicode_ci,\n  `skip_transpilation` tinyint(1) NOT NULL DEFAULT '0',\n  `seed_transpilation` int DEFAULT NULL,\n  `seed_simulation` int DEFAULT NULL,\n  `n_per_node` int unsigned DEFAULT NULL,\n  `simulation_opt` text COLLATE utf8mb4_unicode_ci,\n  `ro_error_mitigation` enum('none','pseudo_inverse','least_square') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `note` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('submitted','ready','running','succeeded','failed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted',\n  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `device` (`device`),\n  CONSTRAINT `tasks_ibfk_1` FOREIGN KEY (`device`) REFERENCES `devices` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     }
   ],
   "relations": [

@@ -90,7 +90,7 @@ jobs.jobId:
               detail: job not found
   patch:
     summary: "Modify selected quantum job (update status)."
-    description: 'Used by device to set job status to "RUNNING".<br/>Other statuses are set by CloudAPI automatically when result is created'
+    description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
     operationId: patchJob
     security: []
     tags:

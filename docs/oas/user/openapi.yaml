@@ -231,7 +231,7 @@ paths:
       tags:
         - job
       summary: Delete job
-      description: 'Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: COMPLETED, FAILED and CANCELLED. submitted and RUNNING jobs must be cancelled before deletion.'
+      description: 'Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion.'
       operationId: deleteSamplingJob
       security:
         - BearerAuth: []
@@ -327,7 +327,7 @@ paths:
       tags:
         - job
       summary: Cancel job
-      description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted or RUNNING.'
+      description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running.'
       operationId: cancelSamplingJob
       security:
         - BearerAuth: []
@@ -557,7 +557,7 @@ components:
         - submitted
         - ready
         - running
-        - success
+        - succeeded
         - failed
         - cancelled
       example: submitted

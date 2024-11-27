@@ -29,7 +29,7 @@ class Job(Base):
         mitigation_info(str): The information about the error mitigation.
         job_type (str): The action to be performed by the job (sampling or estimation).
         shots (int): The number of shots for the job.
-        status (str): The status of the job (submitted, ready, running, success, failed, cancelled).
+        status (str): The status of the job (submitted, ready, running, succeeded, failed, cancelled).
         created_at (datetime): The timestamp when the job was created.
         updated_at(datetime): The timestamp when the job was last updated.
     """

@@ -28,28 +28,33 @@ sequenceDiagram
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
-    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
-    Note over Cloud: The task status is updated to RUNNING.
+    Note over Provider: Provider starts getting the tasks.
+    Provider->>Cloud: GET /jobs
+    Note over Cloud: The task status is updated to ready.
     Cloud-->>Provider: HTTP 200 OK
 
-    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "RUNNING" }
-    Note over Cloud: The task status is updated to RUNNING.
+    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to running.
+    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "running" }
+    Note over Cloud: The task status is updated to running.
+    Cloud-->>Provider: HTTP 200 OK
+
+    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "running" }
+    Note over Cloud: The task status is updated to running.
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "RUNNING" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "running" }
     Note over Provider: The execution of the task <task ID-1> is successfully completed.
-    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "SUCCESS", result: ... }
+    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "succeeded", result: ... }
 
-    Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to COMPLETED (via a DB trigger).
+    Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to succeeded (via a DB trigger).
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "COMPLETED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "succeeded" }
 
     User->>Cloud: GET /results/<task ID-1>
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "SUCCESS", "result": ... }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "succeeded", "result": ... }
 ```
 
 Provider は定期的に、タスクの実行・実行結果の送信、の流れを繰り返します。
@@ -64,17 +69,20 @@ Provider は定期的に、タスクの実行・実行結果の送信、の流�
 - (2)
   - tasks テーブル: [success-case-tasks-02.csv](../../sample/architecture/success-case-tasks-02.csv)
   - results テーブル: データ無し
-- (8)
+- (6)
+  - tasks テーブル: [success-case-tasks-06.csv](../../sample/architecture/success-case-tasks-06.csv)
+  - results テーブル: データ無し
+- (10)
   - tasks テーブル: [success-case-tasks-10.csv](../../sample/architecture/success-case-tasks-10.csv)
   - results テーブル: データ無し
-- (12)
+- (14)
   - tasks テーブル: [success-case-tasks-14.csv](../../sample/architecture/success-case-tasks-14.csv)
   - results テーブル: [success-case-results-14.csv](../../sample/architecture/success-case-results-14.csv)
 
 ## タスク実行のシーケンス (失敗ケース)
 
 タスクの実行に失敗した場合のシーケンスを以下に示します。
-タスクの status が RUNNING に変化するまでは成功ケースと同様の流れです。図中の着色部分が、失敗した場合に特有の処理を示しています。
+タスクの status が running に変化するまでは成功ケースと同様の流れです。図中の着色部分が、失敗した場合に特有の処理を示しています。
 
 ```mermaid
 sequenceDiagram
@@ -91,29 +99,34 @@ sequenceDiagram
     User->>Cloud: GET /tasks/<task ID-1>/status
     Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
 
-    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to RUNNING.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "RUNNING" }
-    Note over Cloud: The task status is updated to RUNNING.
+    Note over Provider: Provider starts getting the tasks.
+    Provider->>Cloud: GET /jobs
+    Note over Cloud: The task status is updated to ready.
     Cloud-->>Provider: HTTP 200 OK
 
-    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "RUNNING" }
-    Note over Cloud: The task status is updated to RUNNING.
+    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to running.
+    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "running" }
+    Note over Cloud: The task status is updated to running.
+    Cloud-->>Provider: HTTP 200 OK
+
+    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "running" }
+    Note over Cloud: The task status is updated to running.
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "RUNNING" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "running" }
 
     rect rgb(255, 240, 240)
         Note over Provider: The execution of the task <task ID-1> is failed.
-        Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "FAILURE", "reason": ... }
-        Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to FAILED (via a DB trigger).
+        Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "failed", "reason": ... }
+        Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to failed (via a DB trigger).
         Cloud-->>Provider: HTTP 200 OK
   
         User->>Cloud: GET /tasks/<task ID-1>/status
-        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "FAILED" }
+        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "failed" }
   
         User->>Cloud: GET /results/<task ID-1>
-        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "FAILED", "reason": ...}
+        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "failed", "reason": ...}
     end
 ```
 
@@ -123,9 +136,9 @@ sequenceDiagram
 `/tasks/estimation` エンドポイントに対してタスクを送信した場合の例となっています。  
 以下の数字は、シーケンス図中の丸数字と対応しています。
 
-- (2), (6), (8)
+- (2), (6), (10)
   - 成功ケースの場合と同様であるため省略。
-- (12)
+- (14)
   - tasks テーブル: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
   - results テーブル: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
 
@@ -143,24 +156,24 @@ sequenceDiagram
 
     User->>Cloud: POST /tasks/<task ID-1>/cancel
     Note right of User: User sends a cancel requests for the task <task ID-1>.
-    Note over Cloud: The task status is updated to cancelling
+    Note over Cloud: The task status is updated to cancelled
     Cloud-->>User: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelling" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled" }
 
     Note over Provider: Provider tries to cancel the executions of the tasks.
     Note over Provider: The execution of the task <task ID-1> is successfully cancelled.
-    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
+    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "cancelled", "reason": ... }
 
-    Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to CANCELLED (via a DB trigger).
+    Note over Cloud: The received result of the task is inserted to the DB.
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLED" }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled" }
 
     User->>Cloud: GET /results/<task ID-1>
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "CANCELLED", "reason": ... }
+    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled", "reason": ... }
 ```
 
 Provider は定期的に、タスク実行のキャンセル・キャンセル結果の送信、の流れを繰り返します。
@@ -182,6 +195,3 @@ Provider は定期的に、タスク実行のキャンセル・キャンセル�
   - tasks テーブル: [cancel-case-tasks-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
   - results テーブル: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
 
-> [!NOTE]
-> (1) の時点でタスクが QUEUED 状態の場合、Cloud は即座にタスクを CANCELLED 状態に変更します。
-> 上記のシーケンス図だと、(1) から (6) の状態に即座に遷移することになります。

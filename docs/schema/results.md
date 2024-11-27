@@ -8,7 +8,7 @@
 ```sql
 CREATE TABLE `results` (
   `task_id` varbinary(16) NOT NULL,
-  `status` enum('SUCCESS','FAILURE','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('succeeded','failed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL,
   `result` text COLLATE utf8mb4_unicode_ci,
   `reason` text COLLATE utf8mb4_unicode_ci,
   `transpiled_code` text COLLATE utf8mb4_unicode_ci,
@@ -25,7 +25,7 @@ CREATE TABLE `results` (
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
 | task_id | varbinary(16) |  | false |  | [tasks](tasks.md) |  |
-| status | enum('SUCCESS','FAILURE','CANCELLED') |  | false |  |  |  |
+| status | enum('succeeded','failed','cancelled') |  | false |  |  |  |
 | result | text |  | true |  |  |  |
 | reason | text |  | true |  |  |  |
 | transpiled_code | text |  | true |  |  |  |
@@ -48,7 +48,7 @@ CREATE TABLE `results` (
 
 | Name | Definition |
 | ---- | ---------- |
-| update_tasks_status_trigger | CREATE TRIGGER update_tasks_status_trigger AFTER INSERT ON results<br>FOR EACH ROW<br>BEGIN<br>	IF NEW.status = 'SUCCESS' THEN<br>  		UPDATE main.tasks SET status = 'COMPLETED' WHERE id = NEW.task_id;<br>  	ELSEIF NEW.status = 'FAILURE' THEN<br>  		UPDATE main.tasks SET status = 'FAILED' WHERE id = NEW.task_id;<br>  	ELSEIF NEW.status = 'CANCELLED' THEN<br>  		UPDATE main.tasks SET status = 'CANCELLED' WHERE id = NEW.task_id;<br>  	END IF;<br>END |
+| update_tasks_status_trigger | CREATE TRIGGER update_tasks_status_trigger AFTER INSERT ON results<br>FOR EACH ROW<br>BEGIN<br>	IF NEW.status = 'succeeded' THEN<br>  		UPDATE main.tasks SET status = 'succeeded' WHERE id = NEW.task_id;<br>  	ELSEIF NEW.status = 'failed' THEN<br>  		UPDATE main.tasks SET status = 'failed' WHERE id = NEW.task_id;<br>  	END IF;<br>END |
 
 ## Relations
 
@@ -59,7 +59,7 @@ erDiagram
 
 "results" {
   varbinary_16_ task_id PK
-  enum__SUCCESS___FAILURE___CANCELLED__ status
+  enum__succeeded___failed___cancelled__ status
   text result
   text reason
   text transpiled_code
@@ -85,7 +85,7 @@ erDiagram
   text simulation_opt
   enum__none___pseudo_inverse___least_square__ ro_error_mitigation
   varchar_1024_ note
-  enum__QUEUED___RUNNING___COMPLETED___FAILED___CANCELLING___CANCELLED__ status
+  enum__submitted___ready___running___succeeded___failed___cancelled__ status
   timestamp created_at
 }
 ```

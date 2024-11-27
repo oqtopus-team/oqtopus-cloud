@@ -26,7 +26,7 @@ CREATE TABLE `tasks` (
   `simulation_opt` text COLLATE utf8mb4_unicode_ci,
   `ro_error_mitigation` enum('none','pseudo_inverse','least_square') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `note` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('QUEUED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QUEUED',
+  `status` enum('submitted','ready','running','succeeded','failed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QUEUED',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `device` (`device`),
@@ -59,7 +59,7 @@ CREATE TABLE `tasks` (
 | simulation_opt | text |  | true |  |  |  |  |
 | ro_error_mitigation | enum('none','pseudo_inverse','least_square') |  | true |  |  |  |  |
 | note | varchar(1024) |  | true |  |  |  |  |
-| status | enum('QUEUED','RUNNING','COMPLETED','FAILED','CANCELLING','CANCELLED') | QUEUED | false |  |  |  |  |
+| status | enum('submitted','ready','running','succeeded','failed','cancelled') | QUEUED | false |  |  |  |  |
 | created_at | timestamp | CURRENT_TIMESTAMP | true | DEFAULT_GENERATED |  |  |  |
 
 ## Constraints
@@ -104,12 +104,12 @@ erDiagram
   text simulation_opt
   enum__none___pseudo_inverse___least_square__ ro_error_mitigation
   varchar_1024_ note
-  enum__QUEUED___RUNNING___COMPLETED___FAILED___CANCELLING___CANCELLED__ status
+  enum__submitted___ready___running___succeeded___failed___cancelled__ status
   timestamp created_at
 }
 "results" {
   varbinary_16_ task_id PK
-  enum__SUCCESS___FAILURE___CANCELLED__ status
+  enum__succeeded___failed___cancelled__ status
   text result
   text reason
   text transpiled_code

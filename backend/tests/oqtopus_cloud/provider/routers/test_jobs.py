@@ -93,14 +93,53 @@ def _get_job_model() -> Job:
     return Job(**mode_dict)
 
 
+def _get_job_model_2() -> Job:
+    mode_dict = {
+        "id": "testjob2id",
+        "owner": "admin",
+        "name": "testjob2",
+        "description": "test job 2",
+        "device_id": "SC2",
+        "job_type": "sampling",
+        "job_info": json.dumps(
+            {
+                "desc": {
+                    "job_type": "sampling",
+                    "code": "code",
+                }
+            }
+        ),
+        "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
+        "simulator_info": json.dumps({"this_is": "simulator_info"}),
+        "mitigation_info": json.dumps(
+            {"field1": "value1", "field2": "value2", "field3": "value3"}
+        ),
+        "status": "submitted",
+        "shots": 1000,
+        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+    }
+    return Job(**mode_dict)
+
+
 def test_get_jobs(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model())
+    test_db.add(_get_job_model_2())
     test_db.add(_get_device_model())
     test_db.commit()
     device_id = "SC2"
+    job_id = "testjob2id"
+
+    job = get_job(job_id=job_id, db=test_db)
+    if isinstance(job, JobDef):
+        assert job.status == "submitted"
+
     jobs = get_jobs(device_id=device_id, db=test_db)
     assert jobs[0].device_id == device_id
+    assert jobs[0].status == "ready"
+
+    job = get_job(job_id=job_id, db=test_db)
+    if isinstance(job, JobDef):
+        assert job.status == "ready"
 
 
 def test_get_job(test_db: Session):
@@ -173,7 +212,7 @@ def test_update_job_info_result(test_db: Session):
     assert bef_job_info.desc == aft_job_info.desc
     assert aft_job_info.result == result
     assert aft_job_info.reason is None
-    assert aft_job.status == JobStatus.success
+    assert aft_job.status == JobStatus.succeeded
 
 
 def test_update_job_info_reason(test_db: Session):
