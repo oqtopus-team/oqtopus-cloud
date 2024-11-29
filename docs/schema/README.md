@@ -32,7 +32,7 @@ erDiagram
 }
 "results" {
   varbinary_16_ task_id PK
-  enum__SUCCESS___FAILURE___CANCELLED__ status
+  enum__succeeded___failed___cancelled__ status
   text result
   text reason
   text transpiled_code
@@ -58,7 +58,7 @@ erDiagram
   text simulation_opt
   enum__none___pseudo_inverse___least_square__ ro_error_mitigation
   varchar_1024_ note
-  enum__QUEUED___RUNNING___COMPLETED___FAILED___CANCELLING___CANCELLED__ status
+  enum__submitted___ready___running___succeeded___failed___cancelled__ status
   timestamp created_at
 }
 ```

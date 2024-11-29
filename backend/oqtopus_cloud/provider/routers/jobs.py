@@ -65,7 +65,15 @@ def get_jobs(
         if isinstance(job, ValueError):
             logger.warning(str(job))
         else:
-            jobs.append(job)
+            try:
+                if decode_job_status(model.status) == JobStatus.submitted:
+                    model.status = JobStatus.ready
+                    db.commit()
+                    job.status = JobStatus(model.status)
+                jobs.append(job)
+            except Exception as e:
+                logger.warning(str(job))
+                logger.warning(f"Error: {str(e)}")
     return jobs
 
 
@@ -118,7 +126,7 @@ def update_job(
 
         if decode_job_status(model.status) != JobStatus.ready:
             return ConflictErrorResponse(
-                f"The specified job is not a status thatt allows transition to the status {request.status}"
+                f"The specified job is not a status that allows transition to the status {request.status}"
             )
 
         model.status = request.status
@@ -154,7 +162,7 @@ def update_job_info(
         if request.result is not None:
             job_info.result = request.result
             job_info.reason = None
-            return (JobStatus.success, job_info)
+            return (JobStatus.succeeded, job_info)
 
         elif request.reason is not None:
             job_info.reason = request.reason

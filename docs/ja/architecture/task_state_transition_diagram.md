@@ -1,25 +1,24 @@
-# タスクの状態遷移
-
-RUNNING 状態に滞在する時間は非常に短いため、スキップされることがあります。例えば、QUEUED状態のタスクは直接 COMPLETED 状態に移行することがあります。
+# ジョブの状態遷移
 
 ```mermaid
 stateDiagram-v2
-    [*] --> submitted :task submitted
+    [*] --> submitted :job submitted
 
-    QUEUED --> RUNNING : execution started
+    submitted --> ready : job readying
+    ready --> running : execution started
     
     state join_state <<join>>
-    RUNNING --> join_state
+    running --> join_state
     
     state join_state <<fork>>
-    join_state --> COMPLETED :execution succeeded
-    join_state --> FAILED :execution failed
-    join_state --> cancelling :cancel requested
+    join_state --> succeeded :execution succeeded
+    join_state --> failed :execution failed
+    join_state --> cancelled :cancel requested
     
-    COMPLETED --> [*] :deleted
-    FAILED --> [*] :deleted
-    CANCELLING --> CANCELLED :cancelled in a gateway
-    QUEUED --> CANCELLED :cancelled requested ( cancelled in the cloud PF)
-    CANCELLED --> [*] :deleted
+    succeeded --> [*] :deleted
+    failed --> [*] :deleted
+    submitted --> cancelled :cancel requested (cancelled in the cloud PF)
+    ready --> cancelled :cancel requested
+    cancelled --> [*] :deleted
 ```
 

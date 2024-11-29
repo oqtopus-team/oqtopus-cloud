@@ -187,9 +187,9 @@ def delete_job(
         if job is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
 
-        if job.owner != owner or job.status not in ["success", "failed", "cancelled"]:
+        if job.owner != owner or job.status not in ["succeeded", "failed", "cancelled"]:
             return NotFoundErrorResponse(
-                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'success', 'failed' and 'cancelled')"
+                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
             )
 
         db.delete(job)
@@ -251,7 +251,7 @@ def cancel_job(
             )
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
-                "job is in submitted or ready or running state, so it will be marked as cancelling"
+                "job is in submitted or ready or running state, so it will be marked as cancelled"
             )
             job.status = JobStatus.cancelled
             db.commit()

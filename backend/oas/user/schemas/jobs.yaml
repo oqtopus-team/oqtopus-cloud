@@ -107,7 +107,7 @@ jobs.JobStatus:
     - submitted
     - ready
     - running
-    - success
+    - succeeded
     - failed
     - cancelled
   example: submitted
