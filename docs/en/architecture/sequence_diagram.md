@@ -23,6 +23,11 @@ sequenceDiagram
     User->>Cloud: GET /jobs/<job ID-1>/status
     Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "submitted" }
 
+    Note over Provider: Provider starts getting jobs.
+    Provider->>Cloud: GET /jobs
+    Note over Cloud: The job status is updated to `ready`.
+    Cloud-->>Provider: HTTP 200 OK
+
     Note over Provider: Provider starts execution of the jobs and sends <br/>  requests to update their statuses to `running`.
     Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "running" }
     Note over Cloud: The job status is updated to `running`.
@@ -42,7 +47,7 @@ sequenceDiagram
     Cloud-->>Provider: HTTP 200 OK
 
     User->>Cloud: GET /jobs/<job ID-1>
-    Cloud-->>User: HTTP 200 OK <br>{ "job_id": <job ID-1>, "status": "success", "job_info": "{ \"result\": ... }", ... } 
+    Cloud-->>User: HTTP 200 OK <br>{ "job_id": <job ID-1>, "status": "succeeded", "job_info": "{ \"result\": ... }", ... } 
 ```
 
 Provider periodically repeats the process of executing the jobs and writting the results.
@@ -62,10 +67,13 @@ The numbers below correspond to the circled numbers in the sequence diagram.
 - (2)
   - tasks table: [success-case-tasks-02.csv](../../sample/architecture/success-case-tasks-02.csv)
   - results table: no data
-- (8)
+- (6)
+  - tasks table: [success-case-tasks-06.csv](../../sample/architecture/success-case-tasks-06.csv)
+  - results table: no data
+- (10)
   - tasks table: [success-case-tasks-10.csv](../../sample/architecture/success-case-tasks-10.csv)
   - results table: no data
-- (12)
+- (14)
   - tasks table: [success-case-tasks-14.csv](../../sample/architecture/success-case-tasks-14.csv)
   - results table: [success-case-results-14.csv](../../sample/architecture/success-case-results-14.csv)
 
@@ -90,6 +98,11 @@ sequenceDiagram
 
     User->>Cloud: GET /jobs/<job ID-1>/status
     Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "submitted" }
+
+    Note over Provider: Provider starts getting jobs.
+    Provider->>Cloud: GET /jobs
+    Note over Cloud: Suppose that the job status is set to `ready`.
+    Cloud-->>Provider: HTTP 200 OK
 
     Note over Provider: Provider starts execution of the jobs and sends <br/>  requests to update their statuses to `running`.
     Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "running" }
@@ -120,9 +133,9 @@ The followings show sample data in the DB at each point in the sequence diagram,
 where there is one task submission to the endpoint `/tasks/estimation`.
 The numbers below correspond to the circled numbers in the sequence diagram.
 
-- (2), (6), (8)
+- (2), (6), (10)
   - Omitted, as they are the same as in the successful case.
-- (12)
+- (14)
   - tasks table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
   - results table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
 
@@ -140,14 +153,21 @@ sequenceDiagram
 
     User->>Cloud: POST /jobs/<Job ID-1>/cancel
     Note right of User: User sends a cancel requests for the job <job ID-1>.
-    Note over Cloud: The job status is updated to cancelling
+    Note over Cloud: The job status is updated to `cancelled`
     Cloud-->>User: HTTP 200 OK
 
     User->>Cloud: GET /jobs/<job ID-1>/status
     Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "cancelled" }
 
-    Note over Provider: Provider tries to cancel the executions of the job.
-    Note over Provider: The execution of the job <job ID-1> is successfully cancelled.
+    Note over Provider: Provider tries to cancel the executions of the tasks.
+    Note over Provider: The execution of the job  <Job ID-1> is successfully cancelled.
+    Provider->>Cloud: PATCH /jobs/<JOB ID-1>/job_info { "job_id": <Job ID-1>, "reason": ... }
+
+    Note over Cloud: The received result is stored in the `job_info` JSON field of the job.
+    Cloud-->>Provider: HTTP 200 OK
+
+    User->>Cloud: GET /jobs/<Job ID-1>/status
+    Cloud-->>User: HTTP 200 OK { "job_id": <Job ID-1>, "status": "cancelled", "job_info": "{ \"reason\": ... }", ... }
 ```
 
 Provider periodically repeats the process of cancelling job executions and sending the cancellation results.
@@ -169,6 +189,3 @@ The numbers below correspond to the circled numbers in the sequence diagram.
   - tasks table: [cancel-case-jobs-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
   - results table: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
 
-> [!NOTE]
-> If the task is in QUEUED status at (1), Cloud immediately changes the task status to CANCELLED.
-> It means the task state transitions from (1) to (6) directly.
