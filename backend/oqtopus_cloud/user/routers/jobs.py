@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from fastapi import (
     APIRouter,
@@ -57,7 +57,7 @@ class BadRequest(Exception):
 
 @router.get(
     "/jobs",
-    response_model=list[GetJobsResponse],
+    response_model=list[Union[GetJobsResponse, JobDef]],
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -71,7 +71,7 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[GetJobsResponse] | ErrorResponse:
+) -> list[Union[GetJobsResponse, JobDef]] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
@@ -201,7 +201,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | ErrorResponse:
+) -> Union[JobDef, GetJobsResponse] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
@@ -336,7 +336,7 @@ def decode_job_info(j: Any) -> JobInfo | None:
         return None
 
 
-def model_to_schema(model: Job | Row) -> JobDef | GetJobsResponse | None:
+def model_to_schema(model: Union[Job, Row]) -> Union[JobDef, GetJobsResponse] | None:
     if hasattr(model, "job_info"):
         job_info = decode_job_info(json.loads(model.job_info))
     else:
