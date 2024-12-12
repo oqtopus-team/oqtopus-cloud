@@ -98,7 +98,7 @@ def get_jobs(
 
         stmt = select(*arg_select).filter(Job.owner == owner).order_by(arg_order)
 
-        # Filterling Jobs
+        # Filtering Jobs
         if startTime is not None:
             stime = datetime.fromisoformat(startTime).astimezone(jst)
             stmt = stmt.filter(Job.created_at >= stime)
@@ -311,6 +311,7 @@ def cancel_job(
         return InternalServerErrorResponse(detail=str(e))
 
 
+# TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {
     "id": "job_id",
     "owner": "owner",
