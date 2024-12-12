@@ -13,6 +13,7 @@ from oqtopus_cloud.user.lambda_function import app
 #     model_to_schema,
 # )
 from oqtopus_cloud.user.schemas.jobs import (
+    GetJobsResponse,
     JobDef,
     JobInfo,
     JobInfoSampling,
@@ -27,12 +28,12 @@ from sqlalchemy import select
 client = TestClient(app)
 
 
-def _get_model() -> Job:
-    mode_dict = {
-        "id": "testjob1id",
+def _get_model(n: int) -> Job:
+    model_dict = {
+        "id": f"testjob{n}id",
         "owner": "admin",
-        "name": "testjob1",
-        "description": "test job 1",
+        "name": f"testjob{n}",
+        "description": f"test job {n}",
         "device_id": "Kawasaki",
         "job_type": "sampling",
         "job_info": json.dumps(
@@ -50,9 +51,9 @@ def _get_model() -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
-        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+        "created_at": datetime(2024, 3, 3 + n, 12, 34, 56),
     }
-    return Job(**mode_dict)
+    return Job(**model_dict)
 
 
 def test_get_job_404(
@@ -67,6 +68,322 @@ def test_get_job_404(
     response = client.get("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517")
     assert response.status_code == 404
     assert response.json() == {"detail": "job not found with the given id"}
+
+
+def test_get_jobs_simple(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    expect = [
+        JobDef(
+            job_id="testjob1id",
+            name="testjob1",
+            description="test job 1",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            updated_at=None,
+        ),
+        JobDef(
+            job_id="testjob2id",
+            name="testjob2",
+            description="test job 2",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            updated_at=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_filtering_fields(
+    test_db,
+):
+    """_summary_
+    GET job_id, status and name by ASC order
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+            name="testjob1",
+            status=JobStatus.submitted,
+        ),
+        GetJobsResponse(
+            job_id="testjob2id",
+            name="testjob2",
+            status=JobStatus.submitted,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_filtering_startTime(
+    test_db,
+):
+    """_summary_
+    filterling startime, expect only testjob2 will be got
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?startTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob2id",
+            name="testjob2",
+            description="test job 2",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            updated_at=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_filtering_endTime(
+    test_db,
+):
+    """_summary_
+    filterling endtime, expect only testjob1 will be got
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?endTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+            name="testjob1",
+            description="test job 1",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            updated_at=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_filtering_search_string(
+    test_db,
+):
+    """_summary_
+    filterling search string "1", expect only testjob1 will be got
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?q=1&order=ASC")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+            name="testjob1",
+            description="test job 1",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            updated_at=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_desc_order(
+    test_db,
+):
+    """_summary_
+    expect testjob2 and testjob1 will be got in this order
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?order=DESC")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob2id",
+            name="testjob2",
+            description="test job 2",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            updated_at=None,
+        ),
+        GetJobsResponse(
+            job_id="testjob1id",
+            name="testjob1",
+            description="test job 1",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
+            simulator_info=json.dumps({"this_is": "simulator_info"}),
+            mitigation_info=json.dumps(
+                {"field1": "value1", "field2": "value2", "field3": "value3"}
+            ),
+            status=JobStatus.submitted,
+            shots=1000,
+            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            updated_at=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_all_parameters(
+    test_db,
+):
+    """_summary_
+    filtering starttime, endtime, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(4))
+    test_db.commit()
+
+    response = client.get(
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&startTime=2024-03-04T16%3A12%3A29%2B09%3A00&endTime=2024-03-06T16%3A12%3A29%2B09%3A00&q=test&order=DESC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob3id",
+            description="test job 3",
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+        ),
+        GetJobsResponse(
+            job_id="testjob2id",
+            description="test job 2",
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
 
 
 def test_job_sortedness(test_db):
@@ -106,7 +423,7 @@ def test_get_jobs_handler(
     """
 
     test_db.flush()
-    test_db.add(_get_model())
+    test_db.add(_get_model(1))
     test_db.commit()
 
     response = client.get("/jobs")
@@ -149,16 +466,16 @@ def test_get_get(test_db):
     """
 
     test_db.flush()
-    test_db.add(_get_model())
+    test_db.add(_get_model(1))
     test_db.commit()
 
     sql = select(Job).order_by(Job.created_at)
 
-    resp1 = client.get(f"/jobs/{_get_model().id}")
+    resp1 = client.get(f"/jobs/{_get_model(1).id}")
     assert resp1.status_code == 200
     before_db = test_db.execute(sql).scalars().all()
 
-    resp2 = client.get(f"/jobs/{_get_model().id}")
+    resp2 = client.get(f"/jobs/{_get_model(1).id}")
     assert resp2.status_code == 200
     after_db = test_db.execute(sql).scalars().all()
 
