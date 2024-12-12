@@ -7,7 +7,8 @@ from fastapi import (
     Depends,
 )
 from fastapi import Request as Event
-from fastapi_pagination import Page, add_pagination, paginate
+from fastapi_pagination import Page, Params, set_page, set_params
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.engine.row import Row
 from sqlalchemy.orm import (
@@ -67,6 +68,8 @@ def get_jobs(
     endTime: Optional[str] = None,
     q: Optional[str] = None,
     order: Optional[str] = None,
+    size: Optional[str] = None,
+    page: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> list[GetJobsResponse] | ErrorResponse:
     try:
@@ -105,17 +108,20 @@ def get_jobs(
         if q is not None:
             stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
 
-        if fields is not None:
-            jobs = db.execute(stmt).all()
-        else:
-            jobs = db.scalars(stmt).all()
+        set_params(
+            Params(
+                size=int(size) if size is not None else 100,
+                page=int(page) if page is not None else 1,
+            )
+        )
+        set_page(Page[Job | Row])
+        jobs = paginate(db, stmt)
 
-        results = [GetJobsResponse]
-        for job_model, job in [(job, model_to_schema(job)) for job in jobs]:
+        results = []
+        for job_model, job in [(job, model_to_schema(job)) for job in jobs.items]:
             if job is None:
                 logger.warning(f"Failed to encode job model to schema: {job_model.id}")
             else:
-                logger.info(f"job_info:{job}")
                 results.append(job)
         return results
     except Exception as e:

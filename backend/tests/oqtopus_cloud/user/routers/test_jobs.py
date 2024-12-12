@@ -346,6 +346,37 @@ def test_get_jobs_desc_order(
     assert actual == expect
 
 
+def test_get_jobs_pagination(
+    test_db,
+):
+    """_summary_
+    expect testjob2 and testjob1 will be got in this order
+    """
+
+    test_db.flush()
+    for i in range(1, 10):
+        test_db.add(_get_model(i))
+    test_db.commit()
+
+    response = client.get("/jobs?page=3&size=3&fields=job_id")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob7id",
+        ),
+        GetJobsResponse(
+            job_id="testjob8id",
+        ),
+        GetJobsResponse(
+            job_id="testjob9id",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
 def test_get_jobs_all_parameters(
     test_db,
 ):
@@ -354,14 +385,12 @@ def test_get_jobs_all_parameters(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
-    test_db.add(_get_model(3))
-    test_db.add(_get_model(4))
+    for i in range(1, 10):
+        test_db.add(_get_model(i))
     test_db.commit()
 
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&startTime=2024-03-04T16%3A12%3A29%2B09%3A00&endTime=2024-03-06T16%3A12%3A29%2B09%3A00&q=test&order=DESC"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&startTime=2024-03-04T16%3A12%3A29%2B09%3A00&endTime=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
