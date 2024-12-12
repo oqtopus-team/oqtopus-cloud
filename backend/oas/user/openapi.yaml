@@ -86,10 +86,63 @@ paths:
       tags:
         - job
       summary: List all quantum jobs
-      description: List all quantum jobs
+      description: |-
+        By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
+
+        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+
+        Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
       operationId: listJobs
       security:
         - BearerAuth: []
+      parameters:
+        - name: fields
+          in: query
+          description: |-
+            Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
+
+            If parameter is specified and requested job field is not defined for a job null is returned.
+
+            If parameter is omitted all available job properties are returned. Undefined job properties (null properties) are not included in the response.
+          required: false
+          schema:
+            type: string
+            maxLength: 1024
+            example: job_id,status,name
+        - name: startTime
+          in: query
+          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2022-10-19T11:45:34+09:00'
+        - name: endTime
+          in: query
+          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2022-10-19T11:45:34+09:00'
+        - name: q
+          in: query
+          description: Allows to filter the list of jobs to fetch by job's name and description. If specified only jobs which name or description contains specified search string are returned.
+          required: false
+          schema:
+            type: string
+            maxLength: 1024
+            example: Bell
+        - name: order
+          in: query
+          description: Specify jobs order according to creation time (createdAt property)
+          required: false
+          schema:
+            type: string
+            enum:
+              - DESC
+              - ASC
+            default: ASC
       responses:
         '200':
           description: Return a list of submitted quantum jobs
@@ -98,7 +151,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobDef'
+                  $ref: '#/components/schemas/jobs.GetJobsResponse'
         '401':
           description: Unauthorized
           content:
@@ -647,7 +700,7 @@ components:
         {
           "ro_error_mitigation": "pseudo_inverse"
         }
-    jobs.JobDef:
+    jobs.GetJobsResponse:
       type: object
       properties:
         job_id:
@@ -681,19 +734,12 @@ components:
         created_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34Z'
+          example: '2022-10-19T11:45:34+09:00'
         updated_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34Z'
-      required:
-        - job_id
-        - name
-        - job_type
-        - status
-        - device_id
-        - shots
-        - job_info
+          example: '2022-10-19T11:45:34+09:00'
+      required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
@@ -712,8 +758,8 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
-        created_at: '2022-10-19T11:45:34'
-        updated_at: '2022-10-19T11:45:34'
+        created_at: '2022-10-19T11:45:34+09:00'
+        updated_at: '2022-10-19T11:45:34+09:00'
     jobs.SubmitJobRequest:
       type: object
       properties:
@@ -784,6 +830,73 @@ components:
           type: string
       required:
         - detail
+    jobs.JobDef:
+      type: object
+      properties:
+        job_id:
+          $ref: '#/components/schemas/jobs.JobId'
+        name:
+          type: string
+          example: Bell State Sampling
+        description:
+          type: string
+          example: Bell State Sampling Example
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
+        status:
+          $ref: '#/components/schemas/jobs.JobStatus'
+        device_id:
+          type: string
+          example: Kawasaki
+        shots:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          example: '1000'
+        job_info:
+          $ref: '#/components/schemas/jobs.JobInfo'
+        transpiler_info:
+          $ref: '#/components/schemas/jobs.TranspilerInfo'
+        simulator_info:
+          $ref: '#/components/schemas/jobs.SimulatorInfo'
+        mitigation_info:
+          $ref: '#/components/schemas/jobs.MitigationInfo'
+        created_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+      required:
+        - job_id
+        - name
+        - job_type
+        - status
+        - device_id
+        - shots
+        - job_info
+      example:
+        job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+        name: Bell State Sampling
+        description: Bell State Sampling Example
+        device_id: Kawasaki,
+        job_info:
+          desc:
+            job_type: estimation
+            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+            operator: X 0 Y 1 Z 5 I 2
+          transpiled_code: '{}'
+          result: '{}'
+          reason: ''
+        transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
+        simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
+        mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
+        shots: 1000
+        status: submitted
+        created_at: '2022-10-19T11:45:34'
+        updated_at: '2022-10-19T11:45:34'
     success.SuccessResponse:
       type: object
       properties:

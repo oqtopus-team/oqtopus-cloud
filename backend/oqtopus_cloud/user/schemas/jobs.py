@@ -80,17 +80,19 @@ class JobInfo(BaseModel):
     """
 
 
-class JobDef(BaseModel):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+class GetJobsResponse(BaseModel):
+    job_id: Annotated[
+        str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
+    ] = None
+    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
     description: Annotated[
         str | None, Field(examples=["Bell State Sampling Example"])
     ] = None
-    job_type: JobType
-    status: JobStatus
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_info: JobInfo
+    job_type: JobType | None = None
+    status: JobStatus | None = None
+    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    job_info: JobInfo | None = None
     transpiler_info: Annotated[
         str | None,
         Field(
@@ -110,12 +112,12 @@ class JobDef(BaseModel):
     mitigation_info: Annotated[
         str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
     ] = None
-    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
-        None
-    )
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
-        None
-    )
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class SubmitJobRequest(BaseModel):
@@ -157,6 +159,44 @@ class SubmitJobResponse(BaseModel):
     """
 
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+
+
+class JobDef(BaseModel):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    description: Annotated[
+        str | None, Field(examples=["Bell State Sampling Example"])
+    ] = None
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_info: JobInfo
+    transpiler_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "qubit_allocation": {\n    "0": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+            ]
+        ),
+    ] = None
+    simulator_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+            ]
+        ),
+    ] = None
+    mitigation_info: Annotated[
+        str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
+    ] = None
+    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
+        None
+    )
+    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
+        None
+    )
 
 
 class GetJobStatusResponse(BaseModel):

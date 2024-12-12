@@ -1,13 +1,15 @@
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import (
     APIRouter,
     Depends,
 )
 from fastapi import Request as Event
-from sqlalchemy import select
+from fastapi_pagination import Page, add_pagination, paginate
+from sqlalchemy import asc, desc, or_, select
+from sqlalchemy.engine.row import Row
 from sqlalchemy.orm import (
     Session,
 )
@@ -28,6 +30,7 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
+    GetJobsResponse,
     GetJobStatusResponse,
     JobDef,
     JobInfo,
@@ -53,27 +56,68 @@ class BadRequest(Exception):
 
 @router.get(
     "/jobs",
-    response_model=list[JobDef],
+    response_model=list[GetJobsResponse],
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_jobs(
     event: Event,
+    fields: Optional[str] = None,
+    startTime: Optional[str] = None,
+    endTime: Optional[str] = None,
+    q: Optional[str] = None,
+    order: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[JobDef] | ErrorResponse:
+) -> list[GetJobsResponse] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        stmt = select(Job).filter(Job.owner == owner).order_by(Job.created_at)
-        jobs = db.scalars(stmt).all()
-        results: list[JobDef] = []
+
+        # Order Control
+        if order == "ASC" or order is None:
+            arg_order = asc(Job.created_at)
+        elif order == "DESC":
+            arg_order = desc(Job.created_at)
+        else:
+            arg_order = asc(Job.created_at)
+
+        # Fields Control
+        if fields is not None:
+            fields_list = fields.split(",")
+            MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+            converted_fields_list = [
+                MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+            ]
+            columns = [getattr(Job, field) for field in converted_fields_list]
+            arg_select = columns
+        else:
+            arg_select = [Job]
+
+        stmt = select(*arg_select).filter(Job.owner == owner).order_by(arg_order)
+
+        # Filterling Jobs
+        if startTime is not None:
+            stime = datetime.fromisoformat(startTime).astimezone(jst)
+            stmt = stmt.filter(Job.created_at >= stime)
+        if endTime is not None:
+            etime = datetime.fromisoformat(endTime).astimezone(jst)
+            stmt = stmt.filter(Job.created_at <= etime)
+        if q is not None:
+            stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
+
+        if fields is not None:
+            jobs = db.execute(stmt).all()
+        else:
+            jobs = db.scalars(stmt).all()
+
+        results = [GetJobsResponse]
         for job_model, job in [(job, model_to_schema(job)) for job in jobs]:
             if job is None:
                 logger.warning(f"Failed to encode job model to schema: {job_model.id}")
             else:
+                logger.info(f"job_info:{job}")
                 results.append(job)
         return results
-
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -262,7 +306,7 @@ def cancel_job(
 
 
 MAP_MODEL_TO_SCHEMA = {
-    "id": "id",
+    "id": "job_id",
     "owner": "owner",
     "status": "status",
     "name": "name",
@@ -286,23 +330,41 @@ def decode_job_info(j: Any) -> JobInfo | None:
         return None
 
 
-def model_to_schema(model: Job) -> JobDef | None:
-    job_info = decode_job_info(json.loads(model.job_info))
-    if job_info is None:
-        return None
+def model_to_schema(model: Job | Row) -> JobDef | GetJobsResponse | None:
+    if hasattr(model, "job_info"):
+        job_info = decode_job_info(json.loads(model.job_info))
+    else:
+        job_info = None
 
-    return JobDef(
-        job_id=model.id,
-        name=model.name,
-        description=model.description,
-        device_id=model.device_id,
-        shots=model.shots,
-        job_type=JobType(job_info.desc.job_type),
-        job_info=job_info,
-        status=JobStatus(model.status),
-        transpiler_info=model.transpiler_info,
-        mitigation_info=model.mitigation_info,
-        simulator_info=model.simulator_info,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    if type(model) is Job and job_info is not None:
+        return JobDef(
+            job_id=model.id,
+            name=model.name,
+            description=model.description,
+            device_id=model.device_id,
+            shots=model.shots,
+            job_type=JobType(job_info.desc.job_type),
+            job_info=job_info,
+            status=JobStatus(model.status),
+            transpiler_info=model.transpiler_info,
+            mitigation_info=model.mitigation_info,
+            simulator_info=model.simulator_info,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
+    elif type(model) is Row:
+        dict_model = {}
+        for k, v in model._mapping.items():
+            if k == "id":
+                dict_model["job_id"] = v
+            elif k == "job_type":
+                dict_model[k] = JobType(v)
+            elif k == "job_info":
+                dict_model[k] = job_info
+            elif k == "status":
+                dict_model[k] = JobStatus(v)
+            else:
+                dict_model[k] = v
+        return GetJobsResponse(**dict_model)
+    else:
+        return None
