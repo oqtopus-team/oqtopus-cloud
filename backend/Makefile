@@ -96,22 +96,25 @@ lint-all: lint-common lint-user lint-provider ## Run all linters
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
 	export POWERTOOLS_SERVICE_NAME=common && \
-	poetry run pytest tests/oqtopus_cloud/common/ -vv --cov=oqtopus_cloud/common --cov-report=xml:../coverage.xml --cov-report=html:../htmlcov
+	poetry run pytest tests/oqtopus_cloud/common/ -vv --cov=oqtopus_cloud/common --cov-report=xml:coverage-common.xml --cov-report=html:htmlcov-common
+	@mv .coverage .coverage-common
 
 test-user: fmt-user lint-user ## Run User API tests
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
-	poetry run pytest tests/oqtopus_cloud/user/ -vv --cov=oqtopus_cloud/user --cov-report=xml:../coverage.xml --cov-report=html:../htmlcov
+	poetry run pytest tests/oqtopus_cloud/user/ -vv --cov=oqtopus_cloud/user --cov-report=xml:coverage-user.xml --cov-report=html:htmlcov-user
+	@mv .coverage .coverage-user
 
 test-provider: fmt-provider lint-provider ## Run Provider tests
 	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:../coverage.xml --cov-report=html:../htmlcov
+	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
+	@mv .coverage .coverage-provider
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
 	export POWERTOOLS_SERVICE_NAME=all && \
-	poetry run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:../coverage.xml --cov-report=html:../htmlcov
+	poetry run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:coverage.xml --cov-report=html:htmlcov
 
 
 help: ## Show this help message
