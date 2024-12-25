@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job
@@ -40,7 +40,7 @@ JobId = str
 
 @router.get(
     "/jobs",
-    response_model=list[Union[JobDef, GetJobsResponse]],
+    response_model=list[JobDef | GetJobsResponse],
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -51,18 +51,30 @@ def get_jobs(
     max_results: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[Union[JobDef, GetJobsResponse]] | ErrorResponse:
+) -> list[JobDef | GetJobsResponse] | ErrorResponse:
     logger.info("invoked get_jobs")
     # Fields Control
     try:
         if fields is not None:
             fields_list = fields.split(",")
-            MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
-            converted_fields_list = [
-                MAP_SCHEMA_TO_MODEL[field] for field in fields_list
-            ]
-            columns = [getattr(Job, field) for field in converted_fields_list]
-            arg_select = columns
+            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            if all(valid_fields_list):
+                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+                converted_fields_list = [
+                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                ]
+                columns = [getattr(Job, field) for field in converted_fields_list]
+
+                # remove duplicated fields
+                arg_select = list(dict.fromkeys(columns))
+            else:
+                invalid_indices = [
+                    i for i, field in enumerate(valid_fields_list) if field is False
+                ]
+                invalid_fields_list = [fields_list[i] for i in invalid_indices]
+                return InternalServerErrorResponse(
+                    detail=f"fields {invalid_fields_list} is invalid"
+                )
         else:
             arg_select = [Job]
 
@@ -88,7 +100,7 @@ def get_jobs(
             # models is Row type
             models = db.execute(stmt).all()
         update_models = db.scalars(full_stmt).all()
-        results: list[Union[JobDef, GetJobsResponse]] = []
+        results: list[JobDef | GetJobsResponse] = []
         for model, update_model in zip(models, update_models):
             job = model_to_schema(model)
             if isinstance(job, ValueError):
@@ -97,12 +109,12 @@ def get_jobs(
                 try:
                     if decode_job_status(update_model.status) == JobStatus.submitted:
                         update_model.status = JobStatus.ready
-                        db.commit()
                         job.status = JobStatus(model.status)
                     results.append(job)
                 except Exception as e:
                     logger.warning(str(job))
                     logger.warning(f"Error: {str(e)}")
+        db.commit()
         return results
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -118,7 +130,7 @@ def get_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-) -> Union[JobDef, GetJobsResponse] | ErrorResponse:
+) -> JobDef | GetJobsResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
         model = db.get(Job, job_id)
@@ -252,8 +264,8 @@ def decode_job_status(s: str) -> JobStatus | ValueError:
 
 
 def model_to_schema(
-    model: Union[Job, Row],
-) -> Union[JobDef, GetJobsResponse] | ValueError:
+    model: Job | Row,
+) -> JobDef | GetJobsResponse | ValueError:
     def decode_job_info(j: Any) -> JobInfo | ValueError:
         try:
             jobinfo = JobInfo.model_validate(j)
@@ -265,12 +277,11 @@ def model_to_schema(
         status = decode_job_status(model.status)
     if hasattr(model, "job_info"):
         job_info = decode_job_info(json.loads(model.job_info))
-
     if type(model) is Job:
-        if isinstance(job_info, ValueError):
-            return job_info
         if isinstance(status, ValueError):
             return status
+        if isinstance(job_info, ValueError):
+            return job_info
         return JobDef(
             job_id=model.id,
             name=model.name,
@@ -291,9 +302,15 @@ def model_to_schema(
             if k == "id":
                 dict_model["job_id"] = v
             elif k == "job_info":
-                dict_model[k] = job_info
+                if isinstance(job_info, ValueError):
+                    return job_info
+                else:
+                    dict_model[k] = job_info
             elif k == "status":
-                dict_model[k] = JobStatus(v)
+                if isinstance(status, ValueError):
+                    return status
+                else:
+                    dict_model[k] = JobStatus(v)
             else:
                 dict_model[k] = v
         return GetJobsResponse(**dict_model)

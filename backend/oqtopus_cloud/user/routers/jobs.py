@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from fastapi import (
     APIRouter,
@@ -57,7 +57,7 @@ class BadRequest(Exception):
 
 @router.get(
     "/jobs",
-    response_model=list[Union[GetJobsResponse, JobDef]],
+    response_model=list[GetJobsResponse | JobDef],
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -71,7 +71,7 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[Union[GetJobsResponse, JobDef]] | ErrorResponse:
+) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
@@ -87,12 +87,24 @@ def get_jobs(
         # Fields Control
         if fields is not None:
             fields_list = fields.split(",")
-            MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
-            converted_fields_list = [
-                MAP_SCHEMA_TO_MODEL[field] for field in fields_list
-            ]
-            columns = [getattr(Job, field) for field in converted_fields_list]
-            arg_select = columns
+            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            if all(valid_fields_list):
+                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+                converted_fields_list = [
+                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                ]
+                columns = [getattr(Job, field) for field in converted_fields_list]
+
+                # remove duplicated fields
+                arg_select = list(dict.fromkeys(columns))
+            else:
+                invalid_indices = [
+                    i for i, field in enumerate(valid_fields_list) if field is False
+                ]
+                invalid_fields_list = [fields_list[i] for i in invalid_indices]
+                return InternalServerErrorResponse(
+                    detail=f"fields {invalid_fields_list} is invalid"
+                )
         else:
             arg_select = [Job]
 
@@ -201,7 +213,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> Union[JobDef, GetJobsResponse] | ErrorResponse:
+) -> JobDef | GetJobsResponse | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
@@ -337,7 +349,7 @@ def decode_job_info(j: Any) -> JobInfo | None:
         return None
 
 
-def model_to_schema(model: Union[Job, Row]) -> Union[JobDef, GetJobsResponse] | None:
+def model_to_schema(model: Job | Row) -> JobDef | GetJobsResponse | None:
     if hasattr(model, "job_info"):
         job_info = decode_job_info(json.loads(model.job_info))
     else:

@@ -5,6 +5,9 @@ from typing import List
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.lambda_function import app
+from oqtopus_cloud.user.schemas.errors import (
+    InternalServerErrorResponse,
+)
 
 # from oqtopus_cloud.user.routers.jobs import (
 #     get_job,
@@ -160,6 +163,30 @@ def test_get_jobs_filtering_fields(
     ]
 
     assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_invalid_fields(
+    test_db,
+):
+    """_summary_
+    GET job_id, status and name by ASC order
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
+    actual = response.json()
+    expect = json.loads(
+        InternalServerErrorResponse(
+            detail=f"fields {["XXX", "YYY"]} is invalid"
+        ).body.decode()
+    )
+
+    assert response.status_code == 500
     assert actual == expect
 
 
