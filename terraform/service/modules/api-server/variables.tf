@@ -40,6 +40,17 @@ variable "lambda_handler" {
   type        = string
 }
 
+variable "use_cognito_authorizer" {
+  description = "Set `true` if API is authorized with cognito userpool."
+  type        = bool
+  default     = true
+}
+
+variable "require_api_key" {
+  description = "Set `true` if API key is required"
+  type        = bool
+  default     = false
+}
 variable "cognito_user_pool_arns" {
   description = "The ARNs of the Cognito user pools"
   type        = list(string)
