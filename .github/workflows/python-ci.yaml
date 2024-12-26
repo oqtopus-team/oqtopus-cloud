@@ -3,7 +3,7 @@ name: Python CI
 on:
   push:
     paths:
-      - 'backend/**/*.py'
+    - 'backend/**/*.py'
 
 jobs:
   lint-format:
@@ -12,25 +12,25 @@ jobs:
       matrix:
         target: [common, user, provider]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: .python-version
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip==24.0
-          python -m pip install poetry
-          poetry install
-      - name: Check version
-        run: |
-          poetry --version
-      - name: Lint and Format ${{ matrix.target }}
-        run: |
-          make lint-${{ matrix.target }}
-          make fmt-${{ matrix.target }}
-        working-directory: ./backend
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: .python-version
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip==24.0
+        python -m pip install poetry
+        poetry install
+    - name: Check version
+      run: |
+        poetry --version
+    - name: Lint and Format ${{ matrix.target }}
+      run: |
+        make lint-${{ matrix.target }}
+        make fmt-${{ matrix.target }}
+      working-directory: ./backend
 
   test:
     runs-on: ubuntu-latest
@@ -40,23 +40,64 @@ jobs:
         target: [common, user, provider]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: .python-version
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip==24.0
-          python -m pip install poetry
-          poetry install
-      - name: Check version
-        run: |
-          poetry --version
-      - name: Test ${{ matrix.target }}
-        run: |
-          make test-${{ matrix.target }}
-        working-directory: ./backend
-        env:
-          TZ: Asia/Tokyo
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: .python-version
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip==24.0
+        python -m pip install poetry
+        poetry install
+    - name: Check version
+      run: |
+        poetry --version
+    - name: Test ${{ matrix.target }}
+      run: |
+        make test-${{ matrix.target }}
+      working-directory: ./backend
+      env:
+        TZ: Asia/Tokyo
+    - name: Upload .coverage-${{ matrix.target }} file
+      uses: actions/upload-artifact@v4
+      with:
+        name: .coverage-${{ matrix.target }}
+        path: .coverage-${{ matrix.target }}
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Download .coverage-common artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: .coverage-common
+        path: ./
+    - name: Download .coverage-user artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: .coverage-user
+        path: ./
+    - name: Download .coverage-provider artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: .coverage-provider
+        path: ./
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip==24.0
+        python -m pip install poetry
+        poetry install
+    - name: Combine coverage files
+      run: |
+        poetry run coverage combine .coverage-common .coverage-user .coverage-provider
+        poetry run coverage xml
+    - name: Upload combined coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: oqtopus-team/oqtopus-cloud
