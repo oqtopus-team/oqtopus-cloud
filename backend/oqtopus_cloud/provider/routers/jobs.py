@@ -24,8 +24,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
 )
-from sqlalchemy import Row, select
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, load_only
 from zoneinfo import ZoneInfo
 
 from . import LoggerRouteHandler
@@ -53,8 +53,9 @@ def get_jobs(
     db: Session = Depends(get_db),
 ) -> list[JobDef | GetJobsResponse] | ErrorResponse:
     logger.info("invoked get_jobs")
-    # Fields Control
     try:
+        # Fields Control
+        fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
             valid_fields_list = [field in JobDef.model_fields for field in fields_list]
@@ -67,6 +68,11 @@ def get_jobs(
 
                 # remove duplicated fields
                 arg_select = list(dict.fromkeys(columns))
+                select_stmt = (
+                    select(Job)
+                    .filter(Job.device_id == device_id)
+                    .options(load_only(*arg_select))
+                )
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -76,44 +82,34 @@ def get_jobs(
                     detail=f"fields {invalid_fields_list} is invalid"
                 )
         else:
-            arg_select = [Job]
+            select_stmt = select(Job).filter(Job.device_id == device_id)
 
-        stmt = select(*arg_select).filter(Job.device_id == device_id)
-        full_stmt = select(Job).filter(Job.device_id == device_id)
-        # query = db.query(Job).filter(Job.device_id == device_id)
         # Filtering Jobs
         if status is not None:
-            stmt = stmt.filter(Job.status == status)
-            full_stmt = full_stmt.filter(Job.status == status)
+            select_stmt = select_stmt.filter(Job.status == status)
         if timestamp is not None:
             time = datetime.fromisoformat(timestamp).astimezone(jst)
-            stmt = stmt.filter(Job.created_at > time)
-            full_stmt = full_stmt.filter(Job.created_at > time)
+            select_stmt = select_stmt.filter(Job.created_at > time)
         if max_results is not None:
-            stmt = stmt.limit(max_results)
-            full_stmt = full_stmt.limit(max_results)
+            select_stmt = select_stmt.limit(max_results)
 
-        if fields is None:
-            # models is Job type
-            models = db.scalars(stmt).all()
-        else:
-            # models is Row type
-            models = db.execute(stmt).all()
-        update_models = db.scalars(full_stmt).all()
+        models = db.scalars(select_stmt).all()
+
         results: list[JobDef | GetJobsResponse] = []
-        for model, update_model in zip(models, update_models):
-            job = model_to_schema(model)
+        # for model, update_status in zip(models, update_statuses):
+        for model in models:
+            job = model_to_schema(model, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
+                return NotFoundErrorResponse("Job not found")
             else:
-                try:
-                    if decode_job_status(update_model.status) == JobStatus.submitted:
-                        update_model.status = JobStatus.ready
-                        job.status = JobStatus(model.status)
-                    results.append(job)
-                except Exception as e:
-                    logger.warning(str(job))
-                    logger.warning(f"Error: {str(e)}")
+                # if status is "submitted", then update status to "ready"
+                if decode_job_status(model.status) == JobStatus.submitted:
+                    model.status = JobStatus.ready
+                # checking model objects has status attribute
+                if (fields is None) or (fields is not None and "status" in fields):
+                    job.status = JobStatus(model.status)
+                results.append(job)
         db.commit()
         return results
     except Exception as e:
@@ -263,21 +259,20 @@ def decode_job_status(s: str) -> JobStatus | ValueError:
         return ValueError(f"Failed to decode JobStatus: {str(err)}")
 
 
-def model_to_schema(
-    model: Job | Row,
-) -> JobDef | GetJobsResponse | ValueError:
-    def decode_job_info(j: Any) -> JobInfo | ValueError:
-        try:
-            jobinfo = JobInfo.model_validate(j)
-            return jobinfo
-        except Exception as e:
-            return ValueError(f"Failed to decode job_info: {str(e)}")
+def decode_job_info(j: Any) -> JobInfo | ValueError:
+    try:
+        jobinfo = JobInfo.model_validate(j)
+        return jobinfo
+    except Exception as e:
+        return ValueError(f"Failed to decode job_info: {str(e)}")
 
-    if hasattr(model, "status"):
+
+def model_to_schema(
+    model: Job, fields: Optional[list[str]] = None
+) -> JobDef | GetJobsResponse | ValueError:
+    if fields is None:
         status = decode_job_status(model.status)
-    if hasattr(model, "job_info"):
         job_info = decode_job_info(json.loads(model.job_info))
-    if type(model) is Job:
         if isinstance(status, ValueError):
             return status
         if isinstance(job_info, ValueError):
@@ -296,23 +291,25 @@ def model_to_schema(
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
-    elif type(model) is Row:
-        dict_model = {}
-        for k, v in model._mapping.items():
-            if k == "id":
-                dict_model["job_id"] = v
+    elif fields is not None:
+        dict_schema: dict[str, Any] = {}
+        for k in fields:
+            if k == "job_id":
+                dict_schema["job_id"] = model.id
             elif k == "job_info":
+                job_info = decode_job_info(json.loads(model.job_info))
                 if isinstance(job_info, ValueError):
                     return job_info
                 else:
-                    dict_model[k] = job_info
+                    dict_schema[k] = job_info
             elif k == "status":
+                status = decode_job_status(model.status)
                 if isinstance(status, ValueError):
                     return status
                 else:
-                    dict_model[k] = JobStatus(v)
+                    dict_schema[k] = JobStatus(model.status)
             else:
-                dict_model[k] = v
-        return GetJobsResponse(**dict_model)
+                dict_schema[k] = getattr(model, k)
+        return GetJobsResponse(**dict_schema)
     else:
         return ValueError("Failed to decode model")

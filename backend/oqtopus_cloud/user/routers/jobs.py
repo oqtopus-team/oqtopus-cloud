@@ -10,10 +10,7 @@ from fastapi import Request as Event
 from fastapi_pagination import Page, Params, set_page, set_params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import asc, desc, or_, select
-from sqlalchemy.engine.row import Row
-from sqlalchemy.orm import (
-    Session,
-)
+from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
@@ -85,6 +82,7 @@ def get_jobs(
             arg_order = asc(Job.created_at)
 
         # Fields Control
+        fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
             valid_fields_list = [field in JobDef.model_fields for field in fields_list]
@@ -97,6 +95,12 @@ def get_jobs(
 
                 # remove duplicated fields
                 arg_select = list(dict.fromkeys(columns))
+                stmt = (
+                    select(Job)
+                    .filter(Job.owner == owner)
+                    .order_by(arg_order)
+                    .options(load_only(*arg_select))
+                )
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -106,9 +110,7 @@ def get_jobs(
                     detail=f"fields {invalid_fields_list} is invalid"
                 )
         else:
-            arg_select = [Job]
-
-        stmt = select(*arg_select).filter(Job.owner == owner).order_by(arg_order)
+            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
 
         # Filtering Jobs
         if startTime is not None:
@@ -126,13 +128,16 @@ def get_jobs(
                 page=int(page) if page is not None else 1,
             )
         )
-        set_page(Page[Job | Row])
-        jobs = paginate(db, stmt)
+        set_page(Page[Job])
+        models = paginate(db, stmt)
 
         results = []
-        for job_model, job in [(job, model_to_schema(job)) for job in jobs.items]:
-            if job is None:
-                logger.warning(f"Failed to encode job model to schema: {job_model.id}")
+        for model, job in [
+            (model, model_to_schema(model, fields_list)) for model in models.items
+        ]:
+            if isinstance(job, ValueError):
+                logger.warning(str(job))
+                return NotFoundErrorResponse("Job not found")
             else:
                 results.append(job)
         return results
@@ -221,7 +226,7 @@ def get_job(
         if job_model is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
         job = model_to_schema(job_model)
-        if job is None:
+        if isinstance(job, ValueError):
             logger.warning("warn: Failed to encode job model to schema.")
             return NotFoundErrorResponse(detail="job not found with the given id")
         return job
@@ -342,20 +347,23 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def decode_job_info(j: Any) -> JobInfo | None:
+def decode_job_info(j: Any) -> JobInfo | ValueError:
     try:
-        return JobInfo.model_validate(j)
-    except Exception as _:
-        return None
+        jobinfo = JobInfo.model_validate(j)
+        return jobinfo
+    except Exception as e:
+        return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
-def model_to_schema(model: Job | Row) -> JobDef | GetJobsResponse | None:
-    if hasattr(model, "job_info"):
+def model_to_schema(
+    model: Job, fields: Optional[list[str]] = None
+) -> JobDef | GetJobsResponse | ValueError:
+    job_info = decode_job_info(json.loads(model.job_info))
+
+    if fields is None:
         job_info = decode_job_info(json.loads(model.job_info))
-    else:
-        job_info = None
-
-    if type(model) is Job and job_info is not None:
+        if isinstance(job_info, ValueError):
+            return job_info
         return JobDef(
             job_id=model.id,
             name=model.name,
@@ -371,19 +379,23 @@ def model_to_schema(model: Job | Row) -> JobDef | GetJobsResponse | None:
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
-    elif type(model) is Row:
-        dict_model = {}
-        for k, v in model._mapping.items():
-            if k == "id":
-                dict_model["job_id"] = v
+    elif fields is not None:
+        dict_schema: dict[str, Any] = {}
+        for k in fields:
+            if k == "job_id":
+                dict_schema["job_id"] = model.id
             elif k == "job_type":
-                dict_model[k] = JobType(v)
+                dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
-                dict_model[k] = job_info
+                job_info = decode_job_info(json.loads(model.job_info))
+                if isinstance(job_info, ValueError):
+                    return job_info
+                else:
+                    dict_schema[k] = job_info
             elif k == "status":
-                dict_model[k] = JobStatus(v)
+                dict_schema[k] = JobStatus(model.status)
             else:
-                dict_model[k] = v
-        return GetJobsResponse(**dict_model)
+                dict_schema[k] = getattr(model, k)
+        return GetJobsResponse(**dict_schema)
     else:
         return None
