@@ -92,6 +92,8 @@ module "user_api" {
 | <a name="input_power_tools_service_name"></a> [power\_tools\_service\_name](#input\_power\_tools\_service\_name) | The service name for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
+| <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
+| <a name="input_use_cognito_authorizer"></a> [use\_cognito\_authorizer](#input\_use\_cognito\_authorizer) | Set `true` if API is authorized with cognito userpool. | `bool` | `true` | no |
 
 ## Outputs
 
