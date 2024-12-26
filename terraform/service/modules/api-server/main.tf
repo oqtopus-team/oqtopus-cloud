@@ -271,13 +271,12 @@ resource "aws_api_gateway_resource" "this" {
 
 
 resource "aws_api_gateway_method" "this" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  resource_id = aws_api_gateway_resource.this.id
-  http_method = "ANY"
-  # authorization = "NONE"
-  authorization = "COGNITO_USER_POOLS"
-  authorizer_id = aws_api_gateway_authorizer.this.id
-  # api_key_required = true
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.this.id
+  http_method      = "ANY"
+  authorization    = var.use_cognito_authorizer ? "COGNITO_USER_POOLS" : "NONE"
+  authorizer_id    = var.use_cognito_authorizer ? aws_api_gateway_authorizer.this[0].id : null
+  api_key_required = var.require_api_key
 
   request_parameters = {
     "method.request.path.proxy" = true
@@ -315,7 +314,9 @@ resource "aws_lambda_permission" "api_lambda_permission" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
+
 resource "aws_api_gateway_authorizer" "this" {
+  count         = var.use_cognito_authorizer ? 1 : 0
   name          = "${var.product}-${var.org}-${var.env}-${var.identifier}"
   rest_api_id   = aws_api_gateway_rest_api.this.id
   type          = "COGNITO_USER_POOLS"
