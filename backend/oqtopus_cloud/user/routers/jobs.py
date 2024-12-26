@@ -1,16 +1,16 @@
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import (
     APIRouter,
     Depends,
 )
 from fastapi import Request as Event
-from sqlalchemy import select
-from sqlalchemy.orm import (
-    Session,
-)
+from fastapi_pagination import Page, Params, set_page, set_params
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import asc, desc, or_, select
+from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
@@ -28,6 +28,7 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
+    GetJobsResponse,
     GetJobStatusResponse,
     JobDef,
     JobInfo,
@@ -53,27 +54,93 @@ class BadRequest(Exception):
 
 @router.get(
     "/jobs",
-    response_model=list[JobDef],
+    response_model=list[GetJobsResponse | JobDef],
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_jobs(
     event: Event,
+    fields: Optional[str] = None,
+    startTime: Optional[str] = None,
+    endTime: Optional[str] = None,
+    q: Optional[str] = None,
+    order: Optional[str] = None,
+    size: Optional[str] = None,
+    page: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[JobDef] | ErrorResponse:
+) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        stmt = select(Job).filter(Job.owner == owner).order_by(Job.created_at)
-        jobs = db.scalars(stmt).all()
-        results: list[JobDef] = []
-        for job_model, job in [(job, model_to_schema(job)) for job in jobs]:
-            if job is None:
-                logger.warning(f"Failed to encode job model to schema: {job_model.id}")
+
+        # Order Control
+        if order == "ASC" or order is None:
+            arg_order = asc(Job.created_at)
+        elif order == "DESC":
+            arg_order = desc(Job.created_at)
+        else:
+            arg_order = asc(Job.created_at)
+
+        # Fields Control
+        fields_list = None
+        if fields is not None:
+            fields_list = fields.split(",")
+            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            if all(valid_fields_list):
+                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+                converted_fields_list = [
+                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                ]
+                columns = [getattr(Job, field) for field in converted_fields_list]
+
+                # remove duplicated fields
+                arg_select = list(dict.fromkeys(columns))
+                stmt = (
+                    select(Job)
+                    .filter(Job.owner == owner)
+                    .order_by(arg_order)
+                    .options(load_only(*arg_select))
+                )
+            else:
+                invalid_indices = [
+                    i for i, field in enumerate(valid_fields_list) if field is False
+                ]
+                invalid_fields_list = [fields_list[i] for i in invalid_indices]
+                return InternalServerErrorResponse(
+                    detail=f"fields {invalid_fields_list} is invalid"
+                )
+        else:
+            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
+
+        # Filtering Jobs
+        if startTime is not None:
+            stime = datetime.fromisoformat(startTime).astimezone(jst)
+            stmt = stmt.filter(Job.created_at >= stime)
+        if endTime is not None:
+            etime = datetime.fromisoformat(endTime).astimezone(jst)
+            stmt = stmt.filter(Job.created_at <= etime)
+        if q is not None:
+            stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
+
+        set_params(
+            Params(
+                size=int(size) if size is not None else 100,
+                page=int(page) if page is not None else 1,
+            )
+        )
+        set_page(Page[Job])
+        models = paginate(db, stmt)
+
+        results = []
+        for model, job in [
+            (model, model_to_schema(model, fields_list)) for model in models.items
+        ]:
+            if isinstance(job, ValueError):
+                logger.warning(str(job))
+                return NotFoundErrorResponse("Job not found")
             else:
                 results.append(job)
         return results
-
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(detail=str(e))
@@ -151,7 +218,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | ErrorResponse:
+) -> JobDef | GetJobsResponse | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
@@ -159,7 +226,7 @@ def get_job(
         if job_model is None:
             return NotFoundErrorResponse(detail="job not found with the given id")
         job = model_to_schema(job_model)
-        if job is None:
+        if isinstance(job, ValueError):
             logger.warning("warn: Failed to encode job model to schema.")
             return NotFoundErrorResponse(detail="job not found with the given id")
         return job
@@ -261,8 +328,9 @@ def cancel_job(
         return InternalServerErrorResponse(detail=str(e))
 
 
+# TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {
-    "id": "id",
+    "id": "job_id",
     "owner": "owner",
     "status": "status",
     "name": "name",
@@ -279,30 +347,55 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def decode_job_info(j: Any) -> JobInfo | None:
+def decode_job_info(j: Any) -> JobInfo | ValueError:
     try:
-        return JobInfo.model_validate(j)
-    except Exception as _:
-        return None
+        jobinfo = JobInfo.model_validate(j)
+        return jobinfo
+    except Exception as e:
+        return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
-def model_to_schema(model: Job) -> JobDef | None:
+def model_to_schema(
+    model: Job, fields: Optional[list[str]] = None
+) -> JobDef | GetJobsResponse | ValueError:
     job_info = decode_job_info(json.loads(model.job_info))
-    if job_info is None:
-        return None
 
-    return JobDef(
-        job_id=model.id,
-        name=model.name,
-        description=model.description,
-        device_id=model.device_id,
-        shots=model.shots,
-        job_type=JobType(job_info.desc.job_type),
-        job_info=job_info,
-        status=JobStatus(model.status),
-        transpiler_info=model.transpiler_info,
-        mitigation_info=model.mitigation_info,
-        simulator_info=model.simulator_info,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    if fields is None:
+        job_info = decode_job_info(json.loads(model.job_info))
+        if isinstance(job_info, ValueError):
+            return job_info
+        return JobDef(
+            job_id=model.id,
+            name=model.name,
+            description=model.description,
+            device_id=model.device_id,
+            shots=model.shots,
+            job_type=JobType(job_info.desc.job_type),
+            job_info=job_info,
+            status=JobStatus(model.status),
+            transpiler_info=model.transpiler_info,
+            mitigation_info=model.mitigation_info,
+            simulator_info=model.simulator_info,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
+    elif fields is not None:
+        dict_schema: dict[str, Any] = {}
+        for k in fields:
+            if k == "job_id":
+                dict_schema["job_id"] = model.id
+            elif k == "job_type":
+                dict_schema[k] = JobType(model.job_type)
+            elif k == "job_info":
+                job_info = decode_job_info(json.loads(model.job_info))
+                if isinstance(job_info, ValueError):
+                    return job_info
+                else:
+                    dict_schema[k] = job_info
+            elif k == "status":
+                dict_schema[k] = JobStatus(model.status)
+            else:
+                dict_schema[k] = getattr(model, k)
+        return GetJobsResponse(**dict_schema)
+    else:
+        return None

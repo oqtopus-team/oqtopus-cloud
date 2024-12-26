@@ -1,6 +1,6 @@
 import json
-import uuid
 from datetime import datetime
+from typing import List
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
@@ -16,13 +16,16 @@ from oqtopus_cloud.provider.routers.jobs import (
     update_job,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
+    GetJobsResponse,
     JobDef,
     JobInfo,
+    JobInfoSampling,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
     UpdateJobInfoRequest,
 )
+from pydantic.type_adapter import TypeAdapter
 from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
 
@@ -65,12 +68,12 @@ def _get_device_model():
     return Device(**mode_dict)
 
 
-def _get_job_model() -> Job:
+def _get_job_model(n: int) -> Job:
     mode_dict = {
-        "id": "testjob1id",
+        "id": f"testjob{n}id",
         "owner": "admin",
-        "name": "testjob1",
-        "description": "test job 1",
+        "name": f"testjob{n}",
+        "description": f"test job {n}",
         "device_id": "SC2",
         "job_type": "sampling",
         "job_info": json.dumps(
@@ -88,7 +91,7 @@ def _get_job_model() -> Job:
         ),
         "status": "ready",
         "shots": 1000,
-        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+        "created_at": datetime(2024, 3, 4 + n, 12, 34, 56),
     }
     return Job(**mode_dict)
 
@@ -123,6 +126,7 @@ def _get_job_model_2() -> Job:
 
 def test_get_jobs(test_db: Session):
     # Arrange
+    test_db.flush()
     test_db.add(_get_job_model_2())
     test_db.add(_get_device_model())
     test_db.commit()
@@ -142,10 +146,98 @@ def test_get_jobs(test_db: Session):
         assert job.status == "ready"
 
 
+def test_get_jobs_filtering(test_db: Session):
+    # Arrange
+    test_db.flush()
+    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(2))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC2&fields=job_id%2Cdescription%2Cjob_info")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+            description="test job 1",
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+        ),
+        GetJobsResponse(
+            job_id="testjob2id",
+            description="test job 2",
+            job_info=JobInfo(
+                desc=JobInfoSampling(job_type="sampling", code="code"),
+            ),
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_timestamp(test_db: Session):
+    # Arrange
+    test_db.flush()
+    for i in range(1, 10):
+        test_db.add(_get_job_model(i))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get(
+        "/jobs?device_id=SC2&fields=job_id&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob7id",
+        ),
+        GetJobsResponse(
+            job_id="testjob8id",
+        ),
+        GetJobsResponse(
+            job_id="testjob9id",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_max_results(test_db: Session):
+    # Arrange
+    test_db.flush()
+    for i in range(1, 10):
+        test_db.add(_get_job_model(i))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC2&fields=job_id&max_results=3")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+        ),
+        GetJobsResponse(
+            job_id="testjob2id",
+        ),
+        GetJobsResponse(
+            job_id="testjob3id",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
 def test_get_job(test_db: Session):
     # Arrange
 
-    test_db.add(_get_job_model())
+    test_db.add(_get_job_model(1))
     test_db.add(_get_device_model())
     test_db.commit()
     job_id = "testjob1id"
@@ -156,7 +248,7 @@ def test_get_job(test_db: Session):
 
 def test_update_job(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model())
+    test_db.add(_get_job_model(1))
     test_db.add(_get_device_model())
     test_db.commit()
     job_id = "testjob1id"
@@ -170,7 +262,7 @@ def test_update_job(test_db: Session):
 
 
 def test_update_job_info_400(test_db: Session):
-    job_model = _get_job_model()
+    job_model = _get_job_model(1)
     test_db.add(_get_device_model())
     test_db.add(job_model)
     test_db.commit()
@@ -189,7 +281,7 @@ def test_update_job_info_400(test_db: Session):
 
 
 def test_update_job_info_result(test_db: Session):
-    job_model = _get_job_model()
+    job_model = _get_job_model(1)
     bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
     test_db.add(_get_device_model())
     test_db.add(job_model)
@@ -216,7 +308,7 @@ def test_update_job_info_result(test_db: Session):
 
 
 def test_update_job_info_reason(test_db: Session):
-    job_model = _get_job_model()
+    job_model = _get_job_model(1)
     bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
     test_db.add(_get_device_model())
     test_db.add(job_model)

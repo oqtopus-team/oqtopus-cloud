@@ -159,7 +159,7 @@ jobs.JobDef:
     updated_at:
       type: string
       format: date-time
-      example: 2022-10-19T11:45:34
+      example: 2022-10-19T11:45:34+09:00
   required:
     - job_id
     - device_id
@@ -211,8 +211,116 @@ jobs.JobDef:
       job_type: sampling
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34
-      updated_at: 2022-10-19T11:45:34
+      created_at: 2022-10-19T11:45:34+09:00
+      updated_at: 2022-10-19T11:45:34+09:00
+
+jobs.GetJobsResponse:
+  type: object
+  properties:
+    job_id:
+      $ref: "#/jobs.JobId"
+    name:
+      type: string
+      example: Bell State Sampling
+    description:
+      type: string
+      example: Bell State Sampling Example
+    device_id:
+      type: string
+      example: Kawasaki
+    shots:
+      type: integer
+      minimum: 1
+      maximum: 1e7
+      example: "1000"
+    job_info:
+      $ref: "#/jobs.JobInfo"
+    transpiler_info:
+      type: string
+      example: >-
+        {
+          "qubit_allocation": {
+            "0"": 12,
+            "1": 16
+          },
+          "skip_transpilation": false,
+          "seed_transpilation": 873
+        }
+    simulator_info:
+      type: string
+      example: >-
+        {
+          "n_qubits": 5,
+          "n_nodes": 12,
+          "n_per_node": 2,
+          "seed_simulation": 39058567,
+          "simulation_opt": {
+            "optimization_method": "light",
+            "optimization_block_size": 1,
+            "optimization_swap_level": 1
+          }
+        }
+    mitigation_info:
+      type: string
+      example: |
+        { "ro_error_mitigation": "pseudo_inverse" }
+    status:
+      $ref: "#/jobs.JobStatus"
+    created_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+    updated_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+  required: []
+  example:
+      job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      name: Bell State Sampling
+      description: Bell State Sampling Example
+      device_id: Kawasaki
+      job_info:
+        desc:
+          job_type: sampling
+          code: >-
+            OPENQASM 3;
+            qubit[2] q;
+            bit[2] c;
+            h q[0];
+            cnot q[0], q[1];
+            c = measure q;
+        transpiled_code: null
+        result: null
+        reason: null
+      transpiler_info: >-
+        {
+          "qubit_allocation": {
+            "0": 12,
+            "1": 16
+          },
+          "skip_transpilation": false,
+          "seed_transpilation": 873
+        }
+      simulator_info: >-
+        {
+          "n_qubits": 5,
+          "n_nodes": 12,
+          "n_per_node": 2,
+          "seed_simulation": 39058567,
+          "simulation_opt": {
+            "optimization_method": "light",
+            "optimization_block_size": 1,
+            "optimization_swap_level": 1
+          }
+        }
+      mitigation_info: |
+        { "ro_error_mitigation": "pseudo_inverse" }
+      job_type: sampling
+      shots: 1000
+      status: submitted
+      created_at: 2022-10-19T11:45:34+09:00
+      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.JobStatusUpdate:
   type: object

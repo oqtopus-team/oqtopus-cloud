@@ -75,6 +75,45 @@ class JobInfo(BaseModel):
     """
 
 
+class GetJobsResponse(BaseModel):
+    job_id: Annotated[
+        str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
+    ] = None
+    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
+    description: Annotated[
+        str | None, Field(examples=["Bell State Sampling Example"])
+    ] = None
+    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    job_info: JobInfo | None = None
+    transpiler_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "qubit_allocation": {\n    "0"": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+            ]
+        ),
+    ] = None
+    simulator_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+            ]
+        ),
+    ] = None
+    mitigation_info: Annotated[
+        str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
+    ] = None
+    status: JobStatus | None = None
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+
+
 class JobDef(BaseModel):
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
@@ -105,9 +144,9 @@ class JobDef(BaseModel):
     ] = None
     status: JobStatus
     created_at: Annotated[datetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
-        None
-    )
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class JobStatusUpdate(BaseModel):
