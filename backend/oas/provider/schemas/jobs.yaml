@@ -159,7 +159,7 @@ jobs.JobDef:
     updated_at:
       type: string
       format: date-time
-      example: 2022-10-19T11:45:34
+      example: 2022-10-19T11:45:34+09:00
   required:
     - job_id
     - device_id
@@ -211,8 +211,8 @@ jobs.JobDef:
       job_type: sampling
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34
-      updated_at: 2022-10-19T11:45:34
+      created_at: 2022-10-19T11:45:34+09:00
+      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.GetJobsResponse:
   type: object
@@ -273,7 +273,7 @@ jobs.GetJobsResponse:
     updated_at:
       type: string
       format: date-time
-      example: 2022-10-19T11:45:34
+      example: 2022-10-19T11:45:34+09:00
   required: []
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -319,8 +319,8 @@ jobs.GetJobsResponse:
       job_type: sampling
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34
-      updated_at: 2022-10-19T11:45:34
+      created_at: 2022-10-19T11:45:34+09:00
+      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.JobStatusUpdate:
   type: object

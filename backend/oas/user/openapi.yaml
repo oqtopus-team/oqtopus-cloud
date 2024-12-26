@@ -825,11 +825,11 @@ components:
         created_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
         updated_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34'
+          example: '2022-10-19T11:45:34+09:00'
       required:
         - name
         - device_id
@@ -884,11 +884,11 @@ components:
         created_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34Z'
+          example: '2022-10-19T11:45:34+09:00'
         updated_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34Z'
+          example: '2022-10-19T11:45:34+09:00'
       required:
         - job_id
         - name
@@ -915,8 +915,8 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
-        created_at: '2022-10-19T11:45:34'
-        updated_at: '2022-10-19T11:45:34'
+        created_at: '2022-10-19T11:45:34+09:00'
+        updated_at: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:
       type: object
       properties:

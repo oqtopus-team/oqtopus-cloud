@@ -145,12 +145,12 @@ class SubmitJobRequest(BaseModel):
     """
     shots: Annotated[int, Field(examples=[1000])]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
-    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
-        None
-    )
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
-        None
-    )
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class SubmitJobResponse(BaseModel):
@@ -191,12 +191,12 @@ class JobDef(BaseModel):
     mitigation_info: Annotated[
         str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
     ] = None
-    created_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
-        None
-    )
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34Z"])] = (
-        None
-    )
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class GetJobStatusResponse(BaseModel):
