@@ -109,9 +109,9 @@ class GetJobsResponse(BaseModel):
     created_at: Annotated[
         datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
-        None
-    )
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class JobDef(BaseModel):
@@ -144,9 +144,9 @@ class JobDef(BaseModel):
     ] = None
     status: JobStatus
     created_at: Annotated[datetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    updated_at: Annotated[datetime | None, Field(examples=["2022-10-19T11:45:34"])] = (
-        None
-    )
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
 
 
 class JobStatusUpdate(BaseModel):
