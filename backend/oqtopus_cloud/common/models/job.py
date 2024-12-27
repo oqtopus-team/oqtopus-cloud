@@ -1,13 +1,19 @@
 import datetime
-import enum
-from typing import Optional
+from typing import Literal, Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String
+from sqlalchemy import TIMESTAMP, Enum, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
     Base,
 )
+from oqtopus_cloud.common.models.device import DeviceId
+
+JobId = str
+
+JobType = Literal["sampling", "estimation", "sse"]
+
+JobStatus = Literal["submitted", "ready", "running", "succeeded", "failed", "cancelled"]
 
 
 class Job(Base):
@@ -36,7 +42,7 @@ class Job(Base):
 
     __tablename__ = "jobs"
 
-    id: Mapped[str] = mapped_column(
+    id: Mapped[JobId] = mapped_column(
         String(64),
         primary_key=True,
     )
@@ -46,35 +52,29 @@ class Job(Base):
     )
     name: Mapped[str] = mapped_column(String(256), nullable=True)
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
-    device_id: Mapped[str] = mapped_column(
-        String(64),
-        nullable=False,
-    )
-    job_info: Mapped[str]
-    transpiler_info: Mapped[str]
-    simulator_info: Mapped[str]
-    mitigation_info: Mapped[str]
-    job_type: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "sampling",
-            "estimation",
-            "sse",
-        ),
-        nullable=False,
+    device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
+    job_info: Mapped[str] = mapped_column(Text)
+    transpiler_info: Mapped[str] = mapped_column(Text)
+    simulator_info: Mapped[str] = mapped_column(Text)
+    mitigation_info: Mapped[str] = mapped_column(Text)
+    job_type: Mapped[JobType] = mapped_column(
+        Enum("sampling", "estimation", "sse"), nullable=False
     )
     shots: Mapped[int] = mapped_column(
         nullable=True,
     )
-    status: Mapped[str] = mapped_column(
+    status: Mapped[JobStatus] = mapped_column(
         String(32),
         nullable=False,
-        default="submitted",
+        server_default="submitted",
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
+        TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP, nullable=True
+        TIMESTAMP,
+        nullable=True,
+        server_onupdate=func.current_timestamp(),
     )
 
 

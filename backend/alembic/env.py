@@ -1,9 +1,11 @@
 from logging.config import fileConfig
 from os import environ
 
+import sqlalchemy as sa
 from alembic import context
+from alembic.autogenerate import renderers
 from oqtopus_cloud.common.models import Base
-from sqlalchemy import TypeDecorator, engine_from_config, pool
+from sqlalchemy import Enum, TypeDecorator, engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,14 +27,18 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+enum_field_max_length = 64
 
-def render_item(type_, obj, autogen_context):
-    """Apply custom rendering for selected items."""
 
-    if type_ == "type" and isinstance(obj, TypeDecorator):
-        return f"sa.{obj.impl!r}"
+def render_enum(type_, obj, autogen_context):
+    if type_ == "type" and isinstance(obj, sa.Enum):
+        # Check for enum's members having name of acceptable length.
+        # (...or, There might be more preferable ways than raising exception?)
+        for member in obj.enums:
+            if len(member) >= enum_field_max_length:
+                raise ValueError(f"Enum field `{member}` is too long.")
+        return f"sa.String(length={enum_field_max_length})"
 
-    # default rendering for other objects
     return False
 
 
@@ -62,6 +68,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -89,7 +96,8 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_item=render_item,
+            render_item=render_enum,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

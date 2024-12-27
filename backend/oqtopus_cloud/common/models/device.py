@@ -1,26 +1,16 @@
 import datetime
-from enum import Enum
+from typing import Literal, Optional, TypeVar
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Table, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import TIMESTAMP, Enum, String, Text, func, text
+from sqlalchemy.orm import Mapped, mapped_column
 
-from oqtopus_cloud.common.model_util import StringEnumType
 from oqtopus_cloud.common.models import Base
-from oqtopus_cloud.common.models.quantum_gate import QuantumGate
 
 DeviceId = str
 
-devices_gates_support = Table(
-    "gate_supports",
-    Base.metadata,
-    Column("device_id", ForeignKey("devices.id"), primary_key=True),
-    Column("gate_id", ForeignKey("quantum_gates.id"), primary_key=True),
-)
+DeviceType = Literal["QPU", "simulator"]
 
-
-class DeviceType(Enum):
-    QPU = "qpu"
-    Simulator = "simulator"
+DeviceStatus = Literal["available", "unavailable"]
 
 
 class Device(Base):
@@ -45,19 +35,16 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id: Mapped[str] = mapped_column(
+    id: Mapped[DeviceId] = mapped_column(
         String(64),
         primary_key=True,
     )
     device_type: Mapped[DeviceType] = mapped_column(
-        StringEnumType(DeviceType),
+        Enum("QPU", "simulator"),
         nullable=False,
     )
-    status: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "available",
-            "unavailable",
-        ),
+    status: Mapped[DeviceStatus] = mapped_column(
+        Enum("available", "unavailable"),
         nullable=False,
         default="unavailable",
     )
@@ -79,17 +66,17 @@ class Device(Base):
         String(64),
         nullable=False,
     )
-    device_info: Mapped[str]
+    device_info: Mapped[str] = mapped_column(Text)
     calibrated_at: Mapped[datetime.datetime]
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
+        TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,
         nullable=True,
+        server_onupdate=func.current_timestamp(),
     )
