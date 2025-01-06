@@ -1,0 +1,14 @@
+error.NotFoundError:
+  type: object
+  properties:
+    detail:
+      type: string
+  required:
+    - detail
+error.InternalServerError:
+  type: object
+  properties:
+    detail:
+      type: string
+  required:
+    - detail

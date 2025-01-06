@@ -18,6 +18,15 @@ generate-provider-schema: ## Generate provider schema
 	OUTPUT=oqtopus_cloud/provider/schemas
 	@$(MAKE) fmt-provider
 
+
+generate-admin-schema: ## Generate admin schema
+	@cd oas && $(MAKE) generate-admin
+	@$(MAKE) generate \
+	INPUT=./oas/admin/openapi.yaml \
+	OUTPUT=oqtopus_cloud/admin/schemas
+	@$(MAKE) fmt-admin
+
+
 generate:
 	@poetry run datamodel-codegen \
 	--use-schema-description \
@@ -42,6 +51,7 @@ generate:
 generate-all-schema: ## Generate user and provider schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
+	@$(MAKE) generate-admin-schema
 
 export ENV=local
 export DB_HOST=localhost
@@ -77,6 +87,9 @@ fmt-user: ## Format user code
 fmt-provider: ## Format provider code
 	@poetry run ruff format oqtopus_cloud/provider
 
+fmt-admin: ## Format admin code
+	@poetry run ruff format oqtopus_cloud/admin
+
 fmt-all: fmt-common fmt-user fmt-provider ## Format all code
 
 lint-common: ## Run common linters
@@ -91,7 +104,11 @@ lint-provider: ## Run provider linters
 	@poetry run ruff check oqtopus_cloud/provider
 	@poetry run mypy -p oqtopus_cloud.provider
 
-lint-all: lint-common lint-user lint-provider ## Run all linters
+lint-admin: ## Run admin linters
+	@poetry run ruff check oqtopus_cloud/admin
+	@poetry run mypy -p oqtopus_cloud.admin
+
+lint-all: lint-common lint-user lint-provider lint-admin ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -110,6 +127,12 @@ test-provider: fmt-provider lint-provider ## Run Provider tests
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
 	@mv .coverage .coverage-provider
+
+test-admin: fmt-admin lint-admin ## Run admin tests
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
+	@mv .coverage .coverage-admin
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \

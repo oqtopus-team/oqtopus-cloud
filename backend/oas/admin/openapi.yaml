@@ -1,0 +1,222 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud User API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Local server url
+paths:
+  /users:
+    get:
+      tags:
+        - user
+      summary: get users
+      description: get users
+      operationId: getUsers
+      security: []
+      parameters:
+        - name: offset
+          in: query
+          description: offset information
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limit information
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: query email infomation
+          required: false
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: query name information
+          required: false
+          schema:
+            type: string
+        - name: organization
+          in: query
+          description: query organization information
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: query user status
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/users.GetUsersResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal Server Error
+  /users/{userId}:
+    put:
+      tags:
+        - user
+      summary: update user status
+      description: update user status
+      operationId: updatetUserStatusById
+      security: []
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/user.UserUpdateStatusRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user.GetOneUserResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: User not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal Server Error
+    delete:
+      tags:
+        - user
+      summary: delete user
+      description: delete user with designated id
+      operationId: deleteUserById
+      security: []
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: User deleted successfully
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                detail: User not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                detail: Internal Server Error
+components:
+  schemas:
+    user.GetOneUserResponse:
+      description: detail of users response
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        organization:
+          type: string
+        status:
+          type: integer
+          format: int32
+        require_mfa_reset:
+          type: boolean
+      xml:
+        name: User
+      required:
+        - id
+        - email
+    users.GetUsersResponse:
+      properties:
+        Offset:
+          type: string
+        Limit:
+          type: string
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/user.GetOneUserResponse'
+    error.InternalServerError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    user.UserUpdateStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - '1'
+            - '3'
+          description: 'status 1: active, 3: inactive'
+    error.NotFoundError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+    success.SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message

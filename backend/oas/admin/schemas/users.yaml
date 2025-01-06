@@ -1,0 +1,10 @@
+users.GetUsersResponse:
+  properties:
+    Offset:
+      type: string
+    Limit:
+      type: string
+    users:
+      type: array
+      items:
+        $ref: "./user.yaml#/user.GetOneUserResponse"

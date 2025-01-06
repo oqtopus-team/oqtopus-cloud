@@ -10,6 +10,9 @@ lint-user: ## Lint user openapi.yaml
 lint-provider: ## Lint provider openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli lint provider/openapi.yaml
 
+lint-admin: ## Lint provider openapi.yaml
+	@docker run --rm -v $(PWD):/spec redocly/cli lint admin/openapi.yaml
+
 lint-all: lint-user lint-provider ## Lint user and provider
 
 generate-user: ## Generate user openapi.yaml
@@ -22,7 +25,12 @@ generate-provider: ## Generate provider openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli bundle /spec/provider/root.yaml -o /spec/provider/openapi.yaml
 	@$(MAKE) lint-provider
 
-generate-all: generate-user generate-provider ## Generate user and provider openapi.yaml
+generate-admin: ## Generate admin openapi.yaml
+	@docker pull redocly/cli
+	@docker run --rm -v $(PWD):/spec redocly/cli bundle /spec/admin/root.yaml -o /spec/admin/openapi.yaml
+	@$(MAKE) lint-admin
+
+generate-all: generate-user generate-provider generate-admin ## Generate user and provider openapi.yaml
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
