@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [common, user, provider]
+        target: [common, user, provider, admin]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     needs: lint-format
     strategy:
       matrix:
-        target: [common, user, provider]
+        target: [common, user, provider, admin]
 
     steps:
     - name: Checkout repository
@@ -85,6 +85,11 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: .coverage-provider
+        path: ./
+    - name: Download .coverage-admin artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: .coverage-admin
         path: ./
     - name: Install dependencies
       run: |

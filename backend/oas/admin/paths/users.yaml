@@ -42,6 +42,11 @@ users:
         description: "query user status"
         required: false
         schema: {type: integer}
+      - name: "group_id"
+        in: "query"
+        description: "query group ID"
+        required: false
+        schema: {type: string}
     responses:
       "200":
         description: "Success"
@@ -56,7 +61,7 @@ users:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
-              detail: "Internal Server Error"
+              message: "Internal Server Error"
 
 
 users.userId:
@@ -93,7 +98,7 @@ users.userId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: "User not found"
+              message: "User not found"
       "500":
         description: Internal Server Error
         content:
@@ -101,7 +106,7 @@ users.userId:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
-              detail: "Internal Server Error"
+              message: "Internal Server Error"
   delete:
     tags:
       - "user"
@@ -131,7 +136,7 @@ users.userId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: "User not found"
+              message: "User not found"
       "500":
         description: Internal Server Error
         content:
@@ -139,4 +144,43 @@ users.userId:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
-              detail: "Internal Server Error"
+              message: "Internal Server Error"
+
+
+users.userId.mfa_reset:
+  put:
+    tags:
+      - "user"
+    summary: "reset user mfa"
+    description: "reset user mfa"
+    operationId: "resetUserMfa"
+    security: []
+    parameters:
+      - name: "userId"
+        in: "path"
+        description: "User ID"
+        required: true
+        schema: {type: "integer"}
+    responses:
+      "200":
+        description: "Success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/user.yaml#/user.GetOneUserResponse"
+      "404":
+        description: "Not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "User not found"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"

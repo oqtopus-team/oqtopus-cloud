@@ -13,12 +13,14 @@ user.GetOneUserResponse:
     status:
       type: "integer"
       format: "int32"
+    group_id:
+      type: "string"
     require_mfa_reset:
       type: "boolean"
   xml:
     name: "User"
   required: [
-    id, email,
+    id,
   ]
 
 user.UserUpdateStatusRequest:

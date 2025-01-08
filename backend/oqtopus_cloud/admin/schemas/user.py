@@ -15,10 +15,11 @@ class GetOneUserResponse(BaseModel):
     """
 
     id: str
-    email: str
+    email: str | None = None
     name: str | None = None
     organization: str | None = None
     status: int | None = None
+    group_id: str | None = None
     require_mfa_reset: bool | None = None
 
 

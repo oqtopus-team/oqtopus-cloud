@@ -1,0 +1,93 @@
+import os
+from datetime import datetime
+from typing import (
+    Generator,
+)
+
+import pytest
+from oqtopus_cloud.common.models.base import (
+    Base,
+)
+from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.session import (
+    get_db,
+)
+from oqtopus_cloud.admin.lambda_function import app
+from sqlalchemy import (
+    create_engine,
+)
+from sqlalchemy.exc import (
+    SQLAlchemyError,
+)
+from sqlalchemy.orm import (
+    Session,
+    sessionmaker,
+)
+from sqlalchemy.orm.session import (
+    close_all_sessions,
+)
+
+
+class TestingSession(Session):
+    """_summary_
+
+    Args:
+            Session (_type_): _description_
+    """
+
+    def commit(
+        self,
+    ) -> None:
+        self.flush()
+        self.expire_all()
+
+
+@pytest.fixture(scope="function")
+def test_db() -> Generator[
+    Session,
+    None,
+    None,
+]:
+    """_summary_
+
+    Yields:
+            Generator[Session, None, None]: _description_
+    """
+    print("SetUp")
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        echo=True,
+    )
+    # Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    TestSessionLocal = sessionmaker(
+        class_=TestingSession,
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+    )
+
+    db = TestSessionLocal()
+
+    # https://fastapi.tiangolo.com/advanced/testing-dependencies/
+    def get_db_for_testing() -> Generator[
+        Session,
+        None,
+        None,
+    ]:
+        try:
+            yield db
+            db.commit()
+        except SQLAlchemyError as e:
+            assert e is not None
+            db.rollback()
+
+    app.dependency_overrides[get_db] = get_db_for_testing
+
+    yield db
+
+    os.remove("./test.db")
+    db.rollback()
+    close_all_sessions()
+    engine.dispose()

@@ -8,8 +8,8 @@ from pydantic import BaseModel
 
 
 class InternalServerError(BaseModel):
-    detail: str
+    message: str
 
 
 class NotFoundError(BaseModel):
-    detail: str
+    message: str

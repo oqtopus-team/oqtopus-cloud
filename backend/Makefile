@@ -72,6 +72,11 @@ run-provider: ## Start the Provider API
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
+run-admin: ## Start the Admin API
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
 up: ## Start the DB
 	@docker compose up
 
@@ -90,7 +95,7 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
-fmt-all: fmt-common fmt-user fmt-provider ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider lint-admin ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common

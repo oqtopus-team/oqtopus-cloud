@@ -29,6 +29,9 @@ class CustomMiddleware(BaseHTTPMiddleware):
                     request.scope["aws.event"]
                 ).request_context.authorizer.claims["cognito:username"]
                 request.state.owner = owner
+                user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
+                request.state.user_pool_id = user_pool_id
+                request.state.region = user_pool_id.split("_")[0]
         except KeyError:
             logger.error("No AWS event found in request scope")
             raise HTTPException(

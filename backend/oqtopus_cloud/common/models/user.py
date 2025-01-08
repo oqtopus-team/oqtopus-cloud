@@ -1,6 +1,6 @@
 import datetime
-
-from sqlalchemy import Column, String, Integer, Boolean, DateTime
+from sqlalchemy.orm import mapped_column
+from sqlalchemy import String, Integer, Boolean, DateTime
 from oqtopus_cloud.common.models.base import (
     Base,
 )
@@ -32,20 +32,22 @@ class User(Base):
     """
 
     __tablename__ = "user"
-    id = Column(Integer, primary_key=True, index=True)
-    cognito_id = Column(String, index=True)
-    email = Column(String, index=True)
-    username = Column(String, nullable=True)
-    userstatus = Column(Integer, nullable=True)
-    api_token_secret = Column(String, nullable=True)
-    organization = Column(String, nullable=True)
-    purpose = Column(String, nullable=True)
-    group_id = Column(String, nullable=True)
-    require_mfa_reset = Column(Boolean, nullable=True)
-    api_token_expiration = Column(DateTime, default=default_datetime)
-    created_at = Column(DateTime, default=default_datetime)
-    updated_at = Column(DateTime, default=default_datetime, onupdate=default_datetime)
-    deleted_at = Column(DateTime, default=default_datetime)
+    id = mapped_column(Integer, primary_key=True, index=True)
+    cognito_id = mapped_column(String, index=True)
+    email = mapped_column(String, index=True)
+    username = mapped_column(String, nullable=True)
+    userstatus = mapped_column(Integer, nullable=True)
+    api_token_secret = mapped_column(String, nullable=True)
+    organization = mapped_column(String, nullable=True)
+    purpose = mapped_column(String, nullable=True)
+    group_id = mapped_column(String, nullable=True)
+    require_mfa_reset = mapped_column(Boolean, nullable=True)
+    api_token_expiration = mapped_column(DateTime, default=default_datetime)
+    created_at = mapped_column(DateTime, default=default_datetime)
+    updated_at = mapped_column(
+        DateTime, default=default_datetime, onupdate=default_datetime
+    )
+    deleted_at = mapped_column(DateTime, default=default_datetime)
 
 
 class Error(Exception):

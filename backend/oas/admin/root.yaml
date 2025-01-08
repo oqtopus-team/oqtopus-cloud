@@ -17,3 +17,5 @@ paths:
     $ref: ./paths/users.yaml#/users
   /users/{userId}:
     $ref: ./paths/users.yaml#/users.userId
+  /users/{userId}/mfa_reset:
+    $ref: ./paths/users.yaml#/users.userId.mfa_reset

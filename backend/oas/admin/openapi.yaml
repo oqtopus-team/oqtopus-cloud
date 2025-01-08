@@ -58,6 +58,12 @@ paths:
           required: false
           schema:
             type: integer
+        - name: group_id
+          in: query
+          description: query group ID
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -72,7 +78,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal Server Error
+                message: Internal Server Error
   /users/{userId}:
     put:
       tags:
@@ -108,7 +114,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: User not found
+                message: User not found
         '500':
           description: Internal Server Error
           content:
@@ -116,7 +122,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal Server Error
+                message: Internal Server Error
     delete:
       tags:
         - user
@@ -147,7 +153,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: User not found
+                message: User not found
         '500':
           description: Internal Server Error
           content:
@@ -155,7 +161,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal Server Error
+                message: Internal Server Error
+  /users/{userId}/mfa_reset:
+    put:
+      tags:
+        - user
+      summary: reset user mfa
+      description: reset user mfa
+      operationId: resetUserMfa
+      security: []
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user.GetOneUserResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: User not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal Server Error
 components:
   schemas:
     user.GetOneUserResponse:
@@ -173,13 +217,14 @@ components:
         status:
           type: integer
           format: int32
+        group_id:
+          type: string
         require_mfa_reset:
           type: boolean
       xml:
         name: User
       required:
         - id
-        - email
     users.GetUsersResponse:
       properties:
         Offset:
@@ -193,10 +238,10 @@ components:
     error.InternalServerError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     user.UserUpdateStatusRequest:
       type: object
       properties:
@@ -209,10 +254,10 @@ components:
     error.NotFoundError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     success.SuccessResponse:
       type: object
       properties:
