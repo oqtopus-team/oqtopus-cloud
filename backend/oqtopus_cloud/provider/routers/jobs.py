@@ -106,6 +106,7 @@ def get_jobs(
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:
                     model.status = JobStatus.ready
+                    model.ready_at = datetime.now()
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
                     job.status = JobStatus(model.status)
@@ -247,6 +248,11 @@ MAP_MODEL_TO_SCHEMA = {
     "mitigation_info": "mitigation_info",
     "job_type": "job_type",
     "shots": "shots",
+    "execution_time": "execution_time",
+    "submitted_at": "submitted_at",
+    "ready_at": "ready_at",
+    "running_at": "running_at",
+    "ended_at": "ended_at",
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
@@ -288,6 +294,11 @@ def model_to_schema(
             transpiler_info=model.transpiler_info,
             mitigation_info=model.mitigation_info,
             simulator_info=model.simulator_info,
+            execution_time=model.execution_time,
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
