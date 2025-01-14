@@ -21,6 +21,9 @@ from oqtopus_cloud.user.routers import (
 from oqtopus_cloud.user.routers import (
     jobs as job_router,
 )
+from oqtopus_cloud.user.routers import (
+    api_token as api_token_router,
+)
 
 app: FastAPI = add_pagination(FastAPI())
 
@@ -48,6 +51,10 @@ app.include_router(
 app.include_router(
     job_router.router,
     tags=["job"],
+)
+app.include_router(
+    api_token_router.router,
+    tags=["api-token"],
 )
 
 handler: Mangum = Mangum(

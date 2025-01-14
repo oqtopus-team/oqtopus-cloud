@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help zip-user zip-provider zip-all zip deploy-user deploy-provider deploy-admin deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
+.PHONY: help zip-user zip-provider zip-admin zip-all zip deploy-user deploy-provider deploy-admin deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
 
 include .env
 export
