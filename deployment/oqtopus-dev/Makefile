@@ -37,7 +37,7 @@ zip:
   -v ./requirements.txt:/requirements.txt \
   python:3.12 /bin/bash -c "\
   curl -fsSL https://astral.sh/uv/install.sh | bash && \
-  /root/.cargo/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}"
+  /root/.local/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}" --link-mode=copy
 	@cd ${DEPLOY_PACKAGES_DIR} && rm -rf __pycache__ && zip -r ../${BIN}/lambda.zip * -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q
