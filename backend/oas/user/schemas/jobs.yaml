@@ -31,19 +31,19 @@ jobs.JobInfoSampling:
       type: string
       enum:
         - sampling
-    code:
-      type: string
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
       example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
   required:
     - job_type
-    - code
-
+    - program
 
 jobs.JobInfoEstimation:
   type: object
@@ -53,22 +53,41 @@ jobs.JobInfoEstimation:
       type: string
       enum:
         - estimation
-    code:
-      type: string
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
       example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
     operator:
-      type: string
-      example: X 0 Y 1 Z 5 I 2
+      type: array
+      items:
+        $ref: "#/jobs.OperatorItem"
   required:
     - job_type
-    - code
+    - program
     - operator
+
+jobs.OperatorItem:
+  type: object
+  properties:
+    pauli:
+      type: string
+      description: The Pauli string.
+      example: "X 0 X 1"
+    coeff:
+      description: "Complex coefficient number in the Pauli string representation."
+      type: array
+      items:
+        type: number
+      minItems: 1
+      maxItems: 2
+  required:
+    - pauli
 
 jobs.JobInfoDesc:
   type: object
@@ -76,12 +95,78 @@ jobs.JobInfoDesc:
     - $ref: "#/jobs.JobInfoEstimation"
     - $ref: "#/jobs.JobInfoSampling"
 
+jobs.JobResultSampling:
+  type: object
+  properties:
+    job_type:
+      type: string
+      enum:
+        - "sampling"
+    counts:
+      type: string
+      example: >-
+        {
+          "10": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+  required:
+    - job_type
+    - counts
+
+jobs.JobResultEstimation:
+  type: object
+  properties:
+    job_type:
+      type: string
+      enum:
+        - "estimation"
+    exp_value:
+      type: array
+      items:
+        type: number
+      minItems: 1
+      maxItems: 2
+    stds:
+      description: "The standard deviation value"
+      type: number
+  required:
+    - job_type
+    - exp_value
+    - stds
+
+jobs.JobResultDesc:
+  type: object
+  oneOf:
+    - $ref: "#/jobs.JobResultEstimation"
+    - $ref: "#/jobs.JobResultSampling"
+
+jobs.JobResult:
+  type: object
+  properties:
+    desc:
+      $ref: "#/jobs.JobResultDesc"
+    divided_result:
+      type: object
+      description: "Assumed to be used for multiprogramming, but currently not supported yet."
+      properties: {}
+    properties:
+      type: string
+    transpile_result:
+      type: object
+      properties:
+        virtual_physical_mapping:
+          type: string
+  required:
+    - desc
+
 jobs.JobInfo:
   type: object
   properties:
     desc:
       $ref: "#/jobs.JobInfoDesc"
-    transpiled_code:
+    transpiled_program:
       type: string
       example: >-
         OPENQASM 3;
@@ -91,13 +176,10 @@ jobs.JobInfo:
         h q[0];
         cx q[0], q[1];
     result:
+      $ref: "#/jobs.JobResult"
+    message:
       type: string
-      description: "The result of quantum computation, set only if the computation is successful."
-      example: |
-        { "11": 4980, "00": 5020 }
-    reason:
-      type: string
-      description: The reason indicating why there is no result
+      description: Describing the reason why there is no result
   required:
     - desc
 

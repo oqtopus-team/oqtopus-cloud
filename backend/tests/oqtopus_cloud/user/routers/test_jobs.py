@@ -43,7 +43,7 @@ def _get_model(n: int) -> Job:
             {
                 "desc": {
                     "job_type": "sampling",
-                    "code": "code",
+                    "program": ["code"],
                 }
             }
         ),
@@ -97,7 +97,7 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -116,7 +116,7 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -213,7 +213,7 @@ def test_get_jobs_filtering_startTime(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -254,7 +254,7 @@ def test_get_jobs_filtering_endTime(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -295,7 +295,7 @@ def test_get_jobs_filtering_search_string(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -336,7 +336,7 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -355,7 +355,7 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -426,14 +426,14 @@ def test_get_jobs_all_parameters(
             job_id="testjob3id",
             description="test job 3",
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
         ),
         GetJobsResponse(
             job_id="testjob2id",
             description="test job 2",
             job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
+                desc=JobInfoSampling(job_type="sampling", program=["code"]),
             ),
         ),
     ]
@@ -448,7 +448,7 @@ def test_job_sortedness(test_db):
             name=f"test-job-{n}",
             device_id="Kawasaki",
             status=JobStatus.submitted,
-            job_info=JobInfoSampling(job_type="sampling", code="code"),
+            job_info=JobInfoSampling(job_type="sampling", program=["code"]),
             simulator_info="{}",
             transpiler_info="{}",
             mitigation_info="{}",
@@ -495,7 +495,7 @@ def test_get_jobs_handler(
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=JobInfo(
-            desc=JobInfoSampling(job_type="sampling", code="code"),
+            desc=JobInfoSampling(job_type="sampling", program=["code"]),
         ),
         transpiler_info=json.dumps({"this_is": "transpiler_info"}),
         simulator_info=json.dumps({"this_is": "simulator_info"}),
@@ -559,7 +559,7 @@ def test_submit_get(
         name="submit-job-test",
         description="Submit job test",
         device_id="Kawasaki",
-        job_info=JobInfoSampling(job_type="sampling", code="codecodecode"),
+        job_info=JobInfoSampling(job_type="sampling", program=["codecodecode"]),
         mitigation_info=json.dumps(
             {
                 "field1": "value1",
@@ -604,7 +604,7 @@ def test_submit_delete(test_db):
         name="submit-job-test",
         description="Submit job test",
         device_id="Kawasaki",
-        job_info=JobInfoSampling(job_type="sampling", code="codecodecode"),
+        job_info=JobInfoSampling(job_type="sampling", program=["codecodecode"]),
         mitigation_info=json.dumps(
             {
                 "field1": "value1",
