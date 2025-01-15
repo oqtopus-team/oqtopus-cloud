@@ -1,0 +1,53 @@
+whitelistUser.id:
+  type: integer
+  example: 1
+
+whitelistUser.group_id:
+  type: string
+  example: group1
+
+whitelistUser.email:
+  type: string
+  example: example@example.com
+
+whitelistUser.username:
+  type: string
+  example: exampleuser
+
+whitelistUser.organization:
+  type: string
+  example: Example Organization
+
+whitelistUser.is_signup_completed:
+  type: boolean
+  example: true
+
+whitelistUser.whitelistUsersDef:
+  type: object
+  properties:
+    id:
+      $ref: "#/whitelistUser.id"
+    group_id:
+      $ref: "#/whitelistUser.group_id"
+    email:
+      $ref: "#/whitelistUser.email"
+    username:
+      $ref: "#/whitelistUser.username"
+    organization:
+      $ref: "#/whitelistUser.organization"
+    is_signup_completed:
+      $ref: "#/whitelistUser.is_signup_completed"
+  required:
+    - id
+    - group_id
+    - email
+    - username
+    - organization
+    - is_signup_completed
+  example:
+      id: 1
+      group_id: group1
+      email: example@example.com
+      username: exampleuser
+      organization: Example Organization
+      is_signup_completed: true
