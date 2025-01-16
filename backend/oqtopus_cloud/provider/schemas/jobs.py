@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -20,21 +20,35 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class OperatorItem(BaseModel):
+    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
+    """
+    The Pauli string.
+    """
+    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    """
+    Complex coefficient number in the Pauli string representation.
+    """
+
+
 class JobInfoEstimation(BaseModel):
     """
     The descriptor of estimation jobs
     """
 
     job_type: Literal["estimation"]
-    code: Annotated[
-        str,
+    program: Annotated[
+        list[str],
         Field(
             examples=[
-                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
             ]
         ),
     ]
-    operator: Annotated[str, Field(examples=["X 0 Y 1 Z 5 I 2"])]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[OperatorItem]
 
 
 class JobInfoSampling(BaseModel):
@@ -43,19 +57,53 @@ class JobInfoSampling(BaseModel):
     """
 
     job_type: Literal["sampling"]
-    code: Annotated[
-        str,
+    program: Annotated[
+        list[str],
         Field(
             examples=[
-                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
             ]
         ),
     ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+
+
+class JobResultEstimation(BaseModel):
+    job_type: Literal["estimation"]
+    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
+    stds: float
+    """
+    The standard deviation value
+    """
+
+
+class JobResultSampling(BaseModel):
+    job_type: Literal["sampling"]
+    counts: Annotated[
+        str,
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ]
+
+
+class TranspileResult(BaseModel):
+    virtual_physical_mapping: str | None = None
+
+
+class JobResult(BaseModel):
+    desc: JobResultEstimation | JobResultSampling
+    divided_result: dict[str, Any] | None = None
+    """
+    Assumed to be used for multiprogramming, but currently not supported yet.
+    """
+    properties: str | None = None
+    transpile_result: TranspileResult | None = None
 
 
 class JobInfo(BaseModel):
     desc: JobInfoEstimation | JobInfoSampling
-    transpiled_code: Annotated[
+    transpiled_program: Annotated[
         str | None,
         Field(
             examples=[
@@ -63,15 +111,10 @@ class JobInfo(BaseModel):
             ]
         ),
     ] = None
-    result: Annotated[
-        str | None, Field(examples=['{\n  "11": 4980,\n  "00": 5020\n}'])
-    ] = None
+    result: JobResult | None = None
+    message: str | None = None
     """
-    The result of quantum computation, set only if the computation is successful.
-    """
-    reason: str | None = None
-    """
-    The reason indicating why there is no result
+    Describing the reason why there is no result
     """
 
 
@@ -158,9 +201,17 @@ class JobStatusUpdateResponse(BaseModel):
 
 
 class UpdateJobInfoRequest(BaseModel):
-    transpiled_code: str | None = None
-    result: str | None = None
-    reason: str | None = None
+    overwrite_status: JobStatus | None = None
+    """
+    Overwrite the job status. Use with caution to avoid putting the job into an inconsistent state. If this field is not specified, the status will be updated automatically.
+    """
+    execution_time: float | None = None
+    """
+    Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
+    """
+    transpiled_program: str | None = None
+    result: JobResult | None = None
+    message: str | None = None
 
 
 class UpdateJobInfoResponse(BaseModel):

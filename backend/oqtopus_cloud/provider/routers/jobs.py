@@ -197,23 +197,24 @@ def update_job_info(
     )
 
     def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
-        job_info.transpiled_code = request.transpiled_code
+        job_info.transpiled_program = request.transpiled_program
 
+        status = request.overwrite_status
         if request.result is not None:
             job_info.result = request.result
-            job_info.reason = None
-            return (JobStatus.succeeded, job_info)
+            job_info.message = None
+            return (status or JobStatus.succeeded, job_info)
 
-        elif request.reason is not None:
-            job_info.reason = request.reason
+        elif request.message is not None:
+            job_info.message = request.message
             job_info.result = None
-            return (JobStatus.failed, job_info)
+            return (status or JobStatus.failed, job_info)
 
-        return (None, job_info)
+        return (status, job_info)
 
-    if request.reason is not None and request.result is not None:
+    if request.message is not None and request.result is not None:
         return BadRequestResponse(
-            detail="You cannot specify both a result and a reason."
+            detail="You cannot specify both a result and a message."
         )
 
     try:
@@ -221,9 +222,20 @@ def update_job_info(
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
-        (status, job_info) = patch_job_info(
-            JobInfo.model_validate(json.loads(model.job_info))
-        )
+        job_info = JobInfo.model_validate(json.loads(model.job_info))
+
+        # The job result must be compatible with the job info.
+        if (
+            request.result is not None
+            and job_info.desc.job_type != request.result.desc.job_type
+        ):
+            return BadRequestResponse(
+                detail="The job result type is not compatible with job info."
+            )
+
+        # Calculate upodated job_info.
+        (status, job_info) = patch_job_info(job_info)
+
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
             model.status = status
