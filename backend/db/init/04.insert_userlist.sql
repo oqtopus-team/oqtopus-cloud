@@ -1,0 +1,9 @@
+INSERT INTO main.user (id, cognito_id, email, username, userstatus, api_token_secret, organization, purpose, group_id, require_mfa_reset, api_token_expiration, created_at, updated_at, deleted_at)
+SELECT '1', '3704aaf8-a0e1-70c5-b5eb-e3879fd201dd', 'admin-email', 'admin', 1, 'admin-api_token_secret', 'admin-organization', 'admin-purpose', 'admin-group_id', false, '2021-01-01 00:00:05', '2021-01-01 00:00:00', '2021-01-01 00:00:01', '2031-01-01 00:00:09'
+WHERE NOT EXISTS (SELECT * FROM main.user WHERE username = 'admin');
+INSERT INTO main.user (id, cognito_id, email, username, userstatus, api_token_secret, organization, purpose, group_id, require_mfa_reset, api_token_expiration, created_at, updated_at, deleted_at)
+SELECT '2', 'c7740a88-4011-70b9-f031-4656382f880e', 'social.elnino.social@gmail.com', 'admin2', 1, 'admin-api_token_secret2', 'admin-organization2', 'admin-purpose2', 'admin-group_id2', false, '2021-01-01 00:00:04', '2021-01-01 00:00:02', '2021-01-01 00:00:03', '2031-01-01 00:00:08'
+WHERE NOT EXISTS (SELECT * FROM main.user WHERE username = 'admin2');
+INSERT INTO main.user (id, cognito_id, email, username, userstatus, api_token_secret, organization, purpose, group_id, require_mfa_reset, api_token_expiration, created_at, updated_at, deleted_at)
+SELECT '3', 'd7740a88-4011-70b9-f031-4656382f880e', 'email-admin', 'admin3', 1, 'admin-api_token_secret3', 'admin-organization3', 'admin-purpose3', 'admin-group_id3', true, '2021-01-01 00:00:04', '2021-01-01 00:00:02', '2021-01-01 00:00:03', '2031-01-01 00:00:08'
+WHERE NOT EXISTS (SELECT * FROM main.user WHERE username = 'admin3');

@@ -1,0 +1,32 @@
+user.GetOneUserResponse:
+  description: detail of users response
+  type: object
+  properties:
+    id:
+      type: "string"
+    email:
+      type: "string"
+    name:
+      type: "string"
+    organization:
+      type: "string"
+    status:
+      type: "integer"
+      format: "int32"
+    group_id:
+      type: "string"
+    require_mfa_reset:
+      type: "boolean"
+  xml:
+    name: "User"
+  required: [
+    id,
+  ]
+
+user.UserUpdateStatusRequest:
+  type: "object"
+  properties:
+    status:
+      type: "string"
+      enum: ["1", "3"]
+      description: "status 1: active, 3: inactive"

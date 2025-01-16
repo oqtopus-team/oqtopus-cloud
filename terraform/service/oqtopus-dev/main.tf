@@ -56,6 +56,28 @@ module "provider_api" {
   log_level                     = "INFO"
 }
 
+module "admin_api" {
+  source = "../modules/api-server"
+
+  product                       = var.product
+  org                           = var.org
+  env                           = var.env
+  identifier                    = "admin"
+  region                        = var.region
+  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                = "oqtopus_cloud.admin.lambda_function.handler"
+  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  power_tools_metrics_namespace = "admin-api"
+  power_tools_service_name      = "admin-api"
+  allow_origins                 = "*"
+  allow_credentials             = "true"
+  allow_methods                 = "*"
+  allow_headers                 = "*"
+  log_level                     = "INFO"
+}
 
 module "vpc_endpoint" {
   source = "../modules/vpc-endpoint"

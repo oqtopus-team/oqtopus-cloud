@@ -1,0 +1,186 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: './schemas/security.yaml#/BearerAuth'
+
+users:
+  get:
+    tags:
+      - "user"
+    summary: "get users"
+    description: "get users"
+    operationId: "getUsers"
+    security: []
+    parameters:
+      - name: "offset"
+        in: "query"
+        description: "offset information"
+        required: false
+        schema: {type: string}
+      - name: "limit"
+        in: "query"
+        description: "Limit information"
+        required: false
+        schema: {type: string}
+      - name: "email"
+        in: "query"
+        description: "query email infomation"
+        required: false
+        schema: {type: string}
+      - name: "name"
+        in: "query"
+        description: "query name information"
+        required: false
+        schema: {type: string}
+      - name: "organization"
+        in: "query"
+        description: "query organization information"
+        required: false
+        schema: {type: string}
+      - name: "status"
+        in: "query"
+        description: "query user status"
+        required: false
+        schema: {type: integer}
+      - name: "group_id"
+        in: "query"
+        description: "query group ID"
+        required: false
+        schema: {type: string}
+    responses:
+      "200":
+        description: "Success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/users.yaml#/users.GetUsersResponse"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"
+
+
+users.userId:
+  put:
+    tags:
+      - "user"
+    summary: "update user status"
+    description: "update user status"
+    operationId: "updatetUserStatusById"
+    security: []
+    parameters:
+      - name: "userId"
+        in: "path"
+        description: "User ID"
+        required: true
+        schema: {type: "integer"}
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/user.yaml#/user.UserUpdateStatusRequest"
+    responses:
+      "200":
+        description: "Success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/user.yaml#/user.GetOneUserResponse"
+      "404":
+        description: "Not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "User not found"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"
+  delete:
+    tags:
+      - "user"
+    summary: "delete user"
+    description: "delete user with designated id"
+    operationId: "deleteUserById"
+    security: []
+    parameters:
+      - name: "userId"
+        in: "path"
+        description: "User ID"
+        required: true
+        schema: {type: "integer"}
+    responses:
+      "200":
+        description: "Success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: "User deleted successfully"
+      "404":
+        description: "Not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "User not found"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"
+
+
+users.userId.mfa_reset:
+  put:
+    tags:
+      - "user"
+    summary: "reset user mfa"
+    description: "reset user mfa"
+    operationId: "resetUserMfa"
+    security: []
+    parameters:
+      - name: "userId"
+        in: "path"
+        description: "User ID"
+        required: true
+        schema: {type: "integer"}
+    responses:
+      "200":
+        description: "Success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/user.yaml#/user.GetOneUserResponse"
+      "404":
+        description: "Not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "User not found"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"
