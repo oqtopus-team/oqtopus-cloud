@@ -17,6 +17,7 @@ from oqtopus_cloud.admin.conf import logger, metrics, tracer
 from oqtopus_cloud.admin.middleware import CustomMiddleware
 from oqtopus_cloud.admin.routers import (
     users as users_router,
+    whitelist_users as whitelist_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -43,10 +44,16 @@ app.include_router(
     tags=["user"],
 )
 
+app.include_router(
+    whitelist_router.router,
+    tags=["whitelist"],
+)
+
 handler: Mangum = Mangum(
     app,
     lifespan="off",
 )
+
 # mypy: disable-error-code = attr-defined
 handler.__name__ = "handler"
 handler = tracer.capture_lambda_handler(handler)

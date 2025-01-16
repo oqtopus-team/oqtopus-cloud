@@ -1,0 +1,102 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud User API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud admin API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage whitelist user.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Local server url
+paths:
+  /whitelist:
+    get:
+      tags:
+        - WhitelistUsers
+      summary: List all whitelist users
+      description: List all whitelist users
+      operationId: listWhitelistUsers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return a list of whitelist users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/whitelistUser.whitelistUsersDef'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                detail: Unauthorized
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    whitelistUser.id:
+      type: integer
+      example: 1
+    whitelistUser.group_id:
+      type: string
+      example: group1
+    whitelistUser.email:
+      type: string
+      example: example@example.com
+    whitelistUser.username:
+      type: string
+      example: exampleuser
+    whitelistUser.organization:
+      type: string
+      example: Example Organization
+    whitelistUser.is_signup_completed:
+      type: boolean
+      example: true
+    whitelistUser.whitelistUsersDef:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/whitelistUser.id'
+        group_id:
+          $ref: '#/components/schemas/whitelistUser.group_id'
+        email:
+          $ref: '#/components/schemas/whitelistUser.email'
+        username:
+          $ref: '#/components/schemas/whitelistUser.username'
+        organization:
+          $ref: '#/components/schemas/whitelistUser.organization'
+        is_signup_completed:
+          $ref: '#/components/schemas/whitelistUser.is_signup_completed'
+      required:
+        - id
+        - group_id
+        - email
+        - username
+        - organization
+        - is_signup_completed
+      example:
+        id: 1
+        group_id: group1
+        email: example@example.com
+        username: exampleuser
+        organization: Example Organization
+        is_signup_completed: true
+    error.UnauthorizedError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
