@@ -91,6 +91,7 @@ def _get_job_model(n: int) -> Job:
         ),
         "status": "ready",
         "shots": 1000,
+        "submitted_at": datetime(2024, 3, 4 + n, 12, 34, 56),
         "created_at": datetime(2024, 3, 4 + n, 12, 34, 56),
     }
     return Job(**mode_dict)
@@ -119,6 +120,7 @@ def _get_job_model_2() -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
+        "submitted_at": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
     return Job(**mode_dict)
