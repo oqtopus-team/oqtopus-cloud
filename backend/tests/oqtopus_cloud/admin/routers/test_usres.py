@@ -1,16 +1,8 @@
-import json
 from datetime import datetime
-from typing import List
-from unittest.mock import patch
-
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.success import SuccessResponse
-from oqtopus_cloud.admin.schemas.errors import (
-    InternalServerErrorResponse,
-    NotFoundErrorResponse,
-)
 
 from oqtopus_cloud.admin.schemas.user import (
     GetOneUserResponse,
@@ -19,9 +11,11 @@ from oqtopus_cloud.admin.schemas.user import (
 )
 from oqtopus_cloud.admin.schemas.users import GetUsersResponse
 from pydantic.type_adapter import TypeAdapter
-from sqlalchemy import select
 
 client = TestClient(app)
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _get_model(n: int) -> User:
@@ -46,10 +40,6 @@ def _get_model(n: int) -> User:
 def test_get_users_simple(
     test_db,
 ):
-    """_summary_
-    Simple GET /users tests
-    """
-
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
@@ -90,10 +80,6 @@ def test_get_users_simple(
 def test_get_users_query_limit_offset(
     test_db,
 ):
-    """_summary_
-    GET user with limit and offset
-    """
-
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
@@ -135,9 +121,6 @@ def test_get_users_query_limit_offset(
 def test_get_user_by_email(
     test_db,
 ):
-    """_summary_
-    GET user by email
-    """
     test_db.flush()
     test_db.add(_get_model(3))
     test_db.add(_get_model(1))
@@ -169,9 +152,6 @@ def test_get_user_by_email(
 def test_get_user_by_name_organization_groupid_status(
     test_db,
 ):
-    """_summary_
-    GET user by name, organization, group_id, status
-    """
     test_db.flush()
     test_db.add(_get_model(3))
     test_db.add(_get_model(1))
@@ -205,11 +185,6 @@ def test_get_user_by_name_organization_groupid_status(
 def test_put_job(
     test_db,
 ):
-    """_summary_
-
-    Args:
-            test_db (_type_): _description_
-    """
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
@@ -233,11 +208,6 @@ def test_put_job(
 def test_put_job_404(
     test_db,
 ):
-    """_summary_
-
-    Args:
-            test_db (_type_): _description_
-    """
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
@@ -265,15 +235,10 @@ def test_put_job_404(
 
 
 def test_post_job_mfa_reset(test_db):
-    """_summary_
-    Args:
-            test_db (_type_): _description_
-    """
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UserUpdateStatusRequest(status=Status.field_3)
-    response = client.put("/users/1/mfa_reset", json=update_data.model_dump())
+    response = client.put("/users/1/mfa_reset")
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
@@ -292,9 +257,6 @@ def test_post_job_mfa_reset(test_db):
 def test_delete_user(
     test_db,
 ):
-    """_summary_
-    DELETE user
-    """
     test_db.flush()
     test_db.add(_get_model(3))
     test_db.add(_get_model(1))

@@ -3,7 +3,7 @@ user.GetOneUserResponse:
   type: object
   properties:
     id:
-      type: "string"
+      type: "integer"
     email:
       type: "string"
     name:

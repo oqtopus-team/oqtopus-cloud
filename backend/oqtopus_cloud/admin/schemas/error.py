@@ -13,3 +13,7 @@ class InternalServerError(BaseModel):
 
 class NotFoundError(BaseModel):
     message: str
+
+
+class BadRequestError(BaseModel):
+    message: str

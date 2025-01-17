@@ -1,0 +1,20 @@
+whitelist_users.GetWhitelistUsersResponse:
+  properties:
+    users:
+      type: array
+      items:
+        $ref: "./whitelist_user.yaml#/whitelist_user.GetWhitelistUserResponse"
+
+whitelist_users.WhitelistUsersRegisterRequest:
+  properties:
+    users:
+      type: array
+      items:
+        $ref: "./whitelist_user.yaml#/whitelist_user.WhitelistUserRegisterRequest"
+
+whitelist_users.WhitelistUsersDeleteRequest:
+  properties:
+    user_emails:
+      type: array
+      items:
+        $ref: "./whitelist_user.yaml#/whitelist_user.Email"

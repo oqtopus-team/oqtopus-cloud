@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
-  title: OQTOPUS Cloud User API
+  title: OQTOPUS Cloud Admin API
   version: '1.0'
   contact:
     name: oqtopus-team
     email: oqtopus-team[at]googlegroups.com
-  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  description: OQTOPUS Cloud Admin API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -20,7 +20,8 @@ paths:
       summary: get users
       description: get users
       operationId: getUsers
-      security: []
+      security:
+        - BearerAuth: []
       parameters:
         - name: offset
           in: query
@@ -71,6 +72,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/users.GetUsersResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
         '500':
           description: Internal Server Error
           content:
@@ -86,7 +91,8 @@ paths:
       summary: update user status
       description: update user status
       operationId: updatetUserStatusById
-      security: []
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -107,6 +113,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/user.GetOneUserResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
         '404':
           description: Not found
           content:
@@ -129,7 +139,8 @@ paths:
       summary: delete user
       description: delete user with designated id
       operationId: deleteUserById
-      security: []
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -146,6 +157,8 @@ paths:
                 $ref: '#/components/schemas/success.SuccessResponse'
               example:
                 message: User deleted successfully
+        '403':
+          description: Not authorized
         '404':
           description: Not found
           content:
@@ -169,7 +182,8 @@ paths:
       summary: reset user mfa
       description: reset user mfa
       operationId: resetUserMfa
-      security: []
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -184,6 +198,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/user.GetOneUserResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
         '404':
           description: Not found
           content:
@@ -200,14 +218,158 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal Server Error
+  /user_detail:
+    get:
+      tags:
+        - user
+      summary: get user detail
+      description: get user detail
+      operationId: getUserDetail
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user.GetOneUserResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: User not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal Server Error
+  /whitelist:
+    get:
+      tags:
+        - WhitelistUsers
+      summary: List whitelist users
+      description: List whitelist users
+      operationId: listWhitelistUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          description: offset information
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limit information
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return a list of whitelist users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/whitelist_users.GetWhitelistUsersResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - WhitelistUsers
+      summary: register a user to the whitelist
+      description: register a user to the whitelist
+      operationId: registerWhitelistUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/whitelist_users.WhitelistUsersRegisterRequest'
+      responses:
+        '200':
+          description: Return a list of whitelist users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - WhitelistUsers
+      summary: delete a user from the whitelist
+      description: delete a user from the whitelist
+      operationId: deleteWhitelistUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_emails
+          in: query
+          description: email of the user to be deleted
+          required: true
+          schema:
+            $ref: '#/components/schemas/whitelist_users.WhitelistUsersDeleteRequest'
+      responses:
+        '204':
+          description: Return a list of whitelist users
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     user.GetOneUserResponse:
       description: detail of users response
       type: object
       properties:
         id:
-          type: string
+          type: integer
         email:
           type: string
         name:
@@ -265,3 +427,74 @@ components:
           type: string
       required:
         - message
+    whitelist_user.Email:
+      type: string
+      example: example@example.com
+    whitelist_user.GetWhitelistUserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        group_id:
+          type: string
+          example: group1
+        email:
+          $ref: '#/components/schemas/whitelist_user.Email'
+        username:
+          type: string
+          example: exampleuser
+        organization:
+          type: string
+          example: Example Organization
+        is_signup_completed:
+          type: boolean
+          example: true
+      required:
+        - id
+        - group_id
+        - email
+      example:
+        id: 1
+        group_id: group1
+        email: example@example.com
+        username: exampleuser
+        organization: Example Organization
+        is_signup_completed: true
+    whitelist_users.GetWhitelistUsersResponse:
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/whitelist_user.GetWhitelistUserResponse'
+    whitelist_user.WhitelistUserRegisterRequest:
+      description: Whitelist user register request
+      type: object
+      properties:
+        group_id:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        organization:
+          type: string
+    whitelist_users.WhitelistUsersRegisterRequest:
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/whitelist_user.WhitelistUserRegisterRequest'
+    error.BadRequestError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    whitelist_users.WhitelistUsersDeleteRequest:
+      properties:
+        user_emails:
+          type: array
+          items:
+            $ref: '#/components/schemas/whitelist_user.Email'

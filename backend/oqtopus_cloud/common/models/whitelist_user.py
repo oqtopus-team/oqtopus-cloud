@@ -1,6 +1,6 @@
+import datetime
 from typing import Optional
-
-from sqlalchemy import Integer, String, Boolean
+from sqlalchemy import Integer, String, Boolean, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -8,7 +8,7 @@ from oqtopus_cloud.common.models.base import (
 )
 
 
-class whitelist_user(Base):
+class WhitelistUser(Base):
     """
     Represents a whitelist_users in the system.
 
@@ -39,27 +39,25 @@ class whitelist_user(Base):
     )
     username: Mapped[str] = mapped_column(
         String(255),
-        nullable=False,
+        nullable=True,
     )
     organization: Mapped[str] = mapped_column(
         String(255),
-        nullable=False,
+        nullable=True,
     )
     is_signup_completed: Mapped[bool] = mapped_column(
         Boolean,
-        nullable=False,
+        nullable=True,
+        default=False,
     )
-
-# class Error(Exception):
-#     pass
-
-
-# class JobNotFound(Error):
-#     """Exception raised when a job is not found.
-
-#     Args:
-#         Error (type): The base error class.
-
-#     """
-
-#     pass
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+    )
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        TIMESTAMP,
+        nullable=True,
+    )
+    deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        TIMESTAMP,
+        nullable=True,
+    )

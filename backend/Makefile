@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-all-schema run-user run-provider run-admin up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user

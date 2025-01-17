@@ -1,37 +1,40 @@
-import json
-from datetime import datetime
-from typing import Any
-
+from typing import Optional
+import datetime
 from fastapi import (
     APIRouter,
     Depends,
 )
-from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import (
     Session,
 )
-from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.whitelist_user import whitelist_user
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.admin.conf import logger, tracer
+from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.admin.schemas.errors import (
-    BadRequestResponse,
     Detail,
-    ErrorResponse,
+    BadRequestErrorResponse,
     InternalServerErrorResponse,
-    NotFoundErrorResponse,
 )
 
-from oqtopus_cloud.admin.schemas.whitelistUser import(
-    WhitelistUsersDef
+from oqtopus_cloud.admin.schemas.whitelist_user import (
+    GetWhitelistUserResponse,
+    WhitelistUserRegisterRequest,
+)
+from oqtopus_cloud.admin.schemas.whitelist_users import (
+    GetWhitelistUsersResponse,
+    WhitelistUsersRegisterRequest,
+    WhitelistUsersDeleteRequest,
 )
 
 from . import LoggerRouteHandler
+
+LEN_VARCHAR = 255
 
 jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
@@ -39,52 +42,165 @@ utc = ZoneInfo("UTC")
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
-class BadRequest(Exception):
-    def __init__(self, detail: str):
-        self.detail = detail
+def is_unique_email(session, email):
+    return session.query(WhitelistUser).filter_by(email=email).first() is None
+
+
+def validated_whitelist_user(
+    db: Session, user: WhitelistUserRegisterRequest
+) -> WhitelistUser:
+    required_msg = "{} is required."
+    too_long_msg = (
+        "The length of {} exceeds the limit. Please enter within {} characters."
+    )
+    if not user.email:
+        raise Exception(required_msg.format("email address"))
+    if not user.group_id:
+        raise Exception(required_msg.format("group_id"))
+
+    if len(str(user.email)) > LEN_VARCHAR:
+        raise Exception(too_long_msg.format(user.email, LEN_VARCHAR))
+    if len(str(user.group_id)) > LEN_VARCHAR:
+        raise Exception(too_long_msg.format(user.group_id, LEN_VARCHAR))
+    if user.username and len(str(user.username)) > LEN_VARCHAR:
+        raise Exception(too_long_msg.format(user.username, LEN_VARCHAR))
+    if user.organization and len(str(user.organization)) > LEN_VARCHAR:
+        raise Exception(too_long_msg.format(user.organization, LEN_VARCHAR))
+
+    if not is_unique_email(db, user.email):
+        raise Exception(f"{user.email} is already registered.")
+
+    validated_user = {
+        "email": str(user.email),
+        "group_id": str(user.group_id),
+        "username": str(user.username),
+        "organization": str(user.organization),
+    }
+
+    return WhitelistUser(**validated_user)
 
 
 @router.get(
     "/whitelist_users",
-    response_model=list[WhitelistUsersDef],
+    response_model=GetWhitelistUsersResponse,
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
 def get_whitelist_users(
+    offset: Optional[int] = 0,
+    limit: Optional[int] = 10,
+    email: Optional[str] = None,
+    username: Optional[str] = None,
+    organization: Optional[str] = None,
+    group_id: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> WhitelistUsersDef | list | ErrorResponse:
+) -> GetWhitelistUsersResponse | InternalServerErrorResponse:
     logger.info("invoked get_whitelist_user")
     try:
-        model = db.get(whitelist_user)
-        if model is None:
-            return NotFoundErrorResponse("whitelist_user not found")
-        whitelist_users = model_to_schema(model)
-        if isinstance(whitelist_users, ValueError):
-            logger.warning(str(whitelist_users))
-            return NotFoundErrorResponse("whitelist_users not found")
-        else:
-            return whitelist_users
+        logger.info("invoked list_whitelist_users")
+        # query
+        stmt = select(WhitelistUser)
+        if email:
+            stmt = stmt.where(WhitelistUser.email.ilike(f"%{email}%"))
+        if username:
+            stmt = stmt.where(WhitelistUser.username.ilike(f"%{username}%"))
+        if organization:
+            stmt = stmt.where(WhitelistUser.organization == organization)
+        if group_id:
+            stmt = stmt.where(WhitelistUser.group_id == group_id)
+        # pageination
+        stmt = stmt.offset(offset).limit(limit)
+        query_result = db.execute(stmt)
+        scalars = query_result.scalars().all()
+
+        whitelist_users = [model_to_schema(user) for user in scalars]
+
+        return GetWhitelistUsersResponse(users=whitelist_users)
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        logger.error(f"error: {str(e)}", stack_info=True)
+        return InternalServerErrorResponse(message=str(e))
 
 
-# MAP_MODEL_TO_SCHEMA = {
-#     "id": "id",
-#     "group_id": "group_id",
-#     "email": "email",
-#     "username": "username",
-#     "organization": "organization",
-#     "is_signup_completed": "is_signup_completed",
-# }
+@router.post(
+    "/whitelist_users",
+    response_model=SuccessResponse,
+    responses={400: {"model": Detail}, 500: {"model": Detail}},
+)
+@tracer.capture_method
+def register_whitelist_user(
+    users: WhitelistUsersRegisterRequest,
+    db: Session = Depends(get_db),
+) -> SuccessResponse | BadRequestErrorResponse | InternalServerErrorResponse:
+    logger.info("invoked create_whitelist_user")
+    valid_users_list = []
+    try:
+        users_list = users.users
+        if users_list is None:
+            logger.error("No users to register")
+            return BadRequestErrorResponse(message="No users to register")
+        valid_users_list = [
+            validated_whitelist_user(db, one_user) for one_user in users_list
+        ]
+    except Exception as e:
+        logger.error(f"error: {str(e)}", stack_info=True)
+        return BadRequestErrorResponse(message=str(e))
+    if not valid_users_list:
+        logger.error("No valid user to register")
+        return BadRequestErrorResponse(message="No valid user to register")
+    try:
+        for user in valid_users_list:
+            new_whitelist_user = WhitelistUser(
+                group_id=user.group_id,
+                email=user.email,
+                username=user.username,
+                organization=user.organization,
+                is_signup_completed=user.is_signup_completed,
+                created_at=datetime.datetime.now(utc),
+                updated_at=datetime.datetime.now(utc),
+            )
+            db.add(new_whitelist_user)
+            db.commit()
+        return SuccessResponse(message="Whitelist users are registered successfully")
+    except Exception as e:
+        logger.error(f"error: {str(e)}", stack_info=True)
+        return InternalServerErrorResponse(message=str(e))
 
 
-# def model_to_schema(model: whitelist_user) -> WhitelistUsersDef | None:
- 
-#     return WhitelistUsersDef(
-#         id=model.id,
-#         group_id=model.group_id,
-#         email=model.email,
-#         username=model.username,
-#         organization=model.organization,
-#         is_signup_completed=model.is_signup_completed
-#     )
+@router.delete(
+    "/whitelist_users",
+    response_model=SuccessResponse,
+    responses={500: {"model": Detail}},
+)
+@tracer.capture_method
+def delete_whitelist_user(
+    user_emails: WhitelistUsersDeleteRequest,
+    db: Session = Depends(get_db),
+) -> SuccessResponse | InternalServerErrorResponse:
+    logger.info("invoked delete whitelist_user")
+    try:
+        if user_emails.user_emails is None:
+            return SuccessResponse(message="No whitelist users to delete")
+        stmt = select(WhitelistUser).where(
+            WhitelistUser.email.in_(user_emails.user_emails)
+        )
+        # delete from RDS
+        users_to_delete = db.scalars(stmt)
+        if not users_to_delete:
+            return SuccessResponse(message="No whitelist users to delete")
+        for user in users_to_delete:
+            db.delete(user)
+        db.commit()
+        return SuccessResponse(message="Whitelist users are deleted successfully")
+    except Exception as e:
+        return InternalServerErrorResponse(message=str(e))
+
+
+def model_to_schema(model: WhitelistUser) -> GetWhitelistUserResponse:
+    return GetWhitelistUserResponse(
+        id=model.id,
+        group_id=model.group_id,
+        email=model.email,
+        username=getattr(model, "username", None),
+        organization=getattr(model, "organization", None),
+        is_signup_completed=getattr(model, "is_signup_completed", None),
+    )

@@ -1,8 +1,10 @@
 import os
+import boto3
 from datetime import datetime
 from typing import (
     Generator,
 )
+from fastapi import Request as Event
 
 import pytest
 from oqtopus_cloud.common.models.base import (
@@ -91,3 +93,45 @@ def test_db() -> Generator[
     db.rollback()
     close_all_sessions()
     engine.dispose()
+
+
+class FakeCognitoClient:
+    def admin_set_user_mfa_preference(
+        self,
+        SMSMfaSettings=None,
+        SoftwareTokenMfaSettings=None,
+        Username=None,
+        UserPoolId=None,
+        **kwargs,
+    ):
+        return {"Response": "Ok"}
+
+    def admin_delete_user(
+        self,
+        SMSMfaSettings=None,
+        SoftwareTokenMfaSettings=None,
+        Username=None,
+        UserPoolId=None,
+        **kwargs,
+    ):
+        return {"Response": "Ok"}
+
+
+def fake_boto3_client(service, region_name=None, **kwargs):
+    if service == "cognito-idp":
+        return FakeCognitoClient()
+    raise ValueError(f"Unsupported service: {service}")
+
+
+@pytest.fixture(autouse=True)
+def override_boto3_client(monkeypatch):
+    monkeypatch.setattr(boto3, "client", fake_boto3_client)
+
+
+@pytest.fixture
+def apigw_event_dummy():
+    response = Event({"type": "http"})
+    response.user_pool_id = "dummy_user_pool_id"
+    response.region = "dummy_region"
+    response.state.owner = "username_1"
+    return response

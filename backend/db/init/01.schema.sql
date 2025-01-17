@@ -33,20 +33,34 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-drop table if exists  main.user;
-CREATE TABLE IF NOT EXISTS user (
+drop table if exists  main.users;
+CREATE TABLE IF NOT EXISTS users (
     id                serial PRIMARY KEY,
-    cognito_id        VARCHAR(100) UNIQUE NOT NULL,
-    email             VARCHAR(300)        NOT NULL,
+    cognito_id        VARCHAR(255) UNIQUE NOT NULL,
+    email             VARCHAR(255)        NOT NULL,
     username          VARCHAR(100),
     userstatus        Integer,
-    api_token_secret VARCHAR(100) UNIQUE,
-    organization      VARCHAR(100),
-    purpose           VARCHAR(100),
-    group_id VARCHAR(300),
+    api_token_secret VARCHAR(255) UNIQUE,
+    organization      VARCHAR(255),
+    purpose           VARCHAR(255),
+    group_id VARCHAR(255),
     require_mfa_reset BOOLEAN,
     api_token_expiration TIMESTAMP,
-    created_at        TIMESTAMP,
-    updated_at        TIMESTAMP,
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at        TIMESTAMP
 );
+
+drop table if exists main.whitelist_users;
+CREATE TABLE
+  whitelist_users (
+    id serial PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    group_id VARCHAR(255) NOT NULL,
+    is_signup_completed BOOLEAN DEFAULT FALSE,
+    username VARCHAR(255),
+    organization VARCHAR(255),
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at          TIMESTAMP
+  );

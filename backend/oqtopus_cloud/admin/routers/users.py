@@ -1,5 +1,6 @@
 # import os
 from typing import Optional
+import datetime
 
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
@@ -92,7 +93,7 @@ def get_users(
 )
 @tracer.capture_method
 def update_user_status(
-    user_id: str,
+    user_id: int,
     status_update: UserUpdateStatusRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
@@ -107,6 +108,7 @@ def update_user_status(
         if status_update.status is None:
             return model_to_schema(query)
         query.userstatus = int(status_update.status)
+        query.updated_at = datetime.datetime.now(utc)
 
         # commit the transaction
         db.commit()
@@ -120,6 +122,7 @@ def update_user_status(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
+# TODO : request to cognito
 @router.put(
     "/users/{user_id}/mfa_reset",
     response_model=GetOneUserResponse,
@@ -131,7 +134,7 @@ def update_user_status(
 @tracer.capture_method
 def reset_user_mfa(
     event: Event,
-    user_id: str,
+    user_id: int,
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     owner = event.state.owner
@@ -158,6 +161,7 @@ def reset_user_mfa(
         logger.info(f"mfa reset response: {response}")
         # change MFA reset status
         query.require_mfa_reset = False
+        query.updated_at = datetime.datetime.now(utc)
         # commit the transaction
         db.commit()
         # refresh the object to get the updated value
@@ -182,7 +186,7 @@ def reset_user_mfa(
 @tracer.capture_method
 def delete_user(
     event: Event,
-    user_id: str,
+    user_id: int,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     user_pool_id = event.state.user_pool_id
@@ -201,7 +205,7 @@ def delete_user(
         db.commit()
 
         # delete from cognito
-        response = client.admin_delete_user(
+        client.admin_delete_user(
             UserPoolId=user_pool_id,
             Username=query_result.email,
         )
@@ -214,7 +218,7 @@ def delete_user(
 
 def model_to_schema(model: User) -> GetOneUserResponse:
     return GetOneUserResponse(
-        id=str(getattr(model, "id", None)),
+        id=model.id,
         email=getattr(model, "email", None),
         name=getattr(model, "username", None),
         organization=getattr(model, "organization", None),

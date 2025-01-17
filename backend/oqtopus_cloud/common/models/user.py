@@ -10,7 +10,7 @@ default_datetime = datetime.datetime.now(datetime.timezone.utc)
 
 class User(Base):
     """
-    Represents a user in the system.
+    Represents a users in the system.
 
     See https://github.com/sqlalchemy/sqlalchemy/issues/5613 for the reason why we need to use nullable=True for some columns.
 
@@ -31,7 +31,7 @@ class User(Base):
     deleted_at (datetime)           The timestamp when the user was deleted.
     """
 
-    __tablename__ = "user"
+    __tablename__ = "users"
     id = mapped_column(Integer, primary_key=True, index=True)
     cognito_id = mapped_column(String, index=True)
     email = mapped_column(String, index=True)

@@ -14,7 +14,7 @@ class GetOneUserResponse(BaseModel):
     detail of users response
     """
 
-    id: str
+    id: int
     email: str | None = None
     name: str | None = None
     organization: str | None = None

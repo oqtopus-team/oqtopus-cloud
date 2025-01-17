@@ -12,3 +12,10 @@ error.InternalServerError:
       type: string
   required:
     - message
+error.BadRequestError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
