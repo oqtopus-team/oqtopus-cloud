@@ -52,22 +52,22 @@ class Job(Base):
     )
     name: Mapped[str] = mapped_column(String(256), nullable=True)
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
-    device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
-    job_info: Mapped[str] = mapped_column(Text)
-    transpiler_info: Mapped[str] = mapped_column(Text)
-    simulator_info: Mapped[str] = mapped_column(Text)
-    mitigation_info: Mapped[str] = mapped_column(Text)
     job_type: Mapped[JobType] = mapped_column(
         Enum("sampling", "estimation", "sse"), nullable=False
     )
-    shots: Mapped[int] = mapped_column(
-        nullable=True,
-    )
+    device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
     status: Mapped[JobStatus] = mapped_column(
         String(32),
         nullable=False,
         server_default="submitted",
     )
+    shots: Mapped[int] = mapped_column(
+        nullable=True,
+    )
+    job_info: Mapped[str] = mapped_column(Text)
+    transpiler_info: Mapped[str] = mapped_column(Text)
+    simulator_info: Mapped[str] = mapped_column(Text)
+    mitigation_info: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
     )
