@@ -18,9 +18,9 @@ from oqtopus_cloud.provider.schemas.devices import (
 )
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
-    Detail,
     ErrorResponse,
     InternalServerErrorResponse,
+    Message,
     NotFoundErrorResponse,
 )
 from sqlalchemy.orm import Session
@@ -122,9 +122,9 @@ def update_device_calibration(
     if device.device_type != DeviceType.QPU.value:
         return BadRequestResponse("Calibration is only supported for QPU devices")
     if device_info is None:
-        return BadRequestResponse(detail="device_info is required")
+        return BadRequestResponse(message="device_info is required")
     if calibrated_at is None:
-        return BadRequestResponse(detail="calibrated_at is required")
+        return BadRequestResponse(message="calibrated_at is required")
     # device.calibration_data = calibration_data.model_dump_json()
     device.device_info = device_info
     device.calibrated_at = calibrated_at
@@ -136,9 +136,9 @@ def update_device_calibration(
     "/devices/{device_id}",
     response_model=DeviceDataUpdateResponse,
     responses={
-        400: {"model": Detail},
-        404: {"model": Detail},
-        500: {"model": Detail},
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method

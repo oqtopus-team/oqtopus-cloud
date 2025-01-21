@@ -100,7 +100,7 @@ jobs:
             schema:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
             example:
-              detail: Unauthorized
+              message: Unauthorized
   post:
     tags:
       - job
@@ -172,7 +172,7 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -180,7 +180,7 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
 
 jobs.jobId:
   get:
@@ -211,7 +211,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -219,7 +219,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -227,7 +227,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
   delete:
     tags:
       - job
@@ -258,7 +258,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -266,7 +266,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -274,7 +274,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
 
 jobs.jobId.status:
   get:
@@ -305,7 +305,7 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -313,7 +313,7 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -321,7 +321,7 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
 
 jobs.jobId.cancel:
   post:
@@ -354,7 +354,7 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -362,7 +362,7 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -370,4 +370,4 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found

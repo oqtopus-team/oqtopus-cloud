@@ -8,16 +8,16 @@ from pydantic import BaseModel
 
 
 class UnauthorizedError(BaseModel):
-    detail: str
+    message: str
 
 
 class InternalServerError(BaseModel):
-    detail: str
+    message: str
 
 
 class NotFoundError(BaseModel):
-    detail: str
+    message: str
 
 
 class BadRequest(BaseModel):
-    detail: str
+    message: str

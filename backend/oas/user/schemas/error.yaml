@@ -1,28 +1,35 @@
 error.BadRequest:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.UnauthorizedError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.NotFoundError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.InternalServerError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
+error.ForbiddenError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message

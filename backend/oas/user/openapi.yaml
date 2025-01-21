@@ -38,7 +38,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '500':
           description: Internal Server Error
           content:
@@ -179,7 +179,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
     post:
       tags:
         - job
@@ -244,7 +244,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -252,7 +252,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
   /jobs/{job_id}:
     get:
       tags:
@@ -283,7 +283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -291,7 +291,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -299,7 +299,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
     delete:
       tags:
         - job
@@ -331,7 +331,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -339,7 +339,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -347,7 +347,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
   /jobs/{job_id}/status:
     get:
       tags:
@@ -378,7 +378,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -386,7 +386,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -394,7 +394,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
   /jobs/{job_id}/cancel:
     post:
       tags:
@@ -427,7 +427,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -435,7 +435,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -443,119 +443,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
-  /api-token:
-    get:
-      tags:
-        - api-token
-      summary: get api token
-      description: Get api token
-      operationId: GetApiToken
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Return api token
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/api-token.ApiToken'
-        '403':
-          description: Frobidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                detail: Frobidden
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                detail: Not found the specified user
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-    post:
-      tags:
-        - api-token
-      summary: create api token
-      description: Create api token
-      operationId: CreateApiToken
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Create api token
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/api-token.ApiToken'
-        '403':
-          description: Frobidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                detail: Frobidden
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                detail: Not found the specified user
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-    delete:
-      tags:
-        - api-token
-      summary: delete api token
-      description: Delete api token
-      operationId: DeleteApiToken
-      security:
-        - BearerAuth: []
-      responses:
-        '204':
-          description: Delete api token
-        '403':
-          description: Frobidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                detail: Frobidden
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                detail: Not found the specified user
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
+                message: job not found
 components:
   securitySchemes:
     BearerAuth:
@@ -709,24 +597,24 @@ components:
     error.UnauthorizedError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.InternalServerError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.NotFoundError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobId:
       type: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -958,10 +846,10 @@ components:
     error.BadRequest:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobDef:
       type: object
       properties:
