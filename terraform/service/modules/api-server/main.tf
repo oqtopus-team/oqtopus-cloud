@@ -70,6 +70,10 @@ resource "aws_lambda_function" "this" {
     security_group_ids          = var.lambda_security_group_ids
     subnet_ids                  = var.lambda_subnet_ids
   }
+
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {
