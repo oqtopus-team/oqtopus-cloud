@@ -70,7 +70,7 @@ def test_get_job_404(
     print(test_db)  # => 1
     response = client.get("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517")
     assert response.status_code == 404
-    assert response.json() == {"detail": "job not found with the given id"}
+    assert response.json() == {"message": "job not found with the given id"}
 
 
 def test_get_jobs_simple(
@@ -182,7 +182,7 @@ def test_get_jobs_invalid_fields(
     actual = response.json()
     expect = json.loads(
         InternalServerErrorResponse(
-            detail=f"fields {["XXX", "YYY"]} is invalid"
+            message=f"fields {["XXX", "YYY"]} is invalid"
         ).body.decode()
     )
 

@@ -54,7 +54,7 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "500":
         description: Internal Server Error
         content:
@@ -62,7 +62,7 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
-              detail: Internal server error
+              message: Internal server error
 
 jobs.jobId:
   get:
@@ -92,7 +92,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "404":
         description: Not Found
         content:
@@ -100,7 +100,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
   patch:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
@@ -136,7 +136,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: Job not found
+              message: Job not found
       "409":
         description: Returned when the specified job is not in a status thatt allows transition to the requested status.
         content:
@@ -144,7 +144,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
-              detail: The specified job is not in a status thatt allows transition to the requested status.
+              message: The specified job is not in a status thatt allows transition to the requested status.
 jobs.jobInfo:
   patch:
     summary: "Update selected quantum job's job_info by placing job results"
@@ -183,7 +183,7 @@ jobs.jobInfo:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "404":
         description: Not Found
         content:
@@ -191,4 +191,4 @@ jobs.jobInfo:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: Job not found
+              message: Job not found

@@ -70,7 +70,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -78,7 +78,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Device not found
+                message: Device not found
         '500':
           description: Internal Server Error
           content:
@@ -86,7 +86,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal server error
+                message: Internal server error
   /jobs:
     get:
       tags:
@@ -149,7 +149,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '500':
           description: Internal Server Error
           content:
@@ -157,7 +157,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal server error
+                message: Internal server error
   /jobs/{job_id}:
     get:
       summary: Get a job by ID
@@ -187,7 +187,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -195,7 +195,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
     patch:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
@@ -232,7 +232,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Job not found
+                message: Job not found
         '409':
           description: Returned when the specified job is not in a status thatt allows transition to the requested status.
           content:
@@ -240,7 +240,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                detail: The specified job is not in a status thatt allows transition to the requested status.
+                message: The specified job is not in a status thatt allows transition to the requested status.
   /jobs/{job_id}/job_info:
     patch:
       summary: Update selected quantum job's job_info by placing job results
@@ -280,7 +280,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -288,7 +288,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Job not found
+                message: Job not found
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -368,24 +368,24 @@ components:
     error.BadRequest:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.NotFoundError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.InternalServerError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobStatus:
       type: string
       enum:
@@ -686,10 +686,10 @@ components:
     error.ConflictError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.UpdateJobInfoRequest:
       type: object
       properties:

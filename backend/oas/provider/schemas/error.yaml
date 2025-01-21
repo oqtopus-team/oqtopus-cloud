@@ -1,28 +1,28 @@
 error.BadRequest:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.InternalServerError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.NotFoundError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
 error.ConflictError:
   type: object
   properties:
-    detail:
+    message:
       type: string
   required:
-    - detail
+    - message
