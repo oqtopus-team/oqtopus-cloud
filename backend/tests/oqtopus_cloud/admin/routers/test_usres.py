@@ -2,7 +2,6 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.admin.lambda_function import app
-from oqtopus_cloud.admin.schemas.success import SuccessResponse
 
 from oqtopus_cloud.admin.schemas.user import (
     GetOneUserResponse,
@@ -217,23 +216,6 @@ def test_put_job_404(
     assert response.json() == {"message": "User not found"}
 
 
-# def test_put_job_500(
-#     test_db,
-# ):
-#     """_summary_
-
-#     Args:
-#             test_db (_type_): _description_
-#     """
-#     test_db.flush()
-#     test_db.add(_get_model(1))
-#     test_db.commit()
-#     update_data = UserUpdateStatusRequest(status=Status.field_3)
-#     response = client.put("/users/1", json=update_data.model_dump())
-#     assert response.status_code == 500
-#     assert response.json() == {"message": "User not found"}
-
-
 def test_post_job_mfa_reset(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
@@ -288,11 +270,7 @@ def test_delete_user(
     assert actual == expect
 
     response = client.delete("/users/1")
-    adapter = TypeAdapter(SuccessResponse)
-    actual = adapter.validate_python(response.json())
-    expect = SuccessResponse(message="User deleted successfully")
-    assert response.status_code == 200
-    assert actual == expect
+    assert response.status_code == 204
 
     # confirm the user is deleted
     update_data = UserUpdateStatusRequest(status=Status.field_3)

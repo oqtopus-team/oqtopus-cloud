@@ -48,7 +48,6 @@ CREATE TABLE IF NOT EXISTS users (
     api_token_expiration TIMESTAMP,
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at        TIMESTAMP
 );
 
 drop table if exists main.whitelist_users;
@@ -62,5 +61,4 @@ CREATE TABLE
     organization VARCHAR(255),
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at          TIMESTAMP
   );

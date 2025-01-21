@@ -2,7 +2,7 @@
 from typing import Optional
 import datetime
 
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, status
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 from sqlalchemy.exc import SQLAlchemyError
@@ -26,7 +26,6 @@ from oqtopus_cloud.admin.schemas.user import (
 from oqtopus_cloud.admin.schemas.user import (
     UserUpdateStatusRequest,
 )
-from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.admin.schemas.errors import (
     Detail,
     NotFoundErrorResponse,
@@ -177,7 +176,8 @@ def reset_user_mfa(
 # TODO : delete from cognito
 @router.delete(
     "/users/{user_id}",
-    response_model=SuccessResponse,
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
         404: {"model": Detail},
         500: {"model": Detail},
@@ -188,7 +188,7 @@ def delete_user(
     event: Event,
     user_id: int,
     db: Session = Depends(get_db),
-) -> SuccessResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> None | NotFoundErrorResponse | InternalServerErrorResponse:
     user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)
@@ -210,7 +210,7 @@ def delete_user(
             Username=query_result.email,
         )
 
-        return SuccessResponse(message="User deleted successfully")
+        return None
     except SQLAlchemyError as e:
         tracer.put_annotation("db_error", str(e))
         return InternalServerErrorResponse(message="Internal Server Error")

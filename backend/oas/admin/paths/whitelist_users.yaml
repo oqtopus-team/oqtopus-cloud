@@ -49,12 +49,8 @@ whitelist_users:
           schema:
             $ref: "../schemas/whitelist_users.yaml#/whitelist_users.WhitelistUsersRegisterRequest"
     responses:
-      "200":
+      "201":
         description: "Return a list of whitelist users"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/success.yaml#/success.SuccessResponse"
       "400":
         description: Bad Request
         content:

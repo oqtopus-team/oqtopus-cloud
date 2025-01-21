@@ -3,6 +3,7 @@ import datetime
 from fastapi import (
     APIRouter,
     Depends,
+    status,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import (
@@ -15,7 +16,6 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.admin.conf import logger, tracer
-from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.admin.schemas.errors import (
     Detail,
     BadRequestErrorResponse,
@@ -123,14 +123,15 @@ def get_whitelist_users(
 
 @router.post(
     "/whitelist_users",
-    response_model=SuccessResponse,
+    response_model=None,
+    status_code=status.HTTP_201_CREATED,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def register_whitelist_user(
     users: WhitelistUsersRegisterRequest,
     db: Session = Depends(get_db),
-) -> SuccessResponse | BadRequestErrorResponse | InternalServerErrorResponse:
+) -> None | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked create_whitelist_user")
     valid_users_list = []
     try:
@@ -160,7 +161,7 @@ def register_whitelist_user(
             )
             db.add(new_whitelist_user)
             db.commit()
-        return SuccessResponse(message="Whitelist users are registered successfully")
+        return None
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))
@@ -168,29 +169,30 @@ def register_whitelist_user(
 
 @router.delete(
     "/whitelist_users",
-    response_model=SuccessResponse,
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
 def delete_whitelist_user(
     user_emails: WhitelistUsersDeleteRequest,
     db: Session = Depends(get_db),
-) -> SuccessResponse | InternalServerErrorResponse:
+) -> None | InternalServerErrorResponse:
     logger.info("invoked delete whitelist_user")
     try:
         if user_emails.user_emails is None:
-            return SuccessResponse(message="No whitelist users to delete")
+            return None
         stmt = select(WhitelistUser).where(
             WhitelistUser.email.in_(user_emails.user_emails)
         )
         # delete from RDS
         users_to_delete = db.scalars(stmt)
         if not users_to_delete:
-            return SuccessResponse(message="No whitelist users to delete")
+            return None
         for user in users_to_delete:
             db.delete(user)
         db.commit()
-        return SuccessResponse(message="Whitelist users are deleted successfully")
+        return None
     except Exception as e:
         return InternalServerErrorResponse(message=str(e))
 

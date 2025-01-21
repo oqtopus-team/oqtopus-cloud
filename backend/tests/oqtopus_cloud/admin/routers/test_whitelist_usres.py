@@ -1,8 +1,8 @@
 from datetime import datetime
 from fastapi.testclient import TestClient
+from fastapi import Response
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.admin.lambda_function import app
-from oqtopus_cloud.admin.schemas.success import SuccessResponse
 
 from oqtopus_cloud.admin.schemas.whitelist_user import (
     GetWhitelistUserResponse,
@@ -28,7 +28,6 @@ def _get_model(n: int, is_completed: bool) -> WhitelistUser:
         "organization": f"organization_{n}",
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
-        "deleted_at": None,
     }
     return WhitelistUser(**model_dict)
 
@@ -134,12 +133,7 @@ def test_post_whitelist_users(test_db):
         "/whitelist_users",
         json=request_body.model_dump(),
     )
-    adapter = TypeAdapter(SuccessResponse)
-    actual = adapter.validate_python(response.json())
-    expect = SuccessResponse(message="Whitelist users are registered successfully")
-
-    assert response.status_code == 200
-    assert actual == expect
+    assert response.status_code == 201
 
     # check the registered users
     response = client.get("/whitelist_users")
@@ -201,12 +195,8 @@ def test_delete_whitelist_users(test_db):
         "/whitelist_users",
         json=request_body.model_dump(),
     )
-    adapter = TypeAdapter(SuccessResponse)
-    actual = adapter.validate_python(response.json())
-    expect = SuccessResponse(message="Whitelist users are deleted successfully")
 
-    assert response.status_code == 200
-    assert actual == expect
+    assert response.status_code == 204
 
     # check the registered users
     response = client.get("/whitelist_users")

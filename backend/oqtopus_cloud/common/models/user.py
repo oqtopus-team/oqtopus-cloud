@@ -28,7 +28,6 @@ class User(Base):
     api_token_expiration (datetime) The expiration date of the API token.
     created_at (datetime)           The timestamp when the user was created.
     updated_at (datetime)           The timestamp when the user was last updated.
-    deleted_at (datetime)           The timestamp when the user was deleted.
     """
 
     __tablename__ = "users"
@@ -47,19 +46,3 @@ class User(Base):
     updated_at = mapped_column(
         DateTime, default=default_datetime, onupdate=default_datetime
     )
-    deleted_at = mapped_column(DateTime, default=default_datetime)
-
-
-class Error(Exception):
-    pass
-
-
-class JobNotFound(Error):
-    """Exception raised when a job is not found.
-
-    Args:
-        Error (type): The base error class.
-
-    """
-
-    pass

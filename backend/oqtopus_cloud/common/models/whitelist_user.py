@@ -21,6 +21,8 @@ class WhitelistUser(Base):
         username (str): The username of the whitelist user.
         organization (str): The organization name to which the whitelist user belongs.
         is_signup_completed (bool): Whether or not the whitelist user signup is completed.
+        created_at (datetime): The timestamp when the whitelist user was created.
+        updated_at (datetime): The timestamp when the whitelist user was last updated.
     """
 
     __tablename__ = "whitelist_users"
@@ -54,10 +56,6 @@ class WhitelistUser(Base):
         TIMESTAMP,
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-    )
-    deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,
         nullable=True,
     )

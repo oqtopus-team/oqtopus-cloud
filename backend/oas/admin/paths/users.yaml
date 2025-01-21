@@ -127,14 +127,8 @@ users.userId:
         required: true
         schema: {type: "integer"}
     responses:
-      "200":
+      "204":
         description: "Success"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: "User deleted successfully"
       "403":
         description: "Not authorized"
       "404":

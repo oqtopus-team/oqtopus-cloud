@@ -19,8 +19,6 @@ paths:
     $ref: ./paths/users.yaml#/users.userId
   /users/{userId}/mfa_reset:
     $ref: ./paths/users.yaml#/users.userId.mfa_reset
-  /user_detail:
-    $ref: ./paths/user_detail.yaml#/user_detail
   /whitelist:
     $ref: ./paths/whitelist_users.yaml#/whitelist_users
 
