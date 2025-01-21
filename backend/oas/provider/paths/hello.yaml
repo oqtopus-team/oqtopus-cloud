@@ -22,7 +22,7 @@ hello:
             schema:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
             example:
-              detail: システムエラーが発生しました。
+              message: システムエラーが発生しました。
 
 hello.name:
   get:
@@ -55,7 +55,7 @@ hello.name:
             schema:
               $ref: '../schemas/error.yaml#/error.BadRequest'
             example:
-              detail: invalid task_id
+              message: invalid task_id
       '500':
         description: Internal Server Error
         content:
@@ -63,5 +63,5 @@ hello.name:
             schema:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
             example:
-              detail: internal server error
+              message: internal server error
 

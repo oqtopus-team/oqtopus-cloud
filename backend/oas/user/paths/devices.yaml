@@ -28,7 +28,7 @@ devices:
             schema:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
             example:
-              detail: Unauthorized
+              message: Unauthorized
       '500':
         description: Internal Server Error
         content:

@@ -9,9 +9,9 @@ from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
     ConflictErrorResponse,
-    Detail,
     ErrorResponse,
     InternalServerErrorResponse,
+    Message,
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
@@ -41,7 +41,7 @@ JobId = str
 @router.get(
     "/jobs",
     response_model=list[JobDef | GetJobsResponse],
-    responses={500: {"model": Detail}},
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def get_jobs(
@@ -79,7 +79,7 @@ def get_jobs(
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
                 return InternalServerErrorResponse(
-                    detail=f"fields {invalid_fields_list} is invalid"
+                    message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
             select_stmt = select(Job).filter(Job.device_id == device_id)
@@ -114,13 +114,17 @@ def get_jobs(
         return results
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
     "/jobs/{job_id}",
     response_model=JobDef,
-    responses={404: {"model": Detail}, 400: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        404: {"model": Message},
+        400: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_job(
@@ -146,9 +150,9 @@ def get_job(
     "/jobs/{job_id}",
     response_model=JobStatusUpdateResponse,
     responses={
-        404: {"model": Detail},
-        409: {"model": Detail},
-        500: {"model": Detail},
+        404: {"model": Message},
+        409: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -180,9 +184,9 @@ def update_job(
     "/jobs/{job_id}/job_info",
     response_model=UpdateJobInfoResponse,
     responses={
-        400: {"model": Detail},
-        404: {"model": Detail},
-        500: {"model": Detail},
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -213,7 +217,7 @@ def update_job_info(
 
     if request.reason is not None and request.result is not None:
         return BadRequestResponse(
-            detail="You cannot specify both a result and a reason."
+            message="You cannot specify both a result and a reason."
         )
 
     try:
