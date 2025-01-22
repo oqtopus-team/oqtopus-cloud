@@ -71,7 +71,7 @@ terraform plan
 terraform apply
 ```
 
-### 1. 疎通確認
+### 疎通確認
 (1) ターミナルを開く
 
 (2) `oqtopus-cloud/terraform/service/oqtopus-dev`に移動する

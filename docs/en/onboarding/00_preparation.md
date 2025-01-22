@@ -70,7 +70,7 @@ terraform plan
 terraform apply
 ```
 
-### 1. Connectivity Check
+### Connectivity Check
 (1) Open your terminal.
 
 (2) Navigate to `oqtopus-cloud/terraform/service/oqtopus-dev`
