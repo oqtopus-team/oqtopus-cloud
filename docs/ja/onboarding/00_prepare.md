@@ -70,3 +70,10 @@ terraform plan
 # 差分を適用
 terraform apply
 ```
+
+### 1. 疎通確認
+(1) ターミナルを開く
+
+(2) `oqtopus-cloud/terraform/service/oqtopus-dev`に移動する
+
+(3) `terraform plan`を実行する → まだ変更前なので、最後に「No changes」と出ればOK
