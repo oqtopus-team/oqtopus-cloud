@@ -123,8 +123,8 @@ jobs:
                   name: "Bell State Sampling",
                   description: "Bell State Sampling Example",
                   device_id: "Kawasaki",
+                  job_type: "sampling",
                   job_info: {
-                    job_type: "sampling",
                     program:
                       [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
                   },
@@ -143,8 +143,8 @@ jobs:
                   name: "Bell State Estimation",
                   description: "Bell State Estimation Example",
                   device_id: "Kawasaki",
+                  job_type: "estimation",
                   job_info: {
-                    job_type: "estimation",
                     program: [
                       "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
                     ],

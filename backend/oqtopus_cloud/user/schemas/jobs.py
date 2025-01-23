@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -36,68 +36,20 @@ class OperatorItem(BaseModel):
     """
 
 
-class JobInfoEstimation(BaseModel):
-    """
-    The descriptor of estimation jobs
-    """
-
-    job_type: Literal["estimation"]
-    program: Annotated[
-        list[str],
-        Field(
-            examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-            ]
-        ),
-    ]
-    """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-    """
-    operator: list[OperatorItem]
-
-
-class JobInfoSampling(BaseModel):
-    """
-    The descriptor of sampling jobs
-    """
-
-    job_type: Literal["sampling"]
-    program: Annotated[
-        list[str],
-        Field(
-            examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-            ]
-        ),
-    ]
-    """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-    """
-
-
-class JobResultEstimation(BaseModel):
-    job_type: Literal["estimation"]
-    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
-    stds: float
-    """
-    The standard deviation value
-    """
-
-
-class JobResultSampling(BaseModel):
-    job_type: Literal["sampling"]
-    counts: Annotated[
-        str,
-        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
-    ]
-
-
 class TranspileResult(BaseModel):
     virtual_physical_mapping: str | None = None
 
 
 class JobResult(BaseModel):
-    desc: JobResultEstimation | JobResultSampling
+    counts: Annotated[
+        str | None,
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ] = None
+    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    stds: float | None = None
+    """
+    The standard deviation value
+    """
     divided_result: dict[str, Any] | None = None
     """
     Assumed to be used for multiprogramming, but currently not supported yet.
@@ -107,7 +59,18 @@ class JobResult(BaseModel):
 
 
 class JobInfo(BaseModel):
-    desc: JobInfoEstimation | JobInfoSampling
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[OperatorItem] | None = None
     transpiled_program: Annotated[
         str | None,
         Field(
@@ -163,13 +126,29 @@ class GetJobsResponse(BaseModel):
     ] = None
 
 
+class SubmitJobInfo(BaseModel):
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[OperatorItem] | None = None
+
+
 class SubmitJobRequest(BaseModel):
     name: Annotated[str, Field(examples=["Bell State Sampling"])]
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    job_info: JobInfoEstimation | JobInfoSampling
+    job_type: JobType
+    job_info: SubmitJobInfo
     transpiler_info: Annotated[str | None, Field(examples=["{}"])] = None
     """
     When specified, valid JSON string is required.
