@@ -1,16 +1,9 @@
-# import os
 from typing import Optional
-import datetime
-
 from fastapi import APIRouter, Depends, Body, status
+from fastapi import Request as Event
 from sqlalchemy.orm import Session
-from zoneinfo import ZoneInfo
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select
 import boto3
-from fastapi import Request as Event
-
-# from database import get_db_client
 
 from oqtopus_cloud.common.session import (
     get_db,
@@ -31,11 +24,8 @@ from oqtopus_cloud.admin.schemas.errors import (
     NotFoundErrorResponse,
     InternalServerErrorResponse,
 )
-
 from . import LoggerRouteHandler
 
-utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
@@ -70,7 +60,6 @@ def get_users(
             stmt = stmt.where(User.group_id == group_id)
         if status:
             stmt = stmt.where(User.userstatus == status)
-        # pageination
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
         scalars = query_result.scalars().all()
@@ -107,7 +96,6 @@ def update_user_status(
         if status_update.status is None:
             return model_to_schema(query)
         query.userstatus = int(status_update.status)
-        query.updated_at = datetime.datetime.now(utc)
 
         # commit the transaction
         db.commit()
@@ -116,12 +104,11 @@ def update_user_status(
         user = model_to_schema(query)
 
         return user
-    except SQLAlchemyError as e:
+    except Exception as e:
         tracer.put_annotation("db_error", str(e))
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-# TODO : request to cognito
 @router.put(
     "/users/{user_id}/mfa_reset",
     response_model=GetOneUserResponse,
@@ -140,7 +127,7 @@ def reset_user_mfa(
     user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)
-    logger.info(f"owner: {owner}, user_pool_id: {user_pool_id}")
+    logger.info(f"owner: {owner}, user_pool_id: {user_pool_id}, region: {region}")
     try:
         logger.info("invoked mfa_reset")
         # query
@@ -149,9 +136,8 @@ def reset_user_mfa(
         if not query:
             return NotFoundErrorResponse(message="User not found")
 
+        # reset MFA setting for cognito user
         response = client.admin_set_user_mfa_preference(
-            # SMS MFA setting enabled
-            SMSMfaSettings={"Enabled": True, "PreferredMfa": True},
             # TOTP MFA setting disabled
             SoftwareTokenMfaSettings={"Enabled": False, "PreferredMfa": False},
             Username=owner,
@@ -160,7 +146,6 @@ def reset_user_mfa(
         logger.info(f"mfa reset response: {response}")
         # change MFA reset status
         query.require_mfa_reset = False
-        query.updated_at = datetime.datetime.now(utc)
         # commit the transaction
         db.commit()
         # refresh the object to get the updated value
@@ -168,12 +153,11 @@ def reset_user_mfa(
         user = model_to_schema(query)
 
         return user
-    except SQLAlchemyError as e:
+    except Exception as e:
         tracer.put_annotation("db_error", str(e))
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-# TODO : delete from cognito
 @router.delete(
     "/users/{user_id}",
     response_model=None,
@@ -211,7 +195,7 @@ def delete_user(
         )
 
         return None
-    except SQLAlchemyError as e:
+    except Exception as e:
         tracer.put_annotation("db_error", str(e))
         return InternalServerErrorResponse(message="Internal Server Error")
 

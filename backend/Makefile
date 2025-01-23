@@ -95,7 +95,7 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
-fmt-all: fmt-common fmt-user fmt-provider lint-admin ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common

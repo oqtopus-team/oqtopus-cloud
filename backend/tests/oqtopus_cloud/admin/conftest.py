@@ -1,6 +1,5 @@
 import os
 import boto3
-from datetime import datetime
 from typing import (
     Generator,
 )
@@ -10,7 +9,6 @@ import pytest
 from oqtopus_cloud.common.models.base import (
     Base,
 )
-from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
