@@ -44,6 +44,7 @@ jobs.JobResult:
   type: object
   properties:
     counts:
+      description: "*(Only for sampling jobs)* JSON string representing the sampling result"
       type: string
       example: >-
         {
@@ -54,13 +55,19 @@ jobs.JobResult:
         }
 
     exp_value:
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value of the operators
+        specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+        If this field is non-null, it must contain an array of numbers with a maximum length of 2,
+        representing a complex number. The first element corresponds to the real part, and the second
+        corresponds to the imaginary part.
       type: array
       items:
         type: number
       minItems: 1
       maxItems: 2
     stds:
-      description: "The standard deviation value"
+      description: "(Only for estimation jobs) The standard deviation value"
       type: number
 
     divided_result:
@@ -91,6 +98,9 @@ jobs.JobInfo:
           [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
 
     operator:
+      description: |
+        *(Only for estimation jobs)* The operator (or observable) for which the expectation
+        value is to be estimated.
       type: array
       items:
         $ref: "#/jobs.OperatorItem"
@@ -238,6 +248,7 @@ jobs.JobDef:
       updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.SubmitJobInfo:
+  description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
   type: object
   properties:
     program:
@@ -252,6 +263,8 @@ jobs.SubmitJobInfo:
           [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
     operator:
       type: array
+      x-see-also:
+        - '#/jobs.JonInfo.operator'
       items:
         $ref: "#/jobs.OperatorItem"
   required:

@@ -40,10 +40,21 @@ class JobResult(BaseModel):
         str | None,
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ] = None
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
     exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    """
+    *(Only for estimation jobs)* The estimated expectation value of the operators
+    specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+    If this field is non-null, it must contain an array of numbers with a maximum length of 2,
+    representing a complex number. The first element corresponds to the real part, and the second
+    corresponds to the imaginary part.
+
+    """
     stds: float | None = None
     """
-    The standard deviation value
+    (Only for estimation jobs) The standard deviation value
     """
     divided_result: dict[str, Any] | None = None
     """
@@ -66,6 +77,11 @@ class JobInfo(BaseModel):
     A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
     """
     operator: list[OperatorItem] | None = None
+    """
+    *(Only for estimation jobs)* The operator (or observable) for which the expectation
+    value is to be estimated.
+
+    """
     transpiled_program: Annotated[
         str | None,
         Field(

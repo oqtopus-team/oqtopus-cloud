@@ -420,6 +420,7 @@ components:
       type: object
       properties:
         counts:
+          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
           type: string
           example: |-
             {
@@ -429,13 +430,19 @@ components:
               "01": 75
             }
         exp_value:
+          description: |
+            *(Only for estimation jobs)* The estimated expectation value of the operators
+            specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+            If this field is non-null, it must contain an array of numbers with a maximum length of 2,
+            representing a complex number. The first element corresponds to the real part, and the second
+            corresponds to the imaginary part.
           type: array
           items:
             type: number
           minItems: 1
           maxItems: 2
         stds:
-          description: The standard deviation value
+          description: (Only for estimation jobs) The standard deviation value
           type: number
         divided_result:
           type: object
@@ -459,6 +466,9 @@ components:
             type: string
           example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
         operator:
+          description: |
+            *(Only for estimation jobs)* The operator (or observable) for which the expectation
+            value is to be estimated.
           type: array
           items:
             $ref: '#/components/schemas/jobs.OperatorItem'
