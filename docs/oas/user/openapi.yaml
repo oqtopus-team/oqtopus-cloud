@@ -38,7 +38,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '500':
           description: Internal Server Error
           content:
@@ -179,7 +179,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
     post:
       tags:
         - job
@@ -201,8 +201,8 @@ paths:
                   name: Bell State Sampling
                   description: Bell State Sampling Example
                   device_id: Kawasaki
+                  job_type: sampling
                   job_info:
-                    job_type: sampling
                     program:
                       - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
                   transpiler_info: '{}'
@@ -218,8 +218,8 @@ paths:
                   name: Bell State Estimation
                   description: Bell State Estimation Example
                   device_id: Kawasaki
+                  job_type: estimation
                   job_info:
-                    job_type: estimation
                     program:
                       - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
                     operator:
@@ -254,7 +254,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -262,7 +262,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
   /jobs/{job_id}:
     get:
       tags:
@@ -293,7 +293,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -301,7 +301,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -309,7 +309,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
     delete:
       tags:
         - job
@@ -341,7 +341,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -349,7 +349,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -357,7 +357,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
   /jobs/{job_id}/status:
     get:
       tags:
@@ -388,7 +388,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -396,7 +396,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -404,7 +404,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
   /jobs/{job_id}/cancel:
     post:
       tags:
@@ -437,7 +437,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -445,7 +445,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
-                detail: Unauthorized
+                message: Unauthorized
         '404':
           description: Not Found
           content:
@@ -453,7 +453,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
 components:
   securitySchemes:
     BearerAuth:
@@ -607,24 +607,24 @@ components:
     error.UnauthorizedError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.InternalServerError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.NotFoundError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobId:
       type: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -660,78 +660,11 @@ components:
           maxItems: 2
       required:
         - pauli
-    jobs.JobInfoEstimation:
-      type: object
-      description: The descriptor of estimation jobs
-      properties:
-        job_type:
-          type: string
-          enum:
-            - estimation
-        program:
-          type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-          items:
-            type: string
-          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-        operator:
-          type: array
-          items:
-            $ref: '#/components/schemas/jobs.OperatorItem'
-      required:
-        - job_type
-        - program
-        - operator
-    jobs.JobInfoSampling:
-      type: object
-      description: The descriptor of sampling jobs
-      properties:
-        job_type:
-          type: string
-          enum:
-            - sampling
-        program:
-          type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-          items:
-            type: string
-          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-      required:
-        - job_type
-        - program
-    jobs.JobInfoDesc:
-      type: object
-      oneOf:
-        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
-        - $ref: '#/components/schemas/jobs.JobInfoSampling'
-    jobs.JobResultEstimation:
+    jobs.JobResult:
       type: object
       properties:
-        job_type:
-          type: string
-          enum:
-            - estimation
-        exp_value:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 2
-        stds:
-          description: The standard deviation value
-          type: number
-      required:
-        - job_type
-        - exp_value
-        - stds
-    jobs.JobResultSampling:
-      type: object
-      properties:
-        job_type:
-          type: string
-          enum:
-            - sampling
         counts:
+          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
           type: string
           example: |-
             {
@@ -740,19 +673,21 @@ components:
               "10": 454,
               "01": 75
             }
-      required:
-        - job_type
-        - counts
-    jobs.JobResultDesc:
-      type: object
-      oneOf:
-        - $ref: '#/components/schemas/jobs.JobResultEstimation'
-        - $ref: '#/components/schemas/jobs.JobResultSampling'
-    jobs.JobResult:
-      type: object
-      properties:
-        desc:
-          $ref: '#/components/schemas/jobs.JobResultDesc'
+        exp_value:
+          description: |
+            *(Only for estimation jobs)* The estimated expectation value of the operators
+            specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+            If this field is non-null, it must contain an array of numbers with a maximum length of 2,
+            representing a complex number. The first element corresponds to the real part, and the second
+            corresponds to the imaginary part.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
+        stds:
+          description: (Only for estimation jobs) The standard deviation value
+          type: number
         divided_result:
           type: object
           description: Assumed to be used for multiprogramming, but currently not supported yet.
@@ -764,13 +699,23 @@ components:
           properties:
             virtual_physical_mapping:
               type: string
-      required:
-        - desc
+      required: []
     jobs.JobInfo:
       type: object
       properties:
-        desc:
-          $ref: '#/components/schemas/jobs.JobInfoDesc'
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        operator:
+          description: |
+            *(Only for estimation jobs)* The operator (or observable) for which the expectation
+            value is to be estimated.
+          type: array
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
         transpiled_program:
           type: string
           example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
@@ -780,7 +725,7 @@ components:
           type: string
           description: Describing the reason why there is no result
       required:
-        - desc
+        - program
     jobs.TranspilerInfo:
       type: string
       example: |-
@@ -856,12 +801,13 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: Kawasaki,
+        device_id: Kawasaki
+        job_type: estimation
         job_info:
-          desc:
-            job_type: estimation
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-            operator: X 0 Y 1 Z 5 I 2
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          operator:
+            - pauli: X 0 Y 1 Z 5 I 2
           transpiled_code: '{}'
           result: '{}'
           reason: ''
@@ -872,6 +818,24 @@ components:
         status: submitted
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
+    jobs.SubmitJobInfo:
+      description: All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
+      type: object
+      properties:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        operator:
+          type: array
+          x-see-also:
+            - '#/jobs.JonInfo.operator'
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+      required:
+        - program
     jobs.SubmitJobRequest:
       type: object
       properties:
@@ -884,8 +848,10 @@ components:
         device_id:
           type: string
           example: Kawasaki
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
         job_info:
-          $ref: '#/components/schemas/jobs.JobInfoDesc'
+          $ref: '#/components/schemas/jobs.SubmitJobInfo'
         transpiler_info:
           type: string
           description: When specified, valid JSON string is required.
@@ -926,6 +892,7 @@ components:
         - name
         - device_id
         - shots
+        - job_type
         - job_info
     jobs.SubmitJobResponse:
       description: submit a job
@@ -938,10 +905,10 @@ components:
     error.BadRequest:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobDef:
       type: object
       properties:
@@ -993,12 +960,15 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: Kawasaki,
+        device_id: Kawasaki
+        job_type: estimation
         job_info:
-          desc:
-            job_type: estimation
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-            operator: X 0 Y 1 Z 5 I 2
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          operator:
+            - pauli: X 0 Y 1 Z 5 I 2
+              coeffs:
+                - 1
           transpiled_code: '{}'
           result: '{}'
           reason: ''
