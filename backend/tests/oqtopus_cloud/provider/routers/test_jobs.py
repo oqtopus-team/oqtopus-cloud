@@ -13,6 +13,7 @@ from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.jobs import (
     get_job,
     get_jobs,
+    jobtype_of_result,
     update_job,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
@@ -296,9 +297,12 @@ def test_update_job_info_result(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
+    assert bef_job_info.program == aft_job_info.program
+    assert bef_job_info.operator == aft_job_info.operator
     assert aft_job_info.result == result
     assert aft_job_info.message is None
     assert aft_job.status == JobStatus.succeeded
+    assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
 
 
 def test_update_job_info_reason(test_db: Session):
@@ -320,6 +324,8 @@ def test_update_job_info_reason(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
+    assert bef_job_info.program == aft_job_info.program
+    assert bef_job_info.operator == aft_job_info.operator
     assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed

@@ -615,3 +615,38 @@ def test_submit_delete(test_db):
     assert len(before_db) == len(after_db)
     for bef, aft in zip(before_db, after_db):
         assert bef == aft
+
+
+def test_submit_job_compat_error(test_db):
+    """_summary_
+    Test for **the invariance of submit and delete**:
+    submitting a job and then sequentially deleting it should result in no remaining effects."
+
+    Args:
+            test_db (_type_): _description_
+    """
+
+    body = SubmitJobRequest(
+        name="submit-job-test",
+        description="Submit job test",
+        device_id="Kawasaki",
+        job_type=JobType.estimation,
+        job_info=SubmitJobInfo(program=["codecodecode"]),
+        mitigation_info=json.dumps(
+            {
+                "field1": "value1",
+                "field2": {
+                    "subfield1": "value2",
+                    "subfield2": ["value3", 42, True],
+                },
+            }
+        ),
+        simulator_info='"This is simulator info"',
+        transpiler_info="{}",
+        shots=1024,
+        status=JobStatus.submitted,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 400
