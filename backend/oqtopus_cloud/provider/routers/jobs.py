@@ -309,7 +309,7 @@ def model_to_schema(
         job_info = decode_job_info(json.loads(model.job_info))
         if isinstance(job_info, ValueError):
             return job_info
-        job_type = parse_job_type(model.job_type.value)
+        job_type = parse_job_type(str(model.job_type))
         if isinstance(job_type, ValueError):
             return job_type
         return JobDef(

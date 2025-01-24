@@ -76,14 +76,7 @@ def _get_job_model(n: int) -> Job:
         "description": f"test job {n}",
         "device_id": "SC2",
         "job_type": "sampling",
-        "job_info": json.dumps(
-            {
-                "desc": {
-                    "job_type": "sampling",
-                    "program": ["code"],
-                }
-            }
-        ),
+        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -104,14 +97,7 @@ def _get_job_model_2() -> Job:
         "description": "test job 2",
         "device_id": "SC2",
         "job_type": "sampling",
-        "job_info": json.dumps(
-            {
-                "desc": {
-                    "job_type": "sampling",
-                    "program": ["code"],
-                }
-            }
-        ),
+        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
