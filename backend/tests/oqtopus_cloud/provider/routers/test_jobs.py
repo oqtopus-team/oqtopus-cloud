@@ -19,10 +19,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     GetJobsResponse,
     JobDef,
     JobInfo,
-    JobInfoSampling,
     JobResult,
-    JobResultEstimation,
-    JobResultSampling,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
@@ -165,16 +162,12 @@ def test_get_jobs_filtering(test_db: Session):
         GetJobsResponse(
             job_id="testjob1id",
             description="test job 1",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", program=["code"]),
-            ),
+            job_info=JobInfo(program=["code"]),
         ),
         GetJobsResponse(
             job_id="testjob2id",
             description="test job 2",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", program=["code"]),
-            ),
+            job_info=JobInfo(program=["code"]),
         ),
     ]
 
@@ -272,11 +265,7 @@ def test_update_job_info_400(test_db: Session):
     test_db.commit()
 
     # Submitting
-    result = JobResult(
-        desc=JobResultSampling(
-            job_type="sampling", counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})
-        ),
-    )
+    result = JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4}))
     message = "Oops! Job failed!"
     body = UpdateJobInfoRequest(result=result, message=message)
     submit_resp = client.patch(
@@ -292,9 +281,7 @@ def test_update_job_info_result_compat(test_db: Session):
     test_db.commit()
 
     # Submitting
-    result = JobResult(
-        desc=JobResultEstimation(job_type="estimation", exp_value=[1.0, 0.0], stds=0.0),
-    )
+    result = JobResult(exp_value=[1.0, 0.0], stds=0.0)
     body = UpdateJobInfoRequest(result=result)
     submit_resp = client.patch(
         f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
@@ -310,11 +297,7 @@ def test_update_job_info_result(test_db: Session):
     test_db.commit()
 
     # Submitting
-    result = JobResult(
-        desc=JobResultSampling(
-            job_type="sampling", counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})
-        ),
-    )
+    result = JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4}))
     transpiled_code = "transpiled_code"
     body = UpdateJobInfoRequest(
         result=result,
@@ -327,7 +310,6 @@ def test_update_job_info_result(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
-    assert bef_job_info.desc == aft_job_info.desc
     assert aft_job_info.result == result
     assert aft_job_info.message is None
     assert aft_job.status == JobStatus.succeeded
@@ -352,7 +334,6 @@ def test_update_job_info_reason(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
-    assert bef_job_info.desc == aft_job_info.desc
     assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed

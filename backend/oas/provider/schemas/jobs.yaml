@@ -25,39 +25,6 @@ jobs.JobProgram:
   example: >-
       [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
 
-jobs.JobInfoSampling:
-  type: object
-  description: "The descriptor of sampling jobs"
-  properties:
-    job_type:
-      type: string
-      enum:
-        - sampling
-    program:
-      $ref: "#/jobs.JobProgram"
-  required:
-    - job_type
-    - program
-
-jobs.JobInfoEstimation:
-  type: object
-  description: "The descriptor of estimation jobs"
-  properties:
-    job_type:
-      type: string
-      enum:
-        - estimation
-    program:
-      $ref: "#/jobs.JobProgram"
-    operator:
-      type: array
-      items:
-        $ref: "#/jobs.OperatorItem"
-  required:
-    - job_type
-    - program
-    - operator
-
 jobs.OperatorItem:
   type: object
   properties:
@@ -75,19 +42,9 @@ jobs.OperatorItem:
   required:
     - pauli
 
-jobs.JobInfoDesc:
-  type: object
-  oneOf:
-    - $ref: "#/jobs.JobInfoEstimation"
-    - $ref: "#/jobs.JobInfoSampling"
-
-jobs.JobResultSampling:
+jobs.JobResult:
   type: object
   properties:
-    job_type:
-      type: string
-      enum:
-        - "sampling"
     counts:
       type: string
       example: >-
@@ -97,17 +54,7 @@ jobs.JobResultSampling:
           "10": 454,
           "01": 75
         }
-  required:
-    - job_type
-    - counts
 
-jobs.JobResultEstimation:
-  type: object
-  properties:
-    job_type:
-      type: string
-      enum:
-        - "estimation"
     exp_value:
       type: array
       items:
@@ -117,22 +64,7 @@ jobs.JobResultEstimation:
     stds:
       description: "The standard deviation value"
       type: number
-  required:
-    - job_type
-    - exp_value
-    - stds
 
-jobs.JobResultDesc:
-  type: object
-  oneOf:
-    - $ref: "#/jobs.JobResultEstimation"
-    - $ref: "#/jobs.JobResultSampling"
-
-jobs.JobResult:
-  type: object
-  properties:
-    desc:
-      $ref: "#/jobs.JobResultDesc"
     divided_result:
       type: object
       description: "Assumed to be used for multiprogramming, but currently not supported yet."
@@ -144,14 +76,27 @@ jobs.JobResult:
       properties:
         virtual_physical_mapping:
           type: string
-  required:
-    - desc
+  required: []
 
 jobs.JobInfo:
   type: object
   properties:
-    desc:
-      $ref: "#/jobs.JobInfoDesc"
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+    operator:
+      type: array
+      items:
+        $ref: "#/jobs.OperatorItem"
+
     transpiled_program:
       type: string
       example: >-
@@ -167,7 +112,7 @@ jobs.JobInfo:
       type: string
       description: Describing the reason why there is no result
   required:
-    - desc
+    - program
 
 jobs.JobType:
   type: string
@@ -194,6 +139,8 @@ jobs.JobDef:
       minimum: 1
       maximum: 1e7
       example: "1000"
+    job_type:
+      $ref: "#/jobs.JobType"
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
@@ -238,6 +185,7 @@ jobs.JobDef:
   required:
     - job_id
     - device_id
+    - job_type
     - job_info
     - shots
     - status
@@ -247,17 +195,17 @@ jobs.JobDef:
       name: Bell State Sampling
       description: Bell State Sampling Example
       device_id: Kawasaki
+      job_type: sampling
       job_info:
-        desc:
-          job_type: sampling
-          code: >-
-            OPENQASM 3;
-            qubit[2] q;
-            bit[2] c;
-            h q[0];
-            cnot q[0], q[1];
-            c = measure q;
-        transpiled_code: null
+        program:
+          - >-
+              OPENQASM 3;
+              qubit[2] q;
+              bit[2] c;
+              h q[0];
+              cnot q[0], q[1];
+              c = measure q;
+        transpiled_program: null
         result: null
         reason: null
       transpiler_info: >-
@@ -283,7 +231,6 @@ jobs.JobDef:
         }
       mitigation_info: |
         { "ro_error_mitigation": "pseudo_inverse" }
-      job_type: sampling
       shots: 1000
       status: submitted
       created_at: 2022-10-19T11:45:34+09:00

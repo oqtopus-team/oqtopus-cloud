@@ -18,9 +18,11 @@ from oqtopus_cloud.provider.schemas.jobs import (
     GetJobsResponse,
     JobDef,
     JobInfo,
+    JobResult,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
 )
@@ -218,7 +220,7 @@ def update_job_info(
 
     if request.message is not None and request.result is not None:
         return BadRequestResponse(
-            detail="You cannot specify both a result and a message."
+            message="You cannot specify both a result and a message."
         )
 
     try:
@@ -229,12 +231,11 @@ def update_job_info(
         job_info = JobInfo.model_validate(json.loads(model.job_info))
 
         # The job result must be compatible with the job info.
-        if (
-            request.result is not None
-            and job_info.desc.job_type != request.result.desc.job_type
+        if request.result is not None and model.job_type != jobtype_of_result(
+            request.result
         ):
             return BadRequestResponse(
-                detail="The job result type is not compatible with job info."
+                message="The job result type is not compatible with job info."
             )
 
         # Calculate upodated job_info.
@@ -268,6 +269,14 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
+def jobtype_of_result(r: JobResult) -> JobType | None:
+    if r.counts is not None:
+        return JobType.sampling
+    elif r.exp_value is not None:
+        return JobType.estimation
+    return None
+
+
 def decode_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
@@ -283,22 +292,33 @@ def decode_job_info(j: Any) -> JobInfo | ValueError:
         return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
+def parse_job_type(jt: str) -> JobType | ValueError:
+    try:
+        return JobType(jt)
+    except Exception:
+        return ValueError(f"{jt} is not a valid JobType")
+
+
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
     if fields is None:
         status = decode_job_status(model.status)
-        job_info = decode_job_info(json.loads(model.job_info))
         if isinstance(status, ValueError):
             return status
+        job_info = decode_job_info(json.loads(model.job_info))
         if isinstance(job_info, ValueError):
             return job_info
+        job_type = parse_job_type(model.job_type.value)
+        if isinstance(job_type, ValueError):
+            return job_type
         return JobDef(
             job_id=model.id,
             name=model.name,
             description=model.description,
             device_id=model.device_id,
             shots=model.shots,
+            job_type=job_type,
             job_info=job_info,
             status=status,
             transpiler_info=model.transpiler_info,
