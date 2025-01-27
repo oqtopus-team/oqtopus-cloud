@@ -149,7 +149,7 @@ def get_job(
 
 
 @router.patch(
-    "/jobs/{job_id}",
+    "/jobs/{job_id}/status",
     response_model=JobStatusUpdateResponse,
     responses={
         404: {"model": Message},
@@ -158,7 +158,7 @@ def get_job(
     },
 )
 @tracer.capture_method
-def update_job(
+def update_job_status(
     job_id: str,
     request: JobStatusUpdate,
     db: Session = Depends(get_db),

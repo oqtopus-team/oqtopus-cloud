@@ -14,7 +14,7 @@ from oqtopus_cloud.provider.routers.jobs import (
     get_job,
     get_jobs,
     jobtype_of_result,
-    update_job,
+    update_job_status,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     EstimationResult,
@@ -258,7 +258,7 @@ def test_update_job(test_db: Session):
     test_db.commit()
     job_id1 = "testjob1id"
     request = JobStatusUpdate(status="running")
-    actual = update_job(job_id=job_id1, request=request, db=test_db)
+    actual = update_job_status(job_id=job_id1, request=request, db=test_db)
 
     expected = JobStatusUpdateResponse(message="Job status updated")
     # Assert
@@ -266,7 +266,7 @@ def test_update_job(test_db: Session):
 
     # for estimation jobs
     job_id2 = "testjob2id"
-    actual2 = update_job(job_id=job_id2, request=request, db=test_db)
+    actual2 = update_job_status(job_id=job_id2, request=request, db=test_db)
     assert actual2 == expected
 
 
@@ -368,6 +368,25 @@ def test_update_job_info_reason(test_db: Session):
     assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed
+
+
+def test_update_job_status(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(_get_device_model())
+    test_db.add(job_model)
+    test_db.commit()
+
+    resp = client.patch(
+        f"/jobs/{job_model.id}/status",
+        content=JobStatusUpdate(status="running").model_dump_json(),
+    )
+    assert resp.status_code == 200
+
+    resp = client.patch(
+        f"/jobs/{job_model.id}/status",
+        content=JobStatusUpdate(status="running").model_dump_json(),
+    )
+    assert resp.status_code == 409
 
 
 # TODO: add invalid test cases

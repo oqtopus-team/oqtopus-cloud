@@ -196,6 +196,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /jobs/{job_id}/status:
     patch:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
