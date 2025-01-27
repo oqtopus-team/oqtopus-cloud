@@ -36,6 +36,25 @@ class OperatorItem(BaseModel):
     """
 
 
+class Estimation(BaseModel):
+    """
+    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+
+    """
+
+    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    """
+    This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+    The first element corresponds to the real part, and the second corresponds to the imaginary part.
+
+    """
+    stds: float | None = None
+    """
+    (Only for estimation jobs) The standard deviation value
+    """
+
+
 class TranspileResult(BaseModel):
     virtual_physical_mapping: str | None = None
 
@@ -48,18 +67,11 @@ class JobResult(BaseModel):
     """
     *(Only for sampling jobs)* JSON string representing the sampling result
     """
-    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    estimation: Estimation | None = None
     """
-    *(Only for estimation jobs)* The estimated expectation value of the operators
-    specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-    If this field is non-null, it must contain an array of numbers with a maximum length of 2,
-    representing a complex number. The first element corresponds to the real part, and the second
-    corresponds to the imaginary part.
+    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
 
-    """
-    stds: float | None = None
-    """
-    (Only for estimation jobs) The standard deviation value
     """
     divided_result: dict[str, Any] | None = None
     """
@@ -80,6 +92,10 @@ class JobInfo(BaseModel):
     ]
     """
     A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    combined_program: str | None = None
+    """
+    For multiprogramming jobs, this field contains the combined circuit.
     """
     operator: list[OperatorItem] | None = None
     """

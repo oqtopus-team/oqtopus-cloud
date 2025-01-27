@@ -42,6 +42,25 @@ jobs.OperatorItem:
   required:
     - pauli
 
+jobs.EstimationResult:
+  type: object
+  description: |
+      *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+      of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+  properties:
+    exp_value:
+      description: |
+        This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+        The first element corresponds to the real part, and the second corresponds to the imaginary part.
+      type: array
+      items:
+        type: number
+      minItems: 1
+      maxItems: 2
+    stds:
+      description: "(Only for estimation jobs) The standard deviation value"
+      type: number
+
 jobs.JobResult:
   type: object
   properties:
@@ -56,21 +75,8 @@ jobs.JobResult:
           "01": 75
         }
 
-    exp_value:
-      description: |
-        *(Only for estimation jobs)* The estimated expectation value of the operators
-        specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-        If this field is non-null, it must contain an array of numbers with a maximum length of 2,
-        representing a complex number. The first element corresponds to the real part, and the second
-        corresponds to the imaginary part.
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
-    stds:
-      description: "(Only for estimation jobs) The standard deviation value"
-      type: number
+    estimation:
+      $ref: "#/jobs.EstimationResult"
 
     divided_result:
       type: object
@@ -98,6 +104,11 @@ jobs.JobInfo:
         type: string
       example: >-
           [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+    combined_program:
+      type: string
+      description: >-
+        For multiprogramming jobs, this field contains the combined circuit.
 
     operator:
       description: |
@@ -313,17 +324,17 @@ jobs.GetJobsResponse:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_info:
-        desc:
-          job_type: sampling
-          code: >-
-            OPENQASM 3;
-            qubit[2] q;
-            bit[2] c;
-            h q[0];
-            cnot q[0], q[1];
-            c = measure q;
-        transpiled_code: null
-        result: null
+        program:
+          - >-
+              OPENQASM 3;
+              qubit[2] q;
+              bit[2] c;
+              h q[0];
+              cnot q[0], q[1];
+              c = measure q;
+        combined_program: null
+        transpiled_prgoram: null
+        result: {}
         reason: null
       transpiler_info: >-
         {
@@ -373,26 +384,31 @@ jobs.JobStatusUpdateResponse:
   required:
     - message
 
-jobs.UpdateJobInfoRequest:
+jobs.UpdateJobInfo:
   type: object
   properties:
-    overwrite_status:
-      description: >-
-        Overwrite the job status. Use with caution to avoid putting
-        the job into an inconsistent state. If this field is not
-        specified, the status will be updated automatically.
-      $ref: "#/jobs.JobStatus"
-    execution_time:
-      type: number
-      description: >-
-        Execution time for quantum computation. Specify the time in seconds,
-        including up to milliseconds.
     transpiled_program:
       type: string
     result:
       $ref: "#/jobs.JobResult"
     message:
       type: string
+
+jobs.UpdateJobInfoRequest:
+  type: object
+  properties:
+    overwrite_status:
+      description: >-
+        Overwrite the job status. If this field is not specified,
+        the status will be updated automatically.
+      $ref: "#/jobs.JobStatus"
+    execution_time:
+      type: number
+      description: >-
+        Execution time for quantum computation. Specify the time in seconds,
+        including up to milliseconds.
+    job_info:
+      $ref: "#/jobs.UpdateJobInfo"
 
 jobs.UpdateJobInfoResponse:
   type: object

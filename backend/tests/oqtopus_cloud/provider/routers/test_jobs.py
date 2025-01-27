@@ -17,6 +17,7 @@ from oqtopus_cloud.provider.routers.jobs import (
     update_job,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
+    EstimationResult,
     GetJobsResponse,
     JobDef,
     JobInfo,
@@ -24,6 +25,9 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    JobType,
+    OperatorItem,
+    UpdateJobInfo,
     UpdateJobInfoRequest,
 )
 from pydantic.type_adapter import TypeAdapter
@@ -69,15 +73,24 @@ def _get_device_model():
     return Device(**mode_dict)
 
 
-def _get_job_model(n: int) -> Job:
+def _get_job_info(jt: JobType) -> JobInfo:
+    return JobInfo(
+        program=["code"],
+        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=[0.5, -2e-8])]
+        if jt == JobType.estimation
+        else None,
+    )
+
+
+def _get_job_model(n: int, jt: JobType) -> Job:
     mode_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
         "name": f"testjob{n}",
         "description": f"test job {n}",
         "device_id": "SC2",
-        "job_type": "sampling",
-        "job_info": json.dumps({"program": ["code"]}),
+        "job_type": jt.value,
+        "job_info": JobInfo.model_dump_json(_get_job_info(jt)),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -126,19 +139,21 @@ def test_get_jobs(test_db: Session):
 
     jobs = get_jobs(device_id=device_id, db=test_db)
     assert isinstance(jobs, list)
-    assert jobs[0].device_id == device_id
-    assert jobs[0].status == "ready"
+    for job in jobs:
+        assert job.device_id == device_id
+        assert job.status == JobStatus.ready
 
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
+        assert job.job_id == job_id
         assert job.status == "ready"
 
 
 def test_get_jobs_filtering(test_db: Session):
     # Arrange
     test_db.flush()
-    test_db.add(_get_job_model(1))
-    test_db.add(_get_job_model(2))
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.estimation))
     test_db.add(_get_device_model())
     test_db.commit()
 
@@ -149,12 +164,12 @@ def test_get_jobs_filtering(test_db: Session):
         GetJobsResponse(
             job_id="testjob1id",
             description="test job 1",
-            job_info=JobInfo(program=["code"]),
+            job_info=_get_job_info(JobType.sampling),
         ),
         GetJobsResponse(
             job_id="testjob2id",
             description="test job 2",
-            job_info=JobInfo(program=["code"]),
+            job_info=_get_job_info(JobType.estimation),
         ),
     ]
 
@@ -166,7 +181,7 @@ def test_get_jobs_timestamp(test_db: Session):
     # Arrange
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i))
+        test_db.add(_get_job_model(i, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
 
@@ -195,7 +210,7 @@ def test_get_jobs_max_results(test_db: Session):
     # Arrange
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i))
+        test_db.add(_get_job_model(i, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
 
@@ -221,10 +236,15 @@ def test_get_jobs_max_results(test_db: Session):
 def test_get_job(test_db: Session):
     # Arrange
 
-    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(1, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
     job_id = "testjob1id"
+    job = get_job(job_id=job_id, db=test_db)
+    if isinstance(job, JobDef):
+        assert job.job_id == job_id
+    test_db.add(_get_job_model(2, JobType.estimation))
+    job_id = "testjob2id"
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
@@ -232,44 +252,37 @@ def test_get_job(test_db: Session):
 
 def test_update_job(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.estimation))
     test_db.add(_get_device_model())
     test_db.commit()
-    job_id = "testjob1id"
+    job_id1 = "testjob1id"
     request = JobStatusUpdate(status="running")
-    actual = update_job(job_id=job_id, request=request, db=test_db)
+    actual = update_job(job_id=job_id1, request=request, db=test_db)
 
     expected = JobStatusUpdateResponse(message="Job status updated")
     # Assert
-
     assert actual == expected
+
+    # for estimation jobs
+    job_id2 = "testjob2id"
+    actual2 = update_job(job_id=job_id2, request=request, db=test_db)
+    assert actual2 == expected
 
 
 def test_update_job_info_400(test_db: Session):
-    job_model = _get_job_model(1)
+    job_model = _get_job_model(1, JobType.sampling)
     test_db.add(_get_device_model())
     test_db.add(job_model)
     test_db.commit()
 
     # Submitting
-    result = JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4}))
-    message = "Oops! Job failed!"
-    body = UpdateJobInfoRequest(result=result, message=message)
-    submit_resp = client.patch(
-        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+    body = UpdateJobInfoRequest(
+        job_info=UpdateJobInfo(
+            result=JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
+            message="Oops! Job failed!",
+        )
     )
-    assert submit_resp.status_code == 400
-
-
-def test_update_job_info_result_compat(test_db: Session):
-    job_model = _get_job_model(1)
-    test_db.add(_get_device_model())
-    test_db.add(job_model)
-    test_db.commit()
-
-    # Submitting
-    result = JobResult(exp_value=[1.0, 0.0], stds=0.0)
-    body = UpdateJobInfoRequest(result=result)
     submit_resp = client.patch(
         f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
     )
@@ -277,36 +290,62 @@ def test_update_job_info_result_compat(test_db: Session):
 
 
 def test_update_job_info_result(test_db: Session):
-    job_model = _get_job_model(1)
-    bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
-    test_db.add(_get_device_model())
-    test_db.add(job_model)
-    test_db.commit()
+    cases: list[tuple[int, JobType, JobResult, int]] = [
+        (
+            1,
+            JobType.sampling,
+            JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
+            200,
+        ),
+        (
+            2,
+            JobType.estimation,
+            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            200,
+        ),
+        (
+            3,
+            JobType.sampling,
+            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            400,
+        ),
+        (
+            4,
+            JobType.estimation,
+            JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
+            400,
+        ),
+    ]
 
-    # Submitting
-    result = JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4}))
-    transpiled_code = "transpiled_code"
-    body = UpdateJobInfoRequest(
-        result=result,
-        transpiled_program=transpiled_code,
-    )
-    submit_resp = client.patch(
-        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
-    )
-    assert submit_resp.status_code == 200
-    get_resp = client.get(f"/jobs/{job_model.id}")
-    aft_job = JobDef.model_validate(get_resp.json())
-    aft_job_info = aft_job.job_info
-    assert bef_job_info.program == aft_job_info.program
-    assert bef_job_info.operator == aft_job_info.operator
-    assert aft_job_info.result == result
-    assert aft_job_info.message is None
-    assert aft_job.status == JobStatus.succeeded
-    assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
+    test_db.flush()
+    test_db.add(_get_device_model())
+
+    for n, jt, res, resp_expect in cases:
+        job_model = _get_job_model(n, jt)
+        bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+        test_db.add(job_model)
+        test_db.commit()
+
+        # Submitting
+        body = UpdateJobInfoRequest(job_info=UpdateJobInfo(result=res))
+        submit_resp = client.patch(
+            f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+        )
+        assert submit_resp.status_code == resp_expect
+        if resp_expect == 200:
+            get_resp = client.get(f"/jobs/{job_model.id}")
+            aft_job = JobDef.model_validate(get_resp.json())
+            aft_job_info = aft_job.job_info
+            assert bef_job_info.program == aft_job_info.program
+            assert bef_job_info.operator == aft_job_info.operator
+            assert aft_job_info.result == res
+            assert aft_job_info.message is None
+            assert aft_job.status == JobStatus.succeeded
+            assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
 
 
 def test_update_job_info_reason(test_db: Session):
-    job_model = _get_job_model(1)
+    job_model = _get_job_model(1, JobType.sampling)
     bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
     test_db.add(_get_device_model())
     test_db.add(job_model)
@@ -315,7 +354,7 @@ def test_update_job_info_reason(test_db: Session):
     # Submitting
     message = "Oops, job failed!"
     body = UpdateJobInfoRequest(
-        message=message,
+        job_info=UpdateJobInfo(message=message),
     )
     submit_resp = client.patch(
         f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()

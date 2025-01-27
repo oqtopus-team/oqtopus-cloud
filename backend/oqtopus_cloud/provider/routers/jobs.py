@@ -203,22 +203,30 @@ def update_job_info(
     )
 
     def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
-        job_info.transpiled_program = request.transpiled_program
-
         status = request.overwrite_status
-        if request.result is not None:
-            job_info.result = request.result
+        incoming = request.job_info
+        if incoming is None:
+            return (status, job_info)
+
+        job_info.transpiled_program = incoming.transpiled_program
+
+        if incoming.result is not None:
+            job_info.result = incoming.result
             job_info.message = None
             return (status or JobStatus.succeeded, job_info)
 
-        elif request.message is not None:
-            job_info.message = request.message
+        elif incoming.message is not None:
+            job_info.message = incoming.message
             job_info.result = None
             return (status or JobStatus.failed, job_info)
 
         return (status, job_info)
 
-    if request.message is not None and request.result is not None:
+    if (
+        request.job_info is not None
+        and request.job_info.message is not None
+        and request.job_info.result is not None
+    ):
         return BadRequestResponse(
             message="You cannot specify both a result and a message."
         )
@@ -231,8 +239,10 @@ def update_job_info(
         job_info = JobInfo.model_validate(json.loads(model.job_info))
 
         # The job result must be compatible with the job info.
-        if request.result is not None and model.job_type != jobtype_of_result(
-            request.result
+        if (
+            request.job_info is not None
+            and request.job_info.result is not None
+            and model.job_type != jobtype_of_result(request.job_info.result)
         ):
             return BadRequestResponse(
                 message="The job result type is not compatible with job info."
@@ -272,7 +282,7 @@ MAP_MODEL_TO_SCHEMA = {
 def jobtype_of_result(r: JobResult) -> JobType | None:
     if r.counts is not None:
         return JobType.sampling
-    elif r.exp_value is not None:
+    elif r.estimation is not None:
         return JobType.estimation
     return None
 
