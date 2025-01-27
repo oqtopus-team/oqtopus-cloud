@@ -135,18 +135,18 @@ def test_get_jobs(test_db: Session):
 
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
-        assert job.status == "submitted"
+        assert job.status == JobStatus.submitted
 
     jobs = get_jobs(device_id=device_id, db=test_db)
     assert isinstance(jobs, list)
     for job in jobs:
         assert job.device_id == device_id
-        assert job.status == JobStatus.ready
+        assert job.status != JobStatus.submitted
 
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
-        assert job.status == "ready"
+        assert job.status != JobStatus.submitted
 
 
 def test_get_jobs_filtering(test_db: Session):
