@@ -660,6 +660,24 @@ components:
           maxItems: 2
       required:
         - pauli
+    jobs.EstimationResult:
+      type: object
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+      properties:
+        exp_value:
+          description: |
+            This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+            The first element corresponds to the real part, and the second corresponds to the imaginary part.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
+        stds:
+          description: (Only for estimation jobs) The standard deviation value
+          type: number
     jobs.JobResult:
       type: object
       properties:
@@ -673,21 +691,8 @@ components:
               "10": 454,
               "01": 75
             }
-        exp_value:
-          description: |
-            *(Only for estimation jobs)* The estimated expectation value of the operators
-            specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-            If this field is non-null, it must contain an array of numbers with a maximum length of 2,
-            representing a complex number. The first element corresponds to the real part, and the second
-            corresponds to the imaginary part.
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 2
-        stds:
-          description: (Only for estimation jobs) The standard deviation value
-          type: number
+        estimation:
+          $ref: '#/components/schemas/jobs.EstimationResult'
         divided_result:
           type: object
           description: Assumed to be used for multiprogramming, but currently not supported yet.
@@ -709,6 +714,9 @@ components:
           items:
             type: string
           example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        combined_program:
+          type: string
+          description: For multiprogramming jobs, this field contains the combined circuit.
         operator:
           description: |
             *(Only for estimation jobs)* The operator (or observable) for which the expectation

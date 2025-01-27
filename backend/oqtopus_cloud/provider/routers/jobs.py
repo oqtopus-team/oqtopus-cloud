@@ -251,6 +251,19 @@ def update_job_info(
         # Calculate upodated job_info.
         (status, job_info) = patch_job_info(job_info)
 
+        # Validate the consitency of patched job_info and status
+        if (
+            # Job with non-null result should be succeeded
+            (job_info.result is not None and status != JobStatus.succeeded)
+            # Job with non-null message should not be succeeded
+            or (job_info.message is not None and status == JobStatus.succeeded)
+            # Job cannot go back to status of submitted or ready.
+            or status in [JobStatus.submitted, JobStatus.ready]
+        ):
+            return BadRequestResponse(
+                message="The overwritten status and job_info is inconsistent"
+            )
+
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
             model.status = status
