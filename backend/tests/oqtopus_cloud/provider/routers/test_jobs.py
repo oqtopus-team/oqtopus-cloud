@@ -370,6 +370,51 @@ def test_update_job_info_reason(test_db: Session):
     assert aft_job.status == JobStatus.failed
 
 
+def test_update_job_info_consist(test_db: Session):
+    # None of the following updates should not be acceptable.
+    cases = [
+        (
+            1,
+            JobType.sampling,
+            JobResult(counts=json.dumps({"00": 1, "01": 2, "10": 3, "11": 4})),
+            JobStatus.failed,
+        ),
+        (
+            2,
+            JobType.estimation,
+            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.0], stds=0.1)),
+            JobStatus.failed,
+        ),
+        (
+            3,
+            JobType.sampling,
+            "Oops",
+            JobStatus.succeeded,
+        ),
+        (4, JobType.sampling, None, JobStatus.submitted),
+        (5, JobType.sampling, None, JobStatus.ready),
+    ]
+
+    test_db.add(_get_device_model())
+    for n, jobtype, result, status in cases:
+        job_model = _get_job_model(n, jobtype)
+        job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+        if isinstance(result, str):
+            job_info.message = result
+        elif isinstance(result, JobResult):
+            job_info.result = result
+        job_model.job_info = job_info.model_dump_json()
+        test_db.add(job_model)
+        test_db.commit()
+
+        resp = client.patch(
+            f"jobs/{job_model.id}/job_info",
+            content=UpdateJobInfoRequest(overwrite_status=status).model_dump_json(),
+        )
+
+        assert resp.status_code == 400
+
+
 def test_update_job_status(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(_get_device_model())
