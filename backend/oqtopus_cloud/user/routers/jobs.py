@@ -34,6 +34,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobInfo,
     JobStatus,
     JobType,
+    SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
 )
@@ -178,6 +179,9 @@ def submit_jobs(
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
 
+        if jobtype_of_jobinfo(request.job_info) != request.job_type:
+            return BadRequestResponse("job_info is not compatible with job_type")
+
         # NOTE: method and operator is validated by pydantic
         shots = request.shots
         # name is optional
@@ -192,11 +196,11 @@ def submit_jobs(
             name=name,
             description=description,
             device_id=request.device_id,
-            job_info=json.dumps({"desc": request.job_info.model_dump()}),
+            job_info=json.dumps(request.job_info.model_dump()),
             transpiler_info=request.transpiler_info,
             simulator_info=request.simulator_info,
             mitigation_info=request.mitigation_info,
-            job_type=request.job_info.job_type,
+            job_type=request.job_type,
             shots=shots,
             created_at=datetime.now(),
         )
@@ -386,7 +390,7 @@ def model_to_schema(
             description=model.description,
             device_id=model.device_id,
             shots=model.shots,
-            job_type=JobType(job_info.desc.job_type),
+            job_type=JobType(model.job_type),
             job_info=job_info,
             status=JobStatus(model.status),
             transpiler_info=model.transpiler_info,
@@ -415,3 +419,10 @@ def model_to_schema(
         return GetJobsResponse(**dict_schema)
     else:
         return None
+
+
+def jobtype_of_jobinfo(info: SubmitJobInfo) -> JobType:
+    if info.operator is not None:
+        return JobType.estimation
+    else:
+        return JobType.sampling

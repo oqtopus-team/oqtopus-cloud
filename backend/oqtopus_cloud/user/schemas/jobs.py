@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -25,42 +25,85 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
-class JobInfoEstimation(BaseModel):
+class OperatorItem(BaseModel):
+    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """
-    The descriptor of estimation jobs
+    The Pauli string.
     """
-
-    job_type: Literal["estimation"]
-    code: Annotated[
-        str,
-        Field(
-            examples=[
-                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-            ]
-        ),
-    ]
-    operator: Annotated[str, Field(examples=["X 0 Y 1 Z 5 I 2"])]
-
-
-class JobInfoSampling(BaseModel):
+    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
     """
-    The descriptor of sampling jobs
+    Complex coefficient number in the Pauli string representation.
     """
 
-    job_type: Literal["sampling"]
-    code: Annotated[
-        str,
-        Field(
-            examples=[
-                "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-            ]
-        ),
-    ]
+
+class Estimation(BaseModel):
+    """
+    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+
+    """
+
+    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    """
+    This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+    The first element corresponds to the real part, and the second corresponds to the imaginary part.
+
+    """
+    stds: float | None = None
+    """
+    (Only for estimation jobs) The standard deviation value
+    """
+
+
+class TranspileResult(BaseModel):
+    virtual_physical_mapping: str | None = None
+
+
+class JobResult(BaseModel):
+    counts: Annotated[
+        str | None,
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ] = None
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
+    estimation: Estimation | None = None
+    """
+    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+
+    """
+    divided_result: dict[str, Any] | None = None
+    """
+    Assumed to be used for multiprogramming, but currently not supported yet.
+    """
+    properties: str | None = None
+    transpile_result: TranspileResult | None = None
 
 
 class JobInfo(BaseModel):
-    desc: JobInfoEstimation | JobInfoSampling
-    transpiled_code: Annotated[
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    combined_program: str | None = None
+    """
+    For multiprogramming jobs, this field contains the combined circuit.
+    """
+    operator: list[OperatorItem] | None = None
+    """
+    *(Only for estimation jobs)* The operator (or observable) for which the expectation
+    value is to be estimated.
+
+    """
+    transpiled_program: Annotated[
         str | None,
         Field(
             examples=[
@@ -68,15 +111,10 @@ class JobInfo(BaseModel):
             ]
         ),
     ] = None
-    result: Annotated[str | None, Field(examples=['{ "11": 4980, "00": 5020 }\n'])] = (
-        None
-    )
+    result: JobResult | None = None
+    message: str | None = None
     """
-    The result of quantum computation, set only if the computation is successful.
-    """
-    reason: str | None = None
-    """
-    The reason indicating why there is no result
+    Describing the reason why there is no result
     """
 
 
@@ -120,13 +158,33 @@ class GetJobsResponse(BaseModel):
     ] = None
 
 
+class SubmitJobInfo(BaseModel):
+    """
+    All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
+    """
+
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[OperatorItem] | None = None
+
+
 class SubmitJobRequest(BaseModel):
     name: Annotated[str, Field(examples=["Bell State Sampling"])]
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    job_info: JobInfoEstimation | JobInfoSampling
+    job_type: JobType
+    job_info: SubmitJobInfo
     transpiler_info: Annotated[str | None, Field(examples=["{}"])] = None
     """
     When specified, valid JSON string is required.

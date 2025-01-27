@@ -19,9 +19,9 @@ from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
     JobDef,
     JobInfo,
-    JobInfoSampling,
     JobStatus,
     JobType,
+    SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
 )
@@ -39,14 +39,7 @@ def _get_model(n: int) -> Job:
         "description": f"test job {n}",
         "device_id": "Kawasaki",
         "job_type": "sampling",
-        "job_info": json.dumps(
-            {
-                "desc": {
-                    "job_type": "sampling",
-                    "code": "code",
-                }
-            }
-        ),
+        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -96,9 +89,7 @@ def test_get_jobs_simple(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -115,9 +106,7 @@ def test_get_jobs_simple(
             description="test job 2",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -212,9 +201,7 @@ def test_get_jobs_filtering_startTime(
             description="test job 2",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -253,9 +240,7 @@ def test_get_jobs_filtering_endTime(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -294,9 +279,7 @@ def test_get_jobs_filtering_search_string(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -335,9 +318,7 @@ def test_get_jobs_desc_order(
             description="test job 2",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -354,9 +335,7 @@ def test_get_jobs_desc_order(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
             transpiler_info=json.dumps({"this_is": "transpiler_info"}),
             simulator_info=json.dumps({"this_is": "simulator_info"}),
             mitigation_info=json.dumps(
@@ -425,16 +404,12 @@ def test_get_jobs_all_parameters(
         GetJobsResponse(
             job_id="testjob3id",
             description="test job 3",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
         ),
         GetJobsResponse(
             job_id="testjob2id",
             description="test job 2",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
+            job_info=JobInfo(program=["code"]),
         ),
     ]
 
@@ -448,7 +423,8 @@ def test_job_sortedness(test_db):
             name=f"test-job-{n}",
             device_id="Kawasaki",
             status=JobStatus.submitted,
-            job_info=JobInfoSampling(job_type="sampling", code="code"),
+            job_type=JobType.sampling,
+            job_info=SubmitJobInfo(program=["code"]),
             simulator_info="{}",
             transpiler_info="{}",
             mitigation_info="{}",
@@ -494,9 +470,7 @@ def test_get_jobs_handler(
         description="test job 1",
         device_id="Kawasaki",
         job_type=JobType.sampling,
-        job_info=JobInfo(
-            desc=JobInfoSampling(job_type="sampling", code="code"),
-        ),
+        job_info=JobInfo(program=["code"]),
         transpiler_info=json.dumps({"this_is": "transpiler_info"}),
         simulator_info=json.dumps({"this_is": "simulator_info"}),
         mitigation_info=json.dumps(
@@ -559,7 +533,8 @@ def test_submit_get(
         name="submit-job-test",
         description="Submit job test",
         device_id="Kawasaki",
-        job_info=JobInfoSampling(job_type="sampling", code="codecodecode"),
+        job_type=JobType.sampling,
+        job_info=SubmitJobInfo(program=["codecodecode"]),
         mitigation_info=json.dumps(
             {
                 "field1": "value1",
@@ -586,7 +561,9 @@ def test_submit_get(
     # And these jobs should be same.
     assert resp_job.name == body.name
     assert resp_job.description == body.description
-    assert resp_job.job_info.desc == body.job_info
+    assert resp_job.job_type == body.job_type
+    assert resp_job.job_info.program == body.job_info.program
+    assert resp_job.job_info.result is None
 
 
 def test_submit_delete(test_db):
@@ -604,7 +581,8 @@ def test_submit_delete(test_db):
         name="submit-job-test",
         description="Submit job test",
         device_id="Kawasaki",
-        job_info=JobInfoSampling(job_type="sampling", code="codecodecode"),
+        job_type=JobType.sampling,
+        job_info=SubmitJobInfo(program=["codecodecode"]),
         mitigation_info=json.dumps(
             {
                 "field1": "value1",
@@ -637,3 +615,38 @@ def test_submit_delete(test_db):
     assert len(before_db) == len(after_db)
     for bef, aft in zip(before_db, after_db):
         assert bef == aft
+
+
+def test_submit_job_compat_error(test_db):
+    """_summary_
+    Test for **the invariance of submit and delete**:
+    submitting a job and then sequentially deleting it should result in no remaining effects."
+
+    Args:
+            test_db (_type_): _description_
+    """
+
+    body = SubmitJobRequest(
+        name="submit-job-test",
+        description="Submit job test",
+        device_id="Kawasaki",
+        job_type=JobType.estimation,
+        job_info=SubmitJobInfo(program=["codecodecode"]),
+        mitigation_info=json.dumps(
+            {
+                "field1": "value1",
+                "field2": {
+                    "subfield1": "value2",
+                    "subfield2": ["value3", 42, True],
+                },
+            }
+        ),
+        simulator_info='"This is simulator info"',
+        transpiler_info="{}",
+        shots=1024,
+        status=JobStatus.submitted,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 400

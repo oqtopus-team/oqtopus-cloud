@@ -18,9 +18,11 @@ from oqtopus_cloud.provider.schemas.jobs import (
     GetJobsResponse,
     JobDef,
     JobInfo,
+    JobResult,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
 )
@@ -147,7 +149,7 @@ def get_job(
 
 
 @router.patch(
-    "/jobs/{job_id}",
+    "/jobs/{job_id}/status",
     response_model=JobStatusUpdateResponse,
     responses={
         404: {"model": Message},
@@ -156,7 +158,7 @@ def get_job(
     },
 )
 @tracer.capture_method
-def update_job(
+def update_job_status(
     job_id: str,
     request: JobStatusUpdate,
     db: Session = Depends(get_db),
@@ -201,23 +203,32 @@ def update_job_info(
     )
 
     def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
-        job_info.transpiled_code = request.transpiled_code
+        status = request.overwrite_status
+        incoming = request.job_info
+        if incoming is None:
+            return (status, job_info)
 
-        if request.result is not None:
-            job_info.result = request.result
-            job_info.reason = None
-            return (JobStatus.succeeded, job_info)
+        job_info.transpiled_program = incoming.transpiled_program
 
-        elif request.reason is not None:
-            job_info.reason = request.reason
+        if incoming.result is not None:
+            job_info.result = incoming.result
+            job_info.message = None
+            return (status or JobStatus.succeeded, job_info)
+
+        elif incoming.message is not None:
+            job_info.message = incoming.message
             job_info.result = None
-            return (JobStatus.failed, job_info)
+            return (status or JobStatus.failed, job_info)
 
-        return (None, job_info)
+        return (status, job_info)
 
-    if request.reason is not None and request.result is not None:
+    if (
+        request.job_info is not None
+        and request.job_info.message is not None
+        and request.job_info.result is not None
+    ):
         return BadRequestResponse(
-            message="You cannot specify both a result and a reason."
+            message="You cannot specify both a result and a message."
         )
 
     try:
@@ -225,9 +236,34 @@ def update_job_info(
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
-        (status, job_info) = patch_job_info(
-            JobInfo.model_validate(json.loads(model.job_info))
-        )
+        job_info = JobInfo.model_validate(json.loads(model.job_info))
+
+        # The job result must be compatible with the job info.
+        if (
+            request.job_info is not None
+            and request.job_info.result is not None
+            and model.job_type != jobtype_of_result(request.job_info.result)
+        ):
+            return BadRequestResponse(
+                message="The job result type is not compatible with job info."
+            )
+
+        # Calculate upodated job_info.
+        (status, job_info) = patch_job_info(job_info)
+
+        # Validate the consitency of patched job_info and status
+        if (
+            # Job with non-null result should be succeeded
+            (job_info.result is not None and status != JobStatus.succeeded)
+            # Job with non-null message should not be succeeded
+            or (job_info.message is not None and status == JobStatus.succeeded)
+            # Job cannot go back to status of submitted or ready.
+            or status in [JobStatus.submitted, JobStatus.ready]
+        ):
+            return BadRequestResponse(
+                message="The overwritten status and job_info is inconsistent"
+            )
+
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
             model.status = status
@@ -256,6 +292,14 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
+def jobtype_of_result(r: JobResult) -> JobType | None:
+    if r.counts is not None:
+        return JobType.sampling
+    elif r.estimation is not None:
+        return JobType.estimation
+    return None
+
+
 def decode_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
@@ -271,22 +315,33 @@ def decode_job_info(j: Any) -> JobInfo | ValueError:
         return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
+def parse_job_type(jt: str) -> JobType | ValueError:
+    try:
+        return JobType(jt)
+    except Exception:
+        return ValueError(f"{jt} is not a valid JobType")
+
+
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
     if fields is None:
         status = decode_job_status(model.status)
-        job_info = decode_job_info(json.loads(model.job_info))
         if isinstance(status, ValueError):
             return status
+        job_info = decode_job_info(json.loads(model.job_info))
         if isinstance(job_info, ValueError):
             return job_info
+        job_type = parse_job_type(str(model.job_type))
+        if isinstance(job_type, ValueError):
+            return job_type
         return JobDef(
             job_id=model.id,
             name=model.name,
             description=model.description,
             device_id=model.device_id,
             shots=model.shots,
+            job_type=job_type,
             job_info=job_info,
             status=status,
             transpiler_info=model.transpiler_info,

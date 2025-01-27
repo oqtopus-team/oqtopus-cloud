@@ -70,7 +70,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -78,7 +78,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Device not found
+                message: Device not found
         '500':
           description: Internal Server Error
           content:
@@ -86,7 +86,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal server error
+                message: Internal server error
   /jobs:
     get:
       tags:
@@ -149,7 +149,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '500':
           description: Internal Server Error
           content:
@@ -157,7 +157,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
-                detail: Internal server error
+                message: Internal server error
   /jobs/{job_id}:
     get:
       summary: Get a job by ID
@@ -187,7 +187,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -195,7 +195,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: job not found
+                message: job not found
+  /jobs/{job_id}/status:
     patch:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
@@ -232,7 +233,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Job not found
+                message: Job not found
         '409':
           description: Returned when the specified job is not in a status thatt allows transition to the requested status.
           content:
@@ -240,7 +241,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                detail: The specified job is not in a status thatt allows transition to the requested status.
+                message: The specified job is not in a status thatt allows transition to the requested status.
   /jobs/{job_id}/job_info:
     patch:
       summary: Update selected quantum job's job_info by placing job results
@@ -280,7 +281,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -288,7 +289,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                detail: Job not found
+                message: Job not found
 components:
   schemas:
     devices.DeviceStatusUpdate:
@@ -368,24 +369,24 @@ components:
     error.BadRequest:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.NotFoundError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     error.InternalServerError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
     jobs.JobStatus:
       type: string
       enum:
@@ -400,64 +401,96 @@ components:
       type: string
       format: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    jobs.JobInfoEstimation:
+    jobs.OperatorItem:
       type: object
-      description: The descriptor of estimation jobs
       properties:
-        job_type:
+        pauli:
           type: string
-          enum:
-            - estimation
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        operator:
-          type: string
-          example: X 0 Y 1 Z 5 I 2
+          description: The Pauli string.
+          example: X 0 X 1
+        coeff:
+          description: Complex coefficient number in the Pauli string representation.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
       required:
-        - job_type
-        - code
-        - operator
-    jobs.JobInfoSampling:
+        - pauli
+    jobs.EstimationResult:
       type: object
-      description: The descriptor of sampling jobs
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
       properties:
-        job_type:
-          type: string
-          enum:
-            - sampling
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-      required:
-        - job_type
-        - code
-    jobs.JobInfoDesc:
+        exp_value:
+          description: |
+            This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+            The first element corresponds to the real part, and the second corresponds to the imaginary part.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
+        stds:
+          description: (Only for estimation jobs) The standard deviation value
+          type: number
+    jobs.JobResult:
       type: object
-      oneOf:
-        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
-        - $ref: '#/components/schemas/jobs.JobInfoSampling'
+      properties:
+        counts:
+          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
+          type: string
+          example: |-
+            {
+              "10": 84,
+              "11": 387,
+              "10": 454,
+              "01": 75
+            }
+        estimation:
+          $ref: '#/components/schemas/jobs.EstimationResult'
+        divided_result:
+          type: object
+          description: Assumed to be used for multiprogramming, but currently not supported yet.
+          properties: {}
+        properties:
+          type: string
+        transpile_result:
+          type: object
+          properties:
+            virtual_physical_mapping:
+              type: string
+      required: []
     jobs.JobInfo:
       type: object
       properties:
-        desc:
-          $ref: '#/components/schemas/jobs.JobInfoDesc'
-        transpiled_code:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        combined_program:
+          type: string
+          description: For multiprogramming jobs, this field contains the combined circuit.
+        operator:
+          description: |
+            *(Only for estimation jobs)* The operator (or observable) for which the expectation
+            value is to be estimated.
+          type: array
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+        transpiled_program:
           type: string
           example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
         result:
+          $ref: '#/components/schemas/jobs.JobResult'
+        message:
           type: string
-          description: The result of quantum computation, set only if the computation is successful.
-          example: |-
-            {
-              "11": 4980,
-              "00": 5020
-            }
-        reason:
-          type: string
-          description: The reason indicating why there is no result
+          description: Describing the reason why there is no result
       required:
-        - desc
+        - program
     jobs.GetJobsResponse:
       type: object
       properties:
@@ -525,11 +558,11 @@ components:
         description: Bell State Sampling Example
         device_id: Kawasaki
         job_info:
-          desc:
-            job_type: sampling
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          transpiled_code: null
-          result: null
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          combined_program: null
+          transpiled_prgoram: null
+          result: {}
           reason: null
         transpiler_info: |-
           {
@@ -559,6 +592,11 @@ components:
         status: submitted
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
+    jobs.JobType:
+      type: string
+      enum:
+        - sampling
+        - estimation
     jobs.JobDef:
       type: object
       properties:
@@ -578,6 +616,8 @@ components:
           minimum: 1
           maximum: 10000000
           example: '1000'
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
         job_info:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
@@ -622,6 +662,7 @@ components:
       required:
         - job_id
         - device_id
+        - job_type
         - job_info
         - shots
         - status
@@ -631,11 +672,11 @@ components:
         name: Bell State Sampling
         description: Bell State Sampling Example
         device_id: Kawasaki
+        job_type: sampling
         job_info:
-          desc:
-            job_type: sampling
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          transpiled_code: null
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          transpiled_program: null
           result: null
           reason: null
         transpiler_info: |-
@@ -661,7 +702,6 @@ components:
           }
         mitigation_info: |
           { "ro_error_mitigation": "pseudo_inverse" }
-        job_type: sampling
         shots: 1000
         status: submitted
         created_at: '2022-10-19T11:45:34+09:00'
@@ -686,19 +726,30 @@ components:
     error.ConflictError:
       type: object
       properties:
-        detail:
+        message:
           type: string
       required:
-        - detail
+        - message
+    jobs.UpdateJobInfo:
+      type: object
+      properties:
+        transpiled_program:
+          type: string
+        result:
+          $ref: '#/components/schemas/jobs.JobResult'
+        message:
+          type: string
     jobs.UpdateJobInfoRequest:
       type: object
       properties:
-        transpiled_code:
-          type: string
-        result:
-          type: string
-        reason:
-          type: string
+        overwrite_status:
+          description: Overwrite the job status. If this field is not specified, the status will be updated automatically.
+          $ref: '#/components/schemas/jobs.JobStatus'
+        execution_time:
+          type: number
+          description: Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
+        job_info:
+          $ref: '#/components/schemas/jobs.UpdateJobInfo'
     jobs.UpdateJobInfoResponse:
       type: object
       properties:
