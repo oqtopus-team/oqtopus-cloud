@@ -7,6 +7,7 @@ import os
 
 import setuptools._distutils.util
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 from mangum import (
     Mangum,
 )
@@ -18,13 +19,10 @@ from oqtopus_cloud.user.routers import (
     devices as device_router,
 )
 from oqtopus_cloud.user.routers import (
-    results as result_router,
-)
-from oqtopus_cloud.user.routers import (
-    tasks as task_router,
+    jobs as job_router,
 )
 
-app: FastAPI = FastAPI()
+app: FastAPI = add_pagination(FastAPI())
 
 app.add_middleware(CustomMiddleware)
 
@@ -48,12 +46,8 @@ app.include_router(
     tags=["device"],
 )
 app.include_router(
-    task_router.router,
-    tags=["task"],
-)
-app.include_router(
-    result_router.router,
-    tags=["result"],
+    job_router.router,
+    tags=["job"],
 )
 
 handler: Mangum = Mangum(

@@ -1,0 +1,385 @@
+jobs:
+  get:
+    tags:
+      - job
+    summary: "List all quantum jobs"
+    description: |-
+        By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
+
+        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+
+        Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
+    operationId: listJobs
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: fields
+        in: query
+        description: |-
+          Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
+
+          If parameter is specified and requested job field is not defined for a job null is returned.
+
+          If parameter is omitted all available job properties are returned. Undefined job properties (null properties) are not included in the response.
+        required: false
+        schema:
+          type: string
+          maxLength: 1024
+          example: "job_id,status,name"
+      - name: startTime
+        in: query
+        description: |-
+          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+        required: false
+        schema:
+          type: string
+          format: date-time
+          example: "2022-10-19T11:45:34+09:00"
+      - name: endTime
+        in: query
+        description: |-
+          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+        required: false
+        schema:
+          type: string
+          format: date-time
+          example: "2022-10-19T11:45:34+09:00"
+      - name: q
+        in: query
+        description: |-
+          Allows to filter the list of jobs to fetch by job's name and description. If specified only jobs which name or description contains specified search string are returned.
+        required: false
+        schema:
+          type: string
+          maxLength: 1024
+          example: "Bell"
+      - name: page
+        in: query
+        description: |-
+          Set jobs list page number to fetch.
+          If requested page number exceeds number of all pages last page is returned.
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 4294967295
+          default: 1
+      - name: size
+        in: query
+        description: |-
+          Configure number of jobs per page
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          default: 10
+      - name: order
+        in: query
+        description: |-
+          Specify jobs order according to creation time (createdAt property)
+        required: false
+        schema:
+          type: string
+          enum:
+            ["DESC", "ASC"]
+          default: "ASC"
+    responses:
+      "200":
+        description: "Return a list of submitted quantum jobs"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/jobs.yaml#/jobs.GetJobsResponse"
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.UnauthorizedError'
+            example:
+              message: Unauthorized
+  post:
+    tags:
+      - job
+    summary: "Submit a quantum job"
+    description: "Submit a quantum job"
+    operationId: submitJob
+    security:
+      - BearerAuth: []
+    requestBody:
+      description: "Quantum job to be submitted"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.SubmitJobRequest"
+          examples:
+            simulator:
+              description: Simulator example
+              value:
+                {
+                  name: "Bell State Sampling",
+                  description: "Bell State Sampling Example",
+                  device_id: "Kawasaki",
+                  job_type: "sampling",
+                  job_info: {
+                    program:
+                      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+                  },
+                  transpiler_info: '{}',
+                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}',
+                  mitigation_info: '{}',
+                  shots: 1000,
+                  status: "submitted",
+                  created_at: "2022-10-19T11:45:34",
+                  updated_at: "2022-10-19T11:45:34"
+                }
+            qpu:
+              description: QPU example
+              value:
+                {
+                  name: "Bell State Estimation",
+                  description: "Bell State Estimation Example",
+                  device_id: "Kawasaki",
+                  job_type: "estimation",
+                  job_info: {
+                    program: [
+                      "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                    ],
+                    operator: [
+                      {
+                        pauli: "X 0 X 1",
+                        coeff: [1.5, 2.8]
+                      },
+                      {
+                        pauli: "Y 0 Z 1",
+                        coeff: [1.2, -2e-8]
+                      }
+                    ]
+                  },
+                  transpiler_info: '{"qubit_allocation": {"0": 12, "1": 16}, "skip_transpilation": false, "seed_transpilation": 873}',
+                  simulator_info: '{}',
+                  mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}',
+                  shots: 1000,
+                  status: "submitted",
+                  created_at: "2022-10-19T11:45:34",
+                  updated_at: "2022-10-19T11:45:34"
+                }
+
+    responses:
+      "200":
+        description: "Job submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.SubmitJobResponse"
+            example:
+              job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+
+jobs.jobId:
+  get:
+    tags:
+      - job
+    summary: "Get selected job"
+    description: "Get selected job"
+    operationId: getSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum job"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+  delete:
+    tags:
+      - job
+    summary: "Delete job"
+    description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion."
+    operationId: deleteSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Quantum job deleted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Quantum job deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+
+jobs.jobId.status:
+  get:
+    tags:
+      - job
+    summary: "Get selected job's status"
+    description: "Get selected job's status"
+    operationId: getSamplingJobStatus
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return quantum job status"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.GetJobStatusResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+
+jobs.jobId.cancel:
+  post:
+    tags:
+      - job
+    summary: "Cancel job"
+    description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running."
+    operationId: cancelSamplingJob
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Job cancelled"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: cancel request accepted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found

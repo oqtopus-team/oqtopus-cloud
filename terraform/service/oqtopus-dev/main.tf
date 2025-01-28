@@ -44,7 +44,9 @@ module "provider_api" {
   lambda_handler                = "oqtopus_cloud.provider.lambda_function.handler"
   lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.provider_cognito.user_pool_arn]
+  use_cognito_authorizer        = false
+  require_api_key               = true
+  cognito_user_pool_arns        = []
   power_tools_metrics_namespace = "provider-api"
   power_tools_service_name      = "provider-api"
   allow_origins                 = "*"

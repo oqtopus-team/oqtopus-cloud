@@ -34,7 +34,8 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 - [AWS System Architecture Diagram](./architecture/aws_system_architecture_diagram.md)
 - [Sequence Diagram](./architecture/sequence_diagram.md)
-- [Task State Transition Diagram](./architecture/task_state_transition_diagram.md)
+- [Quantum Jobs in Detail](./architecture/quantum_jobs_in_detail.md)
+- [Job State Transition Diagram](./architecture/task_state_transition_diagram.md)
 
 ### Developer Guidelines
 

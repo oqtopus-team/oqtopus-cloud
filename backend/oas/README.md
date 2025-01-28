@@ -6,7 +6,7 @@
 
 - ファイル名は、原則`{tag}.{FooBar}.yaml`の形式とし、FooBarはキャメルケースとする
 - ファイル名の`tag`は、APIのリソース名とする
-- ファイル名の`FooBar`は、後続するAPIのメソッド名とする(例: `task/{task_id}`→`task.TaskId.yaml`)
+- ファイル名の`FooBar`は、後続するAPIのメソッド名とする(例: `job/{job_id}`→`job.JobId.yaml`)
 - `datamodel-code-generator`は、`{tag}.{FooBar}.yaml`の形式のファイルを読み込むため、`tag`は、APIのリソース名とし、`FooBar`は、自動生成されるコードのクラス名とする
 
 #### 例1.1
@@ -16,21 +16,21 @@ tree
 .
 ├── openapi.yaml
 ├── parameters
-│   └── task.TaskId.yaml
+│   └── job.JobId.yaml
 ├── paths
 │   ├── hello.yaml
-│   ├── task.TaskId.yaml
-│   └── task.yaml
+│   ├── job.JobId.yaml
+│   └── job.yaml
 ├── root.yaml
 └── schemas
     ├── error.BadRequest.yaml
     ├── error.InternalServerError.yaml
     ├── error.NotFoundError.yaml
     ├── hello.HelloWorldResponse.yaml
-    ├── task.GetTaskResponse.yaml
-    ├── task.PostTaskRequest.yaml
-    ├── task.PostTaskResponse.yaml
-    └── task.TaskId.yaml
+    ├── job.GetJobResponse.yaml
+    ├── job.PostJobRequest.yaml
+    ├── job.PostJobResponse.yaml
+    └── job.JobId.yaml
 ```
 
 ### 1.2 スキーマの命名規則
@@ -41,12 +41,12 @@ tree
 #### 例1.2
 
 ```yaml
-# schemas/task.GetTaskResponse.yaml
-description: detail of task response
+# schemas/job.GetJobResponse.yaml
+description: detail of job response
 type: object
 properties:
-  task_id:
-    $ref: "task.TaskId.yaml"
+  job_id:
+    $ref: "job.JobId.yaml"
   code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
   device: {type: string, example: "Kawasaki"}
   n_qubits:
@@ -94,7 +94,7 @@ properties:
         optimization_swap_level: 1
       }
 required: [
-  taskId, code, device, skip_transpilation
+  jobId, code, device, skip_transpilation
 ]
 
 ```
