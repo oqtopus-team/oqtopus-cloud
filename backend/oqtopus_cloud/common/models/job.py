@@ -2,7 +2,7 @@ import datetime
 import enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String
+from sqlalchemy import TIMESTAMP, Enum, String, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -30,6 +30,11 @@ class Job(Base):
         job_type (str): The action to be performed by the job (sampling or estimation).
         shots (int): The number of shots for the job.
         status (str): The status of the job (submitted, ready, running, succeeded, failed, cancelled).
+        execution_time(float): The duration of the QPU execution.
+        submitted_at(datetime): The timestamp when the job was submitted.
+        ready_at(datetime): The timestamp when the job became ready.
+        running_at(datetime): The timestamp when the job started running.
+        ended_at(datetime): The timestamp when the job ended.
         created_at (datetime): The timestamp when the job was created.
         updated_at(datetime): The timestamp when the job was last updated.
     """
@@ -69,6 +74,22 @@ class Job(Base):
         String(32),
         nullable=False,
         default="submitted",
+    )
+    execution_time: Mapped[float]= mapped_column(
+        Float,
+        nullable=True,
+    )
+    submitted_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP, nullable=True
+    )
+    ready_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP, nullable=True
+    )
+    running_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP, nullable=True
+    )
+    ended_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP, nullable=True
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,

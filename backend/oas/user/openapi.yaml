@@ -796,6 +796,25 @@ components:
           $ref: '#/components/schemas/jobs.SimulatorInfo'
         mitigation_info:
           $ref: '#/components/schemas/jobs.MitigationInfo'
+        execution_time:
+          type: number
+          example: '10.123'
+        submitted_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ready_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        running_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ended_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
           format: date-time
@@ -824,6 +843,11 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
+        execution_time: 10.123
+        submitted_at: '2022-10-19T11:45:34+09:00'
+        ready_at: '2022-10-19T11:45:34+09:00'
+        running_at: '2022-10-19T11:45:34+09:00'
+        ended_at: '2022-10-19T11:45:34+09:00'
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
     jobs.SubmitJobInfo:
@@ -948,6 +972,25 @@ components:
           $ref: '#/components/schemas/jobs.SimulatorInfo'
         mitigation_info:
           $ref: '#/components/schemas/jobs.MitigationInfo'
+        execution_time:
+          type: number
+          example: '10.123'
+        submitted_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ready_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        running_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ended_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
           format: date-time
@@ -985,6 +1028,11 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
+        execution_time: 10.123
+        submitted_at: '2022-10-19T11:45:34+09:00'
+        ready_at: '2022-10-19T11:45:34+09:00'
+        running_at: '2022-10-19T11:45:34+09:00'
+        ended_at: '2022-10-19T11:45:34+09:00'
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:

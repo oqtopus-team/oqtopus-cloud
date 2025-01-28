@@ -139,6 +139,19 @@ class GetJobsResponse(BaseModel):
         str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
     ] = None
     status: JobStatus | None = None
+    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
+    submitted_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ready_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    running_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ended_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
     created_at: Annotated[
         datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
@@ -182,6 +195,19 @@ class JobDef(BaseModel):
         str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
     ] = None
     status: JobStatus
+    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
+    submitted_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ready_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    running_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ended_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
     created_at: Annotated[datetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
     updated_at: Annotated[
         datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
