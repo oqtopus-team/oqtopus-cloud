@@ -95,7 +95,10 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
-fmt-all: fmt-common fmt-user fmt-provider lint-admin ## Format all code
+fmt-lambda_auth: ## Format admin code
+	@poetry run ruff format oqtopus_cloud/lambda_auth
+
+fmt-all: fmt-common fmt-user fmt-provider lint-admin fmt-lambda_auth ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -113,7 +116,11 @@ lint-admin: ## Run admin linters
 	@poetry run ruff check oqtopus_cloud/admin
 	@poetry run mypy -p oqtopus_cloud.admin
 
-lint-all: lint-common lint-user lint-provider lint-admin ## Run all linters
+lint-lambda_auth:
+	@poetry run ruff check ./oqtopus_cloud/lambda_auth
+	@poetry run mypy -p oqtopus_cloud.lambda_auth
+
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -138,6 +145,12 @@ test-admin: fmt-admin lint-admin ## Run admin tests
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
 	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
 	@mv .coverage .coverage-admin
+
+test-lambda_auth: fmt-lambda_auth lint-lambda_auth ## Run lambda_auth tests
+	  @export POWERTOOLS_METRICS_NAMESPACE=lambda_auth && \
+    export POWERTOOLS_SERVICE_NAME=lambda_auth && \
+    poetry run pytest tests/oqtopus_cloud/lambda_auth/ -vv --cov=oqtopus_cloud/lambda_auth --cov-report=xml:coverage-lambda_auth.xml --cov-report=html:htmlcov-lambda_auth
+	  @mv .coverage .coverage-lambda_auth
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
