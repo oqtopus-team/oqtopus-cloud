@@ -1,5 +1,6 @@
-from typing import Optional
 import datetime
+from typing import Optional
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -11,25 +12,24 @@ from sqlalchemy.orm import (
 )
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
-from oqtopus_cloud.common.session import (
-    get_db,
-)
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.errors import (
-    Detail,
     BadRequestErrorResponse,
+    Detail,
     InternalServerErrorResponse,
 )
-
 from oqtopus_cloud.admin.schemas.whitelist_user import (
     GetWhitelistUserResponse,
     WhitelistUserRegisterRequest,
 )
 from oqtopus_cloud.admin.schemas.whitelist_users import (
     GetWhitelistUsersResponse,
-    WhitelistUsersRegisterRequest,
     WhitelistUsersDeleteRequest,
+    WhitelistUsersRegisterRequest,
+)
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
+from oqtopus_cloud.common.session import (
+    get_db,
 )
 
 from . import LoggerRouteHandler

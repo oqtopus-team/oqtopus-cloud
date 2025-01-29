@@ -1,0 +1,127 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud User API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud User API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Local server url
+paths:
+  /signup:
+    post:
+      tags:
+        - signup
+      summary: Signup
+      description: Signup a new user
+      operationId: signup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signup.SignupRequest'
+      responses:
+        '201':
+          description: Signup successful
+        '400':
+          description: Signup failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /confirm:
+    put:
+      tags:
+        - signup
+      summary: Confirm signup
+      description: Confirm a new user
+      operationId: confirmSignup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/confirm_signup.ConfirmationSignupRequest'
+      responses:
+        '200':
+          description: Confirmation successful
+        '400':
+          description: Confirmation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    signup.SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+    error.BadRequest:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    error.InternalServerError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    confirm_signup.ConfirmationSignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: The email address of the user
+        confirmation_code:
+          type: string
+          description: The confirmation code sent to the user
+      required:
+        - email
+        - confirmation_code

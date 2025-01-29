@@ -69,7 +69,7 @@ module "admin_api" {
   lambda_handler                = "oqtopus_cloud.admin.lambda_function.handler"
   lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.admin_cognito.user_pool_arn]
   power_tools_metrics_namespace = "admin-api"
   power_tools_service_name      = "admin-api"
   allow_origins                 = "*"

@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-all-schema run-user run-provider run-admin up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -25,6 +25,13 @@ generate-admin-schema: ## Generate admin schema
 	INPUT=./oas/admin/openapi.yaml \
 	OUTPUT=oqtopus_cloud/admin/schemas
 	@$(MAKE) fmt-admin
+
+generate-user_signup-schema: ## Generate user_signup schema
+	@cd oas && $(MAKE) generate-user_signup
+	@$(MAKE) generate \
+	INPUT=./oas/user_signup/openapi.yaml \
+	OUTPUT=oqtopus_cloud/user_signup/schemas
+	@$(MAKE) fmt-user_signup
 
 
 generate:
@@ -77,6 +84,11 @@ run-admin: ## Start the Admin API
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
 	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
+run-user_signup: ## Start the user_signup API
+	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
+	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
+	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
 up: ## Start the DB
 	@docker compose up
 
@@ -95,7 +107,10 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
-fmt-all: fmt-common fmt-user fmt-provider lint-admin ## Format all code
+fmt-user_signup: ## Format user_signup code
+	@poetry run ruff format oqtopus_cloud/user_signup
+
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-user_signup ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -113,7 +128,11 @@ lint-admin: ## Run admin linters
 	@poetry run ruff check oqtopus_cloud/admin
 	@poetry run mypy -p oqtopus_cloud.admin
 
-lint-all: lint-common lint-user lint-provider lint-admin ## Run all linters
+lint-user_signup: ## Run user_signup linters
+	@poetry run ruff check oqtopus_cloud/user_signup
+	@poetry run mypy -p oqtopus_cloud.user_signup
+
+lint-all: lint-common lint-user lint-provider lint-admin lint-user_signup ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -138,6 +157,12 @@ test-admin: fmt-admin lint-admin ## Run admin tests
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
 	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
 	@mv .coverage .coverage-admin
+
+test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
+	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
+	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
+	poetry run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
+	@mv .coverage .coverage-user_signup
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \

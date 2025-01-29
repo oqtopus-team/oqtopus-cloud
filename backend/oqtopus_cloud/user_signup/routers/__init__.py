@@ -4,7 +4,7 @@ from aws_lambda_powertools.metrics import MetricUnit, single_metric
 from fastapi import Request, Response
 from fastapi.routing import APIRoute
 
-from oqtopus_cloud.admin.conf import logger
+from oqtopus_cloud.user_signup.conf import logger
 
 
 class LoggerRouteHandler(APIRoute):

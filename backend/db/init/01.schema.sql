@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS main.devices (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-drop table if exists  main.jobs;
+drop table if exists main.jobs;
 CREATE TABLE IF NOT EXISTS main.jobs (
   id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-drop table if exists  main.users;
+drop table if exists main.users;
 CREATE TABLE IF NOT EXISTS users (
     id                serial PRIMARY KEY,
     cognito_id        VARCHAR(255) UNIQUE NOT NULL,
@@ -51,8 +51,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 drop table if exists main.whitelist_users;
-CREATE TABLE
-  whitelist_users (
+CREATE TABLE IF NOT EXISTS whitelist_users (
     id serial PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     group_id VARCHAR(255) NOT NULL,

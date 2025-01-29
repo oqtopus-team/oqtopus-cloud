@@ -1,20 +1,17 @@
 from datetime import datetime
-from fastapi.testclient import TestClient
-from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.admin.lambda_function import app
 
+from fastapi.testclient import TestClient
+from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.user import (
     GetOneUserResponse,
     Status,
     UserUpdateStatusRequest,
 )
 from oqtopus_cloud.admin.schemas.users import GetUsersResponse
+from oqtopus_cloud.common.models.user import User
 from pydantic.type_adapter import TypeAdapter
 
 client = TestClient(app)
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def _get_model(n: int) -> User:

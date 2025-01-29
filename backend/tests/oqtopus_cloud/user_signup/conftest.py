@@ -5,14 +5,13 @@ from typing import (
 
 import boto3
 import pytest
-from fastapi import Request as Event
-from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.user_signup.lambda_function import app
 from sqlalchemy import (
     create_engine,
 )
@@ -98,42 +97,62 @@ def test_db() -> (
 
 
 class FakeCognitoClient:
-    def admin_set_user_mfa_preference(
+    def __init__(self):
+        self.confirm_sign_up_exception = None
+
+    def sign_up(
         self,
-        SMSMfaSettings=None,
-        SoftwareTokenMfaSettings=None,
+        ClientId=None,
         Username=None,
-        UserPoolId=None,
-        **kwargs,
+        Password=None,
+        UserAttributes=[
+            {"Name": "email", "Value": None},
+        ],
+        ValidationData=[],
     ):
         return {"Response": "Ok"}
 
-    def admin_delete_user(
+    def confirm_sign_up(
         self,
-        SMSMfaSettings=None,
-        SoftwareTokenMfaSettings=None,
+        ClientId=None,
         Username=None,
-        UserPoolId=None,
-        **kwargs,
+        ConfirmationCode=None,
+        ForceAliasCreation=False,
     ):
+        if self.confirm_sign_up_exception:
+            raise self.confirm_sign_up_exception
         return {"Response": "Ok"}
+
+    def admin_get_user(
+        self,
+        UserPoolId=None,
+        Username=None,
+    ):
+        return {
+            "Username": "user@example.com",
+            "UserAttributes": [
+                {"Name": "sub", "Value": "cognito-id-1234-5678-9012"},
+                {"Name": "email", "Value": "user@example.com"},
+                {"Name": "email_verified", "Value": "true"},
+            ],
+            "Enabled": True,
+            "UserStatus": "CONFIRMED",
+        }
 
 
 def fake_boto3_client(service, region_name=None, **kwargs):
     if service == "cognito-idp":
-        return FakeCognitoClient()
+        return fake_cognito_client
     raise ValueError(f"Unsupported service: {service}")
 
 
-@pytest.fixture(autouse=True)
-def override_boto3_client(monkeypatch):
-    monkeypatch.setattr(boto3, "client", fake_boto3_client)
-
-
 @pytest.fixture
-def apigw_event_dummy():
-    response = Event({"type": "http"})
-    response.user_pool_id = "dummy_user_pool_id"
-    response.region = "dummy_region"
-    response.state.owner = "username_1"
-    return response
+def fake_cognito_client_fixture():
+    return FakeCognitoClient()
+
+
+@pytest.fixture(autouse=True)
+def override_boto3_client(monkeypatch, fake_cognito_client_fixture):
+    global fake_cognito_client
+    fake_cognito_client = fake_cognito_client_fixture
+    monkeypatch.setattr(boto3, "client", fake_boto3_client)

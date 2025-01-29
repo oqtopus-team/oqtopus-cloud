@@ -1,0 +1,12 @@
+confirm-mfa.MFAConfirmationRequest:
+  type: object
+  properties:
+    access_token:
+      type: string
+      description: The access token of the user
+    confirmation_code:
+      type: string
+      description: The confirmation code sent to the user
+  required:
+    - email
+    - confirmation_code

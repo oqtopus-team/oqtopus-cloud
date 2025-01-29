@@ -13,13 +13,13 @@ from mangum import (
 )
 from starlette.middleware.cors import CORSMiddleware
 
-from oqtopus_cloud.admin.conf import logger, metrics, tracer
-from oqtopus_cloud.admin.middleware import CustomMiddleware
-from oqtopus_cloud.admin.routers import (
-    users as users_router,
+from oqtopus_cloud.user_signup.conf import logger, metrics, tracer
+from oqtopus_cloud.user_signup.middleware import CustomMiddleware
+from oqtopus_cloud.user_signup.routers import (
+    confirm_signup as confirm_signup_router,
 )
-from oqtopus_cloud.admin.routers import (
-    whitelist_users as whitelist_router,
+from oqtopus_cloud.user_signup.routers import (
+    signup as signup_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -42,13 +42,13 @@ app.add_middleware(
 )
 
 app.include_router(
-    users_router.router,
-    tags=["user"],
+    signup_router.router,
+    tags=["signup"],
 )
 
 app.include_router(
-    whitelist_router.router,
-    tags=["whitelist"],
+    confirm_signup_router.router,
+    tags=["confirm"],
 )
 
 handler: Mangum = Mangum(
