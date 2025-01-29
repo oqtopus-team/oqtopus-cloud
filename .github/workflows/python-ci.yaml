@@ -65,6 +65,7 @@ jobs:
       with:
         name: .coverage-${{ matrix.target }}
         path: ./backend/.coverage-${{ matrix.target }}
+        include-hidden-files: true
 
   coverage:
     runs-on: ubuntu-latest
