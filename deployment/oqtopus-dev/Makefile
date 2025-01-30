@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help zip-user zip-provider zip-all zip deploy-user deploy-provider deploy-admin deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
+.PHONY: help zip-user zip-provider zip-admin zip-all zip deploy-user deploy-provider deploy-admin deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
 
 include .env
 export
@@ -135,7 +135,7 @@ test-admin: ## Test Admin API(connect to the dev environment)
 	API_URL=$(USER_API_URL) \
 	APP=admin
 
-test-all: test-user test-provider ## Test All APIs(connect to the dev environment)
+test-all: test-user test-provider test-admin ## Test All APIs(connect to the dev environment)
 
 test:
 	@cd ../../ && \

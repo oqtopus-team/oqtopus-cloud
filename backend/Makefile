@@ -48,7 +48,7 @@ generate:
 	--use-default \
 	--output ${OUTPUT}
 
-generate-all-schema: ## Generate user and provider schemas
+generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
 	@$(MAKE) generate-admin-schema

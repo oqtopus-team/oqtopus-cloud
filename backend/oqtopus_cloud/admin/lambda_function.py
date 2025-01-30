@@ -17,6 +17,8 @@ from oqtopus_cloud.admin.conf import logger, metrics, tracer
 from oqtopus_cloud.admin.middleware import CustomMiddleware
 from oqtopus_cloud.admin.routers import (
     users as users_router,
+)
+from oqtopus_cloud.admin.routers import (
     whitelist_users as whitelist_router,
 )
 

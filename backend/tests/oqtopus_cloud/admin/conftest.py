@@ -1,18 +1,18 @@
 import os
-import boto3
 from typing import (
     Generator,
 )
-from fastapi import Request as Event
 
+import boto3
 import pytest
+from fastapi import Request as Event
+from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.session import (
     get_db,
 )
-from oqtopus_cloud.admin.lambda_function import app
 from sqlalchemy import (
     create_engine,
 )
@@ -43,11 +43,13 @@ class TestingSession(Session):
 
 
 @pytest.fixture(scope="function")
-def test_db() -> Generator[
-    Session,
-    None,
-    None,
-]:
+def test_db() -> (
+    Generator[
+        Session,
+        None,
+        None,
+    ]
+):
     """_summary_
 
     Yields:
@@ -71,11 +73,13 @@ def test_db() -> Generator[
     db = TestSessionLocal()
 
     # https://fastapi.tiangolo.com/advanced/testing-dependencies/
-    def get_db_for_testing() -> Generator[
-        Session,
-        None,
-        None,
-    ]:
+    def get_db_for_testing() -> (
+        Generator[
+            Session,
+            None,
+            None,
+        ]
+    ):
         try:
             yield db
             db.commit()

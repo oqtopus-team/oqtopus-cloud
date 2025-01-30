@@ -1,31 +1,30 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Body, status
-from fastapi import Request as Event
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-import boto3
 
-from oqtopus_cloud.common.session import (
-    get_db,
-)
-from oqtopus_cloud.common.models.user import User
+import boto3
+from fastapi import APIRouter, Body, Depends, status
+from fastapi import Request as Event
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from oqtopus_cloud.admin.conf import logger, tracer
-from oqtopus_cloud.admin.schemas.users import (
-    GetUsersResponse,
+from oqtopus_cloud.admin.schemas.errors import (
+    Detail,
+    InternalServerErrorResponse,
+    NotFoundErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.user import (
     GetOneUserResponse,
-)
-from oqtopus_cloud.admin.schemas.user import (
     UserUpdateStatusRequest,
 )
-from oqtopus_cloud.admin.schemas.errors import (
-    Detail,
-    NotFoundErrorResponse,
-    InternalServerErrorResponse,
+from oqtopus_cloud.admin.schemas.users import (
+    GetUsersResponse,
 )
-from . import LoggerRouteHandler
+from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.session import (
+    get_db,
+)
 
+from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 

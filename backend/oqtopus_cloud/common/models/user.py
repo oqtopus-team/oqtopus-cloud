@@ -1,6 +1,8 @@
 import datetime
+
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import String, Integer, Boolean, DateTime
+
 from oqtopus_cloud.common.models.base import (
     Base,
 )
