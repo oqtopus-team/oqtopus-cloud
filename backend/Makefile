@@ -48,7 +48,7 @@ generate:
 	--use-default \
 	--output ${OUTPUT}
 
-generate-all-schema: ## Generate user and provider schemas
+generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
 	@$(MAKE) generate-admin-schema
@@ -95,10 +95,10 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
-fmt-lambda_auth: ## Format admin code
+fmt-lambda_auth: ## Format lambda_auth code
 	@poetry run ruff format oqtopus_cloud/lambda_auth
 
-fmt-all: fmt-common fmt-user fmt-provider lint-admin fmt-lambda_auth ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common

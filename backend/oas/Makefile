@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: lint-user lint-provider lint-all generate-user generate-provider generate-all help
+.PHONY: lint-user lint-provider lint-admin lint-all generate-user generate-provider generate-admin generate-all help
 
 lint-user: ## Lint user openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli lint user/openapi.yaml
@@ -10,10 +10,10 @@ lint-user: ## Lint user openapi.yaml
 lint-provider: ## Lint provider openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli lint provider/openapi.yaml
 
-lint-admin: ## Lint provider openapi.yaml
+lint-admin: ## Lint admin openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli lint admin/openapi.yaml
 
-lint-all: lint-user lint-provider ## Lint user and provider
+lint-all: lint-user lint-provider lint-admin ## Lint user, provider, and admin
 
 generate-user: ## Generate user openapi.yaml
 	@docker pull redocly/cli
@@ -30,7 +30,7 @@ generate-admin: ## Generate admin openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli bundle /spec/admin/root.yaml -o /spec/admin/openapi.yaml
 	@$(MAKE) lint-admin
 
-generate-all: generate-user generate-provider generate-admin ## Generate user and provider openapi.yaml
+generate-all: generate-user generate-provider generate-admin ## Generate user, provider, admin openapi.yaml
 
 help: ## Show this help message
 	@echo "Usage: make [target]"

@@ -1,6 +1,7 @@
 import datetime
 from typing import Optional
-from sqlalchemy import Integer, String, Boolean, TIMESTAMP
+
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
