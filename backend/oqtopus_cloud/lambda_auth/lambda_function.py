@@ -3,6 +3,7 @@ from sqlalchemy import select
 from typing import Optional
 import os
 import boto3
+from datetime import datetime
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.lambda_auth.conf import logger
 from oqtopus_cloud.common.session import get_db
@@ -79,9 +80,19 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         # Get a database session
         dbs = get_db()
         db = next(dbs)
-        stmt = select(User.cognito_id).where(User.api_token_secret == api_token)
-        # Query
-        cognito_id = db.execute(stmt).scalars().first()
+
+        # Get the API token expiration from the database
+        stmt_api_token_expiration = select(User.api_token_expiration).where(User.api_token_secret == api_token)
+        api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
+
+        # Check the API token expiration
+        if (api_token_expiration is None) or (api_token_expiration < datetime.now()):
+            logger.error("API token is expired.")
+            raise Exception("Internal Server Error")
+
+        # Get the Cognito ID from the database
+        stmt_cognito_id = select(User.cognito_id).where(User.api_token_secret == api_token)
+        cognito_id = db.execute(stmt_cognito_id).scalars().first()
         db.close()
     except Exception as e:
         logger.error(f"Database error {e}")
