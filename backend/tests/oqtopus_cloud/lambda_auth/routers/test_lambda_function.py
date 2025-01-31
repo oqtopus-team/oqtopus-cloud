@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 from oqtopus_cloud.common.models.user import User
@@ -88,7 +88,7 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
     return const
 
 
-def _get_model(n: int) -> User:
+def _get_model(n: int, expiration_day=90) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
@@ -100,6 +100,7 @@ def _get_model(n: int) -> User:
         "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
         "require_mfa_reset": False,
+        "api_token_expiration": datetime.now().replace(second=0, microsecond=0) + timedelta(days=expiration_day)
     }
     return User(**model_dict)
 
@@ -123,6 +124,23 @@ def test__verify_api_token(test_session, monkeypatch):
     ret = _verify_api_token("api_token_secret_1")
 
     assert ret == "fake_username"
+
+
+def test__verify_api_token_expired(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    try:
+        ret = _verify_api_token("api_token_secret_1")
+    except Exception as e:
+        assert str(e) == "Internal Server Error"
+    else:
+        assert False
 
 
 def test__generate_policy_allow(
