@@ -82,7 +82,9 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         db = next(dbs)
 
         # Get the API token expiration from the database
-        stmt_api_token_expiration = select(User.api_token_expiration).where(User.api_token_secret == api_token)
+        stmt_api_token_expiration = select(User.api_token_expiration).where(
+            User.api_token_secret == api_token
+        )
         api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
 
         # Check the API token expiration
@@ -91,7 +93,9 @@ def _verify_api_token(api_token: Optional[str]) -> str:
             raise Exception("Internal Server Error")
 
         # Get the Cognito ID from the database
-        stmt_cognito_id = select(User.cognito_id).where(User.api_token_secret == api_token)
+        stmt_cognito_id = select(User.cognito_id).where(
+            User.api_token_secret == api_token
+        )
         cognito_id = db.execute(stmt_cognito_id).scalars().first()
         db.close()
     except Exception as e:
