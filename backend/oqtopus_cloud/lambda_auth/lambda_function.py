@@ -13,6 +13,8 @@ def _verify_id_token(id_token: Optional[str]) -> str:
         logger.error("ID token is None")
         raise Exception("Internal Server Error")
 
+    id_token = id_token.replace("Bearer ", "")
+
     # Get environment variables
     try:
         REGION = os.environ["REGION"]
