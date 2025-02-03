@@ -94,7 +94,9 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
 
         # Check the API token expiration
-        if (api_token_expiration is None) or (api_token_expiration < datetime.now(utc)):
+        if (api_token_expiration is None) or (
+            api_token_expiration.astimezone(utc) < datetime.now(utc)
+        ):
             logger.error("API token is expired.")
             raise Exception("Internal Server Error")
 
