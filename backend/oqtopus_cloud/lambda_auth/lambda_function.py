@@ -1,12 +1,18 @@
+import os
+from datetime import datetime
+from typing import Optional
+
+import boto3
 import jwt
 from sqlalchemy import select
-from typing import Optional
-import os
-import boto3
-from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.lambda_auth.conf import logger
 from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.lambda_auth.conf import logger
+
+jst = ZoneInfo("Asia/Tokyo")
+utc = ZoneInfo("UTC")
 
 
 def _verify_id_token(id_token: Optional[str]) -> str:
@@ -88,7 +94,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
 
         # Check the API token expiration
-        if (api_token_expiration is None) or (api_token_expiration < datetime.now()):
+        if (api_token_expiration is None) or (api_token_expiration < datetime.now(utc)):
             logger.error("API token is expired.")
             raise Exception("Internal Server Error")
 
