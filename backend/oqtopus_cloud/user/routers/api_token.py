@@ -4,9 +4,10 @@ from secrets import token_urlsafe
 from fastapi import (
     APIRouter,
     Depends,
+    Response,
+    status,
 )
 from fastapi import Request as Event
-from fastapi import Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -16,13 +17,14 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.user.conf import logger, tracer
-from oqtopus_cloud.user.schemas.errors import (
-    Message,
-    InternalServerErrorResponse,
-    NotFoundErrorResponse,
-    ForbiddenErrorResponse,
-)
 from oqtopus_cloud.user.schemas.api_token import ApiToken
+from oqtopus_cloud.user.schemas.errors import (
+    ForbiddenErrorResponse,
+    InternalServerErrorResponse,
+    Message,
+    NotFoundErrorResponse,
+)
+
 from . import LoggerRouteHandler
 
 jst = ZoneInfo("Asia/Tokyo")
@@ -96,9 +98,9 @@ def create_api_token(
     logger.info(f"Get api token for {username}")
     # generate api token
     api_token_secret = token_urlsafe(15)
-    api_token_expiration = datetime.now().replace(second=0, microsecond=0) + timedelta(
-        days=90
-    )
+    api_token_expiration = datetime.now(utc).replace(
+        second=0, microsecond=0
+    ) + timedelta(days=90)
     try:
         # save api token to users table
         stmt = select(User).where(User.username == username)
