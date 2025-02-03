@@ -1,14 +1,13 @@
 from typing import Generator
+from unittest import mock
 
 import boto3
 import jwt
 import pytest
-from unittest import mock
-
 from oqtopus_cloud.common.models.base import Base
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
+
 
 class FakeCognitoClient:
     def __init__(self):
@@ -103,9 +102,7 @@ def override_jwt_decode(monkeypatch):
                 }
             ],
         },
-        "context":{
-            "owner": ""
-        }
+        "context": {"owner": ""},
     }
 
     return const

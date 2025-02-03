@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.lambda_auth.lambda_function import (
-    _verify_id_token,
-    _verify_api_token,
     _generate_policy_allow,
     _generate_policy_deny,
-    lambda_handler
+    _verify_api_token,
+    _verify_id_token,
+    lambda_handler,
 )
 
 
@@ -40,9 +40,7 @@ def fake__generate_policy_allow(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username"
-        }
+        "context": {"owner": "fake_username"},
     }
 
     return const
@@ -61,9 +59,7 @@ def fake__generate_policy_deny(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username"
-        }
+        "context": {"owner": "fake_username"},
     }
 
 
@@ -80,9 +76,7 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context":{
-            "owner": ""
-        }
+        "context": {"owner": ""},
     }
 
     return const
@@ -100,14 +94,13 @@ def _get_model(n: int, expiration_day=90) -> User:
         "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
         "require_mfa_reset": False,
-        "api_token_expiration": datetime.now().replace(second=0, microsecond=0) + timedelta(days=expiration_day)
+        "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
+        + timedelta(days=expiration_day),
     }
     return User(**model_dict)
 
 
-def test__verify_id_token(
-
-):
+def test__verify_id_token():
     actual = _verify_id_token("id_token")
     expect = "fake_username"
     assert actual == expect
@@ -143,9 +136,10 @@ def test__verify_api_token_expired(test_session, monkeypatch):
         assert False
 
 
-def test__generate_policy_allow(
-):
-    actual = _generate_policy_allow("fake_username1", 'event["methodArn"]1', 'fake_username1')
+def test__generate_policy_allow():
+    actual = _generate_policy_allow(
+        "fake_username1", 'event["methodArn"]1', "fake_username1"
+    )
     expect = {
         "principalId": "fake_username1",
         "policyDocument": {
@@ -158,17 +152,16 @@ def test__generate_policy_allow(
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username1"
-        }
+        "context": {"owner": "fake_username1"},
     }
 
     assert actual == expect
 
 
-def test__generate_policy_deny(
-):
-    actual = _generate_policy_deny("fake_username2", 'event["methodArn"]2', 'fake_username2')
+def test__generate_policy_deny():
+    actual = _generate_policy_deny(
+        "fake_username2", 'event["methodArn"]2', "fake_username2"
+    )
     expect = {
         "principalId": "fake_username2",
         "policyDocument": {
@@ -181,25 +174,17 @@ def test__generate_policy_deny(
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username2"
-        }
+        "context": {"owner": "fake_username2"},
     }
 
     assert actual == expect
 
 
 def test_lambda_handler_api_token(monkeypatch):
-
     def fake__verify_api_token(id_token=""):
         return "fake_username"
 
-    input = {
-        "headers": {
-            "q-api-token": "api_token_secret"
-        },
-        "methodArn": "methodArn"
-    }
+    input = {"headers": {"q-api-token": "api_token_secret"}, "methodArn": "methodArn"}
 
     const = {
         "principalId": "fake_username",
@@ -213,12 +198,12 @@ def test_lambda_handler_api_token(monkeypatch):
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username"
-        }
+        "context": {"owner": "fake_username"},
     }
     monkeypatch.setattr(lambda_function, "_verify_api_token", fake__verify_api_token)
-    monkeypatch.setattr(lambda_function, '_generate_policy_allow', fake__generate_policy_allow)
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_allow", fake__generate_policy_allow
+    )
 
     actual = lambda_handler(input, None)
     event = const
@@ -227,12 +212,7 @@ def test_lambda_handler_api_token(monkeypatch):
 
 
 def test_lambda_handler_id_token(monkeypatch):
-    input = {
-        "headers": {
-            "authorization": "api_token_secret"
-        },
-        "methodArn": "methodArn"
-    }
+    input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
 
     const = {
         "principalId": "fake_username",
@@ -246,12 +226,16 @@ def test_lambda_handler_id_token(monkeypatch):
                 }
             ],
         },
-        "context":{
-            "owner": "fake_username"
-        }
+        "context": {"owner": "fake_username"},
     }
-    monkeypatch.setattr('oqtopus_cloud.lambda_auth.lambda_function._verify_id_token', fake__verify_id_token)
-    monkeypatch.setattr('oqtopus_cloud.lambda_auth.lambda_function._generate_policy_allow', fake__generate_policy_allow)
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
+        fake__verify_id_token,
+    )
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_allow",
+        fake__generate_policy_allow,
+    )
 
     actual = lambda_handler(input, None)
     event = const
@@ -260,12 +244,7 @@ def test_lambda_handler_id_token(monkeypatch):
 
 
 def test_lambda_handler_none_owner(monkeypatch):
-    input = {
-        "headers": {
-            "authorization": "api_token_secret"
-        },
-        "methodArn": "methodArn"
-    }
+    input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
 
     ans = {
         "principalId": "",
@@ -279,12 +258,16 @@ def test_lambda_handler_none_owner(monkeypatch):
                 }
             ],
         },
-        "context":{
-            "owner": ""
-        }
+        "context": {"owner": ""},
     }
-    monkeypatch.setattr('oqtopus_cloud.lambda_auth.lambda_function._verify_id_token', fake__verify_id_token_none_owner)
-    monkeypatch.setattr('oqtopus_cloud.lambda_auth.lambda_function._generate_policy_deny', fake__generate_policy_none)
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
+        fake__verify_id_token_none_owner,
+    )
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_deny",
+        fake__generate_policy_none,
+    )
 
     actual = lambda_handler(input, None)
     event = ans

@@ -16,13 +16,13 @@ from starlette.middleware.cors import CORSMiddleware
 from oqtopus_cloud.user.conf import logger, metrics, tracer
 from oqtopus_cloud.user.middleware import CustomMiddleware
 from oqtopus_cloud.user.routers import (
+    api_token as api_token_router,
+)
+from oqtopus_cloud.user.routers import (
     devices as device_router,
 )
 from oqtopus_cloud.user.routers import (
     jobs as job_router,
-)
-from oqtopus_cloud.user.routers import (
-    api_token as api_token_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())

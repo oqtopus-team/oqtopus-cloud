@@ -58,7 +58,7 @@ def get_api_token(
         # save user table
         stmt = select(User).where(User.username == username)
         user = db.execute(stmt).scalars().first()
-        if not user:
+        if not user or user.api_token_secret is None:
             logger.info("User not found")
             return NotFoundErrorResponse(message="User not found")
         if user.userstatus == 3:  # suspended status

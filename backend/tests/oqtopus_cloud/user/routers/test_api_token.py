@@ -1,17 +1,15 @@
 from datetime import datetime
+from typing import Any, Dict
 
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.routers.api_token import (
-    get_api_token,
-    delete_api_token,
     create_api_token,
+    delete_api_token,
+    get_api_token,
 )
-
 from oqtopus_cloud.user.schemas.api_token import ApiToken
-
 from starlette.requests import Request
-from typing import Any, Dict
 
 
 def _get_model(n: int) -> User:
