@@ -77,7 +77,7 @@ deploy-admin: zip-admin	## Deploy Admin API Lambda Package
 
 deploy-lambda_auth: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
 	@$(MAKE) deploy \
-	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth-api \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
 	BIN=./bin/lambda_auth
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth ## Deploy All Lambda Packages
