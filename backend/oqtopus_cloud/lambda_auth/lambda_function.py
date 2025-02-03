@@ -59,7 +59,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
             },
         )
 
-        # verify the taken_use claim
+        # verify the token_use claim
         if token["token_use"] != "id":
             logger.error("ID token is invalid.")
             raise Exception("Internal Server Error")
@@ -121,8 +121,15 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         response = client.list_users(
             UserPoolId=USER_POOL_ID, Filter=f'sub = "{cognito_id}"'
         )
-
-        return response["Users"][0]["Username"]
+        logger.info(len(response["Users"]))
+        if len(response["Users"]) == 0:
+            logger.error("Cognito user is not found.")
+            raise Exception()
+        elif len(response["Users"]) > 1:
+            logger.error("Cognito user is duplicated.")
+            raise Exception()
+        else:
+            return response["Users"][0]["Username"]
     except Exception as e:
         logger.error(f"Failed to list users from Cognito {e}")
         raise Exception("Internal Server Error")
@@ -180,13 +187,17 @@ def lambda_handler(event, context):
         except Exception:
             policy_document = _generate_policy_deny(owner, method_arn, owner)
             return policy_document
-    else:
+    elif "authorization" in headers:
         # Verify Cognito ID token
         try:
             owner = _verify_id_token(headers["authorization"])
         except Exception:
             policy_document = _generate_policy_deny(owner, method_arn, owner)
             return policy_document
+    else:
+        logger.error("Unexpected header")
+        policy_document = _generate_policy_deny()
+        return policy_document
 
     if owner is not None and owner != "":
         # Generate allow policy
