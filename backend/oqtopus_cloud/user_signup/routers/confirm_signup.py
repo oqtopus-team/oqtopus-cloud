@@ -77,4 +77,12 @@ def confirm_signup(
         return BadRequestResponse(message=str(e))
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
+        try:
+            # rollback the registration of Cognito user
+            cognito_client.admin_delete_user(
+                UserPoolId=user_pool_id,
+                Username=email,
+            )
+        except Exception as delete_error:
+            logger.error(f"Failed to delete Cognito user: {delete_error}")
         return InternalServerErrorResponse(message=str(e))
