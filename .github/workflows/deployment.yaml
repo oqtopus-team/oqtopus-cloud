@@ -21,6 +21,11 @@ jobs:
           aws-region: 'ap-northeast-1'
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deploy-lambda
 
+      - name: Set AWS Profile
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          echo "PROFILE=$ACCOUNT_ID" >> $GITHUB_ENV
+
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
