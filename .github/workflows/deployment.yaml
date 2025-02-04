@@ -13,18 +13,17 @@ jobs:
       contents: read
 
     steps:
-      # AWSの認証をセットアップ
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: 'ap-northeast-1'
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deployment-lambda
 
-      # makeをインストール
       - name: Install make
         run: sudo apt install make
 
-      # デプロイ
-      - name: Deploy
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Deploy
         working-directory: ./deployment
         run: make deploy-all
