@@ -24,9 +24,6 @@ devices.DeviceDataUpdateResponse:
 devices.DeviceStatusUpdate:
       type: object
       properties:
-        command:
-          type: string
-          example: DeviceStatusUpdate
         status:
           type: string
           enum:
@@ -38,21 +35,9 @@ devices.DeviceStatusUpdate:
           format: date-time
           example: 2023-09-10T14:00:00
 
-devices.DevicePendingJobsUpdate:
-      type: object
-      properties:
-        command:
-          type: string
-          example: DevicePendingJobsUpdate
-        n_pending_jobs:
-          type: integer
-
 devices.DeviceCalibrationUpdate:
       type: object
       properties:
-        command:
-          type: string
-          example: DeviceCalibrationUpdate
         device_info:
           description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
