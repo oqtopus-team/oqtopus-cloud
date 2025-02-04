@@ -21,11 +21,6 @@ jobs:
           aws-region: 'ap-northeast-1'
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deploy-lambda
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
