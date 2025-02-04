@@ -7,6 +7,7 @@ SHELL := bash
 -include .env
 export
 
+PROFILE_ARG := $(shell test -f .env && grep -q '^PROFILE=' .env && echo "--profile $(PROFILE)")
 
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
@@ -42,7 +43,7 @@ zip:
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q
 	@echo "Lambda Package Created: ${BIN}/lambda.zip"
-	@rm -rf ${DEPLOY_PACKAGES_DIR}
+	@sudo rm -rf ${DEPLOY_PACKAGES_DIR}
 	@rm requirements.txt
 
 
@@ -65,7 +66,7 @@ deploy:
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip \
-	--profile $(PROFILE)
+	$(PROFILE_ARG)
 	@echo "Deploy Completed"
 
 create-user-admin: ## Create Admin User
