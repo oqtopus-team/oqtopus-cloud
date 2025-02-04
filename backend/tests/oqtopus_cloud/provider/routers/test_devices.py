@@ -7,13 +7,11 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.provider.routers.devices import (
     update_device_calibration,
-    update_device_pending_jobs,
     update_device_status,
 )
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,
-    DevicePendingJobsUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
@@ -55,31 +53,14 @@ def _get_model():
     return Device(**mode_dict)
 
 
-def test_update_device_pending_jobs(test_db):
-    # Arrange
-    test_db.add(_get_model())
-    test_db.commit()
-    device = test_db.get(Device, "SC2")
-    # Act
-    request = DevicePendingJobsUpdate(
-        command="DevicePendingJobsUpdate", n_pending_jobs=8
-    )
-    actual = update_device_pending_jobs(device=device, request=request, db=test_db)
-    # Assert
-    expected = DeviceDataUpdateResponse(message="Device's data updated")
-    assert actual == expected
-
-
 def test_update_device_status_available(test_db):
     # Arrange
     test_db.add(_get_model())
     test_db.commit()
     device = test_db.get(Device, "SC2")
     # Act
-    request = DeviceStatusUpdate(
-        command="DeviceStatusUpdate", status=DeviceStatus.available, available_at=None
-    )
-    actual = update_device_status(device=device, request=request, db=test_db)
+    request = DeviceStatusUpdate(status=DeviceStatus.available, available_at=None)
+    actual = update_device_status(device_id=device.id, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
@@ -92,31 +73,29 @@ def test_update_device_status_not_available(test_db):
     device = test_db.get(Device, "SC2")
     # Act
     request = DeviceStatusUpdate(
-        command="DeviceStatusUpdate",
         status=DeviceStatus.unavailable,
         available_at=datetime.now(),
     )
-    actual = update_device_status(device=device, request=request, db=test_db)
+    actual = update_device_status(device_id=device.id, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
 
 
-# def test_update_device_calibration(test_db):
-#     # Arrange
-#     test_db.add(_get_model())
-#     test_db.commit()
-#     device = test_db.get(Device, "SC2")
-#     # Act
-#     request = DeviceCalibrationUpdate(
-#         command="DeviceCalibrationUpdate",
-#         calibrationData=CalibrationData(**_get_calibration_dict()),
-#         calibrated_at=datetime.now(),
-#     )
-#     actual = update_device_calibration(device=device, request=request, db=test_db)
-#     # Assert
-#     expected = DeviceDataUpdateResponse(message="Device's data updated")
-#     assert actual == expected
+def test_update_device_calibration(test_db):
+    # Arrange
+    test_db.add(_get_model())
+    test_db.commit()
+    device = test_db.get(Device, "SC2")
+    # Act
+    request = DeviceCalibrationUpdate(
+        device_info=json.dumps(_get_calibration_dict()),
+        calibrated_at=datetime.now(),
+    )
+    actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
+    # Assert
+    expected = DeviceDataUpdateResponse(message="Device's data updated")
+    assert actual == expected
 
 
 # TODO: add invalid test cases
