@@ -23,8 +23,9 @@ jobs:
 
       - name: Set AWS Profile
         run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
-          echo "PROFILE=$ACCOUNT_ID" >> $GITHUB_ENV
+          ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
+          echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
+
 
       - name: Set up Python
         uses: actions/setup-python@v5
