@@ -23,7 +23,15 @@ zip-provider: ## Build provider API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/provider
 
-zip-all: zip-user zip-provider ## Build All Lambda Packages
+zip-worker: ## Build worker Lambda Package
+	@$(MAKE) zip \
+	WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/worker \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/worker
+
+zip-all: zip-user zip-provider zip-worker ## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -56,7 +64,12 @@ deploy-provider: zip-provider	## Deploy Provider API Lambda Package
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
 	BIN=./bin/provider
 
-deploy-all: deploy-user deploy-provider ## Deploy All Lambda Packages
+deploy-worker: zip-worker	## Deploy worker Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-worker \
+	BIN=./bin/worker
+
+deploy-all: deploy-user deploy-provider deploy-worker ## Deploy All Lambda Packages
 
 
 deploy:
