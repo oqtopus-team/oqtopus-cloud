@@ -43,6 +43,7 @@ zip:
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q
 	@echo "Lambda Package Created: ${BIN}/lambda.zip"
+	@echo "If you are required for a password, please enter your PC password to delete deploy packages directory."
 	@sudo rm -rf ${DEPLOY_PACKAGES_DIR}
 	@rm requirements.txt
 
