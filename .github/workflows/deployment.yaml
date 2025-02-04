@@ -25,5 +25,5 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy
-        working-directory: ./deployment
+        working-directory: ./deployment/oqtopus-dev
         run: make deploy-all
