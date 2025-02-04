@@ -56,6 +56,27 @@ module "provider_api" {
   log_level                     = "INFO"
 }
 
+module "worker" {
+  source = "../modules/worker"
+
+  product                       = var.product
+  org                           = var.org
+  env                           = var.env
+  identifier                    = "worker"
+  region                        = var.region
+  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                = "oqtopus_cloud.worker.lambda_function.lambda_handler"
+  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  power_tools_metrics_namespace = "worker"
+  power_tools_service_name      = "worker"
+  allow_origins                 = "*"
+  allow_credentials             = "true"
+  allow_methods                 = "*"
+  allow_headers                 = "*"
+  log_level                     = "INFO"
+}
 
 module "vpc_endpoint" {
   source = "../modules/vpc-endpoint"
