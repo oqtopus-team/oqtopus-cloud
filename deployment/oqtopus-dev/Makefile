@@ -4,7 +4,7 @@ SHELL := bash
 
 .PHONY: help zip-user zip-provider zip-all zip deploy-user deploy-provider deploy-all deploy test-user test-provider test-all test all-user all-provider all
 
-include .env
+-include .env
 export
 
 
