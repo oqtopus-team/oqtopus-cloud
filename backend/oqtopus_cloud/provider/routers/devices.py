@@ -50,7 +50,9 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 )
 @tracer.capture_method
 def update_device_status(
-    device_id: Device, request: DeviceStatusUpdate, db: Session = Depends(get_db)
+    device_id: str,
+    request: DeviceStatusUpdate,
+    db: Session = Depends(get_db),
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
     Update the status of a device.
@@ -101,7 +103,9 @@ def update_device_status(
 )
 @tracer.capture_method
 def update_device_calibration(
-    device_id: Device, request: DeviceCalibrationUpdate, db: Session = Depends(get_db)
+    device_id: str,
+    request: DeviceCalibrationUpdate,
+    db: Session = Depends(get_db),
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
     Update the calibration data and calibrated timestamp for a device.
