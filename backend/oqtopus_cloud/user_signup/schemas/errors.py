@@ -49,6 +49,29 @@ class BadRequestResponse(ErrorResponse):
         )
 
 
+class NotFoundErrorResponse(ErrorResponse):
+    """
+    Represents an error response for a resource not found.
+
+    Args:
+        message (str): The detailed error message.
+
+    Attributes:
+        status_code (int): The HTTP status code of the error response.
+        content (dict): The content of the error response.
+
+    """
+
+    def __init__(
+        self,
+        message: str,
+    ):
+        super().__init__(
+            status_code=404,
+            content={"message": message},
+        )
+
+
 class InternalServerErrorResponse(ErrorResponse):
     """
     Represents an internal server error response.

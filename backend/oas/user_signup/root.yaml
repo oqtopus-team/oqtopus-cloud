@@ -17,6 +17,8 @@ paths:
     $ref: ./paths/signup.yaml#/signup
   /confirm:
     $ref: ./paths/confirm_signup.yaml#/confirm_signup
+  /mfa_reset_request:
+    $ref: ./paths/mfa_reset_request.yaml#/mfa_reset_request
 
 components:
   securitySchemes:

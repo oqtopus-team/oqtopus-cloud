@@ -81,6 +81,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+  /mfa_reset_request:
+    put:
+      tags:
+        - signup
+      summary: MFA Reset Request
+      description: Request to reset MFA
+      operationId: requestToResetMFA
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/mfa_reset_request.MfaResetRequest'
+      responses:
+        '200':
+          description: MFA reset request successful
+        '400':
+          description: MFA reset request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -125,3 +167,26 @@ components:
       required:
         - email
         - confirmation_code
+    mfa_reset_request.MfaResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          description: The email of the user
+        password:
+          type: string
+          description: The password of the user
+        client_id:
+          type: string
+          description: The client id of the user
+      required:
+        - email
+        - password
+        - client_id
+    error.NotFoundError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
