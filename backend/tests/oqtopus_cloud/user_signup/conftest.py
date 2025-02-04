@@ -139,6 +139,15 @@ class FakeCognitoClient:
             "UserStatus": "CONFIRMED",
         }
 
+    def admin_initiate_auth(
+        self,
+        UserPoolId=None,
+        ClientId=None,
+        AuthFlow=None,
+        AuthParameters=None,
+    ):
+        return {"Response": "Ok"}
+
 
 def fake_boto3_client(service, region_name=None, **kwargs):
     if service == "cognito-idp":

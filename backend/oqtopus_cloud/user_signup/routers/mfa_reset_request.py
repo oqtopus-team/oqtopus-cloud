@@ -25,7 +25,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 @router.put(
     "/mfa_reset_request",
     response_model=None,
-    status_code=status.HTTP_200_CREATED,
+    status_code=status.HTTP_200_OK,
     responses={
         400: {"model": Message},
         404: {"model": Message},

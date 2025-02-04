@@ -19,6 +19,9 @@ from oqtopus_cloud.user_signup.routers import (
     confirm_signup as confirm_signup_router,
 )
 from oqtopus_cloud.user_signup.routers import (
+    mfa_reset_request as mfa_reset_request_router,
+)
+from oqtopus_cloud.user_signup.routers import (
     signup as signup_router,
 )
 
@@ -49,6 +52,11 @@ app.include_router(
 app.include_router(
     confirm_signup_router.router,
     tags=["confirm"],
+)
+
+app.include_router(
+    mfa_reset_request_router.router,
+    tags=["mfa_reset_request"],
 )
 
 handler: Mangum = Mangum(
