@@ -56,7 +56,7 @@ def get_users(
         if group_id:
             stmt = stmt.where(User.group_id == group_id)
         if status:
-            stmt = stmt.where(User.userstatus == status)
+            stmt = stmt.where(User.userstatus == int(status))
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
         scalars = query_result.scalars().all()
@@ -92,7 +92,7 @@ def update_user_status(
         # state not updated
         if status_update.status is None:
             return model_to_schema(query)
-        query.userstatus = status_update.status
+        query.userstatus = int(status_update.status)
 
         # commit the transaction
         db.commit()
@@ -204,6 +204,6 @@ def model_to_schema(model: User) -> GetOneUserResponse:
         name=getattr(model, "username", None),
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
-        status=getattr(model, "userstatus", None),
+        status=str(getattr(model, "userstatus", None)),
         require_mfa_reset=getattr(model, "require_mfa_reset", None),
     )

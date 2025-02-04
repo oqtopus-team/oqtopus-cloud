@@ -19,7 +19,7 @@ def _get_model(n: int) -> User:
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
         "username": f"username_{n}",
-        "userstatus": "1",
+        "userstatus": 1,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "purpose": f"purpose_{n}",
