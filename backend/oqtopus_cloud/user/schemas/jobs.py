@@ -36,7 +36,7 @@ class OperatorItem(BaseModel):
     """
 
 
-class Estimation(BaseModel):
+class EstimationResult(BaseModel):
     """
     *(Only for estimation jobs)* The estimated expectation value and the standard deviation
     of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
@@ -67,12 +67,7 @@ class JobResult(BaseModel):
     """
     *(Only for sampling jobs)* JSON string representing the sampling result
     """
-    estimation: Estimation | None = None
-    """
-    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
-    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-
-    """
+    estimation: EstimationResult | None = None
     divided_result: dict[str, Any] | None = None
     """
     Assumed to be used for multiprogramming, but currently not supported yet.

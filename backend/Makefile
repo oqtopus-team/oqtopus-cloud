@@ -37,6 +37,7 @@ generate:
 	--use-standard-collections \
 	--strict-nullable \
 	--use-default \
+	--output-datetime-class datetime \
 	--output ${OUTPUT}
 
 generate-all-schema: ## Generate user and provider schemas
