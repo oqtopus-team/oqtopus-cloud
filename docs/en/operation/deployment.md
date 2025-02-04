@@ -59,7 +59,7 @@ dynamodb_table = "terraform-lock"
 ```hcl:infrastructure/oqtopus-dev/terraform.tfvars
 # infrastructure/terraform.tfvars
 product="oqtopus"
-org="example"
+org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 ```
@@ -98,7 +98,7 @@ dynamodb_table = "terraform-lock"
 ```hcl:service/oqtopus-dev/terraform.tfvars
 # service/terraform.tfvars
 product          = "oqtopus"
-org              = "example"
+org              = "oqtopus"
 env              = "dev"
 region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"

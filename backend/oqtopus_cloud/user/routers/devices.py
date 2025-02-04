@@ -14,9 +14,9 @@ from oqtopus_cloud.user.schemas.devices import (
     DeviceInfo,
 )
 from oqtopus_cloud.user.schemas.errors import (
-    Detail,
     ErrorResponse,
     InternalServerErrorResponse,
+    Message,
     NotFoundErrorResponse,
 )
 
@@ -29,7 +29,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
 @router.get(
-    "/devices", response_model=list[DeviceInfo], responses={500: {"model": Detail}}
+    "/devices", response_model=list[DeviceInfo], responses={500: {"model": Message}}
 )
 @tracer.capture_method
 def get_devices(
@@ -41,13 +41,13 @@ def get_devices(
         return [model_to_schema(device) for device in devices]
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
     "/devices/{device_id}",
     response_model=DeviceInfo,
-    responses={404: {"model": Detail}, 500: {"model": Detail}},
+    responses={404: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def get_device(
@@ -71,12 +71,12 @@ def get_device(
             response = model_to_schema(device)
             return response
         else:
-            detail = f"device_id={device_id} is not found."
-            logger.info(detail)
-            return NotFoundErrorResponse(detail=detail)
+            message = f"device_id={device_id} is not found."
+            logger.info(message)
+            return NotFoundErrorResponse(message=message)
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 MAP_MODEL_TO_SCHEMA = {

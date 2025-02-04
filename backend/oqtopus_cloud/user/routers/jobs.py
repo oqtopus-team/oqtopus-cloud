@@ -22,9 +22,9 @@ from oqtopus_cloud.common.session import (
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
-    Detail,
     ErrorResponse,
     InternalServerErrorResponse,
+    Message,
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
@@ -34,6 +34,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobInfo,
     JobStatus,
     JobType,
+    SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
 )
@@ -48,14 +49,14 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
 class BadRequest(Exception):
-    def __init__(self, detail: str):
-        self.detail = detail
+    def __init__(self, message: str):
+        self.message = message
 
 
 @router.get(
     "/jobs",
     response_model=list[GetJobsResponse | JobDef],
-    responses={500: {"model": Detail}},
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def get_jobs(
@@ -107,7 +108,7 @@ def get_jobs(
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
                 return InternalServerErrorResponse(
-                    detail=f"fields {invalid_fields_list} is invalid"
+                    message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
             stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
@@ -143,7 +144,7 @@ def get_jobs(
         return results
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 def validate_name(request: JobDef) -> str | None:
@@ -161,7 +162,7 @@ def validate_description(
 @router.post(
     "/jobs",
     response_model=SubmitJobResponse,
-    responses={400: {"model": Detail}, 500: {"model": Detail}},
+    responses={400: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def submit_jobs(
@@ -172,11 +173,14 @@ def submit_jobs(
     try:
         device = db.get(Device, request.device_id)  # type: ignore
         if device is None:
-            return BadRequestResponse(detail="device not found")
+            return BadRequestResponse(message="device not found")
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
+
+        if jobtype_of_jobinfo(request.job_info) != request.job_type:
+            return BadRequestResponse("job_info is not compatible with job_type")
 
         # NOTE: method and operator is validated by pydantic
         shots = request.shots
@@ -192,12 +196,13 @@ def submit_jobs(
             name=name,
             description=description,
             device_id=request.device_id,
-            job_info=json.dumps({"desc": request.job_info.model_dump()}),
+            job_info=json.dumps(request.job_info.model_dump()),
             transpiler_info=request.transpiler_info,
             simulator_info=request.simulator_info,
             mitigation_info=request.mitigation_info,
-            job_type=request.job_info.job_type,
+            job_type=request.job_type,
             shots=shots,
+            submitted_at=datetime.now(),
             created_at=datetime.now(),
         )
         db.add(job)
@@ -205,13 +210,17 @@ def submit_jobs(
         return SubmitJobResponse(job_id=job.id)
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
     "/jobs/{job_id}",
     response_model=JobDef,
-    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_job(
@@ -224,21 +233,25 @@ def get_job(
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
-            return NotFoundErrorResponse(detail="job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
         job = model_to_schema(job_model)
         if isinstance(job, ValueError):
             logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(detail="job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
         return job
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.delete(
     "/jobs/{job_id}",
     response_model=SuccessResponse,
-    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def delete_job(
@@ -252,11 +265,11 @@ def delete_job(
         job = db.get(Job, job_id)
 
         if job is None:
-            return NotFoundErrorResponse(detail="job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
 
         if job.owner != owner or job.status not in ["succeeded", "failed", "cancelled"]:
             return NotFoundErrorResponse(
-                detail=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
+                message=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
             )
 
         db.delete(job)
@@ -264,13 +277,17 @@ def delete_job(
         return SuccessResponse(message="job deleted")
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
     "/jobs/{job_id}/status",
     response_model=GetJobStatusResponse,
-    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_job_status(
@@ -289,14 +306,18 @@ def get_job_status(
         .first()
     )
     if job is None:
-        return NotFoundErrorResponse(detail="job not found with the given id")
+        return NotFoundErrorResponse(message="job not found with the given id")
     return GetJobStatusResponse(job_id=job_id, status=job.status)
 
 
 @router.post(
     "/jobs/{job_id}/cancel",
     response_model=SuccessResponse,
-    responses={400: {"model": Detail}, 404: {"model": Detail}, 500: {"model": Detail}},
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def cancel_job(
@@ -311,10 +332,10 @@ def cancel_job(
         job = db.get(Job, job_id)
 
         if job is None:
-            return NotFoundErrorResponse(detail="job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
         if job.owner != owner or job.status not in ["ready", "submitted", "running"]:
             return NotFoundErrorResponse(
-                detail=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
+                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
             )
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
@@ -325,7 +346,7 @@ def cancel_job(
         return SuccessResponse(message="cancel request accepted")
     except Exception as e:
         logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(detail=str(e))
+        return InternalServerErrorResponse(message=str(e))
 
 
 # TODO: match parameter names of model and schema
@@ -342,6 +363,11 @@ MAP_MODEL_TO_SCHEMA = {
     "mitigation_info": "mitigation_info",
     "job_type": "job_type",
     "shots": "shots",
+    "execution_time": "execution_time",
+    "submitted_at": "submitted_at",
+    "ready_at": "ready_at",
+    "running_at": "running_at",
+    "ended_at": "ended_at",
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
@@ -370,12 +396,17 @@ def model_to_schema(
             description=model.description,
             device_id=model.device_id,
             shots=model.shots,
-            job_type=JobType(job_info.desc.job_type),
+            job_type=JobType(model.job_type),
             job_info=job_info,
             status=JobStatus(model.status),
             transpiler_info=model.transpiler_info,
             mitigation_info=model.mitigation_info,
             simulator_info=model.simulator_info,
+            execution_time=model.execution_time,
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -399,3 +430,10 @@ def model_to_schema(
         return GetJobsResponse(**dict_schema)
     else:
         return None
+
+
+def jobtype_of_jobinfo(info: SubmitJobInfo) -> JobType:
+    if info.operator is not None:
+        return JobType.estimation
+    else:
+        return JobType.sampling

@@ -70,7 +70,7 @@ devices.deviceId:
               schema:
                 $ref: '../schemas/error.yaml#/error.BadRequest'
               example:
-                detail: Bad request malformed input data
+                message: Bad request malformed input data
         '404':
           description: Not Found
           content:
@@ -78,7 +78,7 @@ devices.deviceId:
               schema:
                 $ref: '../schemas/error.yaml#/error.NotFoundError'
               example:
-                detail: Device not found
+                message: Device not found
         '500':
           description: Internal Server Error
           content:
@@ -86,4 +86,4 @@ devices.deviceId:
               schema:
                 $ref: '../schemas/error.yaml#/error.InternalServerError'
               example:
-                detail: Internal server error
+                message: Internal server error

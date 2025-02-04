@@ -65,12 +65,15 @@ jobs:
       with:
         name: .coverage-${{ matrix.target }}
         path: ./backend/.coverage-${{ matrix.target }}
+        include-hidden-files: true
 
   coverage:
     runs-on: ubuntu-latest
     needs: test
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
     - name: Download .coverage-common artifacts
       uses: actions/download-artifact@v4
       with:
