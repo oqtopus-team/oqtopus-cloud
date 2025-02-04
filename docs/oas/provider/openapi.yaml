@@ -331,9 +331,6 @@ components:
     devices.DeviceStatusUpdate:
       type: object
       properties:
-        command:
-          type: string
-          example: DeviceStatusUpdate
         status:
           type: string
           enum:
@@ -377,9 +374,6 @@ components:
     devices.DeviceCalibrationUpdate:
       type: object
       properties:
-        command:
-          type: string
-          example: DeviceCalibrationUpdate
         device_info:
           description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
