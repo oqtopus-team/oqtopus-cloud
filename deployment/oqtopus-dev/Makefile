@@ -65,7 +65,7 @@ deploy:
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip \
-	$(if $(PROFILE),--profile $(PROFILE))
+	--profile $(PROFILE)
 	@echo "Deploy Completed"
 
 create-user-admin: ## Create Admin User
