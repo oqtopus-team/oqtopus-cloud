@@ -12,12 +12,10 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     NotFoundErrorResponse,
 )
-from oqtopus_cloud.admin.schemas.user import (
-    GetOneUserResponse,
-    UserUpdateStatusRequest,
-)
 from oqtopus_cloud.admin.schemas.users import (
+    GetOneUserResponse,
     GetUsersResponse,
+    UpdateUserStatusRequest,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
@@ -42,7 +40,7 @@ def get_users(
     name: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
-    status: Optional[int] = None,
+    status: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> GetUsersResponse | InternalServerErrorResponse:
     try:
@@ -64,7 +62,7 @@ def get_users(
         scalars = query_result.scalars().all()
         users = [model_to_schema(user) for user in scalars]
 
-        return GetUsersResponse(Offset=str(offset), Limit=str(limit), users=users)
+        return GetUsersResponse(offset=str(offset), limit=str(limit), users=users)
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))
@@ -81,7 +79,7 @@ def get_users(
 @tracer.capture_method
 def update_user_status(
     user_id: int,
-    status_update: UserUpdateStatusRequest = Body(..., description="new status"),
+    status_update: UpdateUserStatusRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     try:
@@ -94,7 +92,7 @@ def update_user_status(
         # state not updated
         if status_update.status is None:
             return model_to_schema(query)
-        query.userstatus = int(status_update.status)
+        query.userstatus = status_update.status
 
         # commit the transaction
         db.commit()

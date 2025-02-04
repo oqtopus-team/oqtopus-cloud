@@ -18,14 +18,12 @@ from oqtopus_cloud.admin.schemas.errors import (
     Detail,
     InternalServerErrorResponse,
 )
-from oqtopus_cloud.admin.schemas.whitelist_user import (
-    GetWhitelistUserResponse,
-    WhitelistUserRegisterRequest,
-)
 from oqtopus_cloud.admin.schemas.whitelist_users import (
-    GetWhitelistUsersResponse,
+    ListWhitelistUserResponse,
+    ListWhitelistUsersResponse,
+    RegisterWhitelistUserRequest,
+    RegisterWhitelistUsersRequest,
     WhitelistUsersDeleteRequest,
-    WhitelistUsersRegisterRequest,
 )
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
@@ -47,7 +45,7 @@ def is_unique_email(session, email):
 
 
 def validated_whitelist_user(
-    db: Session, user: WhitelistUserRegisterRequest
+    db: Session, user: RegisterWhitelistUserRequest
 ) -> WhitelistUser:
     required_msg = "{} is required."
     too_long_msg = (
@@ -82,7 +80,7 @@ def validated_whitelist_user(
 
 @router.get(
     "/whitelist_users",
-    response_model=GetWhitelistUsersResponse,
+    response_model=ListWhitelistUsersResponse,
     responses={500: {"model": Detail}},
 )
 @tracer.capture_method
@@ -94,7 +92,7 @@ def get_whitelist_users(
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> GetWhitelistUsersResponse | InternalServerErrorResponse:
+) -> ListWhitelistUsersResponse | InternalServerErrorResponse:
     logger.info("invoked get_whitelist_user")
     try:
         # query
@@ -114,7 +112,7 @@ def get_whitelist_users(
 
         whitelist_users = [model_to_schema(user) for user in scalars]
 
-        return GetWhitelistUsersResponse(users=whitelist_users)
+        return ListWhitelistUsersResponse(users=whitelist_users)
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))
@@ -123,12 +121,12 @@ def get_whitelist_users(
 @router.post(
     "/whitelist_users",
     response_model=None,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     responses={400: {"model": Detail}, 500: {"model": Detail}},
 )
 @tracer.capture_method
 def register_whitelist_user(
-    users: WhitelistUsersRegisterRequest,
+    users: RegisterWhitelistUsersRequest,
     db: Session = Depends(get_db),
 ) -> None | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked create_whitelist_user")
@@ -196,8 +194,8 @@ def delete_whitelist_user(
         return InternalServerErrorResponse(message=str(e))
 
 
-def model_to_schema(model: WhitelistUser) -> GetWhitelistUserResponse:
-    return GetWhitelistUserResponse(
+def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:
+    return ListWhitelistUserResponse(
         id=model.id,
         group_id=model.group_id,
         email=model.email,

@@ -1,10 +1,40 @@
+users.GetOneUserResponse:
+  description: detail of users response
+  type: object
+  properties:
+    id:
+      type: "integer"
+    email:
+      type: "string"
+    name:
+      type: "string"
+    organization:
+      type: "string"
+    status:
+      type: "string"
+    group_id:
+      type: "string"
+    require_mfa_reset:
+      type: "boolean"
+  xml:
+    name: "User"
+  required: [
+    id,
+  ]
+
+users.UpdateUserStatusRequest:
+  type: "object"
+  properties:
+    status:
+      type: "string"
+
 users.GetUsersResponse:
   properties:
-    Offset:
+    offset:
       type: string
-    Limit:
+    limit:
       type: string
     users:
       type: array
       items:
-        $ref: "./user.yaml#/user.GetOneUserResponse"
+        $ref: "#/users.GetOneUserResponse"

@@ -21,7 +21,7 @@ class User(Base):
     cognito_id (str)                Cognito ID of the user.
     email (str)                     Email of the user.
     username (str)                  Username of the user.
-    userstatus (int)                Status of the user.
+    userstatus (str)                Status of the user.
     api_token_secret (str)          API token secret of the user.
     organization (str)              Organization of the user.
     purpose (str)                   Purpose of the user.
@@ -37,7 +37,7 @@ class User(Base):
     cognito_id = mapped_column(String, index=True)
     email = mapped_column(String, index=True)
     username = mapped_column(String, nullable=True)
-    userstatus = mapped_column(Integer, nullable=True)
+    userstatus = mapped_column(String, nullable=True)
     api_token_secret = mapped_column(String, nullable=True)
     organization = mapped_column(String, nullable=True)
     purpose = mapped_column(String, nullable=True)

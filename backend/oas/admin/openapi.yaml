@@ -5,7 +5,7 @@ info:
   contact:
     name: oqtopus-team
     email: oqtopus-team[at]googlegroups.com
-  description: OQTOPUS Cloud Admin API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, tasks, and results.
+  description: OQTOPUS Cloud Admin API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -84,7 +84,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal Server Error
-  /users/{userId}:
+  /users/{user_id}:
     put:
       tags:
         - user
@@ -94,7 +94,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: userId
+        - name: user_id
           in: path
           description: User ID
           required: true
@@ -105,14 +105,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/user.UserUpdateStatusRequest'
+              $ref: '#/components/schemas/users.UpdateUserStatusRequest'
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/user.GetOneUserResponse'
+                $ref: '#/components/schemas/users.GetOneUserResponse'
         '401':
           description: Unauthorized
         '403':
@@ -142,7 +142,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: userId
+        - name: user_id
           in: path
           description: User ID
           required: true
@@ -169,7 +169,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal Server Error
-  /users/{userId}/mfa_reset:
+  /users/{user_id}/mfa_reset:
     put:
       tags:
         - user
@@ -179,7 +179,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: userId
+        - name: user_id
           in: path
           description: User ID
           required: true
@@ -191,7 +191,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/user.GetOneUserResponse'
+                $ref: '#/components/schemas/users.GetOneUserResponse'
         '401':
           description: Unauthorized
         '403':
@@ -240,7 +240,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/whitelist_users.GetWhitelistUsersResponse'
+                $ref: '#/components/schemas/whitelist_users.ListWhitelistUsersResponse'
         '401':
           description: Unauthorized
         '403':
@@ -263,10 +263,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/whitelist_users.WhitelistUsersRegisterRequest'
+              $ref: '#/components/schemas/whitelist_users.RegisterWhitelistUsersRequest'
       responses:
-        '201':
-          description: Return a list of whitelist users
+        '200':
+          description: Success register a user to the whitelist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
         '400':
           description: Bad Request
           content:
@@ -300,7 +304,11 @@ paths:
             $ref: '#/components/schemas/whitelist_users.WhitelistUsersDeleteRequest'
       responses:
         '204':
-          description: Return a list of whitelist users
+          description: Delete success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
         '401':
           description: Unauthorized
         '403':
@@ -318,7 +326,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    user.GetOneUserResponse:
+    users.GetOneUserResponse:
       description: detail of users response
       type: object
       properties:
@@ -331,8 +339,7 @@ components:
         organization:
           type: string
         status:
-          type: integer
-          format: int32
+          type: string
         group_id:
           type: string
         require_mfa_reset:
@@ -343,14 +350,14 @@ components:
         - id
     users.GetUsersResponse:
       properties:
-        Offset:
+        offset:
           type: string
-        Limit:
+        limit:
           type: string
         users:
           type: array
           items:
-            $ref: '#/components/schemas/user.GetOneUserResponse'
+            $ref: '#/components/schemas/users.GetOneUserResponse'
     error.InternalServerError:
       type: object
       properties:
@@ -358,15 +365,11 @@ components:
           type: string
       required:
         - message
-    user.UserUpdateStatusRequest:
+    users.UpdateUserStatusRequest:
       type: object
       properties:
         status:
           type: string
-          enum:
-            - '1'
-            - '3'
-          description: 'status 1: active, 3: inactive'
     error.NotFoundError:
       type: object
       properties:
@@ -374,10 +377,10 @@ components:
           type: string
       required:
         - message
-    whitelist_user.Email:
+    whitelist_users.Email:
       type: string
       example: example@example.com
-    whitelist_user.GetWhitelistUserResponse:
+    whitelist_users.ListWhitelistUserResponse:
       type: object
       properties:
         id:
@@ -387,7 +390,7 @@ components:
           type: string
           example: group1
         email:
-          $ref: '#/components/schemas/whitelist_user.Email'
+          $ref: '#/components/schemas/whitelist_users.Email'
         username:
           type: string
           example: exampleuser
@@ -408,13 +411,13 @@ components:
         username: exampleuser
         organization: Example Organization
         is_signup_completed: true
-    whitelist_users.GetWhitelistUsersResponse:
+    whitelist_users.ListWhitelistUsersResponse:
       properties:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/whitelist_user.GetWhitelistUserResponse'
-    whitelist_user.WhitelistUserRegisterRequest:
+            $ref: '#/components/schemas/whitelist_users.ListWhitelistUserResponse'
+    whitelist_users.RegisterWhitelistUserRequest:
       description: Whitelist user register request
       type: object
       properties:
@@ -426,12 +429,19 @@ components:
           type: string
         organization:
           type: string
-    whitelist_users.WhitelistUsersRegisterRequest:
+    whitelist_users.RegisterWhitelistUsersRequest:
       properties:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/whitelist_user.WhitelistUserRegisterRequest'
+            $ref: '#/components/schemas/whitelist_users.RegisterWhitelistUserRequest'
+    success.SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     error.BadRequestError:
       type: object
       properties:
@@ -444,4 +454,4 @@ components:
         user_emails:
           type: array
           items:
-            $ref: '#/components/schemas/whitelist_user.Email'
+            $ref: '#/components/schemas/whitelist_users.Email'
