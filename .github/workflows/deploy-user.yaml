@@ -1,4 +1,4 @@
-name: deployment
+name: Deploy user
 on:
   push:
     branches:
