@@ -2,12 +2,11 @@ from datetime import datetime
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
-from oqtopus_cloud.admin.schemas.user import (
+from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
-    Status,
-    UserUpdateStatusRequest,
+    GetUsersResponse,
+    UpdateUserStatusRequest,
 )
-from oqtopus_cloud.admin.schemas.users import GetUsersResponse
 from oqtopus_cloud.common.models.user import User
 from pydantic.type_adapter import TypeAdapter
 
@@ -45,15 +44,15 @@ def test_get_users_simple(
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
-        Offset="0",
-        Limit="10",
+        offset="0",
+        limit="10",
         users=[
             GetOneUserResponse(
                 id="1",
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
-                status=1,
+                status="1",
                 group_id="group_id_1",
                 require_mfa_reset=True,
             ),
@@ -61,7 +60,7 @@ def test_get_users_simple(
                 id="2",
                 email="email_2",
                 name="username_2",
-                status=1,
+                status="1",
                 organization="organization_2",
                 group_id="group_id_2",
                 require_mfa_reset=True,
@@ -86,14 +85,14 @@ def test_get_users_query_limit_offset(
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
-        Offset="1",
-        Limit="2",
+        offset="1",
+        limit="2",
         users=[
             GetOneUserResponse(
                 id="2",
                 email="email_2",
                 name="username_2",
-                status=1,
+                status="1",
                 organization="organization_2",
                 group_id="group_id_2",
                 require_mfa_reset=True,
@@ -102,7 +101,7 @@ def test_get_users_query_limit_offset(
                 id="3",
                 email="email_3",
                 name="username_3",
-                status=1,
+                status="1",
                 organization="organization_3",
                 group_id="group_id_3",
                 require_mfa_reset=True,
@@ -127,15 +126,15 @@ def test_get_user_by_email(
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
-        Offset="0",
-        Limit="10",
+        offset="0",
+        limit="10",
         users=[
             GetOneUserResponse(
                 id="1",
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
-                status=1,
+                status="1",
                 group_id="group_id_1",
                 require_mfa_reset=True,
             )
@@ -160,15 +159,15 @@ def test_get_user_by_name_organization_groupid_status(
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
-        Offset="0",
-        Limit="10",
+        offset="0",
+        limit="10",
         users=[
             GetOneUserResponse(
                 id="1",
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
-                status=1,
+                status="1",
                 group_id="group_id_1",
                 require_mfa_reset=True,
             )
@@ -184,7 +183,7 @@ def test_put_job(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UserUpdateStatusRequest(status=Status.field_3)
+    update_data = UpdateUserStatusRequest(status="3")
     response = client.put("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -193,7 +192,7 @@ def test_put_job(
         email="email_1",
         name="username_1",
         organization="organization_1",
-        status=3,
+        status="3",
         group_id="group_id_1",
         require_mfa_reset=True,
     )
@@ -207,7 +206,7 @@ def test_put_job_404(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UserUpdateStatusRequest(status=Status.field_3)
+    update_data = UpdateUserStatusRequest(status="3")
     response = client.put("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
     assert response.json() == {"message": "User not found"}
@@ -225,7 +224,7 @@ def test_post_job_mfa_reset(test_db):
         email="email_1",
         name="username_1",
         organization="organization_1",
-        status=1,
+        status="1",
         group_id="group_id_1",
         require_mfa_reset=False,
     )
@@ -249,15 +248,15 @@ def test_delete_user(
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
-        Offset="0",
-        Limit="10",
+        offset="0",
+        limit="10",
         users=[
             GetOneUserResponse(
                 id="1",
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
-                status=1,
+                status="1",
                 group_id="group_id_1",
                 require_mfa_reset=True,
             )
@@ -270,6 +269,6 @@ def test_delete_user(
     assert response.status_code == 204
 
     # confirm the user is deleted
-    update_data = UserUpdateStatusRequest(status=Status.field_3)
+    update_data = UpdateUserStatusRequest(status="3")
     response = client.put("/users/1", json=update_data.model_dump())
     assert response.status_code == 404

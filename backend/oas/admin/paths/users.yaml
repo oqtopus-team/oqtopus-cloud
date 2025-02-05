@@ -64,7 +64,7 @@ users:
               message: "Internal Server Error"
 
 
-users.userId:
+users.user_id:
   put:
     tags:
       - "user"
@@ -74,24 +74,24 @@ users.userId:
     security:
       - BearerAuth: []
     parameters:
-      - name: "userId"
+      - name: "user_id"
         in: "path"
         description: "User ID"
         required: true
-        schema: {type: "integer"}
+        schema: {type: integer}
     requestBody:
       required: true
       content:
         application/json:
           schema:
-            $ref: "../schemas/user.yaml#/user.UserUpdateStatusRequest"
+            $ref: "../schemas/users.yaml#/users.UpdateUserStatusRequest"
     responses:
       "200":
         description: "Success"
         content:
           application/json:
             schema:
-              $ref: "../schemas/user.yaml#/user.GetOneUserResponse"
+              $ref: "../schemas/users.yaml#/users.GetOneUserResponse"
       "401":
         description: "Unauthorized"
       "403":
@@ -121,11 +121,11 @@ users.userId:
     security:
       - BearerAuth: []
     parameters:
-      - name: "userId"
+      - name: "user_id"
         in: "path"
         description: "User ID"
         required: true
-        schema: {type: "integer"}
+        schema: {type: integer}
     responses:
       "204":
         description: "Success"
@@ -149,7 +149,7 @@ users.userId:
               message: "Internal Server Error"
 
 
-users.userId.mfa_reset:
+users.user_id.mfa_reset:
   put:
     tags:
       - "user"
@@ -159,18 +159,18 @@ users.userId.mfa_reset:
     security:
       - BearerAuth: []
     parameters:
-      - name: "userId"
+      - name: "user_id"
         in: "path"
         description: "User ID"
         required: true
-        schema: {type: "integer"}
+        schema: {type: integer}
     responses:
       "200":
         description: "Success"
         content:
           application/json:
             schema:
-              $ref: "../schemas/user.yaml#/user.GetOneUserResponse"
+              $ref: "../schemas/users.yaml#/users.GetOneUserResponse"
       "401":
         description: "Unauthorized"
       "403":

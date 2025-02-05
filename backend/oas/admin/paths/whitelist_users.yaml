@@ -24,7 +24,7 @@ whitelist_users:
         content:
           application/json:
             schema:
-              $ref: "../schemas/whitelist_users.yaml#/whitelist_users.GetWhitelistUsersResponse"
+              $ref: "../schemas/whitelist_users.yaml#/whitelist_users.ListWhitelistUsersResponse"
       "401":
         description: "Unauthorized"
       "403":
@@ -47,10 +47,14 @@ whitelist_users:
       content:
         application/json:
           schema:
-            $ref: "../schemas/whitelist_users.yaml#/whitelist_users.WhitelistUsersRegisterRequest"
+            $ref: "../schemas/whitelist_users.yaml#/whitelist_users.RegisterWhitelistUsersRequest"
     responses:
-      "201":
-        description: "Return a list of whitelist users"
+      "200":
+        description: "Success register a user to the whitelist"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
       "400":
         description: Bad Request
         content:
@@ -84,7 +88,11 @@ whitelist_users:
           $ref: "../schemas/whitelist_users.yaml#/whitelist_users.WhitelistUsersDeleteRequest"
     responses:
       "204":
-        description: "Return a list of whitelist users"
+        description: "Delete success"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
       "401":
         description: "Unauthorized"
       "403":

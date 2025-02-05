@@ -2,14 +2,12 @@ from datetime import datetime
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
-from oqtopus_cloud.admin.schemas.whitelist_user import (
-    GetWhitelistUserResponse,
-    WhitelistUserRegisterRequest,
-)
 from oqtopus_cloud.admin.schemas.whitelist_users import (
-    GetWhitelistUsersResponse,
+    ListWhitelistUserResponse,
+    ListWhitelistUsersResponse,
+    RegisterWhitelistUserRequest,
+    RegisterWhitelistUsersRequest,
     WhitelistUsersDeleteRequest,
-    WhitelistUsersRegisterRequest,
 )
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from pydantic.type_adapter import TypeAdapter
@@ -44,11 +42,11 @@ def test_get_whitelist_users_simple(
     test_db.commit()
 
     response = client.get("/whitelist_users")
-    adapter = TypeAdapter(GetWhitelistUsersResponse)
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
-    expect = GetWhitelistUsersResponse(
+    expect = ListWhitelistUsersResponse(
         users=[
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
@@ -56,7 +54,7 @@ def test_get_whitelist_users_simple(
                 organization="organization_1",
                 is_signup_completed=True,
             ),
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
@@ -85,11 +83,11 @@ def test_get_whitelist_users_offset1_limit1(
     test_db.commit()
 
     response = client.get("/whitelist_users?offset=1&limit=1")
-    adapter = TypeAdapter(GetWhitelistUsersResponse)
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
-    expect = GetWhitelistUsersResponse(
+    expect = ListWhitelistUsersResponse(
         users=[
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
@@ -112,15 +110,15 @@ def test_post_whitelist_users(test_db):
     test_db.add(_get_model(1, True))
     test_db.add(_get_model(2, False))
     test_db.commit()
-    request_body = WhitelistUsersRegisterRequest(
+    request_body = RegisterWhitelistUsersRequest(
         users=[
-            WhitelistUserRegisterRequest(
+            RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="group_id_3",
                 username="username_3",
                 organization="organization_3",
             ),
-            WhitelistUserRegisterRequest(
+            RegisterWhitelistUserRequest(
                 email="email_4",
                 group_id="group_id_4",
                 username="username_4",
@@ -132,15 +130,15 @@ def test_post_whitelist_users(test_db):
         "/whitelist_users",
         json=request_body.model_dump(),
     )
-    assert response.status_code == 201
+    assert response.status_code == 200
 
     # check the registered users
     response = client.get("/whitelist_users")
-    adapter = TypeAdapter(GetWhitelistUsersResponse)
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
-    expect = GetWhitelistUsersResponse(
+    expect = ListWhitelistUsersResponse(
         users=[
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
@@ -148,7 +146,7 @@ def test_post_whitelist_users(test_db):
                 organization="organization_1",
                 is_signup_completed=True,
             ),
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
@@ -156,7 +154,7 @@ def test_post_whitelist_users(test_db):
                 organization="organization_2",
                 is_signup_completed=False,
             ),
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
@@ -164,7 +162,7 @@ def test_post_whitelist_users(test_db):
                 organization="organization_3",
                 is_signup_completed=False,
             ),
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=4,
                 email="email_4",
                 group_id="group_id_4",
@@ -199,11 +197,11 @@ def test_delete_whitelist_users(test_db):
 
     # check the registered users
     response = client.get("/whitelist_users")
-    adapter = TypeAdapter(GetWhitelistUsersResponse)
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
-    expect = GetWhitelistUsersResponse(
+    expect = ListWhitelistUsersResponse(
         users=[
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
@@ -211,7 +209,7 @@ def test_delete_whitelist_users(test_db):
                 organization="organization_1",
                 is_signup_completed=True,
             ),
-            GetWhitelistUserResponse(
+            ListWhitelistUserResponse(
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
