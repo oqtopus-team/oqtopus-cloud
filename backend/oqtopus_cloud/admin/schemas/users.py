@@ -6,10 +6,26 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from . import user
+
+class GetOneUserResponse(BaseModel):
+    """
+    detail of users response
+    """
+
+    id: int
+    email: str | None = None
+    name: str | None = None
+    organization: str | None = None
+    status: str | None = None
+    group_id: str | None = None
+    require_mfa_reset: bool | None = None
 
 
 class GetUsersResponse(BaseModel):
-    Offset: str | None = None
-    Limit: str | None = None
-    users: list[user.GetOneUserResponse] | None = None
+    offset: str | None = None
+    limit: str | None = None
+    users: list[GetOneUserResponse] | None = None
+
+
+class UpdateUserStatusRequest(BaseModel):
+    status: str | None = None

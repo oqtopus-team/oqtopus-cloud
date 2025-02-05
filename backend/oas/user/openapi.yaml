@@ -201,9 +201,10 @@ paths:
                   name: Bell State Sampling
                   description: Bell State Sampling Example
                   device_id: Kawasaki
+                  job_type: sampling
                   job_info:
-                    job_type: sampling
-                    code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                    program:
+                      - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
                   transpiler_info: '{}'
                   simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}'
                   mitigation_info: '{}'
@@ -214,13 +215,22 @@ paths:
               qpu:
                 description: QPU example
                 value:
-                  name: Bell State Sampling
-                  description: Bell State Sampling Example
+                  name: Bell State Estimation
+                  description: Bell State Estimation Example
                   device_id: Kawasaki
+                  job_type: estimation
                   job_info:
-                    job_type: estimation
-                    code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-                    operator: X 0 Y 1 Z 5 I 2
+                    program:
+                      - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+                    operator:
+                      - pauli: X 0 X 1
+                        coeff:
+                          - 1.5
+                          - 2.8
+                      - pauli: Y 0 Z 1
+                        coeff:
+                          - 1.2
+                          - -2.e-8
                   transpiler_info: '{"qubit_allocation": {"0": 12, "1": 16}, "skip_transpilation": false, "seed_transpilation": 873}'
                   simulator_info: '{}'
                   mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}'
@@ -444,6 +454,118 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /api-token:
+    get:
+      tags:
+        - api-token
+      summary: get api token
+      description: Get api token
+      operationId: GetApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - api-token
+      summary: create api token
+      description: Create api token
+      operationId: CreateApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Create api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - api-token
+      summary: delete api token
+      description: Delete api token
+      operationId: DeleteApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Delete api token
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -634,61 +756,96 @@ components:
         - failed
         - cancelled
       example: submitted
-    jobs.JobInfoEstimation:
+    jobs.OperatorItem:
       type: object
-      description: The descriptor of estimation jobs
       properties:
-        job_type:
+        pauli:
           type: string
-          enum:
-            - estimation
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-        operator:
-          type: string
-          example: X 0 Y 1 Z 5 I 2
+          description: The Pauli string.
+          example: X 0 X 1
+        coeff:
+          description: Complex coefficient number in the Pauli string representation.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
       required:
-        - job_type
-        - code
-        - operator
-    jobs.JobInfoSampling:
+        - pauli
+    jobs.EstimationResult:
       type: object
-      description: The descriptor of sampling jobs
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
       properties:
-        job_type:
-          type: string
-          enum:
-            - sampling
-        code:
-          type: string
-          example: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-      required:
-        - job_type
-        - code
-    jobs.JobInfoDesc:
+        exp_value:
+          description: |
+            This field must contain an array of numbers with a maximum length of 2, representing a complex number.
+            The first element corresponds to the real part, and the second corresponds to the imaginary part.
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 2
+        stds:
+          description: (Only for estimation jobs) The standard deviation value
+          type: number
+    jobs.JobResult:
       type: object
-      oneOf:
-        - $ref: '#/components/schemas/jobs.JobInfoEstimation'
-        - $ref: '#/components/schemas/jobs.JobInfoSampling'
+      properties:
+        counts:
+          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
+          type: string
+          example: |-
+            {
+              "10": 84,
+              "11": 387,
+              "10": 454,
+              "01": 75
+            }
+        estimation:
+          $ref: '#/components/schemas/jobs.EstimationResult'
+        divided_result:
+          type: object
+          description: Assumed to be used for multiprogramming, but currently not supported yet.
+          properties: {}
+        properties:
+          type: string
+        transpile_result:
+          type: object
+          properties:
+            virtual_physical_mapping:
+              type: string
+      required: []
     jobs.JobInfo:
       type: object
       properties:
-        desc:
-          $ref: '#/components/schemas/jobs.JobInfoDesc'
-        transpiled_code:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        combined_program:
+          type: string
+          description: For multiprogramming jobs, this field contains the combined circuit.
+        operator:
+          description: |
+            *(Only for estimation jobs)* The operator (or observable) for which the expectation
+            value is to be estimated.
+          type: array
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+        transpiled_program:
           type: string
           example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
         result:
+          $ref: '#/components/schemas/jobs.JobResult'
+        message:
           type: string
-          description: The result of quantum computation, set only if the computation is successful.
-          example: |
-            { "11": 4980, "00": 5020 }
-        reason:
-          type: string
-          description: The reason indicating why there is no result
+          description: Describing the reason why there is no result
       required:
-        - desc
+        - program
     jobs.TranspilerInfo:
       type: string
       example: |-
@@ -751,6 +908,25 @@ components:
           $ref: '#/components/schemas/jobs.SimulatorInfo'
         mitigation_info:
           $ref: '#/components/schemas/jobs.MitigationInfo'
+        execution_time:
+          type: number
+          example: '10.123'
+        submitted_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ready_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        running_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ended_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
           format: date-time
@@ -764,12 +940,13 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: Kawasaki,
+        device_id: Kawasaki
+        job_type: estimation
         job_info:
-          desc:
-            job_type: estimation
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-            operator: X 0 Y 1 Z 5 I 2
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          operator:
+            - pauli: X 0 Y 1 Z 5 I 2
           transpiled_code: '{}'
           result: '{}'
           reason: ''
@@ -778,8 +955,31 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
+        execution_time: 10.123
+        submitted_at: '2022-10-19T11:45:34+09:00'
+        ready_at: '2022-10-19T11:45:34+09:00'
+        running_at: '2022-10-19T11:45:34+09:00'
+        ended_at: '2022-10-19T11:45:34+09:00'
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
+    jobs.SubmitJobInfo:
+      description: All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
+      type: object
+      properties:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        operator:
+          type: array
+          x-see-also:
+            - '#/jobs.JonInfo.operator'
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+      required:
+        - program
     jobs.SubmitJobRequest:
       type: object
       properties:
@@ -792,8 +992,10 @@ components:
         device_id:
           type: string
           example: Kawasaki
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
         job_info:
-          $ref: '#/components/schemas/jobs.JobInfoDesc'
+          $ref: '#/components/schemas/jobs.SubmitJobInfo'
         transpiler_info:
           type: string
           description: When specified, valid JSON string is required.
@@ -834,6 +1036,7 @@ components:
         - name
         - device_id
         - shots
+        - job_type
         - job_info
     jobs.SubmitJobResponse:
       description: submit a job
@@ -881,6 +1084,25 @@ components:
           $ref: '#/components/schemas/jobs.SimulatorInfo'
         mitigation_info:
           $ref: '#/components/schemas/jobs.MitigationInfo'
+        execution_time:
+          type: number
+          example: '10.123'
+        submitted_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ready_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        running_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        ended_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
           format: date-time
@@ -901,12 +1123,15 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: Kawasaki,
+        device_id: Kawasaki
+        job_type: estimation
         job_info:
-          desc:
-            job_type: estimation
-            code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-            operator: X 0 Y 1 Z 5 I 2
+          program:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+          operator:
+            - pauli: X 0 Y 1 Z 5 I 2
+              coeffs:
+                - 1
           transpiled_code: '{}'
           result: '{}'
           reason: ''
@@ -915,6 +1140,11 @@ components:
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
         shots: 1000
         status: submitted
+        execution_time: 10.123
+        submitted_at: '2022-10-19T11:45:34+09:00'
+        ready_at: '2022-10-19T11:45:34+09:00'
+        running_at: '2022-10-19T11:45:34+09:00'
+        ended_at: '2022-10-19T11:45:34+09:00'
         created_at: '2022-10-19T11:45:34+09:00'
         updated_at: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:
@@ -935,3 +1165,21 @@ components:
       required:
         - job_id
         - status
+    api-token.ApiToken:
+      type: object
+      properties:
+        api_token_secret:
+          type: string
+          description: The api token secret
+        api_token_expiration:
+          type: string
+          format: date-time
+          example: '2025-01-09T12:34:56'
+          description: The expiration date of the api token
+    error.ForbiddenError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message

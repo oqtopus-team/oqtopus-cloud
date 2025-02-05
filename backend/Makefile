@@ -53,9 +53,10 @@ generate:
 	--use-standard-collections \
 	--strict-nullable \
 	--use-default \
+	--output-datetime-class datetime \
 	--output ${OUTPUT}
 
-generate-all-schema: ## Generate user and provider schemas
+generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
 	@$(MAKE) generate-admin-schema
@@ -107,10 +108,13 @@ fmt-provider: ## Format provider code
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
+fmt-lambda_auth: ## Format lambda_auth code
+	@poetry run ruff format oqtopus_cloud/lambda_auth
+
 fmt-user_signup: ## Format user_signup code
 	@poetry run ruff format oqtopus_cloud/user_signup
 
-fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-user_signup ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -128,11 +132,15 @@ lint-admin: ## Run admin linters
 	@poetry run ruff check oqtopus_cloud/admin
 	@poetry run mypy -p oqtopus_cloud.admin
 
+lint-lambda_auth:
+	@poetry run ruff check ./oqtopus_cloud/lambda_auth
+	@poetry run mypy -p oqtopus_cloud.lambda_auth
+
 lint-user_signup: ## Run user_signup linters
 	@poetry run ruff check oqtopus_cloud/user_signup
 	@poetry run mypy -p oqtopus_cloud.user_signup
 
-lint-all: lint-common lint-user lint-provider lint-admin lint-user_signup ## Run all linters
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-user_signup ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -157,6 +165,12 @@ test-admin: fmt-admin lint-admin ## Run admin tests
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
 	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
 	@mv .coverage .coverage-admin
+
+test-lambda_auth: fmt-lambda_auth lint-lambda_auth ## Run lambda_auth tests
+	  @export POWERTOOLS_METRICS_NAMESPACE=lambda_auth && \
+    export POWERTOOLS_SERVICE_NAME=lambda_auth && \
+    poetry run pytest tests/oqtopus_cloud/lambda_auth/ -vv --cov=oqtopus_cloud/lambda_auth --cov-report=xml:coverage-lambda_auth.xml --cov-report=html:htmlcov-lambda_auth
+	  @mv .coverage .coverage-lambda_auth
 
 test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \

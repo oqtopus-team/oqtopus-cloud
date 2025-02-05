@@ -19,5 +19,7 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.jobId
+  /jobs/{job_id}/status:
+    $ref: ./paths/jobs.yaml#/jobs.jobStatus
   /jobs/{job_id}/job_info:
     $ref: ./paths/jobs.yaml#/jobs.jobInfo

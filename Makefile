@@ -28,6 +28,7 @@ doctor: ## Check the environment
 copy: generate-oas terraform-docs
 	@cp ./backend/oas/user/openapi.yaml ./docs/oas/user/openapi.yaml
 	@cp ./backend/oas/provider/openapi.yaml ./docs/oas/provider/openapi.yaml
+	@cp ./backend/oas/admin/openapi.yaml ./docs/oas/admin/openapi.yaml
 	@cp ./terraform/infrastructure/modules/cognito/README.md ./docs/terraform_modules/cognito/README.md
 	@cp ./terraform/infrastructure/modules/db/README.md ./docs/terraform_modules/db/README.md
 	@cp ./terraform/infrastructure/modules/management/README.md ./docs/terraform_modules/management/README.md

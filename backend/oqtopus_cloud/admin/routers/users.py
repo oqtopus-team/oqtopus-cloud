@@ -12,12 +12,10 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     NotFoundErrorResponse,
 )
-from oqtopus_cloud.admin.schemas.user import (
-    GetOneUserResponse,
-    UserUpdateStatusRequest,
-)
 from oqtopus_cloud.admin.schemas.users import (
+    GetOneUserResponse,
     GetUsersResponse,
+    UpdateUserStatusRequest,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
@@ -42,7 +40,7 @@ def get_users(
     name: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
-    status: Optional[int] = None,
+    status: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> GetUsersResponse | InternalServerErrorResponse:
     try:
@@ -58,13 +56,13 @@ def get_users(
         if group_id:
             stmt = stmt.where(User.group_id == group_id)
         if status:
-            stmt = stmt.where(User.userstatus == status)
+            stmt = stmt.where(User.userstatus == int(status))
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
         scalars = query_result.scalars().all()
         users = [model_to_schema(user) for user in scalars]
 
-        return GetUsersResponse(Offset=str(offset), Limit=str(limit), users=users)
+        return GetUsersResponse(offset=str(offset), limit=str(limit), users=users)
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))
@@ -81,7 +79,7 @@ def get_users(
 @tracer.capture_method
 def update_user_status(
     user_id: int,
-    status_update: UserUpdateStatusRequest = Body(..., description="new status"),
+    status_update: UpdateUserStatusRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     try:
@@ -206,6 +204,6 @@ def model_to_schema(model: User) -> GetOneUserResponse:
         name=getattr(model, "username", None),
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
-        status=getattr(model, "userstatus", None),
+        status=str(getattr(model, "userstatus", None)),
         require_mfa_reset=getattr(model, "require_mfa_reset", None),
     )

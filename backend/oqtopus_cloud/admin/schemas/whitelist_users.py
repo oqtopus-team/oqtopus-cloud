@@ -4,17 +4,37 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Annotated
 
-from . import whitelist_user
-
-
-class GetWhitelistUsersResponse(BaseModel):
-    users: list[whitelist_user.GetWhitelistUserResponse] | None = None
+from pydantic import BaseModel, Field
 
 
-class WhitelistUsersRegisterRequest(BaseModel):
-    users: list[whitelist_user.WhitelistUserRegisterRequest] | None = None
+class ListWhitelistUserResponse(BaseModel):
+    id: Annotated[int, Field(examples=[1])]
+    group_id: Annotated[str, Field(examples=["group1"])]
+    email: Annotated[str, Field(examples=["example@example.com"])]
+    username: Annotated[str | None, Field(examples=["exampleuser"])] = None
+    organization: Annotated[str | None, Field(examples=["Example Organization"])] = None
+    is_signup_completed: Annotated[bool | None, Field(examples=[True])] = None
+
+
+class ListWhitelistUsersResponse(BaseModel):
+    users: list[ListWhitelistUserResponse] | None = None
+
+
+class RegisterWhitelistUserRequest(BaseModel):
+    """
+    Whitelist user register request
+    """
+
+    group_id: str | None = None
+    email: str | None = None
+    username: str | None = None
+    organization: str | None = None
+
+
+class RegisterWhitelistUsersRequest(BaseModel):
+    users: list[RegisterWhitelistUserRequest] | None = None
 
 
 class WhitelistUsersDeleteRequest(BaseModel):
