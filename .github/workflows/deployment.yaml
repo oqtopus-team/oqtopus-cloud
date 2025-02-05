@@ -45,4 +45,4 @@ jobs:
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
-        run: sudo make deploy-all
+        run: sudo -E env PATH="$PATH" make deploy-all
