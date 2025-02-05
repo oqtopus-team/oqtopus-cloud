@@ -660,6 +660,30 @@ components:
           maxItems: 2
       required:
         - pauli
+    jobs.TranspileResult:
+      type: object
+      properties:
+        transpiled_program:
+          type: string
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: string
+        virtual_physical_mapping:
+          type: string
+      required: []
+    jobs.SamplingResult:
+      type: object
+      description: '*(Only for sampling jobs)* JSON string representing the sampling result'
+      properties:
+        counts:
+          type: string
+          example: |-
+            {
+              "10": 84,
+              "11": 387,
+              "10": 454,
+              "01": 75
+            }
     jobs.EstimationResult:
       type: object
       description: |
@@ -681,29 +705,11 @@ components:
     jobs.JobResult:
       type: object
       properties:
-        counts:
-          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
-          type: string
-          example: |-
-            {
-              "10": 84,
-              "11": 387,
-              "10": 454,
-              "01": 75
-            }
+        sampling:
+          $ref: '#/components/schemas/jobs.SamplingResult'
         estimation:
           $ref: '#/components/schemas/jobs.EstimationResult'
-        divided_result:
-          type: object
-          description: Assumed to be used for multiprogramming, but currently not supported yet.
-          properties: {}
-        properties:
-          type: string
-        transpile_result:
-          type: object
-          properties:
-            virtual_physical_mapping:
-              type: string
+      additionalProperties: true
       required: []
     jobs.JobInfo:
       type: object
@@ -724,9 +730,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/jobs.OperatorItem'
-        transpiled_program:
-          type: string
-          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        transpile_result:
+          $ref: '#/components/schemas/jobs.TranspileResult'
         result:
           $ref: '#/components/schemas/jobs.JobResult'
         message:
@@ -921,7 +926,6 @@ components:
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required:
-        - name
         - device_id
         - shots
         - job_type
