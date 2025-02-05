@@ -4,7 +4,7 @@ on:
     branches:
       - develop
     paths:
-      - 'terraform/service'
+      - 'terraform/service/**'
 
 jobs:
   deployment:
