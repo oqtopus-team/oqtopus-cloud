@@ -137,7 +137,7 @@ def reset_user_mfa(
         response = client.admin_set_user_mfa_preference(
             # TOTP MFA setting disabled
             SoftwareTokenMfaSettings={"Enabled": False, "PreferredMfa": False},
-            Username=owner,
+            Username=query.email,
             UserPoolId=user_pool_id,
         )
         logger.info(f"mfa reset response: {response}")
