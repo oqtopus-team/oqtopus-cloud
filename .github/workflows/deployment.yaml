@@ -2,7 +2,9 @@ name: deployment
 on:
   push:
     branches:
-    - develop
+      - develop
+    paths:
+      - 'terraform/service'
 
 jobs:
   deployment:
