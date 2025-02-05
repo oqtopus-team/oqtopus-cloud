@@ -12,12 +12,14 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     NotFoundErrorResponse,
 )
-from oqtopus_cloud.admin.schemas.user import (
-    GetOneUserResponse,
-    UserUpdateStatusRequest,
-)
 from oqtopus_cloud.admin.schemas.users import (
+    GetOneUserResponse,
     GetUsersResponse,
+    UpdateUserStatusRequest,
+)
+from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.session import (
+    get_db,
 )
 
 from . import LoggerRouteHandler
