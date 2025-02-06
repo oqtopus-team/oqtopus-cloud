@@ -106,55 +106,6 @@ def update_user_status(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-@router.put(
-    "/users/{user_id}/mfa_reset",
-    response_model=GetOneUserResponse,
-    responses={
-        404: {"model": Detail},
-        500: {"model": Detail},
-    },
-)
-@tracer.capture_method
-def reset_user_mfa(
-    event: Event,
-    user_id: int,
-    db: Session = Depends(get_db),
-) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
-    owner = event.state.owner
-    user_pool_id = event.state.user_pool_id
-    region = event.state.region
-    client = boto3.client("cognito-idp", region_name=region)
-    logger.info(f"owner: {owner}, user_pool_id: {user_pool_id}, region: {region}")
-    try:
-        logger.info("invoked mfa_reset")
-        # query
-        stmt = select(User).where(User.id == user_id)
-        query = db.execute(stmt).scalars().first()
-        if not query:
-            return NotFoundErrorResponse(message="User not found")
-
-        # reset MFA setting for cognito user
-        response = client.admin_set_user_mfa_preference(
-            # TOTP MFA setting disabled
-            SoftwareTokenMfaSettings={"Enabled": False, "PreferredMfa": False},
-            Username=query.email,
-            UserPoolId=user_pool_id,
-        )
-        logger.info(f"mfa reset response: {response}")
-        # change MFA reset status
-        query.require_mfa_reset = False
-        # commit the transaction
-        db.commit()
-        # refresh the object to get the updated value
-        db.refresh(query)
-        user = model_to_schema(query)
-
-        return user
-    except Exception as e:
-        tracer.put_annotation("db_error", str(e))
-        return InternalServerErrorResponse(message="Internal Server Error")
-
-
 @router.delete(
     "/users/{user_id}",
     response_model=None,

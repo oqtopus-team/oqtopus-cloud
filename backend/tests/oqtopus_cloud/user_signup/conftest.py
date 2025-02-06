@@ -148,6 +148,14 @@ class FakeCognitoClient:
     ):
         return {"Response": "Ok"}
 
+    def admin_set_user_mfa_preference(
+        self,
+        SoftwareTokenMfaSettings=None,
+        Username=None,
+        UserPoolId=None,
+    ):
+        return {"Response": "Ok"}
+
 
 def fake_boto3_client(service, region_name=None, **kwargs):
     if service == "cognito-idp":

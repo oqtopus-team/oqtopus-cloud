@@ -212,26 +212,6 @@ def test_put_job_404(
     assert response.json() == {"message": "User not found"}
 
 
-def test_post_job_mfa_reset(test_db):
-    test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.commit()
-    response = client.put("/users/1/mfa_reset")
-    adapter = TypeAdapter(GetOneUserResponse)
-    actual = adapter.validate_python(response.json())
-    expect = GetOneUserResponse(
-        id="1",
-        email="email_1",
-        name="username_1",
-        organization="organization_1",
-        status="1",
-        group_id="group_id_1",
-        require_mfa_reset=False,
-    )
-    assert response.status_code == 200
-    assert actual == expect
-
-
 def test_delete_user(
     test_db,
 ):

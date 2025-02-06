@@ -62,9 +62,14 @@ def mfa_reset_request(
         if not user:
             logger.error(f"User not found: {email}")
             return NotFoundErrorResponse(message="User not found")
-        # set the require_mfa_reset flag
-        user.require_mfa_reset = True
-        db.commit()
+        # reset MFA setting for cognito user
+        response = client.admin_set_user_mfa_preference(
+            # TOTP MFA setting disabled
+            SoftwareTokenMfaSettings={"Enabled": False, "PreferredMfa": False},
+            Username=email,
+            UserPoolId=pool_id,
+        )
+        logger.info(f"mfa reset response: {response}")
         return None
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
