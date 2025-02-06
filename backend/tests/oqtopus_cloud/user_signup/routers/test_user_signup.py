@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi.testclient import TestClient
+from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.user_signup.lambda_function import app
 from oqtopus_cloud.user_signup.schemas.signup import (
@@ -30,6 +31,17 @@ def test_signup_success(test_db):
     body = SignupRequest(email="email_1", password="password_1")
     response = client.post("/signup", json=body.model_dump())
     assert response.status_code == 201
+    user = test_db.query(User).filter(User.email == "email_1").first()
+    whitelist_user = (
+        test_db.query(WhitelistUser).filter(WhitelistUser.email == "email_1").first()
+    )
+    assert user.username == "email_1"
+    assert user.email == "email_1"
+    assert user.organization == "organization_1"
+    assert user.group_id == "group_id_1"
+    assert user.userstatus == 1
+    assert user.require_mfa_reset is False
+    assert whitelist_user.is_signup_completed is True
 
 
 def test_signup_not_in_whitelist(test_db):

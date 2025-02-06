@@ -1,10 +1,14 @@
+from typing import Any
+
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, status
 from fastapi import Request as Event
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -19,6 +23,28 @@ from oqtopus_cloud.user_signup.schemas.errors import (
 from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+def cleanup_user(
+    db: Session, cognito_client: Any, email: str, user_pool_id: str
+) -> None:
+    try:
+        # rollback the registration of Cognito user
+        cognito_client.admin_delete_user(
+            UserPoolId=user_pool_id,
+            Username=email,
+        )
+        # rollback the registration of user
+        stmt = select(User).where(User.email == email)
+        user = db.execute(stmt).scalars().first()
+        db.delete(user)
+        stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
+        query_whitelist = db.execute(stmt_whitelist).scalars().first()
+        if query_whitelist:
+            query_whitelist.is_signup_completed = False
+        db.commit()
+    except Exception as delete_error:
+        logger.error(f"Failed to delete Cognito user: {delete_error}")
 
 
 @router.put(
@@ -41,48 +67,20 @@ def confirm_signup(
         confirmation_code = request.confirmation_code
         # check the confirmation code
         cognito_client = boto3.client("cognito-idp")
-        response = cognito_client.confirm_sign_up(
+        cognito_client.confirm_sign_up(
             ClientId=client_id,
             Username=email,
             ConfirmationCode=confirmation_code,
             ForceAliasCreation=False,
         )
-        logger.info(f"response from cognito: {response}")
-        admin_response = cognito_client.admin_get_user(
-            UserPoolId=user_pool_id,
-            Username=email,
-        )
-        cognito_id = next(
-            (
-                attr["Value"]
-                for attr in admin_response["UserAttributes"]
-                if attr["Name"] == "sub"
-            ),
-            None,
-        )
-        # register the user to users table
-        new_user = User(
-            cognito_id=cognito_id,
-            email=email,
-            username=email,
-            userstatus=1,
-            require_mfa_reset=False,
-        )
-        db.add(new_user)
-        db.commit()
         logger.info(f"User {email} has been confirmed")
         return None
     except ClientError as e:
         # catch the cognito error
+        logger.error(f"error: {str(e)}", stack_info=True)
+        cleanup_user(db, cognito_client, email, user_pool_id)
         return BadRequestResponse(message=str(e))
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
-        try:
-            # rollback the registration of Cognito user
-            cognito_client.admin_delete_user(
-                UserPoolId=user_pool_id,
-                Username=email,
-            )
-        except Exception as delete_error:
-            logger.error(f"Failed to delete Cognito user: {delete_error}")
+        cleanup_user(db, cognito_client, email, user_pool_id)
         return InternalServerErrorResponse(message=str(e))

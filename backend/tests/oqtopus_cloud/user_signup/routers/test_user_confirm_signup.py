@@ -39,9 +39,6 @@ def test_signup_confirm_success(test_db):
     )
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 200
-    # confirm the user is registered
-    user = test_db.query(User).filter(User.email == "email1@gmail.com").first()
-    assert user.username == "email1@gmail.com"
 
 
 def test_signup_confirm_multiple_registration(test_db, fake_cognito_client_fixture):

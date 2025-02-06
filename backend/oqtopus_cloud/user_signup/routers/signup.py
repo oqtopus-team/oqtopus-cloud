@@ -4,6 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
@@ -34,13 +35,14 @@ def signup(
     db: Session = Depends(get_db),
 ) -> None | BadRequestResponse | InternalServerErrorResponse:
     client_id = event.state.client_id
+    user_pool_id = event.state.pool_id
     try:
         logger.info("invoked pre signup confirmation")
         # check if user exists
         email = request.email
         password = request.password
-        stmt = select(WhitelistUser).where(WhitelistUser.email == email)
-        whitelist_user = db.execute(stmt).scalars().first()
+        stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
+        whitelist_user = db.execute(stmt_whitelist).scalars().first()
         if not whitelist_user:
             logger.error(f"Not in whitelist_users: {email}")
             return BadRequestResponse(message="Not in whitelist_users")
@@ -56,6 +58,29 @@ def signup(
             ValidationData=[],
         )
         logger.info(f"response: {response}")
+        # register the user to users table
+        admin_response = client.admin_get_user(
+            UserPoolId=user_pool_id,
+            Username=email,
+        )
+        cognito_id = next(
+            (
+                attr["Value"]
+                for attr in admin_response["UserAttributes"]
+                if attr["Name"] == "sub"
+            ),
+            None,
+        )
+        new_user = User(
+            cognito_id=cognito_id,
+            email=email,
+            username=email,
+            userstatus=1,
+            organization=whitelist_user.organization,
+            group_id=whitelist_user.group_id,
+            require_mfa_reset=False,
+        )
+        db.add(new_user)
         # update whitelist_user status to completed
         whitelist_user.is_signup_completed = True
         db.commit()
