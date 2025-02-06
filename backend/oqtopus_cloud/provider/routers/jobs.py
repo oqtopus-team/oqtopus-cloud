@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
@@ -354,12 +354,24 @@ def model_to_schema(
             mitigation_info=model.mitigation_info,
             simulator_info=model.simulator_info,
             execution_time=model.execution_time,
-            submitted_at=model.submitted_at,
-            ready_at=model.ready_at,
-            running_at=model.running_at,
-            ended_at=model.ended_at,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
+            submitted_at=model.submitted_at.replace(tzinfo=timezone.utc)
+            if model.submitted_at is not None
+            else None,
+            ready_at=model.ready_at.replace(tzinfo=timezone.utc)
+            if model.ready_at is not None
+            else None,
+            running_at=model.running_at.replace(tzinfo=timezone.utc)
+            if model.running_at is not None
+            else None,
+            ended_at=model.ended_at.replace(tzinfo=timezone.utc)
+            if model.ended_at is not None
+            else None,
+            created_at=model.created_at.replace(tzinfo=timezone.utc)
+            if model.created_at is not None
+            else None,
+            updated_at=model.updated_at.replace(tzinfo=timezone.utc)
+            if model.updated_at is not None
+            else None,
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -379,6 +391,7 @@ def model_to_schema(
                 else:
                     dict_schema[k] = JobStatus(model.status)
             else:
+                # TODO Replace datetime timezone
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)
     else:

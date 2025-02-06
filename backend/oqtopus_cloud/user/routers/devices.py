@@ -1,5 +1,7 @@
 import json
+from datetime import datetime
 
+import pytz
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -94,18 +96,24 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
+def localize(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return pytz.utc.localize(dt)
+
+
 def model_to_schema(model: Device) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
         "device_type": getattr(model, "device_type", None),
         "status": model.status,
-        "available_at": getattr(model, "available_at", None),
+        "available_at": localize(getattr(model, "available_at", None)),
         "n_pending_jobs": getattr(model, "pending_jobs", None),
         "n_qubits": getattr(model, "n_qubits", None),
         "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
         "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
         "device_info": getattr(model, "device_info", None),
-        "calibrated_at": getattr(model, "calibrated_at", None),
+        "calibrated_at": localize(getattr(model, "calibrated_at", None)),
         "description": model.description,
     }
     return DeviceInfo.model_validate(dict)

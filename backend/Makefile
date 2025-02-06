@@ -29,6 +29,7 @@ generate:
 	--input-file-type openapi \
 	--collapse-root-models \
 	--enum-field-as-literal one \
+	--output-datetime-class AwareDatetime \
 	--use-union-operator \
 	--use-subclass-enum \
 	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
@@ -37,7 +38,6 @@ generate:
 	--use-standard-collections \
 	--strict-nullable \
 	--use-default \
-	--output-datetime-class datetime \
 	--output ${OUTPUT}
 
 generate-all-schema: ## Generate user and provider schemas
