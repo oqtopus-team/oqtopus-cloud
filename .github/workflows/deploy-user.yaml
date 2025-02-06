@@ -47,4 +47,4 @@ jobs:
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
-        run: sudo -E env PATH="$PATH" make deploy-user
+        run: sudo -E env PATH="$PATH" make deploy-user-via-actions
