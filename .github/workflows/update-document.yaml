@@ -18,5 +18,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup make
-      
+    - name: Install make
+      run: sudo apt install make
+
+    - name: Update document
+      run: make docs
