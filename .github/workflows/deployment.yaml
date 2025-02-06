@@ -4,7 +4,7 @@ on:
     branches:
       - develop
     paths:
-      - 'backend/oqtopus-cloud/**'
+      - 'backend/oqtopus_cloud/**'
 
 jobs:
   deployment:
