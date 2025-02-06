@@ -7,8 +7,6 @@ SHELL := bash
 -include .env
 export
 
-PROFILE_ARG := $(shell test -f .env && grep -q '^PROFILE=' .env && echo "--profile $(PROFILE)")
-
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
 	WORKSPACE=../../backend \
@@ -59,15 +57,33 @@ deploy-provider: zip-provider	## Deploy Provider API Lambda Package
 
 deploy-all: deploy-user deploy-provider ## Deploy All Lambda Packages
 
-
 deploy:
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip \
-	$(PROFILE_ARG)
+	--profile $(PROFILE)
 	@echo "Deploy Completed"
+
+deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
+	BIN=./bin/user
+
+deploy-provider-via-actions: zip-provider	## Deploy Provider API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
+	BIN=./bin/provider
+
+deploy-via-actions: ## Deploy Lambda Package via Github Actions
+	@echo "Deploy ${FUNCTION_NAME} ..."
+	@export AWS_PAGER="" && \
+	aws lambda update-function-code \
+	--function-name ${FUNCTION_NAME} \
+	--zip-file fileb://${BIN}/lambda.zip
+	@echo "Deploy Completed"
+
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
