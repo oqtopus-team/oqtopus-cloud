@@ -1,7 +1,8 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional
 
+import pytz
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
@@ -328,6 +329,29 @@ def parse_job_type(jt: str) -> JobType | ValueError:
         return ValueError(f"{jt} is not a valid JobType")
 
 
+def localize(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return pytz.utc.localize(dt)
+
+
+def is_datetime_field(fld: str) -> bool:
+    if fld == "submitted_at":
+        return True
+    elif fld == "ready_at":
+        return True
+    elif fld == "running_at":
+        return True
+    elif fld == "ended_at":
+        return True
+    elif fld == "created_at":
+        return True
+    elif fld == "updated_at":
+        return True
+
+    return False
+
+
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
@@ -354,24 +378,12 @@ def model_to_schema(
             mitigation_info=model.mitigation_info,
             simulator_info=model.simulator_info,
             execution_time=model.execution_time,
-            submitted_at=model.submitted_at.replace(tzinfo=timezone.utc)
-            if model.submitted_at is not None
-            else None,
-            ready_at=model.ready_at.replace(tzinfo=timezone.utc)
-            if model.ready_at is not None
-            else None,
-            running_at=model.running_at.replace(tzinfo=timezone.utc)
-            if model.running_at is not None
-            else None,
-            ended_at=model.ended_at.replace(tzinfo=timezone.utc)
-            if model.ended_at is not None
-            else None,
-            created_at=model.created_at.replace(tzinfo=timezone.utc)
-            if model.created_at is not None
-            else None,
-            updated_at=model.updated_at.replace(tzinfo=timezone.utc)
-            if model.updated_at is not None
-            else None,
+            submitted_at=localize(model.submitted_at),
+            ready_at=localize(model.ready_at),
+            running_at=localize(model.running_at),
+            ended_at=localize(model.ended_at),
+            created_at=pytz.utc.localize(model.created_at),
+            updated_at=localize(model.updated_at),
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -390,8 +402,9 @@ def model_to_schema(
                     return status
                 else:
                     dict_schema[k] = JobStatus(model.status)
+            elif is_datetime_field(k):
+                dict_schema[k] = localize(getattr(model, k))
             else:
-                # TODO Replace datetime timezone
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)
     else:
