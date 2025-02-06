@@ -1,0 +1,22 @@
+name: Update document
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+    - 'backend/oas/provider/**'
+    - 'backend/oas/user/**'
+    - 'terraform/infrastructure/**'
+    - 'terraform/server/**'
+
+jobs:
+  update-document:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup make
+      
