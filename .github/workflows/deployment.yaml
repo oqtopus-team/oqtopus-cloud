@@ -1,4 +1,4 @@
-name: Deploy provider
+name: Deploy user
 on:
   push:
     branches:
@@ -9,6 +9,9 @@ on:
 jobs:
   deployment:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deploy-target: [user, provider]
 
     permissions:
       id-token: write
@@ -47,4 +50,4 @@ jobs:
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
-        run: sudo -E env PATH="$PATH" make deploy-provider-via-actions
+        run: sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
