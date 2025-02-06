@@ -12,7 +12,7 @@ class ErrorResponse(JSONResponse):
     pass
 
 
-class Detail(BaseModel):
+class Message(BaseModel):
     """A simple message response.
 
     Args:

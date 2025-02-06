@@ -15,8 +15,8 @@ from zoneinfo import ZoneInfo
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
-    Detail,
     InternalServerErrorResponse,
+    Message,
 )
 from oqtopus_cloud.admin.schemas.whitelist_users import (
     ListWhitelistUserResponse,
@@ -81,7 +81,7 @@ def validated_whitelist_user(
 @router.get(
     "/whitelist_users",
     response_model=ListWhitelistUsersResponse,
-    responses={500: {"model": Detail}},
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def get_whitelist_users(
@@ -122,7 +122,7 @@ def get_whitelist_users(
     "/whitelist_users",
     response_model=None,
     status_code=status.HTTP_200_OK,
-    responses={400: {"model": Detail}, 500: {"model": Detail}},
+    responses={400: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def register_whitelist_user(
@@ -168,7 +168,7 @@ def register_whitelist_user(
     "/whitelist_users",
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={500: {"model": Detail}},
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def delete_whitelist_user(

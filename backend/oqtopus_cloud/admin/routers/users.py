@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.errors import (
-    Detail,
     InternalServerErrorResponse,
+    Message,
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.users import (
@@ -30,7 +30,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 @router.get(
     "/users",
     response_model=GetUsersResponse,
-    responses={500: {"model": Detail}},
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def get_users(
@@ -72,8 +72,8 @@ def get_users(
     "/users/{user_id}",
     response_model=GetOneUserResponse,
     responses={
-        404: {"model": Detail},
-        500: {"model": Detail},
+        404: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -110,8 +110,8 @@ def update_user_status(
     "/users/{user_id}/mfa_reset",
     response_model=GetOneUserResponse,
     responses={
-        404: {"model": Detail},
-        500: {"model": Detail},
+        404: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -160,8 +160,8 @@ def reset_user_mfa(
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        404: {"model": Detail},
-        500: {"model": Detail},
+        404: {"model": Message},
+        500: {"model": Message},
     },
 )
 @tracer.capture_method
