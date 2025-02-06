@@ -21,6 +21,10 @@ paths:
     $ref: ./paths/users.yaml#/users.user_id.mfa_reset
   /whitelist:
     $ref: ./paths/whitelist_users.yaml#/whitelist_users
+  /devices:
+    $ref: ./paths/devices.yaml#/devices
+  /devices/{device_id}:
+    $ref: ./paths/devices.yaml#/devices.deviceId
 
 components:
   securitySchemes:
