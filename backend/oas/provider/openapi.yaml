@@ -550,10 +550,12 @@ components:
           example: '10.123'
         submitted_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ready_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         running_at:
@@ -568,10 +570,12 @@ components:
           example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         updated_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required: []
@@ -688,10 +692,12 @@ components:
           example: '10.123'
         submitted_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ready_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         running_at:
@@ -706,10 +712,12 @@ components:
           example: '2022-10-19T11:45:34+09:00'
         created_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         updated_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
       required:
