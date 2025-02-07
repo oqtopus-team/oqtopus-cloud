@@ -12,6 +12,8 @@ info:
 servers:
   - url: http://localhost:8888
     description: Local server url
+security:
+  - ApiKeyAuth: []
 paths:
   /devices/{device_id}:
     patch:
@@ -20,7 +22,6 @@ paths:
       summary: Update data of selected device
       description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)
       operationId: patchDeviceData
-      security: []
       parameters:
         - in: path
           name: device_id
@@ -89,12 +90,11 @@ paths:
                 message: Internal server error
   /jobs:
     get:
-      tags:
-        - jobs
       summary: Search jobs for a device
       description: Search jobs for a device
-      operationId: getjobs
-      security: []
+      operationId: getjobs  
+      tags:
+        - jobs
       parameters:
         - in: query
           name: device_id
@@ -103,19 +103,6 @@ paths:
           schema:
             type: string
             example: Kawasaki
-        - in: query
-          name: fields
-          description: |-
-            Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
-
-            If parameter is specified and requested job field is not defined for a job null is returned.
-
-            If parameter is omitted all available job properties are returned. Undefined job properties (null properties) are not included in the response.
-          required: false
-          schema:
-            type: string
-            maxLength: 1024
-            example: job_id,status,name
         - in: query
           name: status
           description: Additional search parameter:<br/> Search jobs with specified status only
@@ -141,7 +128,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.GetJobsResponse'
+                  $ref: '#/components/schemas/jobs.JobDef'
         '400':
           description: Bad Request
           content:
@@ -163,7 +150,6 @@ paths:
       summary: Get a job by ID
       description: Get a job by ID
       operationId: getJob
-      security: []
       tags:
         - jobs
       parameters:
@@ -201,7 +187,6 @@ paths:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
       operationId: patchJob
-      security: []
       tags:
         - jobs
       parameters:
@@ -249,7 +234,6 @@ paths:
         Used by device to set results or error details in job_info、accompanied by appropriate status updating.
         Note that job info descriptor (sampling, estimation, etc) cannot be modified.
       operationId: patchJobInfo
-      security: []
       tags:
         - jobs
       parameters:
@@ -291,6 +275,11 @@ paths:
               example:
                 message: Job not found
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
   schemas:
     devices.DeviceStatusUpdate:
       type: object
@@ -399,6 +388,7 @@ components:
       example: submitted
     jobs.JobId:
       type: string
+      format: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.OperatorItem:
       type: object
@@ -418,6 +408,7 @@ components:
         - pauli
     jobs.EstimationResult:
       type: object
+      nullable: true
       description: |
         *(Only for estimation jobs)* The estimated expectation value and the standard deviation
         of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
@@ -435,6 +426,7 @@ components:
           description: (Only for estimation jobs) The standard deviation value
           type: number
     jobs.JobResult:
+      nullable: true
       type: object
       properties:
         counts:
@@ -450,9 +442,11 @@ components:
         estimation:
           $ref: '#/components/schemas/jobs.EstimationResult'
         divided_result:
-          type: object
-          description: Assumed to be used for multiprogramming, but currently not supported yet.
-          properties: {}
+          oneOf:
+            - type: object
+              description: Assumed to be used for multiprogramming, but currently not supported yet.
+              properties: {}
+            - type: 'null'
         properties:
           type: string
         transpile_result:
@@ -472,21 +466,25 @@ components:
           example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
         combined_program:
           type: string
+          nullable: true
           description: For multiprogramming jobs, this field contains the combined circuit.
         operator:
           description: |
             *(Only for estimation jobs)* The operator (or observable) for which the expectation
             value is to be estimated.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/jobs.OperatorItem'
         transpiled_program:
           type: string
+          nullable: true
           example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
         result:
           $ref: '#/components/schemas/jobs.JobResult'
         message:
           type: string
+          nullable: true
           description: Describing the reason why there is no result
       required:
         - program
@@ -513,6 +511,7 @@ components:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
           type: string
+          nullable: true
           example: |-
             {
               "qubit_allocation": {
@@ -524,6 +523,7 @@ components:
             }
         simulator_info:
           type: string
+          nullable: true
           example: |-
             {
               "n_qubits": 5,
@@ -532,18 +532,21 @@ components:
               "seed_simulation": 39058567,
               "simulation_opt": {
                 "optimization_method": "light",
+                b
                 "optimization_block_size": 1,
                 "optimization_swap_level": 1
               }
             }
         mitigation_info:
           type: string
+          nullable: true
           example: |
             { "ro_error_mitigation": "pseudo_inverse" }
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
         execution_time:
           type: number
+          nullable: true
           example: '10.123'
         submitted_at:
           type: string
@@ -555,10 +558,12 @@ components:
           example: '2022-10-19T11:45:34+09:00'
         running_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ended_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         created_at:
@@ -645,6 +650,7 @@ components:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
           type: string
+          nullable: true
           example: |-
             {
               "qubit_allocation": {
@@ -656,6 +662,7 @@ components:
             }
         simulator_info:
           type: string
+          nullable: true
           example: |-
             {
               "n_qubits": 5,
@@ -670,12 +677,14 @@ components:
             }
         mitigation_info:
           type: string
+          nullable: true
           example: |
             { "ro_error_mitigation": "pseudo_inverse" }
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
         execution_time:
           type: number
+          nullable: true
           example: '10.123'
         submitted_at:
           type: string
@@ -687,10 +696,12 @@ components:
           example: '2022-10-19T11:45:34+09:00'
         running_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ended_at:
           type: string
+          nullable: true
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         created_at:
@@ -794,6 +805,7 @@ components:
           $ref: '#/components/schemas/jobs.JobStatus'
         execution_time:
           type: number
+          nullable: true
           description: Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
         job_info:
           $ref: '#/components/schemas/jobs.UpdateJobInfo'
