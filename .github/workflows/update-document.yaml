@@ -57,6 +57,12 @@ jobs:
 
     - name: Commit changes
       run: |
+        EXIST_DIFF=$(git diff --exit-code)
+        if [ "$EXIST_DIFF" == "0" ]; then
+          echo "No changes to commit."
+          exit 0
+        fi
+        git add .
         git commit -m "Auto update document $(date +%Y%m%d-%H%M%S)" -a
         git push origin $BRANCH_NAME
 
@@ -65,6 +71,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
       run: |
+        if [ "$EXIST_DIFF" == "0" ]; then
+          echo "No changes to commit."
+          exit 0
+        fi
         gh pr create --title "chore: [CI] Auto update document $(date +%Y%m%d-%H%M%S)" \
                       --body "This PR was automatically generated.\n$TRIGGERED_PUSH_URL" \
                       --base develop \
