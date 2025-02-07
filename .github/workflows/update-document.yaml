@@ -5,8 +5,8 @@ on:
     branches:
       - develop
     paths:
-    - 'backend/oas/provider/**'
-    - 'backend/oas/user/**'
+    - 'backend/oqtopus-cloud/provider/**'
+    - 'backend/oqtopus-cloud/user/**'
 
 permissions:
   contents: read
