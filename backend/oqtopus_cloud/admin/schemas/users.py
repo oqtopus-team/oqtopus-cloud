@@ -4,7 +4,15 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 from pydantic import BaseModel
+
+
+class UserStatus(str, Enum):
+    approved = "approved"
+    unapproved = "unapproved"
+    suspended = "suspended"
 
 
 class GetOneUserResponse(BaseModel):
@@ -16,7 +24,7 @@ class GetOneUserResponse(BaseModel):
     email: str | None = None
     name: str | None = None
     organization: str | None = None
-    status: str | None = None
+    status: UserStatus | None = None
     group_id: str | None = None
     require_mfa_reset: bool | None = None
 
@@ -28,4 +36,4 @@ class GetUsersResponse(BaseModel):
 
 
 class UpdateUserStatusRequest(BaseModel):
-    status: str | None = None
+    status: UserStatus | None = None

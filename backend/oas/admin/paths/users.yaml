@@ -1,61 +1,70 @@
 users:
   get:
     tags:
-      - "user"
+      - user
     summary: "get users"
     description: "get users"
-    operationId: "getUsers"
+    operationId: getUsers
     security:
       - BearerAuth: []
     parameters:
-      - name: "offset"
-        in: "query"
+      - name: offset
+        in: query
         description: "offset information"
         required: false
         schema: {type: string}
-      - name: "limit"
-        in: "query"
+      - name: limit
+        in: query
         description: "Limit information"
         required: false
         schema: {type: string}
-      - name: "email"
-        in: "query"
+      - name: email
+        in: query
         description: "query email infomation"
         required: false
         schema: {type: string}
-      - name: "name"
-        in: "query"
+      - name: name
+        in: query
         description: "query name information"
         required: false
         schema: {type: string}
-      - name: "organization"
-        in: "query"
+      - name: organization
+        in: query
         description: "query organization information"
         required: false
         schema: {type: string}
-      - name: "status"
-        in: "query"
+      - name: status
+        in: query
         description: "query user status"
         required: false
-        schema: {type: integer}
-      - name: "group_id"
-        in: "query"
+        schema:
+          $ref: "../schemas/users.yaml#/users.UserStatus"
+      - name: group_id
+        in: query
         description: "query group ID"
         required: false
         schema: {type: string}
     responses:
       "200":
-        description: "Success"
+        description: Success
         content:
           application/json:
             schema:
               $ref: "../schemas/users.yaml#/users.GetUsersResponse"
+      "400":
+        description: "Bad Request"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: "Invalid status"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized : user is not admin"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
@@ -63,19 +72,18 @@ users:
             example:
               message: "Internal Server Error"
 
-
 users.user_id:
   put:
     tags:
-      - "user"
+      - user
     summary: "update user status"
     description: "update user status"
-    operationId: "updatetUserStatusById"
+    operationId: updatetUserStatusById
     security:
       - BearerAuth: []
     parameters:
-      - name: "user_id"
-        in: "path"
+      - name: user_id
+        in: path
         description: "User ID"
         required: true
         schema: {type: integer}
@@ -87,13 +95,13 @@ users.user_id:
             $ref: "../schemas/users.yaml#/users.UpdateUserStatusRequest"
     responses:
       "200":
-        description: "Success"
+        description: Success
         content:
           application/json:
             schema:
               $ref: "../schemas/users.yaml#/users.GetOneUserResponse"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized"
       "404":
@@ -105,7 +113,7 @@ users.user_id:
             example:
               message: "User not found"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
@@ -114,21 +122,23 @@ users.user_id:
               message: "Internal Server Error"
   delete:
     tags:
-      - "user"
+      - user
     summary: "delete user"
     description: "delete user with designated id"
-    operationId: "deleteUserById"
+    operationId: deleteUserById
     security:
       - BearerAuth: []
     parameters:
-      - name: "user_id"
-        in: "path"
+      - name: user_id
+        in: path
         description: "User ID"
         required: true
         schema: {type: integer}
     responses:
       "204":
-        description: "Success"
+        description: Success
+      "401":
+        description: Unauthorized
       "403":
         description: "Not authorized"
       "404":
@@ -140,7 +150,7 @@ users.user_id:
             example:
               message: "User not found"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
@@ -148,31 +158,30 @@ users.user_id:
             example:
               message: "Internal Server Error"
 
-
 users.user_id.mfa_reset:
   put:
     tags:
-      - "user"
+      - user
     summary: "reset user mfa"
     description: "reset user mfa"
-    operationId: "resetUserMfa"
+    operationId: resetUserMfa
     security:
       - BearerAuth: []
     parameters:
-      - name: "user_id"
-        in: "path"
+      - name: user_id
+        in: path
         description: "User ID"
         required: true
         schema: {type: integer}
     responses:
       "200":
-        description: "Success"
+        description: Success
         content:
           application/json:
             schema:
               $ref: "../schemas/users.yaml#/users.GetOneUserResponse"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized : user is not admin"
       "404":
@@ -184,7 +193,7 @@ users.user_id.mfa_reset:
             example:
               message: "User not found"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:

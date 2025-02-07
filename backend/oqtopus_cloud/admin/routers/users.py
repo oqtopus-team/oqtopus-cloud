@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.errors import (
+    BadRequestErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
@@ -16,6 +17,7 @@ from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
     UpdateUserStatusRequest,
+    UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
@@ -40,9 +42,9 @@ def get_users(
     name: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[UserStatus] = None,
     db: Session = Depends(get_db),
-) -> GetUsersResponse | InternalServerErrorResponse:
+) -> GetUsersResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     try:
         logger.info("invoked list_users")
         # query
@@ -56,7 +58,10 @@ def get_users(
         if group_id:
             stmt = stmt.where(User.group_id == group_id)
         if status:
-            stmt = stmt.where(User.userstatus == int(status))
+            status_num = enum_to_status(status)
+            if status_num is None:
+                return BadRequestErrorResponse(message="Invalid status")
+            stmt = stmt.where(User.userstatus == status_num)
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
         scalars = query_result.scalars().all()
@@ -92,7 +97,7 @@ def update_user_status(
         # state not updated
         if status_update.status is None:
             return model_to_schema(query)
-        query.userstatus = int(status_update.status)
+        query.userstatus = enum_to_status(status_update.status)
 
         # commit the transaction
         db.commit()
@@ -198,12 +203,35 @@ def delete_user(
 
 
 def model_to_schema(model: User) -> GetOneUserResponse:
+    status = status_to_enum(getattr(model, "userstatus", None))
     return GetOneUserResponse(
         id=model.id,
         email=getattr(model, "email", None),
         name=getattr(model, "username", None),
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
-        status=str(getattr(model, "userstatus", None)),
+        status=status,
         require_mfa_reset=getattr(model, "require_mfa_reset", None),
     )
+
+
+def status_to_enum(status: int | None) -> UserStatus | None:
+    if status == 1:
+        return UserStatus.approved
+    elif status == 2:
+        return UserStatus.unapproved
+    elif status == 3:
+        return UserStatus.suspended
+    else:
+        return None
+
+
+def enum_to_status(status: UserStatus | None) -> int | None:
+    if status == UserStatus.approved:
+        return 1
+    elif status == UserStatus.unapproved:
+        return 2
+    elif status == UserStatus.suspended:
+        return 3
+    else:
+        return None

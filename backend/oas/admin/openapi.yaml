@@ -58,7 +58,7 @@ paths:
           description: query user status
           required: false
           schema:
-            type: integer
+            $ref: '#/components/schemas/users.UserStatus'
         - name: group_id
           in: query
           description: query group ID
@@ -72,6 +72,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/users.GetUsersResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Invalid status
         '401':
           description: Unauthorized
         '403':
@@ -151,6 +159,8 @@ paths:
       responses:
         '204':
           description: Success
+        '401':
+          description: Unauthorized
         '403':
           description: Not authorized
         '404':
@@ -326,6 +336,13 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    users.UserStatus:
+      type: string
+      enum:
+        - approved
+        - unapproved
+        - suspended
+      example: approved
     users.GetOneUserResponse:
       description: detail of users response
       type: object
@@ -339,7 +356,7 @@ components:
         organization:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/users.UserStatus'
         group_id:
           type: string
         require_mfa_reset:
@@ -358,6 +375,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/users.GetOneUserResponse'
+    error.BadRequestError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     error.InternalServerError:
       type: object
       properties:
@@ -369,7 +393,7 @@ components:
       type: object
       properties:
         status:
-          type: string
+          $ref: '#/components/schemas/users.UserStatus'
     error.NotFoundError:
       type: object
       properties:
@@ -436,13 +460,6 @@ components:
           items:
             $ref: '#/components/schemas/whitelist_users.RegisterWhitelistUserRequest'
     success.SuccessResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
-    error.BadRequestError:
       type: object
       properties:
         message:

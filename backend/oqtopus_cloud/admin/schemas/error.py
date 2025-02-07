@@ -7,13 +7,13 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
+class BadRequestError(BaseModel):
+    message: str
+
+
 class InternalServerError(BaseModel):
     message: str
 
 
 class NotFoundError(BaseModel):
-    message: str
-
-
-class BadRequestError(BaseModel):
     message: str
