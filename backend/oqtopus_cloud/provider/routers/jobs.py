@@ -224,15 +224,6 @@ def update_job_info(
 
         return (status, job_info)
 
-    if (
-        request.job_info is not None
-        and request.job_info.message is not None
-        and request.job_info.result is not None
-    ):
-        return BadRequestResponse(
-            message="You cannot specify both a result and a message."
-        )
-
     try:
         stmt = select(Job).where(Job.id == job_id)
         model = db.execute(stmt).scalar_one_or_none()
@@ -257,8 +248,6 @@ def update_job_info(
         if (
             # Job with non-null result should be succeeded
             (job_info.result is not None and status != JobStatus.succeeded)
-            # Job with non-null message should not be succeeded
-            or (job_info.message is not None and status == JobStatus.succeeded)
             # Job cannot go back to status of submitted or ready.
             or status in [JobStatus.submitted, JobStatus.ready]
         ):
