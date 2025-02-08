@@ -55,26 +55,20 @@ jobs:
         git checkout -b $BRANCH_NAME
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-    - name: Commit changes
+    - name: Auto PR
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
       run: |
         if git diff --quiet; then
           echo "No changes to commit."
           exit 0
         fi
-        git add .
         git commit -m "Auto update document $(date +%Y%m%d-%H%M%S)" -a
         git push origin $BRANCH_NAME
-
-    - name: Create Pull Request
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-      run: |
-        if [ "$EXIST_DIFF" == "0" ]; then
-          echo "No changes to commit."
-          exit 0
-        fi
         gh pr create --title "chore: [CI] Auto update document $(date +%Y%m%d-%H%M%S)" \
                       --body "This PR was automatically generated.\n$TRIGGERED_PUSH_URL" \
                       --base develop \
-                      --head $BRANCH_NAME
+                      --head $BRANCH_NAME \
+                      --label documentation \
+                      --reviewer dvlpwork
