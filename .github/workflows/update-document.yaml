@@ -57,8 +57,8 @@ jobs:
 
     - name: Commit changes
       run: |
-        EXIST_DIFF=$(git diff --exit-code)
-        if [ "$EXIST_DIFF" == "0" ]; then
+        EXIST_DIFF=$(git diff --quiet)
+        if $EXIST_DIFF; then
           echo "No changes to commit."
           exit 0
         fi
