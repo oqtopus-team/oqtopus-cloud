@@ -218,7 +218,7 @@ jobs.JobDef:
       $ref: "#/jobs.MitigationInfo"
     execution_time:
       type: number
-      example: "10.123"
+      example: "10.12345"
     submitted_at:
       type: string
       format: date-time
