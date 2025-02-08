@@ -70,5 +70,4 @@ jobs:
                       --body "This PR was automatically generated.$TRIGGERED_PUSH_URL" \
                       --base develop \
                       --head $BRANCH_NAME \
-                      --label documentation \
-                      --reviewer dvlpwork
+                      --label documentation
