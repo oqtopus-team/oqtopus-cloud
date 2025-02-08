@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - develop
-    paths:
-    - 'backend/oqtopus_cloud/provider/**'
-    - 'backend/oqtopus_cloud/user/**'
+      - feature/#307-test-*
+    # paths:
+    # - 'backend/oqtopus_cloud/provider/**'
+    # - 'backend/oqtopus_cloud/user/**'
 
 permissions:
   contents: write
