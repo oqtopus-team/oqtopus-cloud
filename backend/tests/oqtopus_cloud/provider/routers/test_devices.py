@@ -1,7 +1,8 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
+import pytz
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -42,7 +43,7 @@ def _get_model():
         "id": "SC2",
         "device_type": "simulator",
         "status": "available",
-        "available_at": datetime(2023, 1, 2, 12, 34, 56),
+        "available_at": datetime(2023, 1, 2, 12, 34, 56).replace(tzinfo=timezone.utc),
         "pending_jobs": 8,
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
@@ -94,7 +95,7 @@ def test_update_device_status_not_available(test_db):
     request = DeviceStatusUpdate(
         command="DeviceStatusUpdate",
         status=DeviceStatus.unavailable,
-        available_at=datetime.now(),
+        available_at=datetime.now(tz=timezone.utc),
     )
     actual = update_device_status(device=device, request=request, db=test_db)
     # Assert

@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class JobType(str, Enum):
@@ -147,22 +146,22 @@ class GetJobsResponse(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ready_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     running_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     created_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
@@ -212,10 +211,10 @@ class SubmitJobRequest(BaseModel):
     shots: Annotated[int, Field(examples=[1000])]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
     created_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
@@ -259,22 +258,22 @@ class JobDef(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ready_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     running_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     created_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
