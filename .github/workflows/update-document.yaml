@@ -5,8 +5,10 @@ on:
     branches:
       - develop
     paths:
-    - 'backend/oqtopus_cloud/provider/**'
-    - 'backend/oqtopus_cloud/user/**'
+    - 'backend/oas/provider/**'
+    - 'backend/oas/user/**'
+    - 'terraform/infrastructure/modules/**'
+    - 'terraform/service/modules/**'
 
 permissions:
   contents: write
