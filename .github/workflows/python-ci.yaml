@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [common, user, provider]
+        target: [common, user, provider, admin]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     needs: lint-format
     strategy:
       matrix:
-        target: [common, user, provider]
+        target: [common, user, provider, admin]
 
     steps:
     - name: Checkout repository
@@ -89,6 +89,11 @@ jobs:
       with:
         name: .coverage-provider
         path: ./
+    - name: Download .coverage-admin artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: .coverage-admin
+        path: ./
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip==24.0
@@ -96,7 +101,7 @@ jobs:
         poetry install
     - name: Combine coverage files
       run: |
-        poetry run coverage combine .coverage-common .coverage-user .coverage-provider
+        poetry run coverage combine .coverage-common .coverage-user .coverage-provider .coverage-admin
         poetry run coverage xml
     - name: Upload combined coverage to Codecov
       uses: codecov/codecov-action@v5

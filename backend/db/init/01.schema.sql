@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS main.devices (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-drop table if exists  main.jobs;
+drop table if exists main.jobs;
 CREATE TABLE IF NOT EXISTS main.jobs (
   id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
@@ -37,3 +37,32 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+drop table if exists main.users;
+  CREATE TABLE IF NOT EXISTS users (
+      id                serial PRIMARY KEY,
+      cognito_id        VARCHAR(255) UNIQUE NOT NULL,
+      email             VARCHAR(255)        NOT NULL,
+      username          VARCHAR(100),
+      userstatus        VARCHAR(10),
+      api_token_secret  VARCHAR(255) UNIQUE,
+      organization      VARCHAR(255),
+      purpose           VARCHAR(255),
+      group_id          VARCHAR(255),
+      require_mfa_reset BOOLEAN,
+      api_token_expiration TIMESTAMP,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+
+drop table if exists main.whitelist_users;
+CREATE TABLE IF NOT EXISTS whitelist_users (
+    id serial PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    group_id VARCHAR(255) NOT NULL,
+    is_signup_completed BOOLEAN DEFAULT FALSE,
+    username VARCHAR(255),
+    organization VARCHAR(255),
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
