@@ -23,4 +23,4 @@ paths:
 components:
   securitySchemes:
     BearerAuth:
-      $ref: './schemas/security.yaml#/BearerAuth'
+      $ref: ./schemas/security.yaml#/BearerAuth

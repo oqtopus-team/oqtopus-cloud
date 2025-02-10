@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import List
 
+import pytz
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.lambda_function import app
@@ -47,8 +48,8 @@ def _get_model(n: int) -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
-        "submitted_at": datetime(2024, 3, 3 + n, 12, 34, 56),
-        "created_at": datetime(2024, 3, 3 + n, 12, 34, 56),
+        "submitted_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+        "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
     }
     return Job(**model_dict)
 
@@ -99,11 +100,11 @@ def test_get_jobs_simple(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 4, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             updated_at=None,
         ),
         JobDef(
@@ -121,11 +122,11 @@ def test_get_jobs_simple(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 5, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             updated_at=None,
         ),
     ]
@@ -221,11 +222,11 @@ def test_get_jobs_filtering_startTime(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 5, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             updated_at=None,
         ),
     ]
@@ -265,11 +266,11 @@ def test_get_jobs_filtering_endTime(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 4, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             updated_at=None,
         ),
     ]
@@ -309,11 +310,11 @@ def test_get_jobs_filtering_search_string(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 4, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             updated_at=None,
         ),
     ]
@@ -353,11 +354,11 @@ def test_get_jobs_desc_order(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 5, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 5, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
             updated_at=None,
         ),
         GetJobsResponse(
@@ -375,11 +376,11 @@ def test_get_jobs_desc_order(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=datetime(2024, 3, 4, 12, 34, 56),
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             updated_at=None,
         ),
     ]
@@ -519,11 +520,11 @@ def test_get_jobs_handler(
         status=JobStatus.submitted,
         shots=1000,
         execution_time=None,
-        submitted_at=datetime(2024, 3, 4, 12, 34, 56),
+        submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
         ready_at=None,
         running_at=None,
         ended_at=None,
-        created_at=datetime(2024, 3, 4, 12, 34, 56),
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
     )
     assert jobs[0] == expected
 
