@@ -93,7 +93,7 @@ paths:
               example:
                 message: Internal Server Error
   /users/{user_id}:
-    put:
+    patch:
       tags:
         - user
       summary: update user status
@@ -180,7 +180,7 @@ paths:
               example:
                 message: Internal Server Error
   /users/{user_id}/mfa_reset:
-    put:
+    patch:
       tags:
         - user
       summary: reset user mfa
@@ -389,11 +389,6 @@ components:
           type: string
       required:
         - message
-    users.UpdateUserStatusRequest:
-      type: object
-      properties:
-        status:
-          $ref: '#/components/schemas/users.UserStatus'
     error.NotFoundError:
       type: object
       properties:
@@ -401,6 +396,11 @@ components:
           type: string
       required:
         - message
+    users.UpdateUserStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/users.UserStatus'
     whitelist_users.Email:
       type: string
       example: example@example.com

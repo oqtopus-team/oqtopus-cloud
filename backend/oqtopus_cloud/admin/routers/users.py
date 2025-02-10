@@ -20,6 +20,7 @@ from oqtopus_cloud.admin.schemas.users import (
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import UserStatus as UserStatusSchema
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -73,7 +74,7 @@ def get_users(
         return InternalServerErrorResponse(message=str(e))
 
 
-@router.put(
+@router.patch(
     "/users/{user_id}",
     response_model=GetOneUserResponse,
     responses={
@@ -94,9 +95,6 @@ def update_user_status(
         query = db.execute(stmt).scalars().first()
         if not query:
             return NotFoundErrorResponse(message="User not found")
-        # state not updated
-        if status_update.status is None:
-            return model_to_schema(query)
         query.userstatus = enum_to_status(status_update.status)
 
         # commit the transaction
@@ -111,7 +109,7 @@ def update_user_status(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-@router.put(
+@router.patch(
     "/users/{user_id}/mfa_reset",
     response_model=GetOneUserResponse,
     responses={
@@ -215,23 +213,23 @@ def model_to_schema(model: User) -> GetOneUserResponse:
     )
 
 
-def status_to_enum(status: int | None) -> UserStatus | None:
-    if status == 1:
+def status_to_enum(status: UserStatusSchema | None) -> UserStatus | None:
+    if status == UserStatusSchema.approved:
         return UserStatus.approved
-    elif status == 2:
+    elif status == UserStatusSchema.unapproved:
         return UserStatus.unapproved
-    elif status == 3:
+    elif status == UserStatusSchema.suspended:
         return UserStatus.suspended
     else:
         return None
 
 
-def enum_to_status(status: UserStatus | None) -> int | None:
+def enum_to_status(status: UserStatus | None) -> UserStatusSchema | None:
     if status == UserStatus.approved:
-        return 1
+        return UserStatusSchema.approved
     elif status == UserStatus.unapproved:
-        return 2
+        return UserStatusSchema.unapproved
     elif status == UserStatus.suspended:
-        return 3
+        return UserStatusSchema.suspended
     else:
         return None

@@ -20,7 +20,7 @@ def _get_model(n: int) -> User:
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
         "username": f"username_{n}",
-        "userstatus": 1,
+        "userstatus": UserStatus.approved,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "purpose": f"purpose_{n}",
@@ -178,14 +178,14 @@ def test_get_user_by_name_organization_groupid_status(
     assert actual == expect
 
 
-def test_put_job(
+def test_patch_job(
     test_db,
 ):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
-    response = client.put("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
@@ -201,14 +201,14 @@ def test_put_job(
     assert actual == expect
 
 
-def test_put_job_404(
+def test_patch_job_404(
     test_db,
 ):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
-    response = client.put("/users/2", json=update_data.model_dump())
+    response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
     assert response.json() == {"message": "User not found"}
 
@@ -217,7 +217,7 @@ def test_post_job_mfa_reset(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    response = client.put("/users/1/mfa_reset")
+    response = client.patch("/users/1/mfa_reset")
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
@@ -271,5 +271,5 @@ def test_delete_user(
 
     # confirm the user is deleted
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
-    response = client.put("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404

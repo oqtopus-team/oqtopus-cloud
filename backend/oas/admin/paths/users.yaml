@@ -73,7 +73,7 @@ users:
               message: "Internal Server Error"
 
 users.user_id:
-  put:
+  patch:
     tags:
       - user
     summary: "update user status"
@@ -159,7 +159,7 @@ users.user_id:
               message: "Internal Server Error"
 
 users.user_id.mfa_reset:
-  put:
+  patch:
     tags:
       - user
     summary: "reset user mfa"
