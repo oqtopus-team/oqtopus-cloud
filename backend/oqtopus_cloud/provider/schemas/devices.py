@@ -19,7 +19,7 @@ class DeviceStatusUpdate(BaseModel):
     command: Annotated[
         Literal["DeviceStatusUpdate"], Field(examples=["DeviceStatusUpdate"])
     ]
-    status: Status | None = None
+    status: Status
     available_at: Annotated[
         AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None

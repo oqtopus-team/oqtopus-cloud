@@ -12,29 +12,24 @@ jobs:
         name: device_id
         required: true
         description: "Device identifier"
-        schema: { type: string, example: "Kawasaki" }
-      - in: query
-        name: fields
-        description: |-
-          Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
-
-          If parameter is specified and requested job field is not defined for a job null is returned.
-
-          If parameter is omitted all available job properties are returned. Undefined job properties (null properties) are not included in the response.
-        required: false
         schema:
           type: string
-          maxLength: 1024
-          example: "job_id,status,name"
+          nullable: false
+          example: "Kawasaki"
       - in: query
         name: status
+        required: false
         description: "Additional search parameter:<br/> Search jobs with specified status only"
         schema:
           $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
       - in: query
         name: max_results
+        required: false
         description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
-        schema: { type: integer, example: 1 }
+        schema:
+          type: integer
+          nullable: false
+          example: 1
       - in: query
         name: timestamp
         description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
@@ -79,7 +74,7 @@ jobs.jobId:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string }
+        schema: { type: string, nullable: false }
     responses:
       "200":
         description: "Return quantum job"
@@ -117,7 +112,7 @@ jobs.jobStatus:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string }
+        schema: { type: string, nullable: false }
     requestBody:
       description: "New job status. "
       content:
@@ -165,7 +160,7 @@ jobs.jobInfo:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string }
+        schema: { type: string, nullable: false }
     requestBody:
       description: "Modifications applied to Job info"
       content:
