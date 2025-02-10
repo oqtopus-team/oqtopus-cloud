@@ -19,7 +19,7 @@ whitelist_users.ListWhitelistUserResponse:
   type: object
   properties:
     id:
-      type: "integer"
+      type: integer
       example: 1
     group_id:
       type: string

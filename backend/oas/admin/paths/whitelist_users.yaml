@@ -8,13 +8,13 @@ whitelist_users:
     security:
       - BearerAuth: []
     parameters:
-      - name: "offset"
-        in: "query"
+      - name: offset
+        in: query
         description: "offset information"
         required: false
         schema: {type: string}
-      - name: "limit"
-        in: "query"
+      - name: limit
+        in: query
         description: "Limit information"
         required: false
         schema: {type: string}
@@ -26,11 +26,11 @@ whitelist_users:
             schema:
               $ref: "../schemas/whitelist_users.yaml#/whitelist_users.ListWhitelistUsersResponse"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized : user is not admin"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
@@ -56,17 +56,17 @@ whitelist_users:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
       "400":
-        description: Bad Request
+        description: "Bad Request"
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized : user is not admin"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
@@ -80,8 +80,8 @@ whitelist_users:
     security:
       - BearerAuth: []
     parameters:
-      - name: "user_emails"
-        in: "query"
+      - name: user_emails
+        in: query
         description: "email of the user to be deleted"
         required: true
         schema:
@@ -94,11 +94,11 @@ whitelist_users:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
       "401":
-        description: "Unauthorized"
+        description: Unauthorized
       "403":
         description: "Not authorized : user is not admin"
       "500":
-        description: Internal Server Error
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
