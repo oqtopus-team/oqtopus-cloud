@@ -6,6 +6,8 @@ text = """\
 exclude:
   - message: "ignores"
     paths:
+      - 'site/**'
+      - 'docs/**'
 """
 text += "\n".join(ignores) + "\n"
 

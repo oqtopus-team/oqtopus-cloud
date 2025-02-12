@@ -1,6 +1,8 @@
 exclude:
   - message: "ignores"
     paths:
+      - 'site/**'
+      - 'docs/**'
       - '__pycache__/'
       - '*.py[cod]'
       - '*$py.class'
@@ -96,4 +98,3 @@ exclude:
       - 'bin/'
       - '*.env'
       - '*lambda.zip'
-      - 'poetry.lock'
