@@ -69,6 +69,7 @@ jobs.EstimationResult:
 
 jobs.JobResult:
   type: object
+  nullable: true
   properties:
     counts:
       description: "*(Only for sampling jobs)* JSON string representing the sampling result"
