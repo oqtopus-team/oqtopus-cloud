@@ -16,7 +16,6 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    GetJobsResponse,
     JobDef,
     JobInfo,
     JobResult,
@@ -43,7 +42,7 @@ JobId = str
 
 @router.get(
     "/jobs",
-    response_model=list[JobDef | GetJobsResponse],
+    response_model=list[JobDef],
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -54,7 +53,7 @@ def get_jobs(
     max_results: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[JobDef | GetJobsResponse] | ErrorResponse:
+) -> list[JobDef] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
         # Fields Control
@@ -98,7 +97,7 @@ def get_jobs(
 
         models = db.scalars(select_stmt).all()
 
-        results: list[JobDef | GetJobsResponse] = []
+        results: list[JobDef] = []
         # for model, update_status in zip(models, update_statuses):
         for model in models:
             job = model_to_schema(model, fields_list)
@@ -134,7 +133,7 @@ def get_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | GetJobsResponse | ErrorResponse:
+) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
         model = db.get(Job, job_id)
@@ -342,58 +341,33 @@ def is_datetime_field(fld: str) -> bool:
 
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
-) -> JobDef | GetJobsResponse | ValueError:
-    if fields is None:
-        status = decode_job_status(model.status)
-        if isinstance(status, ValueError):
-            return status
-        job_info = decode_job_info(json.loads(model.job_info))
-        if isinstance(job_info, ValueError):
-            return job_info
-        job_type = parse_job_type(str(model.job_type))
-        if isinstance(job_type, ValueError):
-            return job_type
-        return JobDef(
-            job_id=model.id,
-            name=model.name,
-            description=model.description,
-            device_id=model.device_id,
-            shots=model.shots,
-            job_type=job_type,
-            job_info=job_info,
-            status=status,
-            transpiler_info=model.transpiler_info,
-            mitigation_info=model.mitigation_info,
-            simulator_info=model.simulator_info,
-            execution_time=model.execution_time,
-            submitted_at=localize(model.submitted_at),
-            ready_at=localize(model.ready_at),
-            running_at=localize(model.running_at),
-            ended_at=localize(model.ended_at),
-            created_at=pytz.utc.localize(model.created_at),
-            updated_at=localize(model.updated_at),
-        )
-    elif fields is not None:
-        dict_schema: dict[str, Any] = {}
-        for k in fields:
-            if k == "job_id":
-                dict_schema["job_id"] = model.id
-            elif k == "job_info":
-                job_info = decode_job_info(json.loads(model.job_info))
-                if isinstance(job_info, ValueError):
-                    return job_info
-                else:
-                    dict_schema[k] = job_info
-            elif k == "status":
-                status = decode_job_status(model.status)
-                if isinstance(status, ValueError):
-                    return status
-                else:
-                    dict_schema[k] = JobStatus(model.status)
-            elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
-            else:
-                dict_schema[k] = getattr(model, k)
-        return GetJobsResponse(**dict_schema)
-    else:
-        return ValueError("Failed to decode model")
+) -> JobDef | ValueError:
+    status = decode_job_status(model.status)
+    if isinstance(status, ValueError):
+        return status
+    job_info = decode_job_info(json.loads(model.job_info))
+    if isinstance(job_info, ValueError):
+        return job_info
+    job_type = parse_job_type(str(model.job_type))
+    if isinstance(job_type, ValueError):
+        return job_type
+    return JobDef(
+        job_id=model.id,
+        name=model.name,
+        description=model.description,
+        device_id=model.device_id,
+        shots=model.shots,
+        job_type=job_type,
+        job_info=job_info,
+        status=status,
+        transpiler_info=model.transpiler_info,
+        mitigation_info=model.mitigation_info,
+        simulator_info=model.simulator_info,
+        execution_time=model.execution_time,
+        submitted_at=localize(model.submitted_at),
+        ready_at=localize(model.ready_at),
+        running_at=localize(model.running_at),
+        ended_at=localize(model.ended_at),
+        created_at=pytz.utc.localize(model.created_at),
+        updated_at=localize(model.updated_at),
+    )

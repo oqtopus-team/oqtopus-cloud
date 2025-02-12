@@ -5,8 +5,6 @@ devices.deviceId:
       summary: "Update data of selected device"
       description: "Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)"
       operationId: patchDeviceData
-      security:
-        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
@@ -14,6 +12,7 @@ devices.deviceId:
           required: true
           schema:
             type: string
+            nullable: false
             example: "Kawasaki"
       requestBody:
         description: "New calibration data"

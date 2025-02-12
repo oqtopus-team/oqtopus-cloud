@@ -98,9 +98,9 @@ paths:
               $ref: '#/components/schemas/mfa_reset_request.MfaResetRequest'
       responses:
         '200':
-          description: MFA reset request successful
+          description: MFA reset successful
         '400':
-          description: MFA reset request failed
+          description: MFA reset failed
           content:
             application/json:
               schema:

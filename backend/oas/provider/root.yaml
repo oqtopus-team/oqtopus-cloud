@@ -12,6 +12,8 @@ info:
 servers:
   - url: http://localhost:8888
     description: Local server url
+security:
+  - ApiKeyAuth: []
 paths:
   /devices/{device_id}:
     $ref: ./paths/devices.yaml#/devices.deviceId
@@ -28,4 +30,4 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: x-api-key
+      name: X-Api-Key

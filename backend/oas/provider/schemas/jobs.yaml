@@ -30,10 +30,12 @@ jobs.OperatorItem:
     pauli:
       type: string
       description: The Pauli string.
+      nullable: false
       example: "X 0 X 1"
     coeff:
       description: "Complex coefficient number in the Pauli string representation."
       type: array
+      nullable: true
       items:
         type: number
       minItems: 1
@@ -52,20 +54,29 @@ jobs.EstimationResult:
         This field must contain an array of numbers with a maximum length of 2, representing a complex number.
         The first element corresponds to the real part, and the second corresponds to the imaginary part.
       type: array
+      nullable: false
       items:
         type: number
       minItems: 1
       maxItems: 2
     stds:
       description: "(Only for estimation jobs) The standard deviation value"
+      nullable: false
       type: number
+  required:
+    - exp_value
+    - stds
 
 jobs.JobResult:
   type: object
+  nullable: true
   properties:
     counts:
       description: "*(Only for sampling jobs)* JSON string representing the sampling result"
       type: string
+      # TODO: When counts moved to under `sampling`` field, this field will become nullable: false
+      nullable: true
+      default: null
       example: >-
         {
           "10": 84,
@@ -76,19 +87,27 @@ jobs.JobResult:
 
     estimation:
       $ref: "#/jobs.EstimationResult"
+      nullable: true
+      default: null
 
     divided_result:
       type: object
       description: "Assumed to be used for multiprogramming, but currently not supported yet."
+      nullable: true
       properties: {}
     properties:
       type: string
+      nullable: true
     transpile_result:
       type: object
       properties:
         virtual_physical_mapping:
           type: string
-  required: []
+      nullable: true
+      default: null
+  required:
+    - counts
+    - estimation
 
 jobs.JobInfo:
   type: object
@@ -101,6 +120,7 @@ jobs.JobInfo:
         Otherwise, those programs are combined according to the multiprogramming machinery.
       items:
         type: string
+      nullable: false
       example: >-
           [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
 
@@ -108,12 +128,16 @@ jobs.JobInfo:
       type: string
       description: >-
         For multiprogramming jobs, this field contains the combined circuit.
+      nullable: true
+      default: null
 
     operator:
       description: |
         *(Only for estimation jobs)* The operator (or observable) for which the expectation
         value is to be estimated.
       type: array
+      nullable: true
+      default: null
       items:
         $ref: "#/jobs.OperatorItem"
 
@@ -126,11 +150,19 @@ jobs.JobInfo:
         let q = _all_qubits[0:1];
         h q[0];
         cx q[0], q[1];
+      nullable: true
+      default: null
+
     result:
       $ref: "#/jobs.JobResult"
+      nullable: true
+      default: null
+
     message:
       type: string
       description: Describing the reason why there is no result
+      nullable: true
+      default: null
   required:
     - program
 
@@ -145,26 +177,34 @@ jobs.JobDef:
   properties:
     job_id:
       $ref: "#/jobs.JobId"
+      nullable: false
     name:
       type: string
       example: Bell State Sampling
+      nullable: true
     description:
       type: string
       example: Bell State Sampling Example
+      nullable: false
     device_id:
       type: string
       example: Kawasaki
+      nullable: false
     shots:
       type: integer
       minimum: 1
       maximum: 1e7
       example: "1000"
+      nullable: false
     job_type:
       $ref: "#/jobs.JobType"
+      nullable: false
     job_info:
       $ref: "#/jobs.JobInfo"
+      nullable: false
     transpiler_info:
       type: string
+      nullable: true
       example: >-
         {
           "qubit_allocation": {
@@ -176,6 +216,7 @@ jobs.JobDef:
         }
     simulator_info:
       type: string
+      nullable: true
       example: >-
         {
           "n_qubits": 5,
@@ -192,35 +233,50 @@ jobs.JobDef:
       type: string
       example: |
         { "ro_error_mitigation": "pseudo_inverse" }
+      nullable: true
     status:
       $ref: "#/jobs.JobStatus"
+      nullable: false
     execution_time:
       type: number
       example: "10.123"
+      nullable: true
+      default: null
     submitted_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     ready_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     running_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     ended_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
+      nullable: true
+      default: null
     created_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
+      nullable: false
     updated_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
+      nullable: true
+      default: null
   required:
     - job_id
     - device_id
@@ -285,24 +341,32 @@ jobs.GetJobsResponse:
   properties:
     job_id:
       $ref: "#/jobs.JobId"
+      nullable: false
     name:
       type: string
       example: Bell State Sampling
+      nullable: true
+      default: null
     description:
       type: string
       example: Bell State Sampling Example
+      nullable: false
     device_id:
       type: string
       example: Kawasaki
+      nullable: false
     shots:
       type: integer
       minimum: 1
       maximum: 1e7
+      nullable: false
       example: "1000"
     job_info:
       $ref: "#/jobs.JobInfo"
+      nullable: false
     transpiler_info:
       type: string
+      nullable: true
       example: >-
         {
           "qubit_allocation": {
@@ -314,6 +378,7 @@ jobs.GetJobsResponse:
         }
     simulator_info:
       type: string
+      nullable: true
       example: >-
         {
           "n_qubits": 5,
@@ -328,36 +393,51 @@ jobs.GetJobsResponse:
         }
     mitigation_info:
       type: string
+      nullable: true
       example: |
         { "ro_error_mitigation": "pseudo_inverse" }
     status:
       $ref: "#/jobs.JobStatus"
+      nullable: false
     execution_time:
       type: number
+      nullable: true
+      default: null
       example: "10.123"
     submitted_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     ready_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     running_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     ended_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
     created_at:
       type: string
       format: date-time
+      nullable: false
       example: 2022-10-19T11:45:34+09:00
     updated_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
   required: []
   example:
@@ -420,6 +500,7 @@ jobs.JobStatusUpdate:
       enum:
         - running
       example: running
+      nullable: false
   required:
     - status
 
@@ -428,6 +509,7 @@ jobs.JobStatusUpdateResponse:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
 
@@ -436,10 +518,13 @@ jobs.UpdateJobInfo:
   properties:
     transpiled_program:
       type: string
+      nullable: true
     result:
       $ref: "#/jobs.JobResult"
+      nullable: true
     message:
       type: string
+      nullable: true
 
 jobs.UpdateJobInfoRequest:
   type: object
@@ -448,19 +533,23 @@ jobs.UpdateJobInfoRequest:
       description: >-
         Overwrite the job status. If this field is not specified,
         the status will be updated automatically.
+      nullable: true
       $ref: "#/jobs.JobStatus"
     execution_time:
       type: number
       description: >-
         Execution time for quantum computation. Specify the time in seconds,
         including up to milliseconds.
+      nullable: true
     job_info:
       $ref: "#/jobs.UpdateJobInfo"
+      nullable: true
 
 jobs.UpdateJobInfoResponse:
   type: object
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
