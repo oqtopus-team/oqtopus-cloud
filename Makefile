@@ -65,4 +65,3 @@ help: ## Show this help message
 
 setup-lefthook:
 	@poetry run lefthook install
-	@echo "pre-commit:\n  commands:\n    trufflehog:\n      run: poetry run trufflehog filesystem .\n" > lefthook.yml
