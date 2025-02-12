@@ -4,7 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
@@ -75,7 +75,7 @@ def signup(
             cognito_id=cognito_id,
             email=email,
             username=email,
-            userstatus=1,
+            userstatus=UserStatus.approved,
             organization=whitelist_user.organization,
             group_id=whitelist_user.group_id,
             require_mfa_reset=False,
