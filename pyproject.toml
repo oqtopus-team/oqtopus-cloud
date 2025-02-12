@@ -26,6 +26,7 @@ uuid7 = "^0.1.0"
 uuid-v7 = "^1.0.0"
 pytest-env = "^1.1.5"
 fastapi-pagination = "^0.12.32"
+pyjwt = "^2.10.1"
 pytz = "^2025.1"
 types-pytz = "^2025.1.0.20250204"
 
