@@ -5,7 +5,6 @@ jobs:
     summary: Search jobs for a device
     description: Search jobs for a device
     operationId: getjobs
-    security: []
     parameters:
       - in: query
         name: device_id
@@ -64,7 +63,6 @@ jobs.jobId:
     summary: Get a job by ID
     description: Get a job by ID
     operationId: getJob
-    security: []
     tags:
       - jobs
     parameters:
@@ -101,7 +99,6 @@ jobs.jobStatus:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
     operationId: patchJob
-    security: []
     tags:
       - jobs
     parameters:
