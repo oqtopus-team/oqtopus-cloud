@@ -8,7 +8,7 @@ exclude:
     paths:
       - 'site/**'
       - 'docs/**'
-      - 'poetry.lock
+      - 'poetry.lock'
 """
 text += "\n".join(ignores) + "\n"
 

@@ -3,7 +3,7 @@ exclude:
     paths:
       - 'site/**'
       - 'docs/**'
-      - 'poetry.lock
+      - 'poetry.lock'
       - '__pycache__/'
       - '*.py[cod]'
       - '*$py.class'
