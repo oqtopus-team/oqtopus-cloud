@@ -145,7 +145,6 @@ jobs.jobInfo:
       Used by device to set results or error details in job_info、accompanied by appropriate status updating.
       Note that job info descriptor (sampling, estimation, etc) cannot be modified.
     operationId: patchJobInfo
-    security: []
     tags:
       - jobs
     parameters:
