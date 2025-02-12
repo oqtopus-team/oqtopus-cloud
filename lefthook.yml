@@ -1,4 +1,4 @@
 pre-commit:
   commands:
     trufflehog:
-      run: poetry run trufflehog filesystem .
+      run: poetry run trufflehog3 filesystem .
