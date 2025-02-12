@@ -12,6 +12,8 @@ info:
 servers:
   - url: http://localhost:8888
     description: Local server url
+security:
+  - ApiKeyAuth: []
 paths:
   /devices/{device_id}:
     patch:
@@ -20,8 +22,6 @@ paths:
       summary: Update data of selected device
       description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)
       operationId: patchDeviceData
-      security:
-        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
@@ -96,8 +96,6 @@ paths:
       summary: Search jobs for a device
       description: Search jobs for a device
       operationId: getjobs
-      security:
-        - ApiKeyAuth: []
       parameters:
         - in: query
           name: device_id
@@ -157,8 +155,6 @@ paths:
       summary: Get a job by ID
       description: Get a job by ID
       operationId: getJob
-      security:
-        - ApiKeyAuth: []
       tags:
         - jobs
       parameters:
@@ -197,8 +193,6 @@ paths:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
       operationId: patchJob
-      security:
-        - ApiKeyAuth: []
       tags:
         - jobs
       parameters:
@@ -247,8 +241,7 @@ paths:
         Used by device to set results or error details in job_info、accompanied by appropriate status updating.
         Note that job info descriptor (sampling, estimation, etc) cannot be modified.
       operationId: patchJobInfo
-      security:
-        - ApiKeyAuth: []
+      security: []
       tags:
         - jobs
       parameters:
@@ -295,7 +288,7 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: x-api-key
+      name: X-Api-Key
   schemas:
     devices.DeviceStatusUpdate:
       type: object
