@@ -210,17 +210,16 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
-        job_info.transpiled_program = incoming.transpiled_program
+        if incoming.transpiled_program is not None:
+            job_info.transpiled_program = incoming.transpiled_program
 
         if incoming.result is not None:
             job_info.result = incoming.result
-            job_info.message = None
-            return (status or JobStatus.succeeded, job_info)
+            if status is None:
+                status = JobStatus.succeeded
 
-        elif incoming.message is not None:
+        if incoming.message is not None:
             job_info.message = incoming.message
-            job_info.result = None
-            return (status or JobStatus.failed, job_info)
 
         return (status, job_info)
 
