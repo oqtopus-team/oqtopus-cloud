@@ -71,7 +71,6 @@ class JobResult(BaseModel):
     """
     Assumed to be used for multiprogramming, but currently not supported yet.
     """
-    properties: str | None = None
     transpile_result: TranspileResult | None = None
 
 

@@ -441,6 +441,7 @@ components:
         - pauli
     jobs.EstimationResult:
       type: object
+      nullable: true
       description: |
         *(Only for estimation jobs)* The estimated expectation value and the standard deviation
         of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
@@ -487,9 +488,6 @@ components:
           description: Assumed to be used for multiprogramming, but currently not supported yet.
           nullable: true
           properties: {}
-        properties:
-          type: string
-          nullable: true
         transpile_result:
           type: object
           properties:
