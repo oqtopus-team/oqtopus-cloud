@@ -5,8 +5,7 @@ jobs:
     summary: Search jobs for a device
     description: Search jobs for a device
     operationId: getjobs
-    security:
-      - ApiKeyAuth: []
+    security: []
     parameters:
       - in: query
         name: device_id
@@ -65,8 +64,7 @@ jobs.jobId:
     summary: Get a job by ID
     description: Get a job by ID
     operationId: getJob
-    security:
-      - ApiKeyAuth: []
+    security: []
     tags:
       - jobs
     parameters:
@@ -103,8 +101,7 @@ jobs.jobStatus:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
     operationId: patchJob
-    security:
-      - ApiKeyAuth: []
+    security: []
     tags:
       - jobs
     parameters:
@@ -151,8 +148,7 @@ jobs.jobInfo:
       Used by device to set results or error details in job_info、accompanied by appropriate status updating.
       Note that job info descriptor (sampling, estimation, etc) cannot be modified.
     operationId: patchJobInfo
-    security:
-      - ApiKeyAuth: []
+    security: []
     tags:
       - jobs
     parameters:
