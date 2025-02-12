@@ -22,7 +22,6 @@ paths:
       summary: Update data of selected device
       description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)
       operationId: patchDeviceData
-      security: []
       parameters:
         - in: path
           name: device_id
@@ -97,7 +96,6 @@ paths:
       summary: Search jobs for a device
       description: Search jobs for a device
       operationId: getjobs
-      security: []
       parameters:
         - in: query
           name: device_id
@@ -157,7 +155,6 @@ paths:
       summary: Get a job by ID
       description: Get a job by ID
       operationId: getJob
-      security: []
       tags:
         - jobs
       parameters:
@@ -196,7 +193,6 @@ paths:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
       operationId: patchJob
-      security: []
       tags:
         - jobs
       parameters:
