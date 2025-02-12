@@ -7,14 +7,14 @@ api-token:
   get:
     tags:
       - api-token
-    summary: get api token
-    description: Get api token
+    summary: "get api token"
+    description: "Get api token"
     operationId: GetApiToken
     security:
       - BearerAuth: []
     responses:
-      '200':
-        description: Return api token
+      "200":
+        description: "Return api token"
         content:
           application/json:
             schema:
@@ -26,34 +26,34 @@ api-token:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.ForbiddenError'
+              $ref: "../schemas/error.yaml#/error.ForbiddenError"
             example:
               message: Frobidden
       "404":
-        description: Not Found
+        description: "Not Found"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: Not found the specified user
-      '500':
-        description: Internal Server Error
+              message: "Not found the specified user"
+      "500":
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.InternalServerError'
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
   post:
     tags:
       - api-token
-    summary: create api token
-    description: Create api token
+    summary: "create api token"
+    description: "Create api token"
     operationId: CreateApiToken
     security:
       - BearerAuth: []
     responses:
-      '200':
-        description: Create api token
+      "200":
+        description: "Create api token"
         content:
           application/json:
             schema:
@@ -65,53 +65,53 @@ api-token:
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.ForbiddenError'
+              $ref: "../schemas/error.yaml#/error.ForbiddenError"
             example:
               message: Frobidden
       "404":
-        description: Not Found
+        description: "Not Found"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: Not found the specified user
-      '500':
-        description: Internal Server Error
+              message: "Not found the specified user"
+      "500":
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.InternalServerError'
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
   delete:
     tags:
       - api-token
-    summary: delete api token
-    description: Delete api token
+    summary: "delete api token"
+    description: "Delete api token"
     operationId: DeleteApiToken
     security:
       - BearerAuth: []
     responses:
-      '200':
-        description: Delete api token
+      "200":
+        description: "Delete api token"
       "403":
         description: Frobidden
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.ForbiddenError'
+              $ref: "../schemas/error.yaml#/error.ForbiddenError"
             example:
               message: Frobidden
       "404":
-        description: Not Found
+        description: "Not Found"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.NotFoundError'
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: Not found the specified user
-      '500':
-        description: Internal Server Error
+              message: "Not found the specified user"
+      "500":
+        description: "Internal Server Error"
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml#/error.InternalServerError'
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
