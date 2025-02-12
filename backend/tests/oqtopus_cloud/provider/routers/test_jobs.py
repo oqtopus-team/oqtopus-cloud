@@ -337,6 +337,7 @@ def test_update_job_info_reason(test_db: Session):
     # Submitting
     message = "Oops, job failed!"
     body = UpdateJobInfoRequest(
+        overwrite_status=JobStatus.failed,
         job_info=UpdateJobInfo(message=message),
     )
     submit_resp = client.patch(
