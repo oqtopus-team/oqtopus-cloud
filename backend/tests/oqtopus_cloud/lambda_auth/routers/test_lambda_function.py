@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.lambda_auth.lambda_function import (
     _generate_policy_allow,
     _generate_policy_deny,
@@ -88,7 +88,7 @@ def _get_model(n: int, expiration_day=90) -> User:
         "cognito_id": f"cognito_id_{n}",
         "email": f"email{n}@gmail.com",
         "username": f"username_{n}",
-        "userstatus": 1,
+        "userstatus": UserStatus.approved,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "purpose": f"purpose_{n}",

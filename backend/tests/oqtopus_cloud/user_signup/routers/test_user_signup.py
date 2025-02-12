@@ -39,7 +39,7 @@ def test_signup_success(test_db):
     assert user.email == "email_1"
     assert user.organization == "organization_1"
     assert user.group_id == "group_id_1"
-    assert user.userstatus == 1
+    assert user.userstatus == "approved"
     assert user.require_mfa_reset is False
     assert whitelist_user.is_signup_completed is True
 
