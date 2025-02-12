@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.user.lambda_function import app
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.user.routers.api_token import (
     create_api_token,
     delete_api_token,
@@ -10,6 +9,9 @@ from oqtopus_cloud.user.routers.api_token import (
 )
 from oqtopus_cloud.user.schemas.api_token import ApiToken
 from starlette.requests import Request
+from zoneinfo import ZoneInfo
+
+utc = ZoneInfo("UTC")
 
 
 def _get_model(n: int) -> User:
@@ -18,15 +20,15 @@ def _get_model(n: int) -> User:
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
         "username": f"username_{n}",
-        "userstatus": 1,
+        "userstatus": UserStatus.approved,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
         "require_mfa_reset": True,
-        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
-        "created_at": datetime(2024, 3, 4, 12, 34, 57),
-        "updated_at": datetime(2024, 3, 4, 12, 34, 58),
+        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+        "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=utc),
+        "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=utc),
     }
     return User(**model_dict)
 
@@ -58,7 +60,7 @@ def test_get_api_token(
     )
     assert response == ApiToken(
         api_token_secret="api_token_secret_1",
-        api_token_expiration=datetime(2024, 3, 4, 12, 34, 56),
+        api_token_expiration=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
     )
 
 

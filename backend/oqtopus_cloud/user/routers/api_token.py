@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -27,7 +27,6 @@ from oqtopus_cloud.user.schemas.errors import (
 
 from . import LoggerRouteHandler
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
@@ -61,14 +60,17 @@ def get_api_token(
         if not user or user.api_token_secret is None:
             logger.info("User not found")
             return NotFoundErrorResponse(message="User not found")
-        if user.userstatus == 3:  # suspended status
+        if user.userstatus == UserStatus.suspended:  # suspended status
             logger.info("Forbidden")
             return ForbiddenErrorResponse(message="Forbidden")
         else:
             logger.info("API token found")
+            apitoken_expiration = user.api_token_expiration
+            if apitoken_expiration is not None:
+                apitoken_expiration = apitoken_expiration.replace(tzinfo=utc)
             return ApiToken(
                 api_token_secret=user.api_token_secret,
-                api_token_expiration=user.api_token_expiration,
+                api_token_expiration=apitoken_expiration,
             )
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -108,7 +110,7 @@ def create_api_token(
         if not user:
             logger.info("User not found")
             return NotFoundErrorResponse(message="User not found")
-        if user.userstatus == 3:  # suspended status
+        if user.userstatus == UserStatus.suspended:  # suspended status
             logger.info("Forbidden")
             return ForbiddenErrorResponse(
                 message="this operation is currently unavailable because the status of user is [suspended]"
@@ -155,7 +157,7 @@ def delete_api_token(
         if not user:
             logger.info("User not found")
             return NotFoundErrorResponse(message="User not found")
-        if user.userstatus == 3:  # suspended status
+        if user.userstatus == UserStatus.suspended:  # suspended status
             logger.info("Forbidden")
             return ForbiddenErrorResponse(message="Forbidden")
         else:
