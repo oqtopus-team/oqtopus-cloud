@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 
 
 class ApiToken(BaseModel):
@@ -16,7 +15,7 @@ class ApiToken(BaseModel):
     The api token secret
     """
     api_token_expiration: Annotated[
-        datetime | None, Field(examples=["2025-01-09T12:34:56"])
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56"])
     ] = None
     """
     The expiration date of the api token
