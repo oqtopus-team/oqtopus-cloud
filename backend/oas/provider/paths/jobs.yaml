@@ -40,7 +40,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.GetJobsResponse"
+                $ref: "../schemas/jobs.yaml#/jobs.JobDef"
       "400":
         description: Bad Request
         content:

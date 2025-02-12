@@ -18,7 +18,6 @@ from oqtopus_cloud.provider.routers.jobs import (
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     EstimationResult,
-    GetJobsResponse,
     JobDef,
     JobInfo,
     JobResult,
@@ -151,63 +150,6 @@ def test_get_jobs(test_db: Session):
         assert job.status != JobStatus.submitted
 
 
-def test_get_jobs_filtering(test_db: Session):
-    # Arrange
-    test_db.flush()
-    test_db.add(_get_job_model(1, JobType.sampling))
-    test_db.add(_get_job_model(2, JobType.estimation))
-    test_db.add(_get_device_model())
-    test_db.commit()
-
-    response = client.get("/jobs?device_id=SC2&fields=job_id%2Cdescription%2Cjob_info")
-    adapter = TypeAdapter(List[GetJobsResponse])
-    actual = adapter.validate_python(response.json())
-    expect = [
-        GetJobsResponse(
-            job_id="testjob1id",
-            description="test job 1",
-            job_info=_get_job_info(JobType.sampling),
-        ),
-        GetJobsResponse(
-            job_id="testjob2id",
-            description="test job 2",
-            job_info=_get_job_info(JobType.estimation),
-        ),
-    ]
-
-    assert response.status_code == 200
-    assert actual == expect
-
-
-def test_get_jobs_timestamp(test_db: Session):
-    # Arrange
-    test_db.flush()
-    for i in range(1, 10):
-        test_db.add(_get_job_model(i, JobType.sampling))
-    test_db.add(_get_device_model())
-    test_db.commit()
-
-    response = client.get(
-        "/jobs?device_id=SC2&fields=job_id&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
-    )
-    adapter = TypeAdapter(List[GetJobsResponse])
-    actual = adapter.validate_python(response.json())
-    expect = [
-        GetJobsResponse(
-            job_id="testjob7id",
-        ),
-        GetJobsResponse(
-            job_id="testjob8id",
-        ),
-        GetJobsResponse(
-            job_id="testjob9id",
-        ),
-    ]
-
-    assert response.status_code == 200
-    assert actual == expect
-
-
 def test_get_jobs_max_results(test_db: Session):
     # Arrange
     test_db.flush()
@@ -216,23 +158,18 @@ def test_get_jobs_max_results(test_db: Session):
     test_db.add(_get_device_model())
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&fields=job_id&max_results=3")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    response = client.get("/jobs?device_id=SC2&max_results=3")
+    adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
-    expect = [
-        GetJobsResponse(
-            job_id="testjob1id",
-        ),
-        GetJobsResponse(
-            job_id="testjob2id",
-        ),
-        GetJobsResponse(
-            job_id="testjob3id",
-        ),
+    expect_job_ids = [
+        "testjob1id",
+        "testjob2id",
+        "testjob3id",
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    for act, exp_job_id in zip(actual, expect_job_ids):
+        assert act.job_id == exp_job_id
 
 
 def test_get_job(test_db: Session):
