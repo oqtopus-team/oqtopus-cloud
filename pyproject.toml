@@ -30,7 +30,7 @@ pyjwt = "^2.10.1"
 pytz = "^2025.1"
 types-pytz = "^2025.1.0.20250204"
 lefthook = "^1.10.0"
-trufflehog = "^3.88.0"
+trufflehog = "^2.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
