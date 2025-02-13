@@ -83,6 +83,14 @@ def test_get_devices(
     assert actual == expected
 
 
+def test_get_devices_500():
+    """_summary_
+    Simple GET /devices tests 500 error
+    """
+    response = client.get("/devices")
+    assert response.status_code == 500
+
+
 def test_get_device(
     test_db,
 ):
@@ -112,6 +120,14 @@ def test_get_device(
     )
     assert response.status_code == 200
     assert actual == expected
+
+
+def test_get_device_500():
+    """_summary_
+    Simple GET /devices/{device_id} tests 500 error
+    """
+    response = client.get("/devices/1")
+    assert response.status_code == 500
 
 
 def test_get_device_no_device(
@@ -157,6 +173,77 @@ def test_register_devices(
     assert device.basis_gates == '"[\\"x\\", \\"sx\\", \\"rz\\", \\"cx\\", \\"t\\"]"'
 
 
+def test_register_devices_no_device_id_400(
+    test_db,
+):
+    """_summary_
+    Simple POST /devices tests 400 error no device id
+    """
+    body = {
+        "device_info": None,
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+
+    response = client.post("/devices", json=body)
+    assert response.status_code == 400
+    assert response.json() == {"message": "device_id is required"}
+
+
+def test_register_devices_device_id_exception_400(
+    test_db,
+):
+    """_summary_
+    Simple POST /devices tests 400 error no device id
+    """
+    body = {
+        "device_info": "not json format info",
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+
+    response = client.post("/devices", json=body)
+    assert response.status_code == 400
+    assert response.json() == {"message": "device_id is required"}
+
+
+def test_register_devices_400(
+    test_db,
+):
+    """_summary_
+    Simple POST /devices tests 400 error
+    """
+    device_info = {"device_id_none": "SVSim1"}
+
+    body = {
+        "device_info": json.dumps(device_info),
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+
+    response = client.post("/devices", json=body)
+    assert response.status_code == 400
+    assert response.json() == {"message": "device_id is required"}
+
+
 def test_register_devices_overlap(
     test_db,
 ):
@@ -183,6 +270,28 @@ def test_register_devices_overlap(
     response = client.post("/devices", json=body)
     assert response.status_code == 400
     assert response.json() == {"message": "device_id=SVSim1 already exists"}
+
+
+def test_register_devices_500():
+    """_summary_
+    Simple POST /devices tests 500 error
+    """
+    device_info = {"device_id": "SVSim1"}
+
+    body = {
+        "device_info": json.dumps(device_info),
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+
+    response = client.post("/devices", json=body)
+    assert response.status_code == 500
 
 
 def test_update_devices_full(
@@ -213,6 +322,51 @@ def test_update_devices_full(
     assert response.json() == {"message": "Device updated successfully"}
 
 
+def test_update_devices_404(test_db):
+    """_summary_
+    Simple PATCH /devices/{device_id} tests 404 error
+    """
+    device_info = {"device_id": "SVSim1"}
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+
+    body = {
+        "device_info": json.dumps(device_info),
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 3,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+    response = client.patch("/devices/SVSim2", json=body)
+    assert response.status_code == 404
+
+
+def test_update_devices_500():
+    """_summary_
+    Simple PATCH /devices/{device_id} tests 500 error
+    """
+    device_info = {"device_id": "SVSim1"}
+
+    body = {
+        "device_info": json.dumps(device_info),
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56",
+        "basis_gates": '["x", "sx", "rz", "cx"]',
+        "supported_instructions": '["measure", "barrier", "reset"]',
+        "calibrated_at": "2024-03-04T12:34:56",
+        "description": "State vector-based quantum circuit simulator",
+    }
+    response = client.patch("/devices/SVSim1", json=body)
+    assert response.status_code == 500
+
+
 def test_delete_devices(
     test_db,
 ):
@@ -228,3 +382,25 @@ def test_delete_devices(
     # confirm the device is deleted
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device is None
+
+
+def test_delete_devices_404(
+    test_db,
+):
+    """_summary_
+    Simple DELETE /devices/{device_id} tests 404 error
+    """
+    device_info = {"device_id": "SVSim1"}
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    response = client.delete("/devices/SVSim2")
+    assert response.status_code == 404
+
+
+def test_delete_devices_500():
+    """_summary_
+    Simple DELETE /devices/{device_id} tests 500 error
+    """
+    response = client.delete("/devices/SVSim1")
+    assert response.status_code == 500

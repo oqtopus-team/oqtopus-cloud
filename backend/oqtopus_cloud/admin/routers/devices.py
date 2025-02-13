@@ -181,21 +181,6 @@ def check_device_id(device_base: DeviceBase) -> str | None:
         return None
 
 
-def model_to_schema_changeable(model: Device) -> DeviceBase:
-    dict = {
-        "device_type": getattr(model, "device_type", None),
-        "status": model.status,
-        "n_qubits": getattr(model, "n_qubits", None),
-        "available_at": getattr(model, "available_at", None),
-        "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
-        "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
-        "device_info": getattr(model, "device_info", None),
-        "calibrated_at": getattr(model, "calibrated_at", None),
-        "description": model.description,
-    }
-    return DeviceBase.model_validate(dict)
-
-
 def model_to_schema(model: Device) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
