@@ -93,7 +93,7 @@ module "user_api" {
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
 | <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
-| <a name="input_use_cognito_authorizer"></a> [use\_cognito\_authorizer](#input\_use\_cognito\_authorizer) | Set `true` if API is authorized with cognito userpool. | `bool` | `true` | no |
+| <a name="input_authorizer_type"></a> [authorizer_type](#input_authorizer_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `NONE` if no authorization is required. | `string` | `COGNITO` | no |
 
 ## Outputs
 

@@ -32,19 +32,27 @@ resource "aws_lambda_function" "this" {
   architectures = ["x86_64"]
 
   environment { # TODO :Add module input variables
-    variables = {
-      DB_HOST                      = var.db_proxy_endpoint
-      DB_NAME                      = "main"
-      DB_CONNECTOR                 = "mysql+pymysql"
-      SECRET_NAME                  = var.db_secret_arn
-      POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
-      POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
-      ALLOW_ORIGINS                = var.allow_origins
-      ALLOW_CREDENTIALS            = var.allow_credentials
-      ALLOW_METHODS                = var.allow_methods
-      ALLOW_HEADERS                = var.allow_headers
-      LOG_LEVEL                    = var.log_level
-    }
+    variables = merge(
+      {
+        DB_HOST                      = var.db_proxy_endpoint
+        DB_NAME                      = "main"
+        DB_CONNECTOR                 = "mysql+pymysql"
+        SECRET_NAME                  = var.db_secret_arn
+        POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
+        POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
+        ALLOW_ORIGINS                = var.allow_origins
+        ALLOW_CREDENTIALS            = var.allow_credentials
+        ALLOW_METHODS                = var.allow_methods
+        ALLOW_HEADERS                = var.allow_headers
+        LOG_LEVEL                    = var.log_level
+      },
+      # optional environment variables
+      var.client_cognito_user_pool_id != "" ? {
+        CLIENT_COGNITO_USER_POOL_ID = var.client_cognito_user_pool_id
+        AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
+      } : {},
+      var.client_cognito_user_pool_web_client_id != "" ? { CLIENT_COGNITO_USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+    )
   }
 
   ephemeral_storage {
@@ -278,8 +286,8 @@ resource "aws_api_gateway_method" "this" {
   rest_api_id      = aws_api_gateway_rest_api.this.id
   resource_id      = aws_api_gateway_resource.this.id
   http_method      = "ANY"
-  authorization    = var.use_cognito_authorizer ? "COGNITO_USER_POOLS" : "NONE"
-  authorizer_id    = var.use_cognito_authorizer ? aws_api_gateway_authorizer.this[0].id : null
+  authorization    = var.authorizer_type == "NONE" ? "NONE" : "CUSTOM"
+  authorizer_id    = var.authorizer_type == "COGNITO" ? aws_api_gateway_authorizer.cognito[0].id : (var.authorizer_type == "LAMBDA" ? aws_api_gateway_authorizer.lambda[0].id : null)
   api_key_required = var.require_api_key
 
   request_parameters = {
@@ -319,10 +327,20 @@ resource "aws_lambda_permission" "api_lambda_permission" {
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
 
-resource "aws_api_gateway_authorizer" "this" {
-  count         = var.use_cognito_authorizer ? 1 : 0
+resource "aws_api_gateway_authorizer" "cognito" {
+  count         = var.authorizer_type == "COGNITO" ? 1 : 0
   name          = "${var.product}-${var.org}-${var.env}-${var.identifier}"
   rest_api_id   = aws_api_gateway_rest_api.this.id
   type          = "COGNITO_USER_POOLS"
   provider_arns = var.cognito_user_pool_arns
+}
+
+resource "aws_api_gateway_authorizer" "lambda" {
+  count                            = var.authorizer_type == "LAMBDA" ? 1 : 0
+  name                             = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
+  rest_api_id                      = aws_api_gateway_rest_api.this.id
+  type                             = "TOKEN"
+  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_auth.arn}/invocations"
+  identity_source                  = "method.request.header.Authorization"
+  authorizer_result_ttl_in_seconds = 300
 }

@@ -143,8 +143,69 @@ resource "aws_subnet" "private" {
     Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
   }
 }
+## Public Subnets
+resource "aws_subnet" "public_subnets" {
+  for_each                = var.public_subnets
+  vpc_id                  = aws_vpc.this.id
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
+  map_public_ip_on_launch = true
 
-## Route Tables
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+  }
+}
+
+## Internet Gateway
+resource "aws_internet_gateway" "this" {
+  vpc_id = aws_vpc.this.id
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-igw"
+  }
+}
+
+# Elastic IP for NAT Gateway
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-nat-eip"
+  }
+}
+
+## Nat Gateway
+resource "aws_nat_gateway" "nat_gw" {
+  allocation_id = element(aws_eip.nat_eip.*.id, 0)
+  # attach nat gateway on the first public subnet
+  subnet_id = length(aws_subnet.public_subnets) > 0 ? element(aws_subnet.public_subnets.*.id, 0) : null
+
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-nat-gw"
+  }
+}
+
+
+
+## Public Route Table
+resource "aws_route_table" "public" {
+  for_each = var.public_subnets
+  vpc_id   = aws_vpc.this.id
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+  }
+}
+resource "aws_route" "public_default_route" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.this.id
+}
+resource "aws_route_table_association" "public_assoc" {
+  for_each       = aws_subnet.public_subnets
+  subnet_id      = aws_subnet.public[each.key].id
+  route_table_id = aws_route_table.public[each.key].id
+}
+
+
+## Private Route Tables
 resource "aws_route_table" "private" {
   for_each = var.private_subnets
   vpc_id   = aws_vpc.this.id
@@ -154,10 +215,16 @@ resource "aws_route_table" "private" {
   }
 }
 
+resource "aws_route" "private_default_route" {
+  for_each               = aws_route_table.private
+  route_table_id         = each.value.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = element(aws_nat_gateway.nat_gw.*.id, 0)
+}
+
 ## Route Table Associations
 resource "aws_route_table_association" "private" {
   for_each       = var.private_subnets
   subnet_id      = aws_subnet.private[each.key].id
   route_table_id = aws_route_table.private[each.key].id
 }
-
