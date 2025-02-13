@@ -34,7 +34,6 @@ from . import LoggerRouteHandler
 
 LEN_VARCHAR = 255
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)

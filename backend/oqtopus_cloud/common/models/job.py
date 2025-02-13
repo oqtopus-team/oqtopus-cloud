@@ -2,7 +2,7 @@ import datetime
 import enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String, Float
+from sqlalchemy import TIMESTAMP, Enum, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (

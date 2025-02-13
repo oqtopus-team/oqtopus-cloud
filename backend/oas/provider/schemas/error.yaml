@@ -3,6 +3,7 @@ error.BadRequest:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
 error.InternalServerError:
@@ -10,6 +11,7 @@ error.InternalServerError:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
 error.NotFoundError:
@@ -17,6 +19,7 @@ error.NotFoundError:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
 error.ConflictError:
@@ -24,5 +27,6 @@ error.ConflictError:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message

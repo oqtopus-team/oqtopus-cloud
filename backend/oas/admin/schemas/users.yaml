@@ -3,30 +3,38 @@ users.GetOneUserResponse:
   type: object
   properties:
     id:
-      type: "integer"
+      type: integer
     email:
-      type: "string"
+      type: string
     name:
-      type: "string"
+      type: string
     organization:
-      type: "string"
+      type: string
     status:
-      type: "string"
+      $ref: "#/users.UserStatus"
     group_id:
-      type: "string"
+      type: string
     require_mfa_reset:
-      type: "boolean"
+      type: boolean
   xml:
-    name: "User"
+    name: User
   required: [
     id,
   ]
 
+users.UserStatus:
+  type: string
+  enum:
+    - approved
+    - unapproved
+    - suspended
+  example: approved
+
 users.UpdateUserStatusRequest:
-  type: "object"
+  type: object
   properties:
     status:
-      type: "string"
+      $ref: "#/users.UserStatus"
 
 users.GetUsersResponse:
   properties:
