@@ -19,6 +19,11 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class JobType(str, Enum):
+    sampling = "sampling"
+    estimation = "estimation"
+
+
 class OperatorItem(BaseModel):
     pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """
@@ -37,13 +42,13 @@ class EstimationResult(BaseModel):
 
     """
 
-    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
     """
     This field must contain an array of numbers with a maximum length of 2, representing a complex number.
     The first element corresponds to the real part, and the second corresponds to the imaginary part.
 
     """
-    stds: float | None = None
+    stds: float
     """
     (Only for estimation jobs) The standard deviation value
     """
@@ -66,7 +71,6 @@ class JobResult(BaseModel):
     """
     Assumed to be used for multiprogramming, but currently not supported yet.
     """
-    properties: str | None = None
     transpile_result: TranspileResult | None = None
 
 
@@ -105,63 +109,6 @@ class JobInfo(BaseModel):
     """
     Describing the reason why there is no result
     """
-
-
-class GetJobsResponse(BaseModel):
-    job_id: Annotated[
-        str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
-    ] = None
-    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
-    description: Annotated[
-        str | None, Field(examples=["Bell State Sampling Example"])
-    ] = None
-    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
-    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
-    job_info: JobInfo | None = None
-    transpiler_info: Annotated[
-        str | None,
-        Field(
-            examples=[
-                '{\n  "qubit_allocation": {\n    "0"": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
-            ]
-        ),
-    ] = None
-    simulator_info: Annotated[
-        str | None,
-        Field(
-            examples=[
-                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
-            ]
-        ),
-    ] = None
-    mitigation_info: Annotated[
-        str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
-    ] = None
-    status: JobStatus | None = None
-    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
-    submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-
-
-class JobType(str, Enum):
-    sampling = "sampling"
-    estimation = "estimation"
 
 
 class JobDef(BaseModel):

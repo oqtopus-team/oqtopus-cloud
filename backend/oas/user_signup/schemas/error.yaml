@@ -1,0 +1,28 @@
+error.BadRequest:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
+error.UnauthorizedError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
+error.NotFoundError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
+error.InternalServerError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message

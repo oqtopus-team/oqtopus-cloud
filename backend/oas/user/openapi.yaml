@@ -454,6 +454,118 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /api-token:
+    get:
+      tags:
+        - api-token
+      summary: get api token
+      description: Get api token
+      operationId: GetApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - api-token
+      summary: create api token
+      description: Create api token
+      operationId: CreateApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Create api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - api-token
+      summary: delete api token
+      description: Delete api token
+      operationId: DeleteApiToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Delete api token
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -1057,3 +1169,21 @@ components:
       required:
         - job_id
         - status
+    api-token.ApiToken:
+      type: object
+      properties:
+        api_token_secret:
+          type: string
+          description: The api token secret
+        api_token_expiration:
+          type: string
+          format: date-time
+          example: '2025-01-09T12:34:56'
+          description: The expiration date of the api token
+    error.ForbiddenError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
