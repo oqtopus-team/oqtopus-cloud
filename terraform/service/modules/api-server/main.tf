@@ -121,6 +121,13 @@ resource "aws_iam_role_policy_attachment" "secret_manager" {
   policy_arn = aws_iam_policy.secret_manager.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
+  count = var.manage_cognito_user_pool == 1 ? 1 : 0
+
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json

@@ -104,3 +104,9 @@ variable "client_cognito_user_pool_web_client_id" {
   type        = string
   default     = ""
 }
+
+variable "manage_cognito_user_pool" {
+  description = "Set `true` if the module should manage the Cognito user pool"
+  type        = bool
+  default     = false
+}
