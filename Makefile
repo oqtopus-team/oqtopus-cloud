@@ -65,3 +65,7 @@ help: ## Show this help message
 
 setup-lefthook:
 	@poetry run lefthook install
+
+update-trufflehog:
+	@bash scripts/update_trufflehog.sh
+	@echo ".trufflehog3.yml Updated."
