@@ -772,17 +772,6 @@ components:
           maxItems: 2
       required:
         - pauli
-    jobs.TranspileResult:
-      type: object
-      properties:
-        transpiled_program:
-          type: string
-          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
-        stats:
-          type: string
-        virtual_physical_mapping:
-          type: string
-      required: []
     jobs.SamplingResult:
       type: object
       description: '*(Only for sampling jobs)* JSON string representing the sampling result'
@@ -823,6 +812,23 @@ components:
           $ref: '#/components/schemas/jobs.EstimationResult'
       additionalProperties: true
       required: []
+    jobs.TranspileResult:
+      type: object
+      properties:
+        transpiled_program:
+          type: string
+          nullable: true
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: string
+          nullable: true
+        virtual_physical_mapping:
+          type: string
+          nullable: true
+      required:
+        - transpiled_program
+        - stats
+        - virtual_physical_mapping
     jobs.JobInfo:
       type: object
       properties:
@@ -842,10 +848,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/jobs.OperatorItem'
-        transpile_result:
-          $ref: '#/components/schemas/jobs.TranspileResult'
         result:
           $ref: '#/components/schemas/jobs.JobResult'
+        transpile_result:
+          $ref: '#/components/schemas/jobs.TranspileResult'
         message:
           type: string
           description: Describing the reason why there is no result

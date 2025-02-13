@@ -35,19 +35,6 @@ class OperatorItem(BaseModel):
     """
 
 
-class TranspileResult(BaseModel):
-    transpiled_program: Annotated[
-        str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
-    ] = None
-    stats: str | None = None
-    virtual_physical_mapping: str | None = None
-
-
 class SamplingResult(BaseModel):
     """
     *(Only for sampling jobs)* JSON string representing the sampling result
@@ -86,6 +73,19 @@ class JobResult(BaseModel):
     estimation: EstimationResult | None = None
 
 
+class TranspileResult(BaseModel):
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
+    stats: Annotated[str | None, Field(...)] = None
+    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
+
+
 class JobInfo(BaseModel):
     program: Annotated[
         list[str],
@@ -108,8 +108,8 @@ class JobInfo(BaseModel):
     value is to be estimated.
 
     """
-    transpile_result: TranspileResult | None = None
     result: JobResult | None = None
+    transpile_result: TranspileResult | None = None
     message: str | None = None
     """
     Describing the reason why there is no result
