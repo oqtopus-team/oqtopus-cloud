@@ -50,4 +50,9 @@ jobs:
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
-        run: sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
+        run: |
+          sudo -E env PATH="$PATH" make \
+          deploy-${{ matrix.deploy-target }}-via-actions \
+          deploy-admin \
+          deploy-lambda_auth \
+          deploy-user_signup
