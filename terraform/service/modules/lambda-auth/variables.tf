@@ -87,3 +87,9 @@ variable "client_cognito_user_pool_web_client_id" {
   type        = string
   default     = ""
 }
+
+variable "allow_api_gateway_arn" {
+  description = "The ARN of the API Gateway"
+  type        = string
+  default     = ""
+}

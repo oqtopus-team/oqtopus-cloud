@@ -79,9 +79,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
+  # snap_start {
+  #   apply_on = "PublishedVersions"
+  # }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -290,10 +290,11 @@ resource "aws_api_gateway_resource" "this" {
 
 
 resource "aws_api_gateway_method" "this" {
-  rest_api_id      = aws_api_gateway_rest_api.this.id
-  resource_id      = aws_api_gateway_resource.this.id
-  http_method      = "ANY"
-  authorization    = var.authorizer_type == "NONE" ? "NONE" : "CUSTOM"
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.this.id
+  http_method   = "ANY"
+  authorization = var.authorizer_type == "NONE" ? "NONE" : (var.authorizer_type == "COGNITO" ? "COGNITO_USER_POOLS" : "CUSTOM")
+  # authorization    = var.authorizer_type == "NONE" ? "NONE" : "CUSTOM"
   authorizer_id    = var.authorizer_type == "COGNITO" ? aws_api_gateway_authorizer.cognito[0].id : (var.authorizer_type == "LAMBDA" ? aws_api_gateway_authorizer.lambda[0].id : null)
   api_key_required = var.require_api_key
 
@@ -350,4 +351,13 @@ resource "aws_api_gateway_authorizer" "lambda" {
   authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
   identity_source                  = "method.request.header.Authorization"
   authorizer_result_ttl_in_seconds = 300
+}
+
+resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
+  count         = var.authorizer_type == "LAMBDA" ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvokeForLambdaAuth"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_authorizer_arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
 }

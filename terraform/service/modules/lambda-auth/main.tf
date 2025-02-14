@@ -57,7 +57,7 @@ resource "aws_lambda_function" "this" {
   ephemeral_storage {
     size = "512"
   }
-  filename                       = "./bin/lambda.zip"
+  filename                       = "./bin/${var.identifier}/lambda.zip"
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -78,9 +78,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
+  # snap_start {
+  #   apply_on = "PublishedVersions"
+  # }
 }
 
 resource "aws_iam_role" "lambda" {
