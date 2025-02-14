@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        deploy-target: [user, provider]
+        deploy-target: [user, provider, admin, lambda_auth, user_signup]
 
     permissions:
       id-token: write
@@ -51,8 +51,4 @@ jobs:
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
         run: |
-          sudo -E env PATH="$PATH" make \
-          deploy-${{ matrix.deploy-target }}-via-actions \
-          deploy-admin \
-          deploy-lambda_auth \
-          deploy-user_signup
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
