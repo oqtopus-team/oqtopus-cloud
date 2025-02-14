@@ -25,7 +25,8 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.jobId.status
   /jobs/{job_id}/cancel:
     $ref: ./paths/jobs.yaml#/jobs.jobId.cancel
-
+  /api-token:
+    $ref: ./paths/api-token.yaml#/api-token
 components:
   securitySchemes:
     BearerAuth:

@@ -1,0 +1,16 @@
+mfa_reset_request.MfaResetRequest:
+  type: object
+  properties:
+    email:
+      type: string
+      description: The email of the user
+    password:
+      type: string
+      description: The password of the user
+    client_id:
+      type: string
+      description: The client id of the user
+  required:
+    - email
+    - password
+    - client_id

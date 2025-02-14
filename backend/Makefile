@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -18,6 +18,22 @@ generate-provider-schema: ## Generate provider schema
 	OUTPUT=oqtopus_cloud/provider/schemas
 	@$(MAKE) fmt-provider
 
+
+generate-admin-schema: ## Generate admin schema
+	@cd oas && $(MAKE) generate-admin
+	@$(MAKE) generate \
+	INPUT=./oas/admin/openapi.yaml \
+	OUTPUT=oqtopus_cloud/admin/schemas
+	@$(MAKE) fmt-admin
+
+generate-user_signup-schema: ## Generate user_signup schema
+	@cd oas && $(MAKE) generate-user_signup
+	@$(MAKE) generate \
+	INPUT=./oas/user_signup/openapi.yaml \
+	OUTPUT=oqtopus_cloud/user_signup/schemas
+	@$(MAKE) fmt-user_signup
+
+
 generate:
 	@poetry run datamodel-codegen \
 	--use-schema-description \
@@ -29,6 +45,7 @@ generate:
 	--input-file-type openapi \
 	--collapse-root-models \
 	--enum-field-as-literal one \
+	--output-datetime-class AwareDatetime \
 	--use-union-operator \
 	--use-subclass-enum \
 	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
@@ -39,9 +56,10 @@ generate:
 	--use-default \
 	--output ${OUTPUT}
 
-generate-all-schema: ## Generate user and provider schemas
+generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
+	@$(MAKE) generate-admin-schema
 
 export ENV=local
 export DB_HOST=localhost
@@ -62,6 +80,16 @@ run-provider: ## Start the Provider API
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
+run-admin: ## Start the Admin API
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
+run-user_signup: ## Start the user_signup API
+	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
+	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
+	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
 up: ## Start the DB
 	@docker compose up
 
@@ -77,7 +105,16 @@ fmt-user: ## Format user code
 fmt-provider: ## Format provider code
 	@poetry run ruff format oqtopus_cloud/provider
 
-fmt-all: fmt-common fmt-user fmt-provider ## Format all code
+fmt-admin: ## Format admin code
+	@poetry run ruff format oqtopus_cloud/admin
+
+fmt-lambda_auth: ## Format lambda_auth code
+	@poetry run ruff format oqtopus_cloud/lambda_auth
+
+fmt-user_signup: ## Format user_signup code
+	@poetry run ruff format oqtopus_cloud/user_signup
+
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -91,7 +128,19 @@ lint-provider: ## Run provider linters
 	@poetry run ruff check oqtopus_cloud/provider
 	@poetry run mypy -p oqtopus_cloud.provider
 
-lint-all: lint-common lint-user lint-provider ## Run all linters
+lint-admin: ## Run admin linters
+	@poetry run ruff check oqtopus_cloud/admin
+	@poetry run mypy -p oqtopus_cloud.admin
+
+lint-lambda_auth:
+	@poetry run ruff check ./oqtopus_cloud/lambda_auth
+	@poetry run mypy -p oqtopus_cloud.lambda_auth
+
+lint-user_signup: ## Run user_signup linters
+	@poetry run ruff check oqtopus_cloud/user_signup
+	@poetry run mypy -p oqtopus_cloud.user_signup
+
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-user_signup ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -110,6 +159,24 @@ test-provider: fmt-provider lint-provider ## Run Provider tests
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
 	@mv .coverage .coverage-provider
+
+test-admin: fmt-admin lint-admin ## Run admin tests
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
+	@mv .coverage .coverage-admin
+
+test-lambda_auth: fmt-lambda_auth lint-lambda_auth ## Run lambda_auth tests
+	  @export POWERTOOLS_METRICS_NAMESPACE=lambda_auth && \
+    export POWERTOOLS_SERVICE_NAME=lambda_auth && \
+    poetry run pytest tests/oqtopus_cloud/lambda_auth/ -vv --cov=oqtopus_cloud/lambda_auth --cov-report=xml:coverage-lambda_auth.xml --cov-report=html:htmlcov-lambda_auth
+	  @mv .coverage .coverage-lambda_auth
+
+test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
+	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
+	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
+	poetry run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
+	@mv .coverage .coverage-user_signup
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \

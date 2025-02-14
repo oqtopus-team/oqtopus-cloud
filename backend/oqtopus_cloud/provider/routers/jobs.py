@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Optional
 
+import pytz
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
@@ -15,7 +16,6 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    GetJobsResponse,
     JobDef,
     JobInfo,
     JobResult,
@@ -42,7 +42,7 @@ JobId = str
 
 @router.get(
     "/jobs",
-    response_model=list[JobDef | GetJobsResponse],
+    response_model=list[JobDef],
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -53,7 +53,7 @@ def get_jobs(
     max_results: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[JobDef | GetJobsResponse] | ErrorResponse:
+) -> list[JobDef] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
         # Fields Control
@@ -97,7 +97,7 @@ def get_jobs(
 
         models = db.scalars(select_stmt).all()
 
-        results: list[JobDef | GetJobsResponse] = []
+        results: list[JobDef] = []
         # for model, update_status in zip(models, update_statuses):
         for model in models:
             job = model_to_schema(model, fields_list)
@@ -133,7 +133,7 @@ def get_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | GetJobsResponse | ErrorResponse:
+) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
         model = db.get(Job, job_id)
@@ -209,28 +209,18 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
-        job_info.transpiled_program = incoming.transpiled_program
+        if incoming.transpiled_program is not None:
+            job_info.transpiled_program = incoming.transpiled_program
 
         if incoming.result is not None:
             job_info.result = incoming.result
-            job_info.message = None
-            return (status or JobStatus.succeeded, job_info)
+            if status is None:
+                status = JobStatus.succeeded
 
-        elif incoming.message is not None:
+        if incoming.message is not None:
             job_info.message = incoming.message
-            job_info.result = None
-            return (status or JobStatus.failed, job_info)
 
         return (status, job_info)
-
-    if (
-        request.job_info is not None
-        and request.job_info.message is not None
-        and request.job_info.result is not None
-    ):
-        return BadRequestResponse(
-            message="You cannot specify both a result and a message."
-        )
 
     try:
         stmt = select(Job).where(Job.id == job_id)
@@ -256,8 +246,6 @@ def update_job_info(
         if (
             # Job with non-null result should be succeeded
             (job_info.result is not None and status != JobStatus.succeeded)
-            # Job with non-null message should not be succeeded
-            or (job_info.message is not None and status == JobStatus.succeeded)
             # Job cannot go back to status of submitted or ready.
             or status in [JobStatus.submitted, JobStatus.ready]
         ):
@@ -328,58 +316,58 @@ def parse_job_type(jt: str) -> JobType | ValueError:
         return ValueError(f"{jt} is not a valid JobType")
 
 
+def localize(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return pytz.utc.localize(dt)
+
+
+def is_datetime_field(fld: str) -> bool:
+    if fld == "submitted_at":
+        return True
+    elif fld == "ready_at":
+        return True
+    elif fld == "running_at":
+        return True
+    elif fld == "ended_at":
+        return True
+    elif fld == "created_at":
+        return True
+    elif fld == "updated_at":
+        return True
+
+    return False
+
+
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
-) -> JobDef | GetJobsResponse | ValueError:
-    if fields is None:
-        status = decode_job_status(model.status)
-        if isinstance(status, ValueError):
-            return status
-        job_info = decode_job_info(json.loads(model.job_info))
-        if isinstance(job_info, ValueError):
-            return job_info
-        job_type = parse_job_type(str(model.job_type))
-        if isinstance(job_type, ValueError):
-            return job_type
-        return JobDef(
-            job_id=model.id,
-            name=model.name,
-            description=model.description,
-            device_id=model.device_id,
-            shots=model.shots,
-            job_type=job_type,
-            job_info=job_info,
-            status=status,
-            transpiler_info=model.transpiler_info,
-            mitigation_info=model.mitigation_info,
-            simulator_info=model.simulator_info,
-            execution_time=model.execution_time,
-            submitted_at=model.submitted_at,
-            ready_at=model.ready_at,
-            running_at=model.running_at,
-            ended_at=model.ended_at,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-        )
-    elif fields is not None:
-        dict_schema: dict[str, Any] = {}
-        for k in fields:
-            if k == "job_id":
-                dict_schema["job_id"] = model.id
-            elif k == "job_info":
-                job_info = decode_job_info(json.loads(model.job_info))
-                if isinstance(job_info, ValueError):
-                    return job_info
-                else:
-                    dict_schema[k] = job_info
-            elif k == "status":
-                status = decode_job_status(model.status)
-                if isinstance(status, ValueError):
-                    return status
-                else:
-                    dict_schema[k] = JobStatus(model.status)
-            else:
-                dict_schema[k] = getattr(model, k)
-        return GetJobsResponse(**dict_schema)
-    else:
-        return ValueError("Failed to decode model")
+) -> JobDef | ValueError:
+    status = decode_job_status(model.status)
+    if isinstance(status, ValueError):
+        return status
+    job_info = decode_job_info(json.loads(model.job_info))
+    if isinstance(job_info, ValueError):
+        return job_info
+    job_type = parse_job_type(str(model.job_type))
+    if isinstance(job_type, ValueError):
+        return job_type
+    return JobDef(
+        job_id=model.id,
+        name=model.name,
+        description=model.description,
+        device_id=model.device_id,
+        shots=model.shots,
+        job_type=job_type,
+        job_info=job_info,
+        status=status,
+        transpiler_info=model.transpiler_info,
+        mitigation_info=model.mitigation_info,
+        simulator_info=model.simulator_info,
+        execution_time=model.execution_time,
+        submitted_at=localize(model.submitted_at),
+        ready_at=localize(model.ready_at),
+        running_at=localize(model.running_at),
+        ended_at=localize(model.ended_at),
+        created_at=pytz.utc.localize(model.created_at),
+        updated_at=localize(model.updated_at),
+    )

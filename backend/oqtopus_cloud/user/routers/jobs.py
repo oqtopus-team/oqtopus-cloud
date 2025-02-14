@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Optional
 
+import pytz
 from fastapi import (
     APIRouter,
     Depends,
@@ -384,6 +385,27 @@ def decode_job_info(j: Any) -> JobInfo | ValueError:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
+    def is_datetime_field(fld: str) -> bool:
+        if fld == "submitted_at":
+            return True
+        elif fld == "ready_at":
+            return True
+        elif fld == "running_at":
+            return True
+        elif fld == "ended_at":
+            return True
+        elif fld == "created_at":
+            return True
+        elif fld == "updated_at":
+            return True
+
+        return False
+
+    def localize(dt: datetime | None) -> datetime | None:
+        if dt is None:
+            return None
+        return pytz.utc.localize(dt)
+
     job_info = decode_job_info(json.loads(model.job_info))
 
     if fields is None:
@@ -403,12 +425,12 @@ def model_to_schema(
             mitigation_info=model.mitigation_info,
             simulator_info=model.simulator_info,
             execution_time=model.execution_time,
-            submitted_at=model.submitted_at,
-            ready_at=model.ready_at,
-            running_at=model.running_at,
-            ended_at=model.ended_at,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
+            submitted_at=localize(model.submitted_at),
+            ready_at=localize(model.ready_at),
+            running_at=localize(model.running_at),
+            ended_at=localize(model.ended_at),
+            created_at=localize(model.created_at),
+            updated_at=localize(model.updated_at),
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -425,6 +447,8 @@ def model_to_schema(
                     dict_schema[k] = job_info
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
+            elif is_datetime_field(k):
+                dict_schema[k] = localize(getattr(model, k))
             else:
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)
