@@ -96,3 +96,16 @@ module "vpc_endpoint" {
   ]
 }
 
+module "deployment_roles" {
+  source = "../modules/deployment-roles"
+
+  product = var.product
+  org     = var.org
+  env     = var.env
+  region  = var.region
+  profile = var.profile
+  repository = var.repository
+  github_user = var.github_user
+  branch = var.branch
+  aws_account_id = var.aws_account_id
+}
