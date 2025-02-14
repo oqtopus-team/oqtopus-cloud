@@ -39,23 +39,6 @@ variable "lambda_handler" {
   description = "The handler for the Lambda function"
   type        = string
 }
-
-variable "authorizer_type" {
-  description = "Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required."
-  type        = bool
-  default     = "COGNITO"
-}
-
-variable "require_api_key" {
-  description = "Set `true` if API key is required"
-  type        = bool
-  default     = false
-}
-variable "cognito_user_pool_arns" {
-  description = "The ARNs of the Cognito user pools"
-  type        = list(string)
-}
-
 variable "power_tools_metrics_namespace" {
   description = "The namespace for the PowerTools metrics"
   type        = string

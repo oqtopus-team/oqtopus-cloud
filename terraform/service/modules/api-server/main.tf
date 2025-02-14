@@ -58,7 +58,7 @@ resource "aws_lambda_function" "this" {
   ephemeral_storage {
     size = "512"
   }
-  filename                       = "./bin/lambda.zip"
+  filename                       = "./bin/${var.identifier}/lambda.zip"
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -216,7 +216,7 @@ resource "aws_kms_key" "api_gateway_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-1.amazonaws.com"
+          "Service" : "logs.ap-northeast-3.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"
@@ -347,7 +347,7 @@ resource "aws_api_gateway_authorizer" "lambda" {
   name                             = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
   rest_api_id                      = aws_api_gateway_rest_api.this.id
   type                             = "TOKEN"
-  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${aws_lambda_function.lambda_auth.arn}/invocations"
+  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
   identity_source                  = "method.request.header.Authorization"
   authorizer_result_ttl_in_seconds = 300
 }

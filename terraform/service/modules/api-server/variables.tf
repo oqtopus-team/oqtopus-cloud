@@ -42,7 +42,7 @@ variable "lambda_handler" {
 
 variable "authorizer_type" {
   description = "Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required."
-  type        = bool
+  type        = string
   default     = "COGNITO"
 }
 
@@ -109,4 +109,10 @@ variable "manage_cognito_user_pool" {
   description = "Set `true` if the module should manage the Cognito user pool"
   type        = bool
   default     = false
+}
+
+variable "lambda_authorizer_arn" {
+  type        = string
+  default     = ""
+  description = "ARN of the Lambda function used for authorizer"
 }

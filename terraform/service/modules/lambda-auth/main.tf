@@ -20,7 +20,6 @@
 *   db_secret_arn = "arn:aws:secretsmanager:us-west-2:123"
 *   lambda_security_group_ids = ["sg-123"]
 *   lambda_subnet_ids = ["subnet-123"]
-*   cognito_user_pool_arns = ["arn:aws:cognito-idp:us-west-2:123"]
 * }
 * ```
 *
