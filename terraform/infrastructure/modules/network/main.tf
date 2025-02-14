@@ -144,15 +144,14 @@ resource "aws_subnet" "private" {
   }
 }
 ## Public Subnets
-resource "aws_subnet" "public_subnets" {
-  for_each                = var.public_subnets
+resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.this.id
-  cidr_block              = each.value.cidr
-  availability_zone       = each.value.az
+  cidr_block              = var.public_subnet.cidr
+  availability_zone       = var.public_subnet.az
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+    Name = "${var.product}-${var.org}-${var.env}-${var.public_subnet.name}"
   }
 }
 
@@ -176,7 +175,7 @@ resource "aws_eip" "nat_eip" {
 resource "aws_nat_gateway" "nat_gw" {
   allocation_id = element(aws_eip.nat_eip.*.id, 0)
   # attach nat gateway on the first public subnet
-  subnet_id = length(aws_subnet.public_subnets) > 0 ? element(aws_subnet.public_subnets.*.id, 0) : null
+  subnet_id = aws_subnet.public_subnet.id
 
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-nat-gw"
@@ -187,10 +186,9 @@ resource "aws_nat_gateway" "nat_gw" {
 
 ## Public Route Table
 resource "aws_route_table" "public" {
-  for_each = var.public_subnets
-  vpc_id   = aws_vpc.this.id
+  vpc_id = aws_vpc.this.id
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+    Name = "${var.product}-${var.org}-${var.env}-public-rt"
   }
 }
 resource "aws_route" "public_default_route" {
@@ -199,9 +197,8 @@ resource "aws_route" "public_default_route" {
   gateway_id             = aws_internet_gateway.this.id
 }
 resource "aws_route_table_association" "public_assoc" {
-  for_each       = aws_subnet.public_subnets
-  subnet_id      = aws_subnet.public[each.key].id
-  route_table_id = aws_route_table.public[each.key].id
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public.id
 }
 
 

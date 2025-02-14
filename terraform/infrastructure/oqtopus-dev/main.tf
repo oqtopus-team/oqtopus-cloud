@@ -22,12 +22,10 @@ module "network" {
       az   = "ap-northeast-1d"
     },
   }
-  public_subnets = {
-    public-a = {
-      name = "public-a",
-      cidr = "10.2.176.0/20",
-      az   = "ap-northeast-1a"
-    }
+  public_subnet = {
+    name = "public-a"
+    cidr = "10.2.176.0/20"
+    az   = "ap-northeast-1a"
   }
 }
 
