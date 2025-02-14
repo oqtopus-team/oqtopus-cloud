@@ -241,7 +241,6 @@ paths:
         Used by device to set results or error details in job_info、accompanied by appropriate status updating.
         Note that job info descriptor (sampling, estimation, etc) cannot be modified.
       operationId: patchJobInfo
-      security: []
       tags:
         - jobs
       parameters:
@@ -442,6 +441,7 @@ components:
         - pauli
     jobs.EstimationResult:
       type: object
+      nullable: true
       description: |
         *(Only for estimation jobs)* The estimated expectation value and the standard deviation
         of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
@@ -488,9 +488,6 @@ components:
           description: Assumed to be used for multiprogramming, but currently not supported yet.
           nullable: true
           properties: {}
-        properties:
-          type: string
-          nullable: true
         transpile_result:
           type: object
           properties:
