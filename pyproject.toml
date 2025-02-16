@@ -29,6 +29,7 @@ fastapi-pagination = "^0.12.32"
 pyjwt = "^2.10.1"
 pytz = "^2025.1"
 types-pytz = "^2025.1.0.20250204"
+python-multipart = "^0.0.20"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -1,9 +1,12 @@
 import json
 from datetime import datetime
+import os
+import base64
+import boto3
 from typing import Any, Optional
 
 import pytz
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, Form
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -25,6 +28,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
+    GetSseSrcResponse,
+    UploadSseLogResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
@@ -270,6 +275,64 @@ def update_job_info(
 
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
+    except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.post(
+    "/jobs/{job_id}/sse-src",
+    response_model=GetSseSrcResponse,
+    responses={
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_src_src(
+    job_id: str,
+) -> GetSseSrcResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
+    try:
+        # get the program file from the AWS S3 bucket
+        s3_client = boto3.client("s3")
+        program = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+        )
+        program = program["Body"].read().decode("utf-8")
+
+        # encode the file to base64
+        program_base64 = base64.b64encode(program).decode("utf-8")
+        return GetSseSrcResponse(program_base64)
+
+    except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.post(
+    "/jobs/{job_id}/sse-log",
+    response_model=UploadSseLogResponse,
+    responses={
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def upload_sse_log(
+    job_id: str,
+    file: UploadFile = Form(...),
+) -> UploadSseLogResponse | ErrorResponse:
+    try:
+        bucket_name = os.environ["SSE_BUCKET"]
+        file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+        binary = file.file.read()
+
+        s3_client = boto3.client("s3")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+            Body=binary,
+        )
+        return UploadSseLogResponse(message="SSE log uploaded")
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 

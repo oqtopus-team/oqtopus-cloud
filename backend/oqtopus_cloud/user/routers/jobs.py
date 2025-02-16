@@ -1,5 +1,8 @@
 import json
 from datetime import datetime
+import os
+import base64
+import boto3
 from typing import Any, Optional
 
 import pytz
@@ -38,6 +41,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
+    GetSseLogResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -206,6 +210,17 @@ def submit_jobs(
             submitted_at=datetime.now(),
             created_at=datetime.now(),
         )
+
+        # put the user program to S3 when SSE
+        is_success_put_s3 = put_user_program_to_s3(job)
+        if not is_success_put_s3:
+            set_job_failure(job)
+            db.add(job)
+            db.commit()
+            return InternalServerErrorResponse(
+                message="Failed to upload the user program to S3"
+            )
+
         db.add(job)
         db.commit()
         return SubmitJobResponse(job_id=job.id)
@@ -349,6 +364,86 @@ def cancel_job(
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
+
+@router.get(
+    "/jobs/{job_id}/sse-log",
+    response_model=SuccessResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_sse_log(
+    event: Event,
+    job_id: str,
+) -> GetSseLogResponse | ErrorResponse:
+    owner = event.state.owner
+    logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+
+    try:
+        # get the logs from the AWS S3 bucket
+        s3_client = boto3.client("s3")
+        log_object = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+        )
+        if log_object is None:
+            return NotFoundErrorResponse(message="log file not found")
+
+        log_bin = log_object["Body"].read()
+
+        # encode the logs to base64
+        log_base64 = base64.b64encode(log_bin)
+        # replace the file name with the job_id
+        file_name = file_name.replace("{job_id}", job_id)
+
+        # TODO: return the logs in the response
+        return GetSseLogResponse(file=log_base64, file_name=file_name)
+
+    except Exception as e:
+        return InternalServerErrorResponse(message=str(e))
+
+
+def put_user_program_to_s3(job: Job) -> bool:
+    if job.job_type != JobType.sse:
+        return True
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
+    try:
+        job_info = decode_job_info(json.loads(job.job_info))
+        if isinstance(job_info, ValueError):
+            return False
+        if (
+            job_info.program is None
+            or len(job_info.program) == 0
+            or job_info.program[0] == ""
+        ):
+            logger.error("the job has no program")
+            return False
+
+        # decode the base64 encoded program
+        decoded_program = base64.b64decode(job_info.program[0])
+        # upload the program to the AWS S3 bucket
+        s3_client = boto3.client("s3")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=f"{job.job_id}/{file_name}",
+            Body=decoded_program,
+        )
+
+        return True
+    except Exception as e:
+        logger.error(f"Failed to upload the user program to S3: {str(e)}")
+        return False
+
+def set_job_failure(job: Job) -> None:
+    job.status = JobStatus.failed
+    job.ended_at = datetime.now()
 
 # TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {

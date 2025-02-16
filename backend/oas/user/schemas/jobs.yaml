@@ -464,3 +464,15 @@ jobs.GetJobsResponse:
       ended_at: 2022-10-19T11:45:34+09:00
       created_at: 2022-10-19T11:45:34+09:00
       updated_at: 2022-10-19T11:45:34+09:00
+
+jobs.GetSseLogResponse:
+  description: sse log file
+  type: object
+  properties:
+    file:
+      type: string
+      format: binary
+    file_name:
+      type: string
+      example: "sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"
+  required: []

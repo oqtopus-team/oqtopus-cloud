@@ -13,6 +13,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 class JobType(str, Enum):
     estimation = "estimation"
     sampling = "sampling"
+    sse = "sse"
 
 
 class JobStatus(str, Enum):
@@ -288,3 +289,14 @@ class GetJobStatusResponse(BaseModel):
 
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     status: JobStatus
+
+
+class GetSseLogResponse(BaseModel):
+    """
+    sse log file
+    """
+
+    file: bytes | None = None
+    file_name: Annotated[
+        str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
+    ] = None

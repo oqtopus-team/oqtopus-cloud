@@ -193,3 +193,18 @@ class UpdateJobInfoRequest(BaseModel):
 
 class UpdateJobInfoResponse(BaseModel):
     message: str
+
+
+class GetSseSrcResponse(RootModel[str]):
+    root: str
+    """
+    program source file for SSE
+    """
+
+
+class UploadSseLogRequest(BaseModel):
+    file: bytes
+
+
+class UploadSseLogResponse(BaseModel):
+    message: str
