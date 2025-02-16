@@ -182,11 +182,13 @@ def test_get_job(test_db: Session):
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
+        assert job.status == JobStatus.ready
     test_db.add(_get_job_model(2, JobType.estimation))
     job_id = "testjob2id"
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
+        assert job.status == JobStatus.ready
 
 
 def test_update_job(test_db: Session):
@@ -261,6 +263,7 @@ def test_update_job_info_result(test_db: Session):
             assert aft_job_info.result == res
             assert aft_job_info.message is None
             assert aft_job.status == JobStatus.succeeded
+            assert aft_job.ended_at is not None
             assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
 
 
@@ -289,6 +292,7 @@ def test_update_job_info_reason(test_db: Session):
     assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed
+    assert aft_job.ended_at is not None
 
 
 def test_update_job_info_consist(test_db: Session):
@@ -340,12 +344,18 @@ def test_update_job_status(test_db: Session):
         f"/jobs/{job_model.id}/status",
         content=JobStatusUpdate(status="running").model_dump_json(),
     )
+    model = test_db.get(Job, job_model.id)
+    assert model.status == JobStatus.running
+    assert model.running_at is not None
+    running_at = model.running_at
     assert resp.status_code == 200
 
     resp = client.patch(
         f"/jobs/{job_model.id}/status",
         content=JobStatusUpdate(status="running").model_dump_json(),
     )
+    assert model.status == JobStatus.running
+    assert running_at == running_at
     assert resp.status_code == 409
 
 
