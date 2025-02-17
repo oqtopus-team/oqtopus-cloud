@@ -113,6 +113,7 @@ jobs.TranspileResult:
 
 jobs.JobResult:
   type: object
+  nullable: true
   properties:
     sampling:
       $ref: "#/jobs.SamplingResult"
