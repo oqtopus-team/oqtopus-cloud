@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 
 
 class DeviceType(str, Enum):
@@ -26,7 +25,7 @@ class DeviceInfo(BaseModel):
     device_type: Annotated[DeviceType, Field(examples=["simulator"])]
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
@@ -72,7 +71,7 @@ class DeviceInfo(BaseModel):
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
     Parameter available only for `QPU` devices with available calibration data
@@ -90,10 +89,10 @@ class DeviceBase(BaseModel):
     status: Annotated[Status | None, Field(examples=["available"])] = None
     n_qubits: Annotated[int | None, Field(examples=[64])] = None
     available_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     basis_gates: Annotated[
         str | None,

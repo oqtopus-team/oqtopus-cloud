@@ -69,7 +69,7 @@ devices:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
 
 
-devices.deviceId:
+devices.device_id:
   get:
     tags:
       - devices
