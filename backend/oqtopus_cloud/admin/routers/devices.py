@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.devices import (
@@ -24,6 +25,7 @@ from oqtopus_cloud.common.session import (
 from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+utc = ZoneInfo("UTC")
 
 
 @router.get(
@@ -181,18 +183,25 @@ def check_device_id(device_base: DeviceBase) -> str | None:
         return None
 
 
+def ensure_timezone(dt):
+    if dt is not None and dt.tzinfo is None:
+        # ここでは UTC を仮定していますが、適切なタイムゾーンに変更してください
+        return dt.replace(tzinfo=utc)
+    return dt
+
+
 def model_to_schema(model: Device) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
         "device_type": getattr(model, "device_type", None),
         "status": model.status,
-        "available_at": getattr(model, "available_at", None),
+        "available_at": ensure_timezone(getattr(model, "available_at", None)),
         "n_pending_jobs": getattr(model, "pending_jobs", None),
         "n_qubits": getattr(model, "n_qubits", None),
         "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
         "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
         "device_info": getattr(model, "device_info", None),
-        "calibrated_at": getattr(model, "calibrated_at", None),
+        "calibrated_at": ensure_timezone(getattr(model, "calibrated_at", None)),
         "description": model.description,
     }
     return DeviceInfo.model_validate(dict)
@@ -203,12 +212,12 @@ def schema_to_model(device_id: str, schema: DeviceBase) -> Device:
         id=device_id,
         device_type=schema.device_type,
         status=schema.status,
-        available_at=schema.available_at,
+        available_at=ensure_timezone(schema.available_at),
         n_qubits=schema.n_qubits,
         basis_gates=json.dumps(schema.basis_gates),
         instructions=json.dumps(schema.supported_instructions),
         device_info=schema.device_info,
-        calibrated_at=schema.calibrated_at,
+        calibrated_at=ensure_timezone(schema.calibrated_at),
         description=schema.description,
     )
     return model

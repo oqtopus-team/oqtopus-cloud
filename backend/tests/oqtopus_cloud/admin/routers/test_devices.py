@@ -12,10 +12,13 @@ from oqtopus_cloud.admin.schemas.devices import (
 )
 from oqtopus_cloud.common.models.device import Device
 from pydantic.type_adapter import TypeAdapter
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
 client = TestClient(app)
+
+utc = ZoneInfo("UTC")
 
 
 def _get_model(n, device_info={}):
@@ -23,15 +26,15 @@ def _get_model(n, device_info={}):
         "id": f"SVSim{n}",
         "device_type": "simulator",
         "status": "available",
-        "available_at": datetime(2023, 1, 2, 12, 34, 56),
+        "available_at": datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
         "pending_jobs": n,
         "n_qubits": 1 + n,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
         "device_info": json.dumps(device_info),
-        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
+        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         "description": "State vector-based quantum circuit simulator",
-        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+        "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
     }
     return Device(**mode_dict)
 
@@ -42,11 +45,12 @@ def test_get_devices(
     """_summary_
     Simple GET /devices tests
     """
-    device_info = {"device_id": "SVSim1"}
+    device_info1 = {"device_id": "SVSim1"}
+    device_info2 = {"device_id": "SVSim2"}
 
     test_db.flush()
-    test_db.add(_get_model(1, device_info))
-    test_db.add(_get_model(2, device_info))
+    test_db.add(_get_model(1, device_info1))
+    test_db.add(_get_model(2, device_info2))
     test_db.commit()
     response = client.get("/devices")
     adapter = TypeAdapter(list[DeviceInfo])
@@ -56,26 +60,26 @@ def test_get_devices(
             device_id="SVSim1",
             device_type=DeviceType.simulator,
             status=Status.available,
-            available_at=datetime(2023, 1, 2, 12, 34, 56),
+            available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             n_pending_jobs=1,
             n_qubits=2,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info),
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
+            device_info=json.dumps(device_info1),
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
         DeviceInfo(
             device_id="SVSim2",
             device_type=DeviceType.simulator,
             status=Status.available,
-            available_at=datetime(2023, 1, 2, 12, 34, 56),
+            available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             n_pending_jobs=2,
             n_qubits=3,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info),
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
+            device_info=json.dumps(device_info2),
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
     ]
@@ -109,13 +113,13 @@ def test_get_device(
         device_id="SVSim1",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=datetime(2023, 1, 2, 12, 34, 56),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
         n_pending_jobs=1,
         n_qubits=2,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         device_info=json.dumps(device_info),
-        calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         description="State vector-based quantum circuit simulator",
     )
     assert response.status_code == 200
@@ -158,10 +162,10 @@ def test_register_devices(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx", "t"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -184,10 +188,10 @@ def test_register_devices_no_device_id_400(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx", "t"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -207,10 +211,10 @@ def test_register_devices_device_id_exception_400(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx", "t"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -232,10 +236,10 @@ def test_register_devices_400(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx", "t"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -260,10 +264,10 @@ def test_register_devices_overlap(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -283,10 +287,10 @@ def test_register_devices_500():
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx", "t"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
 
@@ -311,10 +315,10 @@ def test_update_devices_full(
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
     response = client.patch("/devices/SVSim1", json=body)
@@ -336,10 +340,10 @@ def test_update_devices_404(test_db):
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 3,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
     response = client.patch("/devices/SVSim2", json=body)
@@ -357,10 +361,10 @@ def test_update_devices_500():
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56",
+        "available_at": "2023-01-02T12:34:56+00:00",
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "supported_instructions": '["measure", "barrier", "reset"]',
-        "calibrated_at": "2024-03-04T12:34:56",
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
     response = client.patch("/devices/SVSim1", json=body)
