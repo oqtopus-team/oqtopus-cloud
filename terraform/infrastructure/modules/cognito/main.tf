@@ -39,6 +39,7 @@ resource "aws_cognito_user_pool" "this" {
     device_only_remembered_on_user_prompt = "true"
   }
 
+  auto_verified_attributes = ["email"]
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
   }
