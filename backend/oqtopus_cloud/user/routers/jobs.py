@@ -425,7 +425,7 @@ def get_sse_log(
             zip_data.writestr(log_name, log_str)
         zip_stream.seek(0)
         zip_bin = zip_stream.read()
-        zip_base64 = base64.b64encode(zip_bin)
+        zip_base64 = base64.b64encode(zip_bin).decode("utf-8")
 
         return GetSseLogResponse(file=zip_base64, file_name=file_name)
 

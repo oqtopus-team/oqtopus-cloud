@@ -800,6 +800,7 @@ components:
       enum:
         - estimation
         - sampling
+        - sse
       example: sampling
     jobs.JobStatus:
       type: string
@@ -1236,7 +1237,7 @@ components:
       properties:
         file:
           type: string
-          format: binary
+          format: byte
         file_name:
           type: string
           example: sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip

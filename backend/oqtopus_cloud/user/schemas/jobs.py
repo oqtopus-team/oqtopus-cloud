@@ -296,7 +296,7 @@ class GetSseLogResponse(BaseModel):
     sse log file
     """
 
-    file: bytes | None = None
+    file: str | None = None
     file_name: Annotated[
         str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
     ] = None

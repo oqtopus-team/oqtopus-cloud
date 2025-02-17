@@ -860,6 +860,7 @@ components:
     jobs.GetSseSrcResponse:
       description: program source file for SSE
       type: string
+      format: byte
     jobs.UploadSseLogRequest:
       type: object
       properties:
