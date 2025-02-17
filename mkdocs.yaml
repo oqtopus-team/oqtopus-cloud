@@ -4,7 +4,7 @@ nav:
   - Home: index.md
   - Architecture:
       - AWS System Architecture Diagram: architecture/aws_system_architecture_diagram.md
-      - Job State Transition Diagram: architecture/task_state_transition_diagram.md
+      - Job State Transition Diagram: architecture/job_state_transition_diagram.md
       - Quantum Jobs in Detail: architecture/quantum_jobs_in_detail.md
       - Sequence Diagram: architecture/sequence_diagram.md
   - Developer Guidelines:
@@ -88,7 +88,7 @@ plugins:
 
             Architecture: アーキテクチャ
             AWS System Architecture Diagram: AWSシステムアーキテクチャ図
-            Task State Transition Diagram: タスクの状態遷移
+            Job State Transition Diagram: ジョブの状態遷移
             Sequence Diagram: シーケンス図
 
             Developer Guidelines: 開発者ガイドライン

@@ -16,7 +16,7 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 ## Features
 
 - **Quantum Computing as a Service (QCaaS)**: Provides a cloud quantum computer system.
-- **Quantum Task Management**: Manages quantum tasks and their states.
+- **Quantum Job Management**: Manages quantum jobs and their states.
 - **Quantum Device Management**: Manages quantum devices and their states.
 
 ## Documentation

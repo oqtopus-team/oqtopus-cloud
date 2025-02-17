@@ -25,7 +25,7 @@
 ## 機能
 
 - **Quantum Computing as a Service (QCaaS)**: クラウド量子コンピュータシステムを提供します。
-- **Quantum Task Management**: 量子タスクとその状態を管理します。
+- **Quantum Job Management**: 量子ジョブとその状態を管理します。
 - **Quatntum Device Management**: 量子デバイスとその状態を管理します。
 
 ## ドキュメント
@@ -34,7 +34,7 @@
 
 - [AWSシステム構成図](./architecture/aws_system_architecture_diagram.md)
 - [シーケンス図](./architecture/sequence_diagram.md)
-- [タスクの状態遷移図](./architecture/task_state_transition_diagram.md)
+- [タスクの状態遷移図](./architecture/job_state_transition_diagram.md)
 
 ### 開発者ガイド
 
