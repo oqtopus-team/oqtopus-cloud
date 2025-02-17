@@ -156,7 +156,7 @@ TODO about log file
   The quantum cloud sets this field with the results of the multi manual job.
   - `counts` contains the sampling results of `combined_program`.
   - `divided_counts` is obtained by dividing `counts` back into the individual `program` sampling results.
-  - The keys of `divided_result` correspond to the array indices ("0", "1", "2", ...).
+  - The keys of `divided_counts` correspond to the array indices ("0", "1", "2", ...).
   - The byte order of the keys in `counts` follows LSB (Least Significant Byte).
   Below is an example of a `result` for a multi manual job:
 
