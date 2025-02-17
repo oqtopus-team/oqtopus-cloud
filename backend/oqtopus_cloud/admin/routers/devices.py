@@ -132,6 +132,8 @@ def update_device_data(
             return NotFoundErrorResponse(message="Device not found")
         update_fields = device_update.model_dump(exclude_none=True)
         for field, value in update_fields.items():
+            if field == "basis_gates" and isinstance(value, list):
+                value = json.dumps(value)
             setattr(query, field, value)
         # commit the transaction
         db.commit()

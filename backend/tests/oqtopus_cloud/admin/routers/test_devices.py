@@ -5,7 +5,6 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.devices import (
-    DeviceBase,
     DeviceInfo,
     DeviceType,
     Status,
@@ -163,8 +162,8 @@ def test_register_devices(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -174,7 +173,7 @@ def test_register_devices(
     assert response.json() == {"message": "Device registered successfully"}
     # confirm the device is registered
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
-    assert device.basis_gates == '"[\\"x\\", \\"sx\\", \\"rz\\", \\"cx\\", \\"t\\"]"'
+    assert device.basis_gates == '["x", "sx", "rz", "cx", "t"]'
 
 
 def test_register_devices_no_device_id_400(
@@ -189,8 +188,8 @@ def test_register_devices_no_device_id_400(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -212,8 +211,8 @@ def test_register_devices_device_id_exception_400(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -237,8 +236,8 @@ def test_register_devices_400(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -265,8 +264,8 @@ def test_register_devices_overlap(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -288,8 +287,8 @@ def test_register_devices_500():
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx", "t"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -302,7 +301,7 @@ def test_update_devices_full(
     test_db,
 ):
     """_summary_
-    Simple PATCH /devices/{device_id} tests
+    Simple PATCH /devices/{device_id} tests full update
     """
 
     device_info = {"device_id": "SVSim1"}
@@ -316,14 +315,40 @@ def test_update_devices_full(
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 200
     assert response.json() == {"message": "Device updated successfully"}
+
+
+def test_update_devices_partial(
+    test_db,
+):
+    """_summary_
+    Simple PATCH /devices/{device_id} tests partially update
+    """
+
+    device_info = {"device_id": "SVSim1"}
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    body = {
+        "device_info": json.dumps(device_info),
+        "n_qubits": 999,
+        "description": "updated description",
+    }
+    response = client.patch("/devices/SVSim1", json=body)
+    assert response.status_code == 200
+    assert response.json() == {"message": "Device updated successfully"}
+    # confirm the device is updated
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device.description == "updated description"
+    assert device.n_qubits == 999
 
 
 def test_update_devices_404(test_db):
@@ -341,8 +366,8 @@ def test_update_devices_404(test_db):
         "status": "available",
         "n_qubits": 3,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
@@ -362,8 +387,8 @@ def test_update_devices_500():
         "status": "available",
         "n_qubits": 2,
         "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": '["x", "sx", "rz", "cx"]',
-        "supported_instructions": '["measure", "barrier", "reset"]',
+        "basis_gates": ["x", "sx", "rz", "cx"],
+        "supported_instructions": ["measure", "barrier", "reset"],
         "calibrated_at": "2024-03-04T12:34:56+00:00",
         "description": "State vector-based quantum circuit simulator",
     }
