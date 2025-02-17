@@ -3,6 +3,8 @@ from datetime import datetime
 import os
 import base64
 import boto3
+import io
+import zipfile
 from typing import Any, Optional
 
 import pytz
@@ -367,7 +369,7 @@ def cancel_job(
 
 @router.get(
     "/jobs/{job_id}/sse-log",
-    response_model=SuccessResponse,
+    response_model=GetSseLogResponse,
     responses={
         400: {"model": Message},
         404: {"model": Message},
@@ -378,33 +380,57 @@ def cancel_job(
 def get_sse_log(
     event: Event,
     job_id: str,
+    db: Session = Depends(get_db),
 ) -> GetSseLogResponse | ErrorResponse:
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
     bucket_name = os.environ["SSE_BUCKET"]
-    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    zip_name = os.environ["SSE_ZIP_FILE_NAME"]
 
     try:
+        # Check the job type, status and the owner
+        job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        if job_model is None:
+            logger.info("job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        job = model_to_schema(job_model)
+        if isinstance(job, ValueError):
+            logger.warning("warn: Failed to encode job model to schema.")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        if job.job_type != JobType.sse:
+            logger.info("job is not an SSE job")
+            return BadRequestResponse(message="job is not an SSE job")
+        if job.status != JobStatus.succeeded and job.status != JobStatus.failed:
+            logger.info("job has not finished yet")
+            return BadRequestResponse(message="job has not finished yet")
+
         # get the logs from the AWS S3 bucket
         s3_client = boto3.client("s3")
         log_object = s3_client.get_object(
             Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
+            Key=f"{job_id}/{log_name}",
         )
         if log_object is None:
             return NotFoundErrorResponse(message="log file not found")
 
-        log_bin = log_object["Body"].read()
+        log_str = log_object["Body"].read().decode()
+        file_name = zip_name.replace("{job_id}", job_id)
 
-        # encode the logs to base64
-        log_base64 = base64.b64encode(log_bin)
-        # replace the file name with the job_id
-        file_name = file_name.replace("{job_id}", job_id)
+        # make a zip stream and encode it to base64
+        zip_stream = io.BytesIO()
+        with zipfile.ZipFile(
+            zip_stream, "w", compression=zipfile.ZIP_DEFLATED
+        ) as zip_data:
+            zip_data.writestr(log_name, log_str)
+        zip_stream.seek(0)
+        zip_bin = zip_stream.read()
+        zip_base64 = base64.b64encode(zip_bin)
 
-        # TODO: return the logs in the response
-        return GetSseLogResponse(file=log_base64, file_name=file_name)
+        return GetSseLogResponse(file=zip_base64, file_name=file_name)
 
     except Exception as e:
+        logger.error(f"Failed to get the log file: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -441,9 +467,11 @@ def put_user_program_to_s3(job: Job) -> bool:
         logger.error(f"Failed to upload the user program to S3: {str(e)}")
         return False
 
+
 def set_job_failure(job: Job) -> None:
     job.status = JobStatus.failed
     job.ended_at = datetime.now()
+
 
 # TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {
