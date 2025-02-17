@@ -40,6 +40,20 @@ jobs.OperatorItem:
   required:
     - pauli
 
+jobs.SamplingResult:
+  type: object
+  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
+  properties:
+    counts:
+      type: string
+      example: >-
+        {
+          "10": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+
 jobs.EstimationResult:
   type: object
   description: |
@@ -59,34 +73,38 @@ jobs.EstimationResult:
       description: "(Only for estimation jobs) The standard deviation value"
       type: number
 
+jobs.TranspileResult:
+  type: object
+  properties:
+    transpiled_program:
+      type: string
+      nullable: true
+      example: >-
+        OPENQASM 3;
+        include "stdgates.inc";
+        qubit[2] _all_qubits;
+        let q = _all_qubits[0:1];
+        h q[0];
+        cx q[0], q[1];
+    stats:
+      type: string
+      nullable: true
+    virtual_physical_mapping:
+      type: string
+      nullable: true
+  required:
+    - transpiled_program
+    - stats
+    - virtual_physical_mapping
+
 jobs.JobResult:
   type: object
   properties:
-    counts:
-      description: "*(Only for sampling jobs)* JSON string representing the sampling result"
-      type: string
-      example: >-
-        {
-          "10": 84,
-          "11": 387,
-          "10": 454,
-          "01": 75
-        }
-
+    sampling:
+      $ref: "#/jobs.SamplingResult"
     estimation:
       $ref: "#/jobs.EstimationResult"
-
-    divided_result:
-      type: object
-      description: "Assumed to be used for multiprogramming, but currently not supported yet."
-      properties: {}
-    properties:
-      type: string
-    transpile_result:
-      type: object
-      properties:
-        virtual_physical_mapping:
-          type: string
+  additionalProperties: true
   required: []
 
 jobs.JobInfo:
@@ -116,17 +134,12 @@ jobs.JobInfo:
       items:
         $ref: "#/jobs.OperatorItem"
 
-    transpiled_program:
-      type: string
-      example: >-
-        OPENQASM 3;
-        include "stdgates.inc";
-        qubit[2] _all_qubits;
-        let q = _all_qubits[0:1];
-        h q[0];
-        cx q[0], q[1];
     result:
       $ref: "#/jobs.JobResult"
+
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
+
     message:
       type: string
       description: Describing the reason why there is no result
@@ -358,7 +371,6 @@ jobs.SubmitJobRequest:
       format: date-time
       example: 2022-10-19T11:45:34+09:00
   required:
-    - name
     - device_id
     - shots
     - job_type

@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
 class JobStatus(str, Enum):
@@ -35,6 +35,17 @@ class OperatorItem(BaseModel):
     """
 
 
+class SamplingResult(BaseModel):
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
+
+    counts: Annotated[
+        str,
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ]
+
+
 class EstimationResult(BaseModel):
     """
     *(Only for estimation jobs)* The estimated expectation value and the standard deviation
@@ -54,24 +65,25 @@ class EstimationResult(BaseModel):
     """
 
 
-class TranspileResult(BaseModel):
-    virtual_physical_mapping: str | None = None
-
-
 class JobResult(BaseModel):
-    counts: Annotated[
-        str | None,
-        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
-    ] = None
-    """
-    *(Only for sampling jobs)* JSON string representing the sampling result
-    """
+    model_config = ConfigDict(
+        extra="allow",
+    )
+    sampling: SamplingResult | None = None
     estimation: EstimationResult | None = None
-    divided_result: dict[str, Any] | None = None
-    """
-    Assumed to be used for multiprogramming, but currently not supported yet.
-    """
-    transpile_result: TranspileResult | None = None
+
+
+class TranspileResult(BaseModel):
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
+    stats: Annotated[str | None, Field(...)] = None
+    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
 
 
 class JobInfo(BaseModel):
@@ -96,15 +108,8 @@ class JobInfo(BaseModel):
     value is to be estimated.
 
     """
-    transpiled_program: Annotated[
-        str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
-    ] = None
     result: JobResult | None = None
+    transpile_result: TranspileResult | None = None
     message: str | None = None
     """
     Describing the reason why there is no result
@@ -169,7 +174,7 @@ class JobStatusUpdateResponse(BaseModel):
 
 
 class UpdateJobInfo(BaseModel):
-    transpiled_program: str | None = None
+    transpile_result: TranspileResult | None = None
     result: JobResult | None = None
     message: str | None = None
 
