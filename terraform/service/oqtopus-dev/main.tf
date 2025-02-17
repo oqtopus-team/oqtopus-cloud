@@ -19,7 +19,7 @@ module "lambda_auth" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
@@ -52,8 +52,8 @@ module "user_api" {
   power_tools_service_name      = "user-api"
   allow_origins                 = "*"
   allow_credentials             = "true"
-  allow_methods                 = "*"
-  allow_headers                 = "*"
+  allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
+  allow_headers                 = "Content-type,Accept,Authorization"
   log_level                     = "INFO"
 }
 
@@ -93,7 +93,7 @@ module "admin_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.admin.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.admin_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
@@ -104,8 +104,8 @@ module "admin_api" {
   power_tools_service_name               = "admin-api"
   allow_origins                          = "*"
   allow_credentials                      = "true"
-  allow_methods                          = "*"
-  allow_headers                          = "*"
+  allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
+  allow_headers                          = "Content-type,Accept,Authorization"
   log_level                              = "INFO"
 }
 
@@ -120,7 +120,7 @@ module "user_signup_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user_signup.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "NONE"
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
@@ -131,8 +131,8 @@ module "user_signup_api" {
   power_tools_service_name               = "user_signup-api"
   allow_origins                          = "*"
   allow_credentials                      = "true"
-  allow_methods                          = "*"
-  allow_headers                          = "*"
+  allow_methods                          = "POST,PUT"
+  allow_headers                          = "Content-type,Accept"
   log_level                              = "INFO"
 }
 

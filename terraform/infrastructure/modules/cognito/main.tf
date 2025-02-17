@@ -43,8 +43,8 @@ resource "aws_cognito_user_pool" "this" {
     email_sending_account = "COGNITO_DEFAULT"
   }
 
-  # mfa_configuration = "ON"
-  name = "${var.product}-${var.org}-${var.env}-${var.identifier}"
+  mfa_configuration = "OPTIONAL"
+  name              = "${var.product}-${var.org}-${var.env}-${var.identifier}"
 
   password_policy {
     minimum_length                   = "12"
@@ -68,9 +68,9 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
-  # software_token_mfa_configuration {
-  #   enabled = "true"
-  # }
+  software_token_mfa_configuration {
+    enabled = "true"
+  }
 
   username_configuration {
     case_sensitive = "false"

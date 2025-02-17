@@ -44,6 +44,7 @@ resource "aws_lambda_function" "this" {
         ALLOW_METHODS                = var.allow_methods
         ALLOW_HEADERS                = var.allow_headers
         LOG_LEVEL                    = var.log_level
+        REGION                       = var.region
       },
       # optional environment variables
       var.client_cognito_user_pool_id != "" ? {
