@@ -482,6 +482,7 @@ components:
         - stds
     jobs.JobResult:
       type: object
+      nullable: true
       properties:
         sampling:
           $ref: '#/components/schemas/jobs.SamplingResult'
