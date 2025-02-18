@@ -1,5 +1,4 @@
 import json
-import logging
 from datetime import datetime
 
 from fastapi.testclient import TestClient
@@ -12,8 +11,6 @@ from oqtopus_cloud.admin.schemas.devices import (
 from oqtopus_cloud.common.models.device import Device
 from pydantic.type_adapter import TypeAdapter
 from zoneinfo import ZoneInfo
-
-logger = logging.getLogger(__name__)
 
 client = TestClient(app)
 
@@ -297,7 +294,7 @@ def test_register_devices_500():
     assert response.status_code == 500
 
 
-def test_update_devices_full(
+def test_update_device_data_full(
     test_db,
 ):
     """_summary_
@@ -325,7 +322,7 @@ def test_update_devices_full(
     assert response.json() == {"message": "Device updated successfully"}
 
 
-def test_update_devices_partial(
+def test_update_device_data_partial(
     test_db,
 ):
     """_summary_
@@ -351,7 +348,32 @@ def test_update_devices_partial(
     assert device.n_qubits == 999
 
 
-def test_update_devices_404(test_db):
+def test_update_device_data_inconsistent_device_id(
+    test_db,
+):
+    """_summary_
+    Simple PATCH /devices/{device_id} tests inconsistent device_id
+    """
+
+    device_info = {"device_id": "SVSim1"}
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    device_info = {"device_id": "SVSim2"}
+    body = {
+        "device_info": json.dumps(device_info),
+        "n_qubits": 999,
+        "description": "updated description",
+    }
+    response = client.patch("/devices/SVSim1", json=body)
+    assert response.status_code == 400
+    assert response.json() == {
+        "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2"
+    }
+
+
+def test_update_device_data_404(test_db):
     """_summary_
     Simple PATCH /devices/{device_id} tests 404 error
     """
@@ -375,7 +397,7 @@ def test_update_devices_404(test_db):
     assert response.status_code == 404
 
 
-def test_update_devices_500():
+def test_update_device_data_500():
     """_summary_
     Simple PATCH /devices/{device_id} tests 500 error
     """
@@ -396,7 +418,7 @@ def test_update_devices_500():
     assert response.status_code == 500
 
 
-def test_delete_devices(
+def test_delete_device(
     test_db,
 ):
     """_summary_
@@ -413,7 +435,7 @@ def test_delete_devices(
     assert device is None
 
 
-def test_delete_devices_404(
+def test_delete_device_404(
     test_db,
 ):
     """_summary_
@@ -427,7 +449,7 @@ def test_delete_devices_404(
     assert response.status_code == 404
 
 
-def test_delete_devices_500():
+def test_delete_device_500():
     """_summary_
     Simple DELETE /devices/{device_id} tests 500 error
     """

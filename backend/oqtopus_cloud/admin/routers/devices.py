@@ -40,7 +40,7 @@ def get_devices(
         devices = db.scalars(select(Device)).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -74,7 +74,7 @@ def get_device(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -105,7 +105,7 @@ def register_devices(
         db.commit()
         return SuccessResponse(message="Device registered successfully")
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -122,14 +122,28 @@ def update_device_data(
     device_id: str,
     device_update: DeviceBase = Body(..., description="new status"),
     db: Session = Depends(get_db),
-) -> SuccessResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> (
+    SuccessResponse
+    | BadRequestErrorResponse
+    | NotFoundErrorResponse
+    | InternalServerErrorResponse
+):
     try:
         logger.info("invoked update device data")
         # query
         stmt = select(Device).where(Device.id == device_id)
         query = db.execute(stmt).scalars().first()
         if not query:
-            return NotFoundErrorResponse(message="Device not found")
+            logger.error(f"device_id={device_id} is not found")
+            return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
+        device_id_from_body = check_device_id(device_update)
+        if device_id != device_id_from_body:
+            logger.error(
+                f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
+            )
+            return BadRequestErrorResponse(
+                message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
+            )
         update_fields = device_update.model_dump(exclude_none=True)
         for field, value in update_fields.items():
             if field == "basis_gates" and isinstance(value, list):
@@ -141,6 +155,7 @@ def update_device_data(
         return SuccessResponse(message="Device updated successfully")
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
@@ -165,6 +180,7 @@ def delete_device(
         # pageination
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
+            logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message="Device not found")
         # delete from RDS
         db.delete(query_result)
@@ -172,6 +188,7 @@ def delete_device(
         return SuccessResponse(message="Device deleted successfully")
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
