@@ -102,6 +102,50 @@ def test_get_whitelist_users_offset1_limit1(
     assert actual == expect
 
 
+def test_get_whitelist_users_filtering(
+    test_db,
+):
+    """_summary_
+    Simple GET /whitelist_users tests with filtering
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.add(_get_model(3, False))
+    test_db.commit()
+
+    response = client.get(
+        "/whitelist_users?email=email_&group_id=group_id_2&organization=organization_2&username=username"
+    )
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = ListWhitelistUsersResponse(
+        users=[
+            ListWhitelistUserResponse(
+                id=2,
+                email="email_2",
+                group_id="group_id_2",
+                username="username_2",
+                organization="organization_2",
+                is_signup_completed=False,
+            ),
+        ],
+    )
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_whitelist_users_500():
+    """_summary_
+    Simple GET /whitelist_users tests 500 error
+    """
+
+    response = client.get("/whitelist_users")
+    assert response.status_code == 500
+
+
 def test_post_whitelist_users(test_db):
     """_summary_
     Simple POST /whitelist_users tests
@@ -176,6 +220,153 @@ def test_post_whitelist_users(test_db):
     assert actual == expect
 
 
+def test_post_whitelist_users_invalid_request_contents(test_db):
+    """_summary_
+    Simple POST /whitelist_users tests
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.commit()
+    request_body_no_email = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email=None,
+                group_id="group_id_3",
+                username="username_3",
+                organization="organization_3",
+            ),
+        ]
+    )
+    request_body_no_group_id = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_3",
+                group_id=None,
+                username="username_3",
+                organization="organization_3",
+            ),
+        ]
+    )
+    request_body_email_too_long = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="a" * 256,
+                group_id="group_id_3",
+                username="username_3",
+                organization="organization_3",
+            ),
+        ]
+    )
+    request_body_group_id_too_long = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_3",
+                group_id="a" * 256,
+                username="username_3",
+                organization="organization_3",
+            ),
+        ]
+    )
+    request_body_usrename_too_long = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_3",
+                group_id="group_id_3",
+                username="a" * 256,
+                organization="organization_3",
+            ),
+        ]
+    )
+    request_body_organization_too_long = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_3",
+                group_id="group_id_3",
+                username="username_3",
+                organization="a" * 256,
+            ),
+        ]
+    )
+    request_body_overlap_username = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_1",
+                group_id="group_id_3",
+                username="username_3",
+                organization="organization_3",
+            ),
+        ]
+    )
+    response_no_email = client.post(
+        "/whitelist_users",
+        json=request_body_no_email.model_dump(),
+    )
+    assert response_no_email.status_code == 400
+    request_body_no_group_id = client.post(
+        "/whitelist_users",
+        json=request_body_no_group_id.model_dump(),
+    )
+    assert request_body_no_group_id.status_code == 400
+    request_body_email_too_long = client.post(
+        "/whitelist_users",
+        json=request_body_email_too_long.model_dump(),
+    )
+    assert request_body_email_too_long.status_code == 400
+    request_body_group_id_too_long = client.post(
+        "/whitelist_users",
+        json=request_body_group_id_too_long.model_dump(),
+    )
+    assert request_body_group_id_too_long.status_code == 400
+    request_body_usrename_too_long = client.post(
+        "/whitelist_users",
+        json=request_body_usrename_too_long.model_dump(),
+    )
+    assert request_body_usrename_too_long.status_code == 400
+    request_body_organization_too_long = client.post(
+        "/whitelist_users",
+        json=request_body_organization_too_long.model_dump(),
+    )
+    assert request_body_organization_too_long.status_code == 400
+    request_body_overlap_username = client.post(
+        "/whitelist_users",
+        json=request_body_overlap_username.model_dump(),
+    )
+    assert request_body_overlap_username.status_code == 400
+
+
+def test_post_whitelist_users_no_usrlist_in_request(test_db):
+    """_summary_
+    Simple POST /whitelist_users tests 400 error
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.commit()
+    request_body = RegisterWhitelistUsersRequest(users=[])
+    response = client.post(
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+    assert response.status_code == 400
+
+
+def test_post_whitelist_users_no_valid_user(test_db):
+    """_summary_
+    Simple POST /whitelist_users tests 400 error
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.commit()
+    request_body = RegisterWhitelistUsersRequest(users=None)
+    response = client.post(
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+    assert response.status_code == 400
+
+
 def test_delete_whitelist_users(test_db):
     """_summary_
     Simple DELETE /whitelist_users tests
@@ -222,3 +413,35 @@ def test_delete_whitelist_users(test_db):
 
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_delete_whitelist_500():
+    """_summary_
+    Simple DELETE /whitelist_users tests no deletion
+    """
+    request_body = WhitelistUsersDeleteRequest(user_emails=["email_5"])
+    response = client.request(
+        "DELETE",
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+
+    assert response.status_code == 500
+
+
+def test_delete_whitelist_email_none(test_db):
+    """_summary_
+    Simple DELETE /whitelist_users tests no deletion
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(3, False))
+    test_db.commit()
+    request_body = WhitelistUsersDeleteRequest(user_emails=None)
+    response = client.request(
+        "DELETE",
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+
+    assert response.status_code == 204

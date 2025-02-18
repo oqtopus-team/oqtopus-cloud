@@ -18,6 +18,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     Message,
 )
+from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.admin.schemas.whitelist_users import (
     ListWhitelistUserResponse,
     ListWhitelistUsersResponse,
@@ -119,7 +120,7 @@ def get_whitelist_users(
 
 @router.post(
     "/whitelist_users",
-    response_model=None,
+    response_model=SuccessResponse,
     status_code=status.HTTP_200_OK,
     responses={400: {"model": Message}, 500: {"model": Message}},
 )
@@ -127,7 +128,7 @@ def get_whitelist_users(
 def register_whitelist_user(
     users: RegisterWhitelistUsersRequest,
     db: Session = Depends(get_db),
-) -> None | BadRequestErrorResponse | InternalServerErrorResponse:
+) -> SuccessResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked create_whitelist_user")
     valid_users_list = []
     try:
@@ -157,7 +158,7 @@ def register_whitelist_user(
             )
             db.add(new_whitelist_user)
             db.commit()
-        return None
+        return SuccessResponse(message="Successfully registered")
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))

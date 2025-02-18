@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
+import pytest
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.lambda_auth.lambda_function import (
     _generate_policy_allow,
@@ -106,6 +107,41 @@ def test__verify_id_token():
     assert actual == expect
 
 
+def test__verify_id_token_no_token(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_id_token(None)
+
+    assert "Internal Server Error" in str(excinfo.value)
+
+
+def test__verify_id_token_no_env_variable(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    monkeypatch.delenv("USER_POOL_WEB_CLIENT_ID", raising=False)
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_id_token("id_token")
+
+    assert "Internal Server Error" in str(excinfo.value)
+
+
+def test__verify_id_token_():
+    actual = _verify_id_token("id_token")
+    expect = "fake_username"
+    assert actual == expect
+
+
 def test__verify_api_token(test_session, monkeypatch):
     user = _get_model(1)
     test_session.flush()
@@ -134,6 +170,20 @@ def test__verify_api_token_expired(test_session, monkeypatch):
         assert str(e) == "Internal Server Error"
     else:
         assert False
+
+
+def test__verify_api_token_api_no_token(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_api_token(None)
+
+    assert "Internal Server Error" in str(excinfo.value)
 
 
 def test__generate_policy_allow():
