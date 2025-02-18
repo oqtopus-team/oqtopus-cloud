@@ -240,7 +240,7 @@ def test_patch_job_404(
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
-    assert response.json() == {"message": "User not found"}
+    assert response.json() == {"message": "User not found: 2"}
 
 
 def test_patch_job_500():

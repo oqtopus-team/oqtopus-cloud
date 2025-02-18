@@ -4,6 +4,7 @@ import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 import pytest
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.lambda_auth.lambda_function import (
+    AuthError,
     _generate_policy_allow,
     _generate_policy_deny,
     _verify_api_token,
@@ -115,10 +116,10 @@ def test__verify_id_token_no_token(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_id_token(None)
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "ID token is not found" in str(excinfo.value)
 
 
 def test__verify_id_token_no_env_variable(test_session, monkeypatch):
@@ -130,20 +131,22 @@ def test__verify_id_token_no_env_variable(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     monkeypatch.delenv("USER_POOL_WEB_CLIENT_ID", raising=False)
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_id_token("id_token")
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "Environment variable is not set 'USER_POOL_WEB_CLIENT_ID" in str(
+        excinfo.value
+    )
 
 
 @pytest.mark.usefixtures("override_PyJWKClientFailure")
 def test__verify_id_token_jwt_signing_key_failure():
-    pytest.raises(Exception, _verify_id_token, "id_token")
+    pytest.raises(AuthError, _verify_id_token, "id_token")
 
 
 @pytest.mark.usefixtures("override_jwt_decode_failure")
 def test__verify_id_token_jwt_decode_failure():
-    pytest.raises(Exception, _verify_id_token, "id_token")
+    pytest.raises(AuthError, _verify_id_token, "id_token")
 
 
 def test__verify_api_token(test_session, monkeypatch):
@@ -169,9 +172,9 @@ def test__verify_api_token_expired(test_session, monkeypatch):
     )
 
     try:
-        ret = _verify_api_token("api_token_secret_1")
-    except Exception as e:
-        assert str(e) == "Internal Server Error"
+        _ = _verify_api_token("api_token_secret_1")
+    except AuthError as e:
+        assert str(e) == "Database error API token is expired"
     else:
         assert False
 
@@ -184,10 +187,10 @@ def test__verify_api_token_api_no_token(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token(None)
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "API token is None" in str(excinfo.value)
 
 
 def test__verify_api_token_no_env_variable(test_session, monkeypatch):
@@ -199,10 +202,10 @@ def test__verify_api_token_no_env_variable(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_secret_1")
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "Environment variable is not set 'AUTH_USER_POOL_ID'" in str(excinfo.value)
 
 
 @pytest.mark.usefixtures("override_boto3_client_zero_user")
@@ -214,10 +217,12 @@ def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_secret_1")
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "Failed to list users from Cognito Cognito user is not found" in str(
+        excinfo.value
+    )
 
 
 @pytest.mark.usefixtures("override_boto3_client_multiple_users")
@@ -229,10 +234,12 @@ def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_secret_1")
 
-    assert "Internal Server Error" in str(excinfo.value)
+    assert "Failed to list users from Cognito Cognito user is duplicated" in str(
+        excinfo.value
+    )
 
 
 def test__generate_policy_allow():

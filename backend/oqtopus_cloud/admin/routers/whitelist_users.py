@@ -40,6 +40,12 @@ utc = ZoneInfo("UTC")
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
+class FormatError(Exception):
+    """Custom exception for formatting errors"""
+
+    pass
+
+
 def is_unique_email(session, email):
     return session.query(WhitelistUser).filter_by(email=email).first() is None
 
@@ -49,24 +55,24 @@ def validated_whitelist_user(
 ) -> WhitelistUser:
     required_msg = "{} is required."
     too_long_msg = (
-        "The length of {} exceeds the limit. Please enter within {} characters."
+        "The length of {} exceeds the limit. Please enter within {} characters"
     )
     if not user.email:
-        raise Exception(required_msg.format("email address"))
+        raise FormatError(required_msg.format("email address"))
     if not user.group_id:
-        raise Exception(required_msg.format("group_id"))
+        raise FormatError(required_msg.format("group_id"))
 
     if len(str(user.email)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.email, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.email, LEN_VARCHAR))
     if len(str(user.group_id)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.group_id, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.group_id, LEN_VARCHAR))
     if user.username and len(str(user.username)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.username, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.username, LEN_VARCHAR))
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.organization, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.organization, LEN_VARCHAR))
 
     if not is_unique_email(db, user.email):
-        raise Exception(f"{user.email} is already registered.")
+        raise FormatError(f"{user.email} is already registered.")
 
     validated_user = {
         "email": str(user.email),
@@ -140,7 +146,7 @@ def register_whitelist_user(
             validated_whitelist_user(db, one_user) for one_user in users_list
         ]
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return BadRequestErrorResponse(message=str(e))
     if not valid_users_list:
         logger.error("No valid user to register")
@@ -160,7 +166,7 @@ def register_whitelist_user(
             db.commit()
         return SuccessResponse(message="Successfully registered")
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -178,6 +184,7 @@ def delete_whitelist_user(
     logger.info("invoked delete whitelist_user")
     try:
         if user_emails.user_emails is None:
+            logger.info("No users to delete")
             return None
         stmt = select(WhitelistUser).where(
             WhitelistUser.email.in_(user_emails.user_emails)
@@ -185,12 +192,14 @@ def delete_whitelist_user(
         # delete from RDS
         users_to_delete = db.scalars(stmt)
         if not users_to_delete:
+            logger.info("No users to delete")
             return None
         for user in users_to_delete:
             db.delete(user)
         db.commit()
         return None
     except Exception as e:
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
