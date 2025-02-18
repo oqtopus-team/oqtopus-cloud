@@ -26,9 +26,9 @@ paths:
   /jobs/{job_id}/job_info:
     $ref: ./paths/jobs.yaml#/jobs.jobInfo
   /jobs/{job_id}/sse-src:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.sseSrc
+    $ref: ./paths/jobs.yaml#/jobs.jobId.ssesrc
   /jobs/{job_id}/sse-log:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.sseLog
+    $ref: ./paths/jobs.yaml#/jobs.jobId.sselog
 components:
   securitySchemes:
     ApiKeyAuth:

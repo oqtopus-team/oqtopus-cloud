@@ -460,7 +460,7 @@ paths:
         - job
       summary: Get SSE log file
       description: Get SSE log file of selected job
-      operationId: getSSELog
+      operationId: getSselog
       security:
         - BearerAuth: []
       parameters:
@@ -476,7 +476,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.GetSseLogResponse'
+                $ref: '#/components/schemas/jobs.GetSselogResponse'
         '400':
           description: Bad Request
           content:
@@ -1231,7 +1231,7 @@ components:
       required:
         - job_id
         - status
-    jobs.GetSseLogResponse:
+    jobs.GetSselogResponse:
       description: sse log file
       type: object
       properties:

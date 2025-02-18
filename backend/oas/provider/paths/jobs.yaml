@@ -185,13 +185,13 @@ jobs.jobInfo:
             example:
               message: Job not found
 
-jobs.jobId.sseSrc:
+jobs.jobId.ssesrc:
   get:
     tags:
       - job
     summary: "Get SSE program source file"
     description: "Get SSE program source file of selected job"
-    operationId: getSseSrc
+    operationId: getSsesrc
     security: []
     parameters:
         - in: path
@@ -205,7 +205,7 @@ jobs.jobId.sseSrc:
         content:
           text/plain:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.GetSseSrcResponse"
+              $ref: "../schemas/jobs.yaml#/jobs.GetSsesrcResponse"
       "400":
         description: Bad Request
         content:
@@ -231,13 +231,13 @@ jobs.jobId.sseSrc:
             example:
               message: Internal server error
 
-jobs.jobId.sseLog:
-  put:
+jobs.jobId.sselog:
+  patch:
     tags:
       - job
     summary: "Upload SSE log file"
     description: "Upload SSE log file of selected job"
-    operationId: uploadSseLog
+    operationId: patchSselog
     security: []
     parameters:
       - in: path
@@ -250,14 +250,14 @@ jobs.jobId.sseLog:
       content:
         multipart/form-data:
           schema:
-            $ref: "../schemas/jobs.yaml#/jobs.UploadSseLogRequest"
+            $ref: "../schemas/jobs.yaml#/jobs.UploadSselogRequest"
     responses:
       "200":
         description: "Log uploaded"
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.UploadSseLogResponse"
+              $ref: "../schemas/jobs.yaml#/jobs.UploadSselogResponse"
             example:
               message: Log uploaded
       "400":

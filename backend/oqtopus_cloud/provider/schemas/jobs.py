@@ -195,16 +195,16 @@ class UpdateJobInfoResponse(BaseModel):
     message: str
 
 
-class GetSseSrcResponse(RootModel[str]):
+class GetSsesrcResponse(RootModel[str]):
     root: str
     """
     program source file for SSE
     """
 
 
-class UploadSseLogRequest(BaseModel):
+class UploadSselogRequest(BaseModel):
     file: bytes
 
 
-class UploadSseLogResponse(BaseModel):
+class UploadSselogResponse(BaseModel):
     message: str

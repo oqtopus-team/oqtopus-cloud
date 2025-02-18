@@ -43,7 +43,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
-    GetSseLogResponse,
+    GetSselogResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -186,7 +186,10 @@ def submit_jobs(
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
 
-        if jobtype_of_jobinfo(request.job_info) != request.job_type:
+        if (
+            jobtype_of_jobinfo(request.job_info) != request.job_type
+            and request.job_type != JobType.sse
+        ):
             return BadRequestResponse("job_info is not compatible with job_type")
 
         # NOTE: method and operator is validated by pydantic
@@ -368,8 +371,8 @@ def cancel_job(
 
 
 @router.get(
-    "/jobs/{job_id}/sse-log",
-    response_model=GetSseLogResponse,
+    "/jobs/{job_id}/sselog",
+    response_model=GetSselogResponse,
     responses={
         400: {"model": Message},
         404: {"model": Message},
@@ -377,11 +380,11 @@ def cancel_job(
     },
 )
 @tracer.capture_method
-def get_sse_log(
+def get_sselog(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> GetSseLogResponse | ErrorResponse:
+) -> GetSselogResponse | ErrorResponse:
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
     bucket_name = os.environ["SSE_BUCKET"]
@@ -427,7 +430,7 @@ def get_sse_log(
         zip_bin = zip_stream.read()
         zip_base64 = base64.b64encode(zip_bin).decode("utf-8")
 
-        return GetSseLogResponse(file=zip_base64, file_name=file_name)
+        return GetSselogResponse(file=zip_base64, file_name=file_name)
 
     except Exception as e:
         logger.error(f"Failed to get the log file: {str(e)}")
@@ -458,7 +461,7 @@ def put_user_program_to_s3(job: Job) -> bool:
         s3_client = boto3.client("s3")
         s3_client.put_object(
             Bucket=bucket_name,
-            Key=f"{job.job_id}/{file_name}",
+            Key=f"{job.id}/{file_name}",
             Body=decoded_program,
         )
 

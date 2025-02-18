@@ -291,7 +291,7 @@ class GetJobStatusResponse(BaseModel):
     status: JobStatus
 
 
-class GetSseLogResponse(BaseModel):
+class GetSselogResponse(BaseModel):
     """
     sse log file
     """

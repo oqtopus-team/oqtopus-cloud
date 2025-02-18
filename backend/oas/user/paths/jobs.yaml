@@ -384,13 +384,13 @@ jobs.jobId.cancel:
             example:
               message: job not found
 
-jobs.jobId.sseLog:
+jobs.jobId.sselog:
   get:
     tags:
       - job
     summary: "Get SSE log file"
     description: "Get SSE log file of selected job"
-    operationId: getSSELog
+    operationId: getSselog
     security:
       - BearerAuth: []
     parameters:
@@ -405,7 +405,7 @@ jobs.jobId.sseLog:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.GetSseLogResponse"
+              $ref: "../schemas/jobs.yaml#/jobs.GetSselogResponse"
       "400":
         description: Bad Request
         content:

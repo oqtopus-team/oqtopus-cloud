@@ -28,8 +28,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
-    GetSseSrcResponse,
-    UploadSseLogResponse,
+    GetSsesrcResponse,
+    UploadSselogResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
@@ -279,17 +279,17 @@ def update_job_info(
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
-@router.post(
-    "/jobs/{job_id}/sse-src",
-    response_model=GetSseSrcResponse,
+@router.get(
+    "/jobs/{job_id}/ssesrc",
+    response_model=GetSsesrcResponse,
     responses={
         500: {"model": Message},
     },
 )
 @tracer.capture_method
-def get_src_src(
+def get_ssesrc(
     job_id: str,
-) -> GetSseSrcResponse | ErrorResponse:
+) -> GetSsesrcResponse | ErrorResponse:
     bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
@@ -299,28 +299,28 @@ def get_src_src(
             Bucket=bucket_name,
             Key=f"{job_id}/{file_name}",
         )
-        program = program["Body"].read().decode("utf-8")
+        program = program["Body"].read()
 
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
-        return GetSseSrcResponse(program_base64)
+        return GetSsesrcResponse(program_base64)
 
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
-@router.post(
-    "/jobs/{job_id}/sse-log",
-    response_model=UploadSseLogResponse,
+@router.patch(
+    "/jobs/{job_id}/sselog",
+    response_model=UploadSselogResponse,
     responses={
         500: {"model": Message},
     },
 )
 @tracer.capture_method
-def upload_sse_log(
+def upload_sselog(
     job_id: str,
     file: UploadFile = Form(...),
-) -> UploadSseLogResponse | ErrorResponse:
+) -> UploadSselogResponse | ErrorResponse:
     try:
         bucket_name = os.environ["SSE_BUCKET"]
         file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
@@ -332,7 +332,7 @@ def upload_sse_log(
             Key=f"{job_id}/{file_name}",
             Body=binary,
         )
-        return UploadSseLogResponse(message="SSE log uploaded")
+        return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 

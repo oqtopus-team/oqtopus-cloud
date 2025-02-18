@@ -560,12 +560,12 @@ jobs.UpdateJobInfoResponse:
   required:
     - message
 
-jobs.GetSseSrcResponse:
+jobs.GetSsesrcResponse:
   description: program source file for SSE
   type: string
   format: byte
 
-jobs.UploadSseLogRequest:
+jobs.UploadSselogRequest:
   type: object
   properties:
     file:
@@ -574,7 +574,7 @@ jobs.UploadSseLogRequest:
   required:
     - file
 
-jobs.UploadSseLogResponse:
+jobs.UploadSselogResponse:
   type: object
   properties:
     message:
