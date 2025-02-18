@@ -136,10 +136,14 @@ def test__verify_id_token_no_env_variable(test_session, monkeypatch):
     assert "Internal Server Error" in str(excinfo.value)
 
 
-def test__verify_id_token_():
-    actual = _verify_id_token("id_token")
-    expect = "fake_username"
-    assert actual == expect
+@pytest.mark.usefixtures("override_PyJWKClientFailure")
+def test__verify_id_token_jwt_signing_key_failure():
+    pytest.raises(Exception, _verify_id_token, "id_token")
+
+
+@pytest.mark.usefixtures("override_jwt_decode_failure")
+def test__verify_id_token_jwt_decode_failure():
+    pytest.raises(Exception, _verify_id_token, "id_token")
 
 
 def test__verify_api_token(test_session, monkeypatch):
@@ -182,6 +186,51 @@ def test__verify_api_token_api_no_token(test_session, monkeypatch):
     )
     with pytest.raises(Exception) as excinfo:
         _ = _verify_api_token(None)
+
+    assert "Internal Server Error" in str(excinfo.value)
+
+
+def test__verify_api_token_no_env_variable(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+    assert "Internal Server Error" in str(excinfo.value)
+
+
+@pytest.mark.usefixtures("override_boto3_client_zero_user")
+def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+    assert "Internal Server Error" in str(excinfo.value)
+
+
+@pytest.mark.usefixtures("override_boto3_client_multiple_users")
+def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(Exception) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
 
     assert "Internal Server Error" in str(excinfo.value)
 
@@ -261,6 +310,18 @@ def test_lambda_handler_api_token(monkeypatch):
     assert actual == event
 
 
+def test_lambda_handler_no_api_token(monkeypatch):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+        return "fake_username"
+
+    input = {"headers": {"q-api-token": None}, "methodArn": "methodArn"}
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_deny", fake__verify_api_token_deny
+    )
+    actual = lambda_handler(input, None)
+    assert actual == "fake_username"
+
+
 def test_lambda_handler_id_token(monkeypatch):
     input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
 
@@ -323,3 +384,15 @@ def test_lambda_handler_none_owner(monkeypatch):
     event = ans
 
     assert actual == event
+
+
+def test_lambda_handler_unexpected_header(monkeypatch):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+        return "fake_username"
+
+    input = {"headers": {"q-api-token-unexpected": None}, "methodArn": "methodArn"}
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_deny", fake__verify_api_token_deny
+    )
+    actual = lambda_handler(input, None)
+    assert actual == "fake_username"
