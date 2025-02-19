@@ -340,6 +340,9 @@ components:
           type: string
           format: date-time
           example: '2023-09-10T14:00:00'
+          nullable: true
+      required:
+        - status
     devices.DeviceDataUpdateResponse:
       type: object
       properties:
@@ -380,6 +383,7 @@ components:
         device_info:
           description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
+          nullable: true
           example: |-
             {
               "n_nodes": 512,
@@ -401,6 +405,9 @@ components:
           type: string
           format: date-time
           example: '2023-09-10T14:00:00'
+          nullable: true
+      required:
+        - device_info
     jobs.JobStatus:
       type: string
       enum:

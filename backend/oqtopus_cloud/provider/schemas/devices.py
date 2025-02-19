@@ -7,7 +7,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field
 
 
 class Status(str, Enum):
@@ -16,9 +16,6 @@ class Status(str, Enum):
 
 
 class DeviceStatusUpdate(BaseModel):
-    command: Annotated[
-        Literal["DeviceStatusUpdate"], Field(examples=["DeviceStatusUpdate"])
-    ]
     status: Status
     available_at: Annotated[
         AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])

@@ -109,7 +109,7 @@ def test_update_device_calibration(test_db):
     # Act
     request = DeviceCalibrationUpdate(
         device_info=json.dumps(_get_calibration_dict()),
-        calibrated_at=datetime.now(),
+        calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
     actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
     # Assert
