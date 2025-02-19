@@ -125,7 +125,7 @@ resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
   count = var.manage_cognito_user_pool ? 1 : 0
 
   role       = aws_iam_role.lambda.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser" # TODO: restrict this policy
 }
 
 resource "aws_iam_policy" "lambda_execution" {
@@ -216,7 +216,7 @@ resource "aws_kms_key" "api_gateway_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-3.amazonaws.com"
+          "Service" : "logs.ap-northeast-1.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"

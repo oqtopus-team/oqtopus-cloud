@@ -9,18 +9,30 @@ This module creates an API Gateway and Lambda function to serve as the backend f
 
 ```hcl
 module "user_api" {
-  source = "./modules/api-gateway"
-  product = "oqtopus"
-  org = "example"
-  env = "dev"
-  identifier = "api"
-  region = "us-west-2"
-  lambda_handler = "app.lambda_handler"
-  db_proxy_endpoint = "oqtopus.cluster-cjxjxjxjxjxj.us-west-2.rds.amazonaws.com"
-  db_secret_arn = "arn:aws:secretsmanager:us-west-2:123
-  lambda_security_group_ids = ["sg-123"]
-  lambda_subnet_ids = ["subnet-123"]
-  cognito_user_pool_arns = ["arn:aws:cognito-idp:us-west-2:123"]
+  source                                 = "./modules/api-gateway"
+  product                                = "oqtopus"
+  org                                    = "example"
+  env                                    = "dev"
+  identifier                             = "api"
+  region                                 = "us-west-2"
+  lambda_handler                         = "app.lambda_handler"
+  db_proxy_endpoint                      = "oqtopus.cluster-cjxjxjxjxjxj.us-west-2.rds.amazonaws.com"
+  db_secret_arn                          = "arn:aws:secretsmanager:us-west-2:123"
+  lambda_security_group_ids              = ["sg-123"]
+  lambda_subnet_ids                      = ["subnet-123"]
+  cognito_user_pool_arns                 = ["arn:aws:cognito-idp:us-west-2:123"]
+  authorizer_type                        = "LAMBDA"
+  client_cognito_user_pool_id            = "us-west-2_I3I6Fjpj5"
+  client_cognito_user_pool_web_client_id = "3s0jjlvfdbpkfrubqd616e2hj5"
+  manage_cognito_user_pool               = true
+  lambda_authorizer_arn                  = "arn:aws:lambda:us-west-2:123456789012:function:oqtopus-example-dev-user-api"
+  power_tools_metrics_namespace          = "user-api"
+  power_tools_service_name               = "user-api"
+  allow_origins                          = "*"
+  allow_credentials                      = "true"
+  allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
+  allow_headers                          = "Content-type,Accept,Authorization"
+  log_level                              = "INFO"
 }
 ```
 
@@ -42,11 +54,17 @@ module "user_api" {
 | Name | Type |
 |------|------|
 | [aws_api_gateway_account.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_account) | resource |
-| [aws_api_gateway_authorizer.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_authorizer) | resource |
+| [aws_api_gateway_authorizer.cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_authorizer) | resource |
+| [aws_api_gateway_authorizer.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_authorizer) | resource |
 | [aws_api_gateway_deployment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_deployment) | resource |
 | [aws_api_gateway_integration.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration_response.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration_response) | resource |
+| [aws_api_gateway_integration.options](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration_response.options](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration_response) | resource |
+| [aws_api_gateway_method.options](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
 | [aws_api_gateway_method.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
 | [aws_api_gateway_method_settings.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method_settings) | resource |
+| [aws_api_gateway_method_settings.options](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method_settings) | resource |
 | [aws_api_gateway_resource.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
 | [aws_api_gateway_rest_api.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_rest_api) | resource |
 | [aws_api_gateway_stage.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_stage) | resource |
@@ -60,9 +78,11 @@ module "user_api" {
 | [aws_iam_role_policy_attachment.lambda_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.vpc_access_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.cognito_poweruser_attach](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_kms_key.api_gateway_log](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
 | [aws_lambda_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_lambda_permission.api_lambda_permission](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
+| [aws_lambda_permission.apigw_lambda_auth_invoke](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.apigateway_putlog_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.lambda_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -93,7 +113,11 @@ module "user_api" {
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
 | <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
-| <a name="input_authorizer_type"></a> [authorizer_type](#input_authorizer_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `NONE` if no authorization is required. | `string` | `COGNITO` | no |
+| <a name="input_authorizer_type"></a> [authorizer\_type](#input\_authorizer\_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `NONE` if no authorization is required. | `string` | `COGNITO` | no |
+| <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | ARN of Cognito user pool ID for the users | `string` | n/a | no |
+| <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | ARN of Cognito user pool web client ID for the users | `string` | n/a | no |
+| <a name="input_manage_cognito_user_pool"></a> [manage\_cognito\_user\_pool](#input\_manage\_cognito\_user\_pool) | Set `true` if the server has to manage cognito user pool | `bool` | n/a | no |
+| <a name="input_lambda_authorizer_arn"></a> [lambda\_authorizer\_arn](#input\_lambda\_authorizer\_arn) | ARN of Lambda Authorizer | `string` | n/a | no |
 
 ## Outputs
 
