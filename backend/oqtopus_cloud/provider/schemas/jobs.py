@@ -7,7 +7,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 
 class JobStatus(str, Enum):
