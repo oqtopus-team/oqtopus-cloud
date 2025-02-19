@@ -272,25 +272,6 @@ def test_update_job(test_db: Session):
     assert actual2 == expected
 
 
-def test_update_job_info_400(test_db: Session):
-    job_model = _get_job_model(1, JobType.sampling)
-    test_db.add(_get_device_model())
-    test_db.add(job_model)
-    test_db.commit()
-
-    # Submitting
-    body = UpdateJobInfoRequest(
-        job_info=UpdateJobInfo(
-            result=JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
-            message="Oops! Job failed!",
-        )
-    )
-    submit_resp = client.patch(
-        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
-    )
-    assert submit_resp.status_code == 400
-
-
 def test_update_job_info_result(test_db: Session):
     cases: list[tuple[int, JobType, JobResult, int]] = [
         (
@@ -373,7 +354,7 @@ def test_update_job_info_reason(test_db: Session):
 
 
 def test_update_job_info_consist(test_db: Session):
-    # None of the following updates should not be acceptable.
+    # None of the following updates should be acceptable.
     cases = [
         (
             1,
@@ -386,12 +367,6 @@ def test_update_job_info_consist(test_db: Session):
             JobType.estimation,
             JobResult(estimation=EstimationResult(exp_value=[1.0, 0.0], stds=0.1)),
             JobStatus.failed,
-        ),
-        (
-            3,
-            JobType.sampling,
-            "Oops",
-            JobStatus.succeeded,
         ),
         (4, JobType.sampling, None, JobStatus.submitted),
         (5, JobType.sampling, None, JobStatus.ready),

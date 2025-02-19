@@ -25,3 +25,9 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.jobStatus
   /jobs/{job_id}/job_info:
     $ref: ./paths/jobs.yaml#/jobs.jobInfo
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

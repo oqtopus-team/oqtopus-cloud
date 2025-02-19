@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-all-schema run-user run-provider run-admin up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -18,6 +18,15 @@ generate-provider-schema: ## Generate provider schema
 	OUTPUT=oqtopus_cloud/provider/schemas
 	@$(MAKE) fmt-provider
 
+
+generate-admin-schema: ## Generate admin schema
+	@cd oas && $(MAKE) generate-admin
+	@$(MAKE) generate \
+	INPUT=./oas/admin/openapi.yaml \
+	OUTPUT=oqtopus_cloud/admin/schemas
+	@$(MAKE) fmt-admin
+
+
 generate:
 	@poetry run datamodel-codegen \
 	--use-schema-description \
@@ -29,6 +38,7 @@ generate:
 	--input-file-type openapi \
 	--collapse-root-models \
 	--enum-field-as-literal one \
+	--output-datetime-class AwareDatetime \
 	--use-union-operator \
 	--use-subclass-enum \
 	--custom-file-header-path "oqtopus_cloud/datamodel_codegen/datamodel-codegen-template.j2" \
@@ -37,12 +47,12 @@ generate:
 	--use-standard-collections \
 	--strict-nullable \
 	--use-default \
-	--output-datetime-class datetime \
 	--output ${OUTPUT}
 
-generate-all-schema: ## Generate user and provider schemas
+generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
+	@$(MAKE) generate-admin-schema
 
 export ENV=local
 export DB_HOST=localhost
@@ -63,6 +73,11 @@ run-provider: ## Start the Provider API
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
+run-admin: ## Start the Admin API
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
 up: ## Start the DB
 	@docker compose up
 
@@ -81,7 +96,10 @@ fmt-provider: ## Format provider code
 fmt-worker: ## Format worker code
 	@poetry run ruff format oqtopus_cloud/worker
 
-fmt-all: fmt-common fmt-user fmt-provider fmt-worker ## Format all code
+fmt-admin: ## Format admin code
+	@poetry run ruff format oqtopus_cloud/admin
+
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-worker ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -99,7 +117,11 @@ lint-worker: ## Run worker linters
 	@poetry run ruff check oqtopus_cloud/worker
 	@poetry run mypy -p oqtopus_cloud.worker
 
-lint-all: lint-common lint-user lint-provider lint-worker ## Run all linters
+lint-admin: ## Run admin linters
+	@poetry run ruff check oqtopus_cloud/admin
+	@poetry run mypy -p oqtopus_cloud.admin
+
+lint-all: lint-common lint-user lint-provider lint-admin lint-worker ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -124,6 +146,12 @@ test-worker: fmt-worker lint-worker ## Run worker tests
 	export POWERTOOLS_SERVICE_NAME=worker && \
 	poetry run pytest tests/oqtopus_cloud/worker/ -vv --cov=oqtopus_cloud/worker --cov-report=xml:coverage-worker.xml --cov-report=html:htmlcov-worker
 	@mv .coverage .coverage-worker
+
+test-admin: fmt-admin lint-admin ## Run admin tests
+	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
+	export POWERTOOLS_SERVICE_NAME=admin-api && \
+	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
+	@mv .coverage .coverage-admin
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
