@@ -268,7 +268,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             ),
         ]
     )
-    request_body_usrename_too_long = RegisterWhitelistUsersRequest(
+    request_body_username_too_long = RegisterWhitelistUsersRequest(
         users=[
             RegisterWhitelistUserRequest(
                 email="email_3",
@@ -318,11 +318,11 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
         json=request_body_group_id_too_long.model_dump(),
     )
     assert request_body_group_id_too_long.status_code == 400
-    request_body_usrename_too_long = client.post(
+    request_body_username_too_long = client.post(
         "/whitelist_users",
-        json=request_body_usrename_too_long.model_dump(),
+        json=request_body_username_too_long.model_dump(),
     )
-    assert request_body_usrename_too_long.status_code == 400
+    assert request_body_username_too_long.status_code == 400
     request_body_organization_too_long = client.post(
         "/whitelist_users",
         json=request_body_organization_too_long.model_dump(),
@@ -335,7 +335,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
     assert request_body_overlap_username.status_code == 400
 
 
-def test_post_whitelist_users_no_usrlist_in_request(test_db):
+def test_post_whitelist_users_no_userlist_in_request(test_db):
     """_summary_
     Simple POST /whitelist_users tests 400 error
     """
