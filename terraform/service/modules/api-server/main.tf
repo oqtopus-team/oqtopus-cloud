@@ -79,9 +79,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start {
-  #   apply_on = "PublishedVersions"
-  # }
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {

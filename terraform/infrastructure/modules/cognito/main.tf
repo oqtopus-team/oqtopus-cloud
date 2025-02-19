@@ -92,7 +92,7 @@ resource "aws_cognito_user_pool_client" "this" {
   enable_propagate_additional_user_context_data = "false"
   enable_token_revocation                       = "true"
   explicit_auth_flows = [
-    # 認証フローの指定
+    # Authentication flow specification
     "ADMIN_NO_SRP_AUTH"
   ]
   id_token_validity             = "60"

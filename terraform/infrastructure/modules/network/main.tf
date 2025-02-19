@@ -26,6 +26,11 @@
 *       name = "subnet-2"
 *     }
 *   }
+*   public_subnet = {
+*     name = "public-a"
+*     cidr = ""
+*     az   = "ap-northeast-1a"
+*   }
 * }
 * ```
 *
@@ -41,6 +46,12 @@ resource "aws_vpc" "this" {
   tags = {
     Name = "${var.product}-${var.org}-${var.env}"
   }
+}
+
+resource "aws_cloudwatch_log_group" "vpc_flow_log_group" {
+  name              = "/aws/vpc-flow-log/${var.product}-${var.org}-${var.env}"
+  retention_in_days = 14
+  kms_key_id        = aws_kms_key.vpc_flow_log.arn
 }
 
 resource "aws_flow_log" "this" {
@@ -76,11 +87,6 @@ resource "aws_kms_key" "vpc_flow_log" {
       }
     ]
   })
-}
-resource "aws_cloudwatch_log_group" "vpc_flow_log_group" {
-  name              = "/aws/vpc-flow-log/${var.product}-${var.org}-${var.env}"
-  retention_in_days = 14
-  kms_key_id        = aws_kms_key.vpc_flow_log.arn
 }
 
 data "aws_iam_policy_document" "vpc_flow_logs_assume_role_policy" {
@@ -143,8 +149,8 @@ resource "aws_subnet" "private" {
     Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
   }
 }
-## Public Subnets
-resource "aws_subnet" "public_subnet" {
+## Public Subnet
+resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = var.public_subnet.cidr
   availability_zone       = var.public_subnet.az
@@ -175,7 +181,7 @@ resource "aws_eip" "nat_eip" {
 resource "aws_nat_gateway" "nat_gw" {
   allocation_id = element(aws_eip.nat_eip.*.id, 0)
   # attach nat gateway on the first public subnet
-  subnet_id = aws_subnet.public_subnet.id
+  subnet_id = aws_subnet.public.id
 
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-nat-gw"
@@ -197,7 +203,7 @@ resource "aws_route" "public_default_route" {
   gateway_id             = aws_internet_gateway.this.id
 }
 resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public_subnet.id
+  subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
 
