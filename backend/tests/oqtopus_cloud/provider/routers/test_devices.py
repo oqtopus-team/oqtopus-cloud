@@ -1,8 +1,7 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict
 
-import pytz
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -41,7 +40,7 @@ def _get_model_sim():
         "id": "SC2",
         "device_type": "simulator",
         "status": "available",
-        "available_at": datetime(2023, 1, 2, 12, 34, 56).replace(tzinfo=timezone.utc),
+        "available_at": datetime(2023, 1, 2, 12, 34, 56),
         "pending_jobs": 8,
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',

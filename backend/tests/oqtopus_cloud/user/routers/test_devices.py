@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Dict
 
-import pytz
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
@@ -77,14 +76,14 @@ def test_get_device(test_db):
         device_id="SVSim",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -102,20 +101,20 @@ def test_model_to_shema():
         device_id="SVSim",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # calibrationData=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
 
 
-def test_get_device_handler(test_db):
+def test_get_device_hadler(test_db):
     # Arrange
     test_db.add(_get_model())
     test_db.commit()
@@ -128,14 +127,14 @@ def test_get_device_handler(test_db):
         "device_id": "SVSim",
         "device_type": "simulator",
         "status": "available",
-        "available_at": "2023-01-02T12:34:56Z",
+        "available_at": "2023-01-02T12:34:56",
         "n_pending_jobs": 8,
         "n_qubits": 39,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "supported_instructions": ["measure", "barrier", "reset"],
         # "calibrationData": _get_calibration_dict(),
         "device_info": "{}",
-        "calibrated_at": "2024-03-04T12:34:56Z",
+        "calibrated_at": "2024-03-04T12:34:56",
         "description": "State vector-based quantum circuit simulator",
     }
     assert actual.json() == expected

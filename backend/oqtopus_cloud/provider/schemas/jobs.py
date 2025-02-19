@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class JobStatus(str, Enum):
@@ -17,11 +18,6 @@ class JobStatus(str, Enum):
     succeeded = "succeeded"
     failed = "failed"
     cancelled = "cancelled"
-
-
-class JobType(str, Enum):
-    sampling = "sampling"
-    estimation = "estimation"
 
 
 class OperatorItem(BaseModel):
@@ -35,17 +31,6 @@ class OperatorItem(BaseModel):
     """
 
 
-class SamplingResult(BaseModel):
-    """
-    *(Only for sampling jobs)* JSON string representing the sampling result
-    """
-
-    counts: Annotated[
-        str,
-        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
-    ]
-
-
 class EstimationResult(BaseModel):
     """
     *(Only for estimation jobs)* The estimated expectation value and the standard deviation
@@ -53,37 +38,37 @@ class EstimationResult(BaseModel):
 
     """
 
-    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
+    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
     """
     This field must contain an array of numbers with a maximum length of 2, representing a complex number.
     The first element corresponds to the real part, and the second corresponds to the imaginary part.
 
     """
-    stds: float
+    stds: float | None = None
     """
     (Only for estimation jobs) The standard deviation value
     """
 
 
-class JobResult(BaseModel):
-    model_config = ConfigDict(
-        extra="allow",
-    )
-    sampling: SamplingResult | None = None
-    estimation: EstimationResult | None = None
-
-
 class TranspileResult(BaseModel):
-    transpiled_program: Annotated[
+    virtual_physical_mapping: str | None = None
+
+
+class JobResult(BaseModel):
+    counts: Annotated[
         str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ] = None
-    stats: Annotated[str | None, Field(...)] = None
-    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
+    estimation: EstimationResult | None = None
+    divided_result: dict[str, Any] | None = None
+    """
+    Assumed to be used for multiprogramming, but currently not supported yet.
+    """
+    properties: str | None = None
+    transpile_result: TranspileResult | None = None
 
 
 class JobInfo(BaseModel):
@@ -108,12 +93,76 @@ class JobInfo(BaseModel):
     value is to be estimated.
 
     """
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
     result: JobResult | None = None
-    transpile_result: TranspileResult | None = None
     message: str | None = None
     """
     Describing the reason why there is no result
     """
+
+
+class GetJobsResponse(BaseModel):
+    job_id: Annotated[
+        str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
+    ] = None
+    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
+    description: Annotated[
+        str | None, Field(examples=["Bell State Sampling Example"])
+    ] = None
+    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    job_info: JobInfo | None = None
+    transpiler_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "qubit_allocation": {\n    "0"": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+            ]
+        ),
+    ] = None
+    simulator_info: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+            ]
+        ),
+    ] = None
+    mitigation_info: Annotated[
+        str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
+    ] = None
+    status: JobStatus | None = None
+    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
+    submitted_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ready_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    running_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    ended_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    created_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+    updated_at: Annotated[
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+
+
+class JobType(str, Enum):
+    sampling = "sampling"
+    estimation = "estimation"
 
 
 class JobDef(BaseModel):
@@ -148,20 +197,20 @@ class JobDef(BaseModel):
     status: JobStatus
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
+    created_at: Annotated[datetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
     updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
@@ -174,7 +223,7 @@ class JobStatusUpdateResponse(BaseModel):
 
 
 class UpdateJobInfo(BaseModel):
-    transpile_result: TranspileResult | None = None
+    transpiled_program: str | None = None
     result: JobResult | None = None
     message: str | None = None
 

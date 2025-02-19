@@ -77,12 +77,3 @@ module "provider_cognito" {
   env        = var.env
   identifier = "provider"
 }
-
-module "admin_cognito" {
-  source = "../modules/cognito"
-
-  product    = var.product
-  org        = var.org
-  env        = var.env
-  identifier = "admin"
-}

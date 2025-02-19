@@ -116,25 +116,3 @@ class ConflictErrorResponse(ErrorResponse):
             status_code=409,
             content={"message": message},
         )
-
-
-class ForbiddenErrorResponse(ErrorResponse):
-    """
-    Represents an error response for a forbidden request.
-
-    Args:
-        detail (str): The detailed error message.
-
-    Attributes:
-        status_code (int): The HTTP status code of the error response.
-        content (dict): The content of the error response.
-    """
-
-    def __init__(
-        self,
-        message: str,
-    ):
-        super().__init__(
-            status_code=403,
-            content={"message": message},
-        )

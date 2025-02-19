@@ -27,7 +27,7 @@ class CustomMiddleware(BaseHTTPMiddleware):
             else:
                 owner = APIGatewayProxyEvent(
                     request.scope["aws.event"]
-                ).request_context.authorizer["owner"]
+                ).request_context.authorizer.claims["cognito:username"]
                 request.state.owner = owner
         except KeyError:
             logger.error("No AWS event found in request scope")

@@ -3,7 +3,6 @@ devices.DeviceDataUpdateResponse:
   properties:
     message:
       type: string
-      nullable: false
       default: Device's data updated
       example: Device's data updated
   required:

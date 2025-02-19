@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import BaseModel, Field
 
 
 class DeviceType(str, Enum):
@@ -25,7 +26,7 @@ class DeviceInfo(BaseModel):
     device_type: Annotated[DeviceType, Field(examples=["simulator"])]
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
@@ -78,7 +79,7 @@ class DeviceInfo(BaseModel):
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34"])
     ] = None
     """
     Parameter available only for `QPU` devices with available calibration data

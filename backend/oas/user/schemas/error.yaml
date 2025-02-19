@@ -19,13 +19,6 @@ error.NotFoundError:
       type: string
   required:
     - message
-error.ForbiddenError:
-  type: object
-  properties:
-    message:
-      type: string
-  required:
-    - message
 error.InternalServerError:
   type: object
   properties:

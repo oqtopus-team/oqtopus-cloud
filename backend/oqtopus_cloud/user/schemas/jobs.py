@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import BaseModel, Field, RootModel
 
 
 class JobType(str, Enum):
@@ -35,17 +36,6 @@ class OperatorItem(BaseModel):
     """
 
 
-class SamplingResult(BaseModel):
-    """
-    *(Only for sampling jobs)* JSON string representing the sampling result
-    """
-
-    counts: Annotated[
-        str | None,
-        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
-    ] = None
-
-
 class EstimationResult(BaseModel):
     """
     *(Only for estimation jobs)* The estimated expectation value and the standard deviation
@@ -65,25 +55,25 @@ class EstimationResult(BaseModel):
     """
 
 
-class JobResult(BaseModel):
-    model_config = ConfigDict(
-        extra="allow",
-    )
-    sampling: SamplingResult | None = None
-    estimation: EstimationResult | None = None
-
-
 class TranspileResult(BaseModel):
-    transpiled_program: Annotated[
+    virtual_physical_mapping: str | None = None
+
+
+class JobResult(BaseModel):
+    counts: Annotated[
         str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
+        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ] = None
-    stats: Annotated[str | None, Field(...)] = None
-    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
+    estimation: EstimationResult | None = None
+    divided_result: dict[str, Any] | None = None
+    """
+    Assumed to be used for multiprogramming, but currently not supported yet.
+    """
+    properties: str | None = None
+    transpile_result: TranspileResult | None = None
 
 
 class JobInfo(BaseModel):
@@ -108,8 +98,15 @@ class JobInfo(BaseModel):
     value is to be estimated.
 
     """
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
     result: JobResult | None = None
-    transpile_result: TranspileResult | None = None
     message: str | None = None
     """
     Describing the reason why there is no result
@@ -150,22 +147,22 @@ class GetJobsResponse(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
@@ -189,7 +186,7 @@ class SubmitJobInfo(BaseModel):
 
 
 class SubmitJobRequest(BaseModel):
-    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
@@ -215,10 +212,10 @@ class SubmitJobRequest(BaseModel):
     shots: Annotated[int, Field(examples=[1000])]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
     created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 
@@ -262,22 +259,22 @@ class JobDef(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        datetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
 

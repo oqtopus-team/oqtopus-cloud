@@ -21,7 +21,3 @@ class NotFoundError(BaseModel):
 
 class BadRequest(BaseModel):
     message: str
-
-
-class ForbiddenError(BaseModel):
-    message: str

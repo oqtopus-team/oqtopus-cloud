@@ -5,29 +5,35 @@ jobs:
     summary: Search jobs for a device
     description: Search jobs for a device
     operationId: getjobs
+    security: []
     parameters:
       - in: query
         name: device_id
         required: true
         description: "Device identifier"
+        schema: { type: string, example: "Kawasaki" }
+      - in: query
+        name: fields
+        description: |-
+          Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
+
+          If parameter is specified and requested job field is not defined for a job null is returned.
+
+          If parameter is omitted all available job properties are returned. Undefined job properties (null properties) are not included in the response.
+        required: false
         schema:
           type: string
-          nullable: false
-          example: "Kawasaki"
+          maxLength: 1024
+          example: "job_id,status,name"
       - in: query
         name: status
-        required: false
         description: "Additional search parameter:<br/> Search jobs with specified status only"
         schema:
           $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
       - in: query
         name: max_results
-        required: false
         description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
-        schema:
-          type: integer
-          nullable: false
-          example: 1
+        schema: { type: integer, example: 1 }
       - in: query
         name: timestamp
         description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
@@ -40,7 +46,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+                $ref: "../schemas/jobs.yaml#/jobs.GetJobsResponse"
       "400":
         description: Bad Request
         content:
@@ -63,6 +69,7 @@ jobs.jobId:
     summary: Get a job by ID
     description: Get a job by ID
     operationId: getJob
+    security: []
     tags:
       - jobs
     parameters:
@@ -70,7 +77,7 @@ jobs.jobId:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string, nullable: false }
+        schema: { type: string }
     responses:
       "200":
         description: "Return quantum job"
@@ -99,6 +106,7 @@ jobs.jobStatus:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
     operationId: patchJob
+    security: []
     tags:
       - jobs
     parameters:
@@ -106,7 +114,7 @@ jobs.jobStatus:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string, nullable: false }
+        schema: { type: string }
     requestBody:
       description: "New job status. "
       content:
@@ -145,6 +153,7 @@ jobs.jobInfo:
       Used by device to set results or error details in job_info、accompanied by appropriate status updating.
       Note that job info descriptor (sampling, estimation, etc) cannot be modified.
     operationId: patchJobInfo
+    security: []
     tags:
       - jobs
     parameters:
@@ -152,7 +161,7 @@ jobs.jobInfo:
         name: job_id
         required: true
         description: "Job identifier"
-        schema: { type: string, nullable: false }
+        schema: { type: string }
     requestBody:
       description: "Modifications applied to Job info"
       content:
