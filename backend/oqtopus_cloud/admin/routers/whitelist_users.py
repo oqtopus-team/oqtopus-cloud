@@ -120,7 +120,7 @@ def get_whitelist_users(
 
         return ListWhitelistUsersResponse(users=whitelist_users)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
