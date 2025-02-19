@@ -5,7 +5,8 @@ devices.deviceStatus:
       summary: "Update status of selected device"
       description: "Update status of selected device."
       operationId: patchDeviceStatus
-      security: []
+      security:
+        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
@@ -62,7 +63,8 @@ devices.deviceInfo:
       summary: "Update device_info(calibration data) of selected device"
       description: "Update device_info(calibration data) of selected device."
       operationId: patchDeviceInfo
-      security: []
+      security:
+        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
