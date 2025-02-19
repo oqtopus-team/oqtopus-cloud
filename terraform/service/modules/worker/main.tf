@@ -50,7 +50,7 @@ resource "aws_lambda_function" "this" {
     size = "512"
   }
   filename                       = "./bin/lambda.zip"
-  function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}"
+  function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-worker"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
   package_type                   = "Zip"
@@ -176,9 +176,6 @@ resource "aws_scheduler_schedule" "update_pending_jobs_lambda" {
   target {
     arn      = aws_lambda_function.this.arn
     role_arn = aws_iam_role.event_bridge.arn
-    input = jsonencode({
-      function = "update_pending_jobs"
-    })
   }
 }
 
