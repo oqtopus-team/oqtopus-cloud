@@ -17,9 +17,7 @@ def _get_model(n: int) -> User:
         "userstatus": 1,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
-        "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
-        "require_mfa_reset": False,
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -67,7 +65,7 @@ def test_mfa_reset_request_500():
     assert response.status_code == 500
 
 
-def test_mfa_reset_request_no_user_found(test_db):
+def test__request_no_user_found(test_db):
     client = TestClient(app)
     test_db.flush()
     test_db.add(_get_model(2))
