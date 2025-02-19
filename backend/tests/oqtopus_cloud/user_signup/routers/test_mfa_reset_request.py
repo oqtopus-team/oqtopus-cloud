@@ -12,7 +12,7 @@ def _get_model(n: int) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
-        "email": f"email{n}@gmail.com",
+        "email": f"email{n}@example.com",
         "username": f"username_{n}",
         "userstatus": 1,
         "api_token_secret": f"api_token_secret_{n}",
@@ -33,7 +33,7 @@ def test_mfa_reset_request_success(test_db):
     test_db.add(_get_model(1))
     test_db.commit()
     body = MfaResetRequest(
-        email="email1@gmail.com",
+        email="email1@example.com",
         password="confirmation_code_1",
         client_id="client_id_1",
     )
@@ -48,7 +48,7 @@ def test_mfa_reset_request_cognito_error(test_db, fake_cognito_client_fixture):
     test_db.add(_get_model(1))
     test_db.commit()
     body = MfaResetRequest(
-        email="email1@gmail.com",
+        email="email1@example.com",
         password="confirmation_code_1",
         client_id="client_id_1",
     )
@@ -59,7 +59,7 @@ def test_mfa_reset_request_cognito_error(test_db, fake_cognito_client_fixture):
 def test_mfa_reset_request_500():
     client = TestClient(app)
     body = MfaResetRequest(
-        email="email1@gmail.com",
+        email="email1@example.com",
         password="confirmation_code_1",
         client_id="client_id_1",
     )
@@ -73,7 +73,7 @@ def test_mfa_reset_request_no_user_found(test_db):
     test_db.add(_get_model(2))
     test_db.commit()
     body = MfaResetRequest(
-        email="email1@gmail.com",
+        email="email1@example.com",
         password="confirmation_code_1",
         client_id="client_id_1",
     )

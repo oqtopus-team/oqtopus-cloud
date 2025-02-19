@@ -88,7 +88,7 @@ def _get_model(n: int, expiration_day=90) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
-        "email": f"email{n}@gmail.com",
+        "email": f"email{n}@example.com",
         "username": f"username_{n}",
         "userstatus": UserStatus.approved,
         "api_token_secret": f"api_token_secret_{n}",
