@@ -513,6 +513,7 @@ components:
       enum:
         - sampling
         - estimation
+        - sse
     jobs.OperatorItem:
       type: object
       properties:

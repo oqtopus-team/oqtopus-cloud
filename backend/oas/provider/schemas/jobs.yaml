@@ -177,6 +177,7 @@ jobs.JobType:
   enum:
     - sampling
     - estimation
+    - sse
 
 jobs.JobDef:
   type: object
