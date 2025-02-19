@@ -4,7 +4,9 @@ from datetime import datetime
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.routers.jobs import get_jobs
-from oqtopus_cloud.worker.lambda_function import update_pending_jobs
+from oqtopus_cloud.worker.pending_jobs_updater.lambda_function import (
+    update_pending_jobs,
+)
 from sqlalchemy import select
 
 
