@@ -78,6 +78,7 @@ module "admin_api" {
   allow_headers                 = "*"
   log_level                     = "INFO"
 }
+  
 module "pending_jobs_updater" {
   source = "../modules/worker"
 

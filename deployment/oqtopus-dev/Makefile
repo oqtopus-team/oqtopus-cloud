@@ -81,7 +81,6 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
 	BIN=./bin/pending-jobs-updater
 
-
 deploy-all: deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
 deploy:
