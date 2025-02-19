@@ -79,9 +79,10 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
+  # snap_start is not supported in python3.12
+  # snap_start {
+  #   apply_on = "PublishedVersions"
+  # }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -189,8 +190,10 @@ resource "aws_api_gateway_rest_api" "this" {
 
 
 resource "aws_api_gateway_deployment" "this" {
-  rest_api_id       = aws_api_gateway_rest_api.this.id
-  stage_description = md5(file("../modules/api-server/main.tf"))
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  triggers = {
+    code_hash = md5(file("../modules/api-server/main.tf"))
+  }
   lifecycle {
     create_before_destroy = true
   }
