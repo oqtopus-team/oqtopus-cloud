@@ -18,16 +18,10 @@ devices.DeviceStatusUpdate:
         - available
         - unavailable
       nullable: false
-    available_at:
-      description: Parameter mandatory and valid for status `unavailable`
-      type: string
-      format: date-time
-      example: 2023-09-10T14:00:00
-      nullable: true
   required:
     - status
 
-devices.DeviceCalibrationUpdate:
+devices.DeviceInfoUpdate:
   type: object
   properties:
     device_info:

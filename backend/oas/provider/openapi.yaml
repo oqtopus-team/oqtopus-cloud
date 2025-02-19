@@ -94,7 +94,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/devices.DeviceCalibrationUpdate'
+              $ref: '#/components/schemas/devices.DeviceInfoUpdate'
       responses:
         '200':
           description: Device's data updated
@@ -337,12 +337,6 @@ components:
             - available
             - unavailable
           nullable: false
-        available_at:
-          description: Parameter mandatory and valid for status `unavailable`
-          type: string
-          format: date-time
-          example: '2023-09-10T14:00:00'
-          nullable: true
       required:
         - status
     devices.DeviceDataUpdateResponse:
@@ -379,7 +373,7 @@ components:
           nullable: false
       required:
         - message
-    devices.DeviceCalibrationUpdate:
+    devices.DeviceInfoUpdate:
       type: object
       properties:
         device_info:

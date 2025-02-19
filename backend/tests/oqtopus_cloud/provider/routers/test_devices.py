@@ -11,8 +11,8 @@ from oqtopus_cloud.provider.routers.devices import (
     update_device_status,
 )
 from oqtopus_cloud.provider.schemas.devices import (
-    DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,
+    DeviceInfoUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
@@ -91,10 +91,7 @@ def test_update_device_status_not_available(test_db):
     test_db.commit()
     device = test_db.get(Device, "SC2")
     # Act
-    request = DeviceStatusUpdate(
-        status=DeviceStatus.unavailable,
-        available_at=datetime.now(tz=timezone.utc),
-    )
+    request = DeviceStatusUpdate(status=DeviceStatus.unavailable)
     actual = update_device_status(device_id=device.id, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
@@ -107,7 +104,7 @@ def test_update_device_calibration(test_db):
     test_db.commit()
     device = test_db.get(Device, "SC")
     # Act
-    request = DeviceCalibrationUpdate(
+    request = DeviceInfoUpdate(
         device_info=json.dumps(_get_calibration_dict()),
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )

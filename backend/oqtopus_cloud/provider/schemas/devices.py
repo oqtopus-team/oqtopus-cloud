@@ -17,12 +17,6 @@ class Status(str, Enum):
 
 class DeviceStatusUpdate(BaseModel):
     status: Status
-    available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
-    ] = None
-    """
-    Parameter mandatory and valid for status `unavailable`
-    """
 
 
 class DeviceDataUpdateResponse(BaseModel):
@@ -31,7 +25,7 @@ class DeviceDataUpdateResponse(BaseModel):
     )
 
 
-class DeviceCalibrationUpdate(BaseModel):
+class DeviceInfoUpdate(BaseModel):
     device_info: Annotated[
         str | None,
         Field(

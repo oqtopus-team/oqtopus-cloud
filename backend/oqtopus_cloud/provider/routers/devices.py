@@ -10,8 +10,8 @@ from oqtopus_cloud.common.session import (
 )
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.devices import (
-    DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,
+    DeviceInfoUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.errors import (
@@ -71,21 +71,7 @@ def update_device_status(
         if device is None:
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         status = request.status
-        available_at = request.available_at
-        if status == DeviceStatus.UNAVAILABLE.value:
-            if not available_at:
-                return BadRequestResponse(
-                    "available_at is required for status unavailable"
-                )
-            device.status = status  # type: ignore
-            device.available_at = available_at
-        else:
-            if available_at:
-                return BadRequestResponse(
-                    "available_at is not required for status available"
-                )
-            device.status = status  # type: ignore
-            device.available_at = None  # type: ignore
+        device.status = status  # type: ignore
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
     except Exception as e:
@@ -104,7 +90,7 @@ def update_device_status(
 @tracer.capture_method
 def update_device_calibration(
     device_id: str,
-    request: DeviceCalibrationUpdate,
+    request: DeviceInfoUpdate,
     db: Session = Depends(get_db),
 ) -> DeviceDataUpdateResponse | ErrorResponse:
     """
@@ -112,7 +98,7 @@ def update_device_calibration(
 
     Args:
         device (Device): The device to update.
-        request (DeviceCalibrationUpdate): The request object containing the calibration data and calibrated timestamp.
+        request (DeviceInfoUpdate): The request object containing the calibration data and calibrated timestamp.
         db (Session): The database session.
 
     Returns:

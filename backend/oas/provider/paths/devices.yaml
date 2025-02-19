@@ -78,7 +78,7 @@ devices.deviceInfo:
         content:
           application/json:
             schema:
-              $ref: "../schemas/devices.yaml#/devices.DeviceCalibrationUpdate"
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoUpdate"
       responses:
         '200':
           description: Device's data updated
