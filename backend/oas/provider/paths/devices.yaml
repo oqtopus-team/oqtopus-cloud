@@ -13,6 +13,7 @@ devices.deviceStatus:
           required: true
           schema:
             type: string
+            nullable: false
             example: "Kawasaki"
       requestBody:
         description: "New device status. "

@@ -2,11 +2,10 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help zip-user zip-provider zip-all zip deploy-user deploy-provider deploy-all deploy test-user test-provider test-all test all-user all-provider all
+.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-all zip deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
-include .env
+-include .env
 export
-
 
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
@@ -23,6 +22,27 @@ zip-provider: ## Build provider API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/provider
 
+zip-admin: ## Build admin API Lambda Package
+	@$(MAKE) zip WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/admin \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/admin
+
+zip-lambda_auth: ## Build lambda_auth API Lambda Package
+	@$(MAKE) zip WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/lambda_auth \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/lambda_auth
+
+zip-user_signup: ## Build user_signup API Lambda Package
+	@$(MAKE) zip WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/user_signup \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/user_signup
+
 zip-worker: ## Build worker Lambda Package
 	@$(MAKE) zip \
 	WORKSPACE=../../backend \
@@ -31,7 +51,7 @@ zip-worker: ## Build worker Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/worker
 
-zip-all: zip-user zip-provider zip-worker ## Build All Lambda Packages
+zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-worker ## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -64,13 +84,29 @@ deploy-provider: zip-provider	## Deploy Provider API Lambda Package
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
 	BIN=./bin/provider
 
+deploy-admin: zip-admin	## Deploy Admin API Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
+	BIN=./bin/admin
+
 deploy-worker: zip-worker	## Deploy worker Lambda Package
 	@$(MAKE) deploy \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-worker \
 	BIN=./bin/worker
 
-deploy-all: deploy-user deploy-provider deploy-worker ## Deploy All Lambda Packages
+deploy-all: deploy-user deploy-provider deploy-admin deploy-worker ## Deploy All Lambda Packages
 
+deploy-lambda_auth: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
+	BIN=./bin/lambda_auth
+
+deploy-user_signup: zip-user_signup	## Deploy user_signup API Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
+	BIN=./bin/user_signup
+
+deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup ## Deploy All Lambda Packages
 
 deploy:
 	@echo "Deploy ${FUNCTION_NAME} ..."
@@ -80,6 +116,41 @@ deploy:
 	--zip-file fileb://${BIN}/lambda.zip \
 	--profile $(PROFILE)
 	@echo "Deploy Completed"
+
+
+deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
+	BIN=./bin/user
+
+deploy-provider-via-actions: zip-provider	## Deploy Provider API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
+	BIN=./bin/provider
+
+deploy-admin-via-actions: zip-admin	## Deploy Admin API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
+	BIN=./bin/admin
+
+deploy-lambda_auth-via-actions: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
+	BIN=./bin/lambda_auth
+
+deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda Package
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
+	BIN=./bin/user_signup
+
+deploy-via-actions: ## Deploy Lambda Package via Github Actions
+	@echo "Deploy ${FUNCTION_NAME} ..."
+	@export AWS_PAGER="" && \
+	aws lambda update-function-code \
+	--function-name ${FUNCTION_NAME} \
+	--zip-file fileb://${BIN}/lambda.zip
+	@echo "Deploy Completed"
+
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
@@ -127,7 +198,34 @@ test-provider: ## Test Provider API API(connect to the dev environment)
 	API_URL=$(PROVIDER_API_URL) \
 	APP=provider
 
-test-all: test-user test-provider ## Test All APIs(connect to the dev environment)
+test-admin: ## Test Admin API(connect to the dev environment)
+	@$(MAKE) test \
+	COGNITO_USER_POOL_ID=$(USER_COGNITO_USER_POOL_ID) \
+	COGNITO_CLIENT_ID=$(USER_COGNITO_CLIENT_ID) \
+	COGNITO_USER_NAME=$(USER_COGNITO_USER_NAME) \
+	COGNITO_USER_PASSWORD=$(USER_COGNITO_USER_PASSWORD) \
+	API_URL=$(USER_API_URL) \
+	APP=admin
+
+test-user_signup: ## Test user_signup API(connect to the dev environment)
+	@$(MAKE) test \
+	COGNITO_USER_POOL_ID=$(USER_COGNITO_USER_POOL_ID) \
+	COGNITO_CLIENT_ID=$(USER_COGNITO_CLIENT_ID) \
+	COGNITO_USER_NAME=$(USER_COGNITO_USER_NAME) \
+	COGNITO_USER_PASSWORD=$(USER_COGNITO_USER_PASSWORD) \
+	API_URL=$(USER_API_URL) \
+	APP=user_signup
+
+test-lambda_auth: ## Test lambda_auth API(connect to the dev environment)
+	@$(MAKE) test \
+	COGNITO_USER_POOL_ID=$(USER_COGNITO_USER_POOL_ID) \
+	COGNITO_CLIENT_ID=$(USER_COGNITO_CLIENT_ID) \
+	COGNITO_USER_NAME=$(USER_COGNITO_USER_NAME) \
+	COGNITO_USER_PASSWORD=$(USER_COGNITO_USER_PASSWORD) \
+	API_URL=$(USER_API_URL) \
+	APP=lambda_auth
+
+test-all: test-user test-provider test-admin test-lambda_auth test-user_signup ## Test All APIs(connect to the dev environment)
 
 test:
 	@cd ../../ && \
@@ -172,7 +270,19 @@ all-provider:	## Deploy Provider API Lambda Package and Test
 	@$(MAKE) deploy-provider
 	@$(MAKE) test-provider
 
-all:all-user all-provider ## Deploy All Lambda Packages and Test
+all-admin:	## Deploy Admin API Lambda Package and Test
+	@$(MAKE) deploy-admin
+	@$(MAKE) test-admin
+
+all-lambda_auth:	## Deploy lambda_auth API Lambda Package and Test
+	@$(MAKE) deploy-lambda_auth
+	@$(MAKE) test-lambda_auth
+
+all-user_signup:	## Deploy user_signup API Lambda Package and Test
+	@$(MAKE) deploy-user_signup
+	@$(MAKE) test-user_signup
+
+all:all-user all-provider all-admin all-lambda_auth all-user_signup ## Deploy All Lambda Packages and Test
 
 help: ## Show this help message
 	@echo "Usage: make [target]"

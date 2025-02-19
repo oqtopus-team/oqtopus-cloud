@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class Status(str, Enum):
@@ -17,9 +16,12 @@ class Status(str, Enum):
 
 
 class DeviceStatusUpdate(BaseModel):
-    status: Status | None = None
+    command: Annotated[
+        Literal["DeviceStatusUpdate"], Field(examples=["DeviceStatusUpdate"])
+    ]
+    status: Status
     available_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00"])
+        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None
     """
     Parameter mandatory and valid for status `unavailable`
@@ -45,7 +47,7 @@ class DeviceCalibrationUpdate(BaseModel):
     Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
     """
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00"])
+        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None
     """
     Parameter mandatory and valid if calibrationData not null

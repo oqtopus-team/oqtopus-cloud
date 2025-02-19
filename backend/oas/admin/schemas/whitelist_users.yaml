@@ -1,0 +1,69 @@
+whitelist_users.Email:
+  type: string
+  example: example@example.com
+
+whitelist_users.RegisterWhitelistUserRequest:
+  description: "Whitelist user register request"
+  type: object
+  properties:
+    group_id:
+      type: string
+    email:
+      type: string
+    username:
+      type: string
+    organization:
+      type: string
+
+whitelist_users.ListWhitelistUserResponse:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 1
+    group_id:
+      type: string
+      example: group1
+    email:
+      $ref: "#/whitelist_users.Email"
+    username:
+      type: string
+      example: exampleuser
+    organization:
+      type: string
+      example: Example Organization
+    is_signup_completed:
+      type: boolean
+      example: true
+  required:
+    - id
+    - group_id
+    - email
+  example:
+    id: 1
+    group_id: group1
+    email: example@example.com
+    username: exampleuser
+    organization: Example Organization
+    is_signup_completed: true
+
+whitelist_users.ListWhitelistUsersResponse:
+  properties:
+    users:
+      type: array
+      items:
+        $ref: "#/whitelist_users.ListWhitelistUserResponse"
+
+whitelist_users.RegisterWhitelistUsersRequest:
+  properties:
+    users:
+      type: array
+      items:
+        $ref: "#/whitelist_users.RegisterWhitelistUserRequest"
+
+whitelist_users.WhitelistUsersDeleteRequest:
+  properties:
+    user_emails:
+      type: array
+      items:
+        $ref: "#/whitelist_users.Email"

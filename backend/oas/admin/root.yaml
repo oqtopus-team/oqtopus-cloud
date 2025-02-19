@@ -1,0 +1,26 @@
+openapi: 3.0.1
+info:
+  title: OQTOPUS Cloud Admin API
+  version: '1.0'
+  contact:
+    name: oqtopus-team
+    email: oqtopus-team[at]googlegroups.com
+  description: OQTOPUS Cloud Admin API. This API is used to interact with the OQTOPUS Cloud service. The API provides endpoints to manage devices, jobs, and results.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Local server url
+paths:
+  /users:
+    $ref: ./paths/users.yaml#/users
+  /users/{user_id}:
+    $ref: ./paths/users.yaml#/users.user_id
+  /whitelist:
+    $ref: ./paths/whitelist_users.yaml#/whitelist_users
+
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: ./schemas/security.yaml#/BearerAuth
