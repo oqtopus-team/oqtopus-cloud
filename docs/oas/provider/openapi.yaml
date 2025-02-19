@@ -22,7 +22,8 @@ paths:
       summary: Update status of selected device
       description: Update status of selected device.
       operationId: patchDeviceStatus
-      security: []
+      security:
+        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
@@ -78,7 +79,8 @@ paths:
       summary: Update device_info(calibration data) of selected device
       description: Update device_info(calibration data) of selected device.
       operationId: patchDeviceInfo
-      security: []
+      security:
+        - ApiKeyAuth: []
       parameters:
         - in: path
           name: device_id
@@ -92,7 +94,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/devices.DeviceCalibrationUpdate'
+              $ref: '#/components/schemas/devices.DeviceInfoUpdate'
       responses:
         '200':
           description: Device's data updated
@@ -335,11 +337,8 @@ components:
             - available
             - unavailable
           nullable: false
-        available_at:
-          description: Parameter mandatory and valid for status `unavailable`
-          type: string
-          format: date-time
-          example: '2023-09-10T14:00:00'
+      required:
+        - status
     devices.DeviceDataUpdateResponse:
       type: object
       properties:
@@ -374,12 +373,13 @@ components:
           nullable: false
       required:
         - message
-    devices.DeviceCalibrationUpdate:
+    devices.DeviceInfoUpdate:
       type: object
       properties:
         device_info:
           description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
           type: string
+          nullable: true
           example: |-
             {
               "n_nodes": 512,
@@ -401,6 +401,9 @@ components:
           type: string
           format: date-time
           example: '2023-09-10T14:00:00'
+          nullable: true
+      required:
+        - device_info
     jobs.JobStatus:
       type: string
       enum:
