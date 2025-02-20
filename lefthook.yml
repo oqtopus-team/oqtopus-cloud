@@ -2,6 +2,6 @@ pre-commit:
   commands:
     credential-scan:
       run: |
-      exit 0
+        exit 0
       #   bash scripts/credential-scan.sh
       #   exit $?
