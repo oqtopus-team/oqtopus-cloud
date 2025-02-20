@@ -1,9 +1,9 @@
 <!-- BEGIN_TF_DOCS -->
-# API Server Module
+# Deployment Roles Module
 
 ## Description
 
-This module creates an IAM Role and OIDC provider for auto deployment 
+This module creates an IAM Role and OIDC provider for auto deployment
 
 ## Usage
 
@@ -35,41 +35,32 @@ module "deployment_roles" {
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.57.0 |
+| <a name="provider_http"></a> [http](#provider\_http) | n/a |
+| <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Resources
 
 | Name | Type |
 |------|------|
-|  |  |
+| [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
+| [aws_iam_policy.github_actions_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_role.github_actions_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.github_actions_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [http_http.github_actions_openid_configuration](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
+| [tls_certificate.github_actions](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/data-sources/certificate) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_allow_credentials"></a> [allow\_credentials](#input\_allow\_credentials) | The allowed credentials for the API Gateway | `string` | n/a | yes |
-| <a name="input_allow_headers"></a> [allow\_headers](#input\_allow\_headers) | The allowed headers for the API Gateway | `string` | n/a | yes |
-| <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | n/a | yes |
-| <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | n/a | yes |
-| <a name="input_cognito_user_pool_arns"></a> [cognito\_user\_pool\_arns](#input\_cognito\_user\_pool\_arns) | The ARNs of the Cognito user pools | `list(string)` | n/a | yes |
-| <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
-| <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
+| <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | AWS account ID | `string` | n/a | yes |
+| <a name="input_branch"></a> [branch](#input\_branch) | GitHub branch | `string` | n/a | yes |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |
-| <a name="input_lambda_handler"></a> [lambda\_handler](#input\_lambda\_handler) | The handler for the Lambda function | `string` | n/a | yes |
-| <a name="input_lambda_security_group_ids"></a> [lambda\_security\_group\_ids](#input\_lambda\_security\_group\_ids) | The security group IDs for the Lambda function | `list(string)` | n/a | yes |
-| <a name="input_lambda_subnet_ids"></a> [lambda\_subnet\_ids](#input\_lambda\_subnet\_ids) | The subnet IDs for the Lambda function | `list(string)` | n/a | yes |
-| <a name="input_log_level"></a> [log\_level](#input\_log\_level) | The log level for the Lambda function | `string` | n/a | yes |
+| <a name="input_github_user"></a> [github\_user](#input\_github\_user) | GitHub user name | `string` | n/a | yes |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
-| <a name="input_power_tools_metrics_namespace"></a> [power\_tools\_metrics\_namespace](#input\_power\_tools\_metrics\_namespace) | The namespace for the PowerTools metrics | `string` | n/a | yes |
-| <a name="input_power_tools_service_name"></a> [power\_tools\_service\_name](#input\_power\_tools\_service\_name) | The service name for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
-| <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
-| <a name="input_use_cognito_authorizer"></a> [use\_cognito\_authorizer](#input\_use\_cognito\_authorizer) | Set `true` if API is authorized with cognito userpool. | `bool` | `true` | no |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | The ARN of the IAM role |
+| <a name="input_profile"></a> [profile](#input\_profile) | AWS profile | `string` | n/a | yes |
+| <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | n/a | yes |
+| <a name="input_repository"></a> [repository](#input\_repository) | GitHub repository name | `string` | n/a | yes |
 <!-- END_TF_DOCS -->
