@@ -157,12 +157,6 @@ class GetJobsResponse(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class SubmitJobInfo(BaseModel):
@@ -260,12 +254,6 @@ class JobDef(BaseModel):
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
