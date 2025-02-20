@@ -282,6 +282,7 @@ def update_job_info(
 
 @router.get(
     "/jobs/{job_id}/ssesrc",
+    response_model=None,
     response_class=PlainTextResponse,
     responses={
         500: {"model": Message},
