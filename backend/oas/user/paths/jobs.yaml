@@ -6,7 +6,7 @@ jobs:
     description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
     operationId: listJobs
@@ -26,19 +26,19 @@ jobs:
           type: string
           maxLength: 1024
           example: "job_id,status,name"
-      - name: startTime
+      - name: start_time
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
         required: false
         schema:
           type: string
           format: date-time
           example: "2022-10-19T11:45:34+09:00"
-      - name: endTime
+      - name: end_tiime
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
         required: false
         schema:
           type: string

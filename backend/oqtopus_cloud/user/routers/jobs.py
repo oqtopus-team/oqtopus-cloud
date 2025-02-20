@@ -63,8 +63,8 @@ class BadRequest(Exception):
 def get_jobs(
     event: Event,
     fields: Optional[str] = None,
-    startTime: Optional[str] = None,
-    endTime: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
     q: Optional[str] = None,
     order: Optional[str] = None,
     size: Optional[str] = None,
@@ -115,11 +115,11 @@ def get_jobs(
             stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
 
         # Filtering Jobs
-        if startTime is not None:
-            stime = datetime.fromisoformat(startTime).astimezone(jst)
+        if start_time is not None:
+            stime = datetime.fromisoformat(start_time).astimezone(jst)
             stmt = stmt.filter(Job.created_at >= stime)
-        if endTime is not None:
-            etime = datetime.fromisoformat(endTime).astimezone(jst)
+        if end_time is not None:
+            etime = datetime.fromisoformat(end_time).astimezone(jst)
             stmt = stmt.filter(Job.created_at <= etime)
         if q is not None:
             stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
