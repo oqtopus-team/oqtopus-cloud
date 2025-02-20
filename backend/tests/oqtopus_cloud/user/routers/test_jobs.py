@@ -488,7 +488,6 @@ def test_job_sortedness(test_db):
         return SubmitJobRequest(
             name=f"test-job-{n}",
             device_id="Kawasaki",
-            status=JobStatus.submitted,
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["code"]),
             simulator_info="{}",
@@ -618,7 +617,6 @@ def test_submit_get(
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -666,7 +664,6 @@ def test_submit_cancel_delete(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.running,
     )
 
     # Submitting
@@ -720,7 +717,6 @@ def test_submit_job_compat_error(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting

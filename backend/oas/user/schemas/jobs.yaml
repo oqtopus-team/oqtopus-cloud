@@ -348,17 +348,6 @@ jobs.SubmitJobRequest:
       minimum: 1
       maximum: 1e7
       example: 1000
-    status:
-      $ref: "#/jobs.JobStatus"
-      example: submitted
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
   required:
     - name
     - device_id
