@@ -136,6 +136,32 @@ def test_get_jobs_simple(
     assert actual == expect
 
 
+def test_get_jobs_ignore_illegal_job(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    # job3 has invalid job_info
+    job_3 = _get_model(3)
+    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(job_3)
+    test_db.commit()
+
+    response = client.get("/jobs")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert len(actual) == 2
+    assert actual[0].job_id == "testjob1id"
+    assert actual[1].job_id == "testjob2id"
+
+
 def test_get_jobs_filtering_fields(
     test_db,
 ):
