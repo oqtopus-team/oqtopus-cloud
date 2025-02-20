@@ -608,7 +608,7 @@ def test_submit_get(
     assert resp_job.job_info.result is None
 
 
-def test_submit_delete(test_db):
+def test_submit_cancel_delete(test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -648,6 +648,11 @@ def test_submit_delete(test_db):
     # Deleting the job of reteurned job_id (Before deleting, canceling is required)
     cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
     assert cancel_resp.status_code == 200
+
+    # After cancelling, the same cancel request returs 200
+    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    assert cancel_resp.status_code == 200
+
     delete_resp = client.delete(f"/jobs/{resp_job_id}")
     assert delete_resp.status_code == 200
 
