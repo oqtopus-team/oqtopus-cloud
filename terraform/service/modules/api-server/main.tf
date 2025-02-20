@@ -26,6 +26,27 @@
 *
 */
 
+locals {
+  # Depending on the authorizer_type, we choose the appropriate authorization method:
+  # - "NONE" => no authorizer
+  # - "COGNITO" => Cognito User Pools
+  # - otherwise => custom authorizer
+  authorizations = {
+    NONE    = "NONE"
+    COGNITO = "COGNITO_USER_POOLS"
+    LAMBDA  = "CUSTOM"
+  }
+  # Depending on the authorizer_type, we set the corresponding authorizer_id:
+  # - "COGNITO" => refer to Cognito authorizer
+  # - "LAMBDA"  => refer to Lambda authorizer
+  # - otherwise => null
+  authorizer_ids = {
+    NONE    = null
+    COGNITO = try(aws_api_gateway_authorizer.cognito[0].id, null)
+    LAMBDA  = try(aws_api_gateway_authorizer.lambda[0].id, null)
+  }
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_lambda_function" "this" {
@@ -296,12 +317,11 @@ resource "aws_api_gateway_resource" "this" {
 
 
 resource "aws_api_gateway_method" "this" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.this.id
-  http_method   = "ANY"
-  authorization = var.authorizer_type == "NONE" ? "NONE" : (var.authorizer_type == "COGNITO" ? "COGNITO_USER_POOLS" : "CUSTOM")
-  # authorization    = var.authorizer_type == "NONE" ? "NONE" : "CUSTOM"
-  authorizer_id    = var.authorizer_type == "COGNITO" ? aws_api_gateway_authorizer.cognito[0].id : (var.authorizer_type == "LAMBDA" ? aws_api_gateway_authorizer.lambda[0].id : null)
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.this.id
+  http_method      = "ANY"
+  authorization    = lookup(local.authorizations, var.authorizer_type, "CUSTOM")
+  authorizer_id    = lookup(local.authorizer_ids, var.authorizer_type, null)
   api_key_required = var.require_api_key
 
   request_parameters = {
