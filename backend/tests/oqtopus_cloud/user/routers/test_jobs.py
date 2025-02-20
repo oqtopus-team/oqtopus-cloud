@@ -192,7 +192,7 @@ def test_get_jobs_invalid_fields(
     assert actual == expect
 
 
-def test_get_jobs_filtering_startTime(
+def test_get_jobs_filtering_start_time(
     test_db,
 ):
     """_summary_
@@ -204,7 +204,9 @@ def test_get_jobs_filtering_startTime(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?startTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    response = client.get(
+        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+    )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -236,11 +238,11 @@ def test_get_jobs_filtering_startTime(
     assert actual == expect
 
 
-def test_get_jobs_filtering_endTime(
+def test_get_jobs_filtering_end_time(
     test_db,
 ):
     """_summary_
-    filterling endtime, expect only testjob1 will be got
+    filterling end_time, expect only testjob1 will be got
     """
 
     test_db.flush()
@@ -248,7 +250,7 @@ def test_get_jobs_filtering_endTime(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?endTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -425,7 +427,7 @@ def test_get_jobs_all_parameters(
     test_db,
 ):
     """_summary_
-    filtering starttime, endtime, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
+    filtering start_time, end_time, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
     """
 
     test_db.flush()
@@ -434,7 +436,7 @@ def test_get_jobs_all_parameters(
     test_db.commit()
 
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&startTime=2024-03-04T16%3A12%3A29%2B09%3A00&endTime=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
