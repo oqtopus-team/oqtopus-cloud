@@ -29,7 +29,9 @@ utc = ZoneInfo("UTC")
 
 
 @router.get(
-    "/devices", response_model=list[DeviceInfo], responses={500: {"model": Message}}
+    "/devices",
+    response_model=list[DeviceInfo],
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
 def get_devices(
