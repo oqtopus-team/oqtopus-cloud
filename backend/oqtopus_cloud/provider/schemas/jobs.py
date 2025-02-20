@@ -7,7 +7,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
 class JobStatus(str, Enum):
@@ -72,6 +72,7 @@ class JobResult(BaseModel):
     )
     sampling: SamplingResult | None = None
     estimation: EstimationResult | None = None
+    sse: SamplingResult | None = None
 
 
 class TranspileResult(BaseModel):
@@ -194,13 +195,6 @@ class UpdateJobInfoRequest(BaseModel):
 
 class UpdateJobInfoResponse(BaseModel):
     message: str
-
-
-class GetSsesrcResponse(RootModel[str]):
-    root: str
-    """
-    program source file for SSE
-    """
 
 
 class UploadSselogRequest(BaseModel):

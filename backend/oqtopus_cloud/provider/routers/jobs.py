@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 import pytz
 from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -28,7 +29,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
-    GetSsesrcResponse,
     UploadSselogResponse,
 )
 from sqlalchemy import select
@@ -236,7 +236,8 @@ def update_job_info(
 
         # The job result must be compatible with the job info.
         if (
-            request.job_info is not None
+            model.job_type != JobType.sse
+            and request.job_info is not None
             and request.job_info.result is not None
             and model.job_type != jobtype_of_result(request.job_info.result)
         ):
@@ -281,7 +282,7 @@ def update_job_info(
 
 @router.get(
     "/jobs/{job_id}/ssesrc",
-    response_model=GetSsesrcResponse,
+    response_class=PlainTextResponse,
     responses={
         500: {"model": Message},
     },
@@ -289,7 +290,7 @@ def update_job_info(
 @tracer.capture_method
 def get_ssesrc(
     job_id: str,
-) -> GetSsesrcResponse | ErrorResponse:
+) -> PlainTextResponse | ErrorResponse:
     bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
@@ -303,7 +304,7 @@ def get_ssesrc(
 
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
-        return GetSsesrcResponse(program_base64)
+        return PlainTextResponse(content=program_base64)
 
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")

@@ -303,7 +303,8 @@ paths:
           content:
             text/plain:
               schema:
-                $ref: '#/components/schemas/jobs.GetSsesrcResponse'
+                type: string
+                format: binary
         '400':
           description: Bad Request
           content:
@@ -581,6 +582,8 @@ components:
           $ref: '#/components/schemas/jobs.SamplingResult'
         estimation:
           $ref: '#/components/schemas/jobs.EstimationResult'
+        sse:
+          $ref: '#/components/schemas/jobs.SamplingResult'
       additionalProperties: true
       required: []
     jobs.TranspileResult:
@@ -858,10 +861,6 @@ components:
           nullable: false
       required:
         - message
-    jobs.GetSsesrcResponse:
-      description: program source file for SSE
-      type: string
-      format: byte
     jobs.UploadSselogRequest:
       type: object
       properties:

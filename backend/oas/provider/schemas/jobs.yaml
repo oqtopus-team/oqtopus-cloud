@@ -119,6 +119,8 @@ jobs.JobResult:
       $ref: "#/jobs.SamplingResult"
     estimation:
       $ref: "#/jobs.EstimationResult"
+    sse:
+      $ref: "#/jobs.SamplingResult"
   additionalProperties: true
   required: []
 
@@ -560,11 +562,6 @@ jobs.UpdateJobInfoResponse:
       nullable: false
   required:
     - message
-
-jobs.GetSsesrcResponse:
-  description: program source file for SSE
-  type: string
-  format: byte
 
 jobs.UploadSselogRequest:
   type: object

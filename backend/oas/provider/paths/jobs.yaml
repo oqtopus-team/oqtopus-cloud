@@ -205,7 +205,8 @@ jobs.jobId.ssesrc:
         content:
           text/plain:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.GetSsesrcResponse"
+              type: string
+              format: binary
       "400":
         description: Bad Request
         content:
