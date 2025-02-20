@@ -200,7 +200,7 @@ jobs.jobId:
       - job
     summary: "Get selected job"
     description: "Get selected job"
-    operationId: getSamplingJob
+    operationId: getJob
     security:
       - BearerAuth: []
     parameters:
@@ -245,7 +245,7 @@ jobs.jobId:
       - job
     summary: "Delete job"
     description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion."
-    operationId: deleteSamplingJob
+    operationId: deleteJob
     security:
       - BearerAuth: []
     parameters:
@@ -294,7 +294,7 @@ jobs.jobId.status:
       - job
     summary: "Get selected job's status"
     description: "Get selected job's status"
-    operationId: getSamplingJobStatus
+    operationId: getJobStatus
     security:
       - BearerAuth: []
     parameters:
@@ -341,7 +341,7 @@ jobs.jobId.cancel:
       - job
     summary: "Cancel job"
     description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running."
-    operationId: cancelSamplingJob
+    operationId: cancelJob
     security:
       - BearerAuth: []
     parameters:
