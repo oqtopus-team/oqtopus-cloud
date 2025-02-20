@@ -48,6 +48,9 @@ utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
+DEFAULT_PAGE_INDEX = 1
+DEFAULT_ITEMS_PER_PAGE = 100
+
 
 class BadRequest(Exception):
     def __init__(self, message: str):
@@ -126,8 +129,8 @@ def get_jobs(
 
         set_params(
             Params(
-                size=int(size) if size is not None else 100,
-                page=int(page) if page is not None else 1,
+                size=int(size) if size is not None else DEFAULT_ITEMS_PER_PAGE,
+                page=int(page) if page is not None else DEFAULT_PAGE_INDEX,
             )
         )
         set_page(Page[Job])
@@ -139,7 +142,8 @@ def get_jobs(
         ]:
             if isinstance(job, ValueError):
                 logger.warning(str(job))
-                return NotFoundErrorResponse("Job not found")
+                # ignore illegal jobs
+                continue
             else:
                 results.append(job)
         return results
