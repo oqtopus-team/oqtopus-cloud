@@ -260,6 +260,14 @@ def update_job_info(
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
             set_job_status(model, status)
+        # execution time
+        if request.execution_time is not None:
+            if request.execution_time < 0:
+                return BadRequestResponse(
+                    message="Execution time should not be negative."
+                )
+            model.execution_time = request.execution_time
+
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
@@ -342,6 +350,7 @@ def is_datetime_field(fld: str) -> bool:
 
     return False
 
+
 def set_job_status(model: Job, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
@@ -361,6 +370,7 @@ def set_job_status(model: Job, status: str | JobStatus) -> None:
         if model.ended_at is None:
             model.ended_at = datetime.now()
     return
+
 
 def stage_of_status(st: JobStatus) -> int:
     match st:
