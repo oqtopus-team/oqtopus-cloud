@@ -107,8 +107,7 @@ def get_jobs(
             else:
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:
-                    model.status = JobStatus.ready
-                    model.ready_at = datetime.now()
+                    set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
                     job.status = JobStatus(model.status)
@@ -176,7 +175,7 @@ def update_job_status(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
 
-        model.status = request.status
+        set_job_status(model, request.status)
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
@@ -209,8 +208,8 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
-        if incoming.transpiled_program is not None:
-            job_info.transpiled_program = incoming.transpiled_program
+        if incoming.transpile_result is not None:
+            job_info.transpile_result = incoming.transpile_result
 
         if incoming.result is not None:
             job_info.result = incoming.result
@@ -227,6 +226,7 @@ def update_job_info(
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
+
         job_info = JobInfo.model_validate(json.loads(model.job_info))
 
         # The job result must be compatible with the job info.
@@ -245,17 +245,29 @@ def update_job_info(
         # Validate the consitency of patched job_info and status
         if (
             # Job with non-null result should be succeeded
-            (job_info.result is not None and status != JobStatus.succeeded)
+            job_info.result is not None and status != JobStatus.succeeded
             # Job cannot go back to status of submitted or ready.
-            or status in [JobStatus.submitted, JobStatus.ready]
         ):
             return BadRequestResponse(
                 message="The overwritten status and job_info is inconsistent"
             )
 
+        status0 = decode_job_status(model.status)
+        assert isinstance(status0, JobStatus)
+        if status is not None and stage_of_status(status) < stage_of_status(status0):
+            return BadRequestResponse(message="Job cannot go back to previous status.")
+
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
-            model.status = status
+            set_job_status(model, status)
+        # execution time
+        if request.execution_time is not None:
+            if request.execution_time < 0:
+                return BadRequestResponse(
+                    message="Execution time should not be negative."
+                )
+            model.execution_time = request.execution_time
+
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
@@ -287,7 +299,7 @@ MAP_MODEL_TO_SCHEMA = {
 
 
 def jobtype_of_result(r: JobResult) -> JobType | None:
-    if r.counts is not None:
+    if r.sampling is not None:
         return JobType.sampling
     elif r.estimation is not None:
         return JobType.estimation
@@ -337,6 +349,39 @@ def is_datetime_field(fld: str) -> bool:
         return True
 
     return False
+
+
+def set_job_status(model: Job, status: str | JobStatus) -> None:
+    if isinstance(status, str):
+        status = JobStatus(status)
+
+    model.status = status
+    if status == JobStatus.ready:
+        if model.ready_at is None:
+            model.ready_at = datetime.now()
+    elif status == JobStatus.running:
+        if model.running_at is None:
+            model.running_at = datetime.now()
+    elif (
+        status == JobStatus.succeeded
+        or status == JobStatus.failed
+        or status == JobStatus.cancelled
+    ):
+        if model.ended_at is None:
+            model.ended_at = datetime.now()
+    return
+
+
+def stage_of_status(st: JobStatus) -> int:
+    match st:
+        case JobStatus.submitted:
+            return 0
+        case JobStatus.ready:
+            return 1
+        case JobStatus.running:
+            return 2
+        case _:
+            return 3
 
 
 def model_to_schema(
