@@ -50,7 +50,7 @@ resource "aws_lambda_function" "this" {
   ephemeral_storage {
     size = "512"
   }
-  filename                       = "./bin/lambda.zip"
+  filename                       = "${path.module}/bin/lambda.zip"
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
