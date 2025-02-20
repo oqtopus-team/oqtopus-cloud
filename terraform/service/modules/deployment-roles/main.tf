@@ -3,24 +3,23 @@
 *
 * ## Description
 *
-* This module creates an IAM role for a Lambda function and an API Gateway REST API.
+* This module creates an IAM Role and OIDC provider for auto deployment
 *
 * ## Usage
 *
 * ```hcl
-* module "user_api" {
-*   source = "./modules/api-gateway"
-*   product = "oqtopus"
-*   org = "example"
-*   env = "dev"
-*   identifier = "api"
-*   region = "us-west-2"
-*   lambda_handler = "app.lambda_handler"
-*   db_proxy_endpoint = "oqtopus.cluster-cjxjxjxjxjxj.us-west-2.rds.amazonaws.com"
-*   db_secret_arn = "arn:aws:secretsmanager:us-west-2:123
-*   lambda_security_group_ids = ["sg-123"]
-*   lambda_subnet_ids = ["subnet-123"]
-*   cognito_user_pool_arns = ["arn:aws:cognito-idp:us-west-2:123"]
+* module "deployment_roles" {
+*   source = "../modules/deployment-roles"
+*
+*   product = var.product
+*   org     = var.org
+*   env     = var.env
+*   region  = var.region
+*   profile = var.profile
+*   repository = var.repository
+*   github_user = var.github_user
+*   branch = var.branch
+*   aws_account_id = var.aws_account_id
 * }
 * ```
 *
