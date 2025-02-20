@@ -334,7 +334,12 @@ def cancel_job(
 
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
-        if job.owner != owner or job.status not in ["ready", "submitted", "running"]:
+        if job.owner != owner or job.status not in [
+            "ready",
+            "submitted",
+            "running",
+            "cancelled",
+        ]:
             return NotFoundErrorResponse(
                 message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
             )
