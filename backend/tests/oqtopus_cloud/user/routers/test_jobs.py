@@ -105,8 +105,6 @@ def test_get_jobs_simple(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
         JobDef(
             job_id="testjob2id",
@@ -127,8 +125,6 @@ def test_get_jobs_simple(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -229,8 +225,6 @@ def test_get_jobs_filtering_start_time(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -273,8 +267,6 @@ def test_get_jobs_filtering_end_time(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -317,8 +309,6 @@ def test_get_jobs_filtering_search_string(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -361,8 +351,6 @@ def test_get_jobs_desc_order(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
         GetJobsResponse(
             job_id="testjob1id",
@@ -383,8 +371,6 @@ def test_get_jobs_desc_order(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -527,7 +513,6 @@ def test_get_jobs_handler(
         ready_at=None,
         running_at=None,
         ended_at=None,
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
     )
     assert jobs[0] == expected
 
@@ -708,7 +693,7 @@ def test_submit_job_shots_boundary(test_db):
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["codecodecode"]),
-            shots=1e7 + 1,
+            shots=int(1e7) + 1,
         )
     except ValidationError as e:
         error_title = e.title
@@ -723,7 +708,7 @@ def test_submit_job_shots_boundary(test_db):
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["codecodecode"]),
-            shots=1e7,
+            shots=int(1e7),
         )
     except ValidationError as e:
         error_title = e.title
