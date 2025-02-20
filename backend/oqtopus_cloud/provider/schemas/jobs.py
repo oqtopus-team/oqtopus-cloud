@@ -72,7 +72,6 @@ class JobResult(BaseModel):
     )
     sampling: SamplingResult | None = None
     estimation: EstimationResult | None = None
-    sse: SamplingResult | None = None
 
 
 class TranspileResult(BaseModel):

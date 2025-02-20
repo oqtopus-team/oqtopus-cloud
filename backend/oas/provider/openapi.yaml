@@ -582,8 +582,6 @@ components:
           $ref: '#/components/schemas/jobs.SamplingResult'
         estimation:
           $ref: '#/components/schemas/jobs.EstimationResult'
-        sse:
-          $ref: '#/components/schemas/jobs.SamplingResult'
       additionalProperties: true
       required: []
     jobs.TranspileResult:

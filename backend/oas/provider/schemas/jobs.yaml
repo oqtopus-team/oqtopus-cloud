@@ -119,8 +119,6 @@ jobs.JobResult:
       $ref: "#/jobs.SamplingResult"
     estimation:
       $ref: "#/jobs.EstimationResult"
-    sse:
-      $ref: "#/jobs.SamplingResult"
   additionalProperties: true
   required: []
 
