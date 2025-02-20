@@ -43,6 +43,24 @@ jobs.OperatorItem:
   required:
     - pauli
 
+jobs.SamplingResult:
+  type: object
+  nullable: true
+  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
+  properties:
+    counts:
+      type: string
+      nullable: false
+      example: >-
+        {
+          "10": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+  required:
+    - counts
+
 jobs.EstimationResult:
   type: object
   nullable: true
@@ -68,44 +86,41 @@ jobs.EstimationResult:
     - exp_value
     - stds
 
+jobs.TranspileResult:
+  type: object
+  nullable: true
+  properties:
+    transpiled_program:
+      type: string
+      nullable: true
+      example: >-
+        OPENQASM 3;
+        include "stdgates.inc";
+        qubit[2] _all_qubits;
+        let q = _all_qubits[0:1];
+        h q[0];
+        cx q[0], q[1];
+    stats:
+      type: string
+      nullable: true
+    virtual_physical_mapping:
+      type: string
+      nullable: true
+  required:
+    - transpiled_program
+    - stats
+    - virtual_physical_mapping
+
 jobs.JobResult:
   type: object
   nullable: true
   properties:
-    counts:
-      description: "*(Only for sampling jobs)* JSON string representing the sampling result"
-      type: string
-      # TODO: When counts moved to under `sampling`` field, this field will become nullable: false
-      nullable: true
-      default: null
-      example: >-
-        {
-          "10": 84,
-          "11": 387,
-          "10": 454,
-          "01": 75
-        }
-
+    sampling:
+      $ref: "#/jobs.SamplingResult"
     estimation:
       $ref: "#/jobs.EstimationResult"
-      nullable: true
-      default: null
-
-    divided_result:
-      type: object
-      description: "Assumed to be used for multiprogramming, but currently not supported yet."
-      nullable: true
-      properties: {}
-    transpile_result:
-      type: object
-      properties:
-        virtual_physical_mapping:
-          type: string
-      nullable: true
-      default: null
-  required:
-    - counts
-    - estimation
+  additionalProperties: true
+  required: []
 
 jobs.JobInfo:
   type: object
@@ -139,20 +154,13 @@ jobs.JobInfo:
       items:
         $ref: "#/jobs.OperatorItem"
 
-    transpiled_program:
-      type: string
-      example: >-
-        OPENQASM 3;
-        include "stdgates.inc";
-        qubit[2] _all_qubits;
-        let q = _all_qubits[0:1];
-        h q[0];
-        cx q[0], q[1];
+    result:
+      $ref: "#/jobs.JobResult"
       nullable: true
       default: null
 
-    result:
-      $ref: "#/jobs.JobResult"
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
       nullable: true
       default: null
 
@@ -514,8 +522,8 @@ jobs.JobStatusUpdateResponse:
 jobs.UpdateJobInfo:
   type: object
   properties:
-    transpiled_program:
-      type: string
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
       nullable: true
     result:
       $ref: "#/jobs.JobResult"

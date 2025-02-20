@@ -26,6 +26,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobStatusUpdateResponse,
     JobType,
     OperatorItem,
+    SamplingResult,
+    TranspileResult,
     UpdateJobInfo,
     UpdateJobInfoRequest,
 )
@@ -182,11 +184,13 @@ def test_get_job(test_db: Session):
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
+        assert job.status == JobStatus.ready
     test_db.add(_get_job_model(2, JobType.estimation))
     job_id = "testjob2id"
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
+        assert job.status == JobStatus.ready
 
 
 def test_update_job(test_db: Session):
@@ -214,7 +218,7 @@ def test_update_job_info_result(test_db: Session):
         (
             1,
             JobType.sampling,
-            JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
+            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
             200,
         ),
         (
@@ -232,7 +236,7 @@ def test_update_job_info_result(test_db: Session):
         (
             4,
             JobType.estimation,
-            JobResult(counts=json.dumps({"00": 1, "01": 2, "11": 3, "10": 4})),
+            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
             400,
         ),
     ]
@@ -261,7 +265,40 @@ def test_update_job_info_result(test_db: Session):
             assert aft_job_info.result == res
             assert aft_job_info.message is None
             assert aft_job.status == JobStatus.succeeded
+            assert aft_job.ended_at is not None
             assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
+
+
+def test_update_job_info_transpile_result(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(_get_device_model())
+    # Set ready
+    job_model.ready_at = datetime.now()
+    job_model.status = JobStatus.ready
+    test_db.add(job_model)
+    test_db.commit()
+
+    # Submitting
+    transpile_result = TranspileResult(
+        transpiled_program="transpiled_program",
+        stats="stats",
+        virtual_physical_mapping="vpm",
+    )
+    body = UpdateJobInfoRequest(
+        overwrite_status=JobStatus.ready,
+        job_info=UpdateJobInfo(transpile_result=transpile_result),
+    )
+    submit_resp = client.patch(
+        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+    )
+    assert submit_resp.status_code == 200
+    get_resp = client.get(f"/jobs/{job_model.id}")
+    aft_job = JobDef.model_validate(get_resp.json())
+    aft_job_info = aft_job.job_info
+    assert aft_job_info.transpile_result == aft_job_info.transpile_result
+    assert aft_job_info.message is None
+    assert aft_job_info.result is None
+    assert aft_job.status == JobStatus.ready
 
 
 def test_update_job_info_reason(test_db: Session):
@@ -289,6 +326,7 @@ def test_update_job_info_reason(test_db: Session):
     assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed
+    assert aft_job.ended_at is not None
 
 
 def test_update_job_info_consist(test_db: Session):
@@ -297,7 +335,7 @@ def test_update_job_info_consist(test_db: Session):
         (
             1,
             JobType.sampling,
-            JobResult(counts=json.dumps({"00": 1, "01": 2, "10": 3, "11": 4})),
+            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
             JobStatus.failed,
         ),
         (
@@ -307,7 +345,6 @@ def test_update_job_info_consist(test_db: Session):
             JobStatus.failed,
         ),
         (4, JobType.sampling, None, JobStatus.submitted),
-        (5, JobType.sampling, None, JobStatus.ready),
     ]
 
     test_db.add(_get_device_model())
@@ -340,12 +377,18 @@ def test_update_job_status(test_db: Session):
         f"/jobs/{job_model.id}/status",
         content=JobStatusUpdate(status="running").model_dump_json(),
     )
+    model = test_db.get(Job, job_model.id)
+    assert model.status == JobStatus.running
+    assert model.running_at is not None
+    running_at = model.running_at
     assert resp.status_code == 200
 
     resp = client.patch(
         f"/jobs/{job_model.id}/status",
         content=JobStatusUpdate(status="running").model_dump_json(),
     )
+    assert model.status == JobStatus.running
+    assert running_at == running_at
     assert resp.status_code == 409
 
 
