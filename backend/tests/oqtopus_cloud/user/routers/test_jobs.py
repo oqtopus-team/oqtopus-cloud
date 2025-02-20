@@ -26,6 +26,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobRequest,
     SubmitJobResponse,
 )
+from pydantic import ValidationError
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy import select
 
@@ -692,3 +693,38 @@ def test_submit_job_compat_error(test_db):
     # Submitting
     submit_resp = client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 400
+
+
+def test_submit_job_shots_boundary(test_db):
+    """_summary_
+    Test for checking out of range shots
+    """
+
+    try:
+        SubmitJobRequest(
+            name="submit-job-test",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=SubmitJobInfo(program=["codecodecode"]),
+            shots=1e7 + 1,
+        )
+    except ValidationError as e:
+        error_title = e.title
+
+    # expcet to raise ValidationError by pydantic
+    assert error_title == "SubmitJobRequest"
+
+    error_title = ""
+    try:
+        SubmitJobRequest(
+            name="submit-job-test",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=SubmitJobInfo(program=["codecodecode"]),
+            shots=1e7,
+        )
+    except ValidationError as e:
+        error_title = e.title
+
+    # expcet no ValidationError
+    assert error_title == ""

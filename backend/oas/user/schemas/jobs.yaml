@@ -345,6 +345,8 @@ jobs.SubmitJobRequest:
       example: "{}"
     shots:
       type: integer
+      minimum: 1
+      maximum: 1e7
       example: 1000
     status:
       $ref: "#/jobs.JobStatus"

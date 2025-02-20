@@ -208,7 +208,7 @@ class SubmitJobRequest(BaseModel):
     """
     When specified, valid JSON string is required
     """
-    shots: Annotated[int, Field(examples=[1000])]
+    shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
     created_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
