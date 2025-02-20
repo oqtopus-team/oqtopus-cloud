@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy import select
@@ -12,6 +13,7 @@ from oqtopus_cloud.admin.schemas.devices import (
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
+    ErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
@@ -36,9 +38,9 @@ utc = ZoneInfo("UTC")
 @tracer.capture_method
 def get_devices(
     db: Session = Depends(get_db),
-) -> list[DeviceInfo] | InternalServerErrorResponse:
+) -> list[DeviceInfo] | ErrorResponse:
     try:
-        logger.info("invoked list_devices")
+        logger.info("invoked get_devices")
         devices = db.scalars(select(Device)).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:
@@ -49,22 +51,16 @@ def get_devices(
 @router.get(
     "/devices/{device_id}",
     response_model=DeviceInfo,
-    responses={404: {"model": Message}, 500: {"model": Message}},
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_device(
     device_id: str,
     db: Session = Depends(get_db),
-) -> DeviceInfo | NotFoundErrorResponse | InternalServerErrorResponse:
-    """_summary_
-
-    Args:
-        device_id (str): _description_
-        db (Session, optional): _description_. Defaults to Depends(get_db).
-
-    Returns:
-        GetDeviceResponse: _description_
-    """
+) -> DeviceInfo | ErrorResponse:
     try:
         device = db.scalars(select(Device).where(Device.id == device_id)).first()
         logger.info("invoked get_device")
@@ -89,10 +85,10 @@ def get_device(
 def register_devices(
     device_info: DeviceBase = Body(..., description="device information"),
     db: Session = Depends(get_db),
-) -> SuccessResponse | BadRequestErrorResponse | InternalServerErrorResponse:
+) -> SuccessResponse | ErrorResponse:
     try:
-        logger.info("invoked register_device")
-        device_id = check_device_id(device_info)
+        logger.info("invoked register_devices")
+        device_id = get_device_id(device_info)
         if device_id is None:
             return BadRequestErrorResponse(message="device_id is required")
         existing_device = db.scalars(
@@ -103,6 +99,8 @@ def register_devices(
                 message=f"device_id={device_id} already exists"
             )
         new_device = schema_to_model(device_id, device_info)
+        if new_device is None:
+            return BadRequestErrorResponse(message="Invalid device timezone")
         db.add(new_device)
         db.commit()
         return SuccessResponse(message="Device registered successfully")
@@ -124,12 +122,7 @@ def update_device_data(
     device_id: str,
     device_update: DeviceBase = Body(..., description="new status"),
     db: Session = Depends(get_db),
-) -> (
-    SuccessResponse
-    | BadRequestErrorResponse
-    | NotFoundErrorResponse
-    | InternalServerErrorResponse
-):
+) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked update device data")
         # query
@@ -138,7 +131,7 @@ def update_device_data(
         if not query:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
-        device_id_from_body = check_device_id(device_update)
+        device_id_from_body = get_device_id(device_update)
         if device_id != device_id_from_body:
             logger.error(
                 f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
@@ -174,7 +167,7 @@ def update_device_data(
 def delete_device(
     device_id: str,
     db: Session = Depends(get_db),
-) -> SuccessResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked delete device")
         # query
@@ -194,7 +187,7 @@ def delete_device(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-def check_device_id(device_base: DeviceBase) -> str | None:
+def get_device_id(device_base: DeviceBase) -> str | None:
     try:
         if device_base.device_info is None:
             return None
@@ -206,8 +199,9 @@ def check_device_id(device_base: DeviceBase) -> str | None:
 
 def ensure_timezone(dt):
     if dt is not None and dt.tzinfo is None:
-        # ここでは UTC を仮定していますが、適切なタイムゾーンに変更してください
         return dt.replace(tzinfo=utc)
+    if dt.utcoffset() != timedelta(0):
+        raise ValueError("Datetime is not in UTC.")
     return dt
 
 
@@ -228,17 +222,20 @@ def model_to_schema(model: Device) -> DeviceInfo:
     return DeviceInfo.model_validate(dict)
 
 
-def schema_to_model(device_id: str, schema: DeviceBase) -> Device:
-    model = Device(
-        id=device_id,
-        device_type=schema.device_type,
-        status=schema.status,
-        available_at=ensure_timezone(schema.available_at),
-        n_qubits=schema.n_qubits,
-        basis_gates=json.dumps(schema.basis_gates),
-        instructions=json.dumps(schema.supported_instructions),
-        device_info=schema.device_info,
-        calibrated_at=ensure_timezone(schema.calibrated_at),
-        description=schema.description,
-    )
-    return model
+def schema_to_model(device_id: str, schema: DeviceBase) -> Device | None:
+    try:
+        model = Device(
+            id=device_id,
+            device_type=schema.device_type,
+            status=schema.status,
+            available_at=ensure_timezone(schema.available_at),
+            n_qubits=schema.n_qubits,
+            basis_gates=json.dumps(schema.basis_gates),
+            instructions=json.dumps(schema.supported_instructions),
+            device_info=schema.device_info,
+            calibrated_at=ensure_timezone(schema.calibrated_at),
+            description=schema.description,
+        )
+        return model
+    except Exception:
+        return None

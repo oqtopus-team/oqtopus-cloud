@@ -173,6 +173,30 @@ def test_register_devices(
     assert device.basis_gates == '["x", "sx", "rz", "cx", "t"]'
 
 
+def test_register_devices_no_utc(
+    test_db,
+):
+    """_summary_
+    Simple POST /devices tests
+    """
+    device_info = {"device_id": "SVSim1"}
+
+    body = {
+        "device_info": json.dumps(device_info),
+        "device_type": "simulator",
+        "status": "available",
+        "n_qubits": 2,
+        "available_at": "2023-01-02T12:34:56+00:00",
+        "basis_gates": ["x", "sx", "rz", "cx", "t"],
+        "supported_instructions": ["measure", "barrier", "reset"],
+        "calibrated_at": "2024-03-04T12:34:56+09:00",
+        "description": "State vector-based quantum circuit simulator",
+    }
+
+    response = client.post("/devices", json=body)
+    assert response.status_code == 400
+
+
 def test_register_devices_no_device_id_400(
     test_db,
 ):
