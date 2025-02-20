@@ -157,12 +157,6 @@ class GetJobsResponse(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class SubmitJobInfo(BaseModel):
@@ -210,12 +204,6 @@ class SubmitJobRequest(BaseModel):
     """
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
     status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class SubmitJobResponse(BaseModel):
@@ -267,12 +255,6 @@ class JobDef(BaseModel):
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 

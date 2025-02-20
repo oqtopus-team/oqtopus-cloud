@@ -371,8 +371,6 @@ def model_to_schema(
             ready_at=localize(model.ready_at),
             running_at=localize(model.running_at),
             ended_at=localize(model.ended_at),
-            created_at=pytz.utc.localize(model.created_at),
-            updated_at=localize(model.updated_at),
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
