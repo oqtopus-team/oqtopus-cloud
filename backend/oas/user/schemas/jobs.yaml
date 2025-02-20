@@ -338,9 +338,6 @@ jobs.SubmitJobRequest:
       minimum: 1
       maximum: 1e7
       example: 1000
-    status:
-      $ref: "#/jobs.JobStatus"
-      example: submitted
   required:
     - name
     - device_id

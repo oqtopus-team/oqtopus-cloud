@@ -104,7 +104,8 @@ def get_jobs(
             job = model_to_schema(model, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
-                return NotFoundErrorResponse("Job not found")
+                # ignore illegal jobs
+                continue
             else:
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:

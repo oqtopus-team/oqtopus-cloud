@@ -203,7 +203,6 @@ class SubmitJobRequest(BaseModel):
     When specified, valid JSON string is required
     """
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
-    status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
 
 
 class SubmitJobResponse(BaseModel):

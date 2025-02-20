@@ -132,6 +132,32 @@ def test_get_jobs_simple(
     assert actual == expect
 
 
+def test_get_jobs_ignore_illegal_job(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    # job3 has invalid job_info
+    job_3 = _get_model(3)
+    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(job_3)
+    test_db.commit()
+
+    response = client.get("/jobs")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert len(actual) == 2
+    assert actual[0].job_id == "testjob1id"
+    assert actual[1].job_id == "testjob2id"
+
+
 def test_get_jobs_filtering_fields(
     test_db,
 ):
@@ -448,7 +474,6 @@ def test_job_sortedness(test_db):
         return SubmitJobRequest(
             name=f"test-job-{n}",
             device_id="Kawasaki",
-            status=JobStatus.submitted,
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["code"]),
             simulator_info="{}",
@@ -577,7 +602,6 @@ def test_submit_get(
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -596,7 +620,7 @@ def test_submit_get(
     assert resp_job.job_info.result is None
 
 
-def test_submit_delete(test_db):
+def test_submit_cancel_delete(test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -625,7 +649,6 @@ def test_submit_delete(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.running,
     )
 
     # Submitting
@@ -636,6 +659,11 @@ def test_submit_delete(test_db):
     # Deleting the job of reteurned job_id (Before deleting, canceling is required)
     cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
     assert cancel_resp.status_code == 200
+
+    # After cancelling, the same cancel request returs 200
+    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    assert cancel_resp.status_code == 200
+
     delete_resp = client.delete(f"/jobs/{resp_job_id}")
     assert delete_resp.status_code == 200
 
@@ -674,7 +702,6 @@ def test_submit_job_compat_error(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting
