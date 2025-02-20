@@ -107,8 +107,7 @@ def get_jobs(
             else:
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:
-                    model.status = JobStatus.ready
-                    model.ready_at = datetime.now()
+                    set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
                     job.status = JobStatus(model.status)
@@ -176,7 +175,7 @@ def update_job_status(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
 
-        model.status = request.status
+        set_job_status(model, request.status)
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
@@ -260,7 +259,7 @@ def update_job_info(
 
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
-            model.status = status
+            set_job_status(model, status)
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
@@ -343,6 +342,25 @@ def is_datetime_field(fld: str) -> bool:
 
     return False
 
+def set_job_status(model: Job, status: str | JobStatus) -> None:
+    if isinstance(status, str):
+        status = JobStatus(status)
+
+    model.status = status
+    if status == JobStatus.ready:
+        if model.ready_at is None:
+            model.ready_at = datetime.now()
+    elif status == JobStatus.running:
+        if model.running_at is None:
+            model.running_at = datetime.now()
+    elif (
+        status == JobStatus.succeeded
+        or status == JobStatus.failed
+        or status == JobStatus.cancelled
+    ):
+        if model.ended_at is None:
+            model.ended_at = datetime.now()
+    return
 
 def stage_of_status(st: JobStatus) -> int:
     match st:
