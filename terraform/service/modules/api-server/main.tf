@@ -26,31 +26,60 @@
 *
 */
 
+locals {
+  # Depending on the authorizer_type, we choose the appropriate authorization method:
+  # - "NONE" => no authorizer
+  # - "COGNITO" => Cognito User Pools
+  # - otherwise => custom authorizer
+  authorizations = {
+    NONE    = "NONE"
+    COGNITO = "COGNITO_USER_POOLS"
+    LAMBDA  = "CUSTOM"
+  }
+  # Depending on the authorizer_type, we set the corresponding authorizer_id:
+  # - "COGNITO" => refer to Cognito authorizer
+  # - "LAMBDA"  => refer to Lambda authorizer
+  # - otherwise => null
+  authorizer_ids = {
+    NONE    = null
+    COGNITO = try(aws_api_gateway_authorizer.cognito[0].id, null)
+    LAMBDA  = try(aws_api_gateway_authorizer.lambda[0].id, null)
+  }
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_lambda_function" "this" {
   architectures = ["x86_64"]
 
   environment { # TODO :Add module input variables
-    variables = {
-      DB_HOST                      = var.db_proxy_endpoint
-      DB_NAME                      = "main"
-      DB_CONNECTOR                 = "mysql+pymysql"
-      SECRET_NAME                  = var.db_secret_arn
-      POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
-      POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
-      ALLOW_ORIGINS                = var.allow_origins
-      ALLOW_CREDENTIALS            = var.allow_credentials
-      ALLOW_METHODS                = var.allow_methods
-      ALLOW_HEADERS                = var.allow_headers
-      LOG_LEVEL                    = var.log_level
-    }
+    variables = merge(
+      {
+        DB_HOST                      = var.db_proxy_endpoint
+        DB_NAME                      = "main"
+        DB_CONNECTOR                 = "mysql+pymysql"
+        SECRET_NAME                  = var.db_secret_arn
+        POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
+        POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
+        ALLOW_ORIGINS                = var.allow_origins
+        ALLOW_CREDENTIALS            = var.allow_credentials
+        ALLOW_METHODS                = var.allow_methods
+        ALLOW_HEADERS                = var.allow_headers
+        LOG_LEVEL                    = var.log_level
+      },
+      # optional environment variables
+      var.client_cognito_user_pool_id != "" ? {
+        CLIENT_COGNITO_USER_POOL_ID = var.client_cognito_user_pool_id
+        AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
+      } : {},
+      var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+    )
   }
 
   ephemeral_storage {
     size = "512"
   }
-  filename                       = "${path.module}/bin/lambda.zip"
+  filename                       = "${path.module}/bin/${var.identifier}/lambda.zip"
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -59,7 +88,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "5"
+  timeout                        = "15"
 
   tracing_config {
     mode = "Active"
@@ -71,9 +100,10 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
+  # snap_start is not supported in python3.12
+  # snap_start {
+  #   apply_on = "PublishedVersions"
+  # }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -111,6 +141,13 @@ resource "aws_iam_role_policy_attachment" "vpc_access_execution" {
 resource "aws_iam_role_policy_attachment" "secret_manager" {
   role       = aws_iam_role.lambda.name
   policy_arn = aws_iam_policy.secret_manager.arn
+}
+
+resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
+  count = var.manage_cognito_user_pool ? 1 : 0
+
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser" # TODO: restrict this policy
 }
 
 resource "aws_iam_policy" "lambda_execution" {
@@ -174,8 +211,10 @@ resource "aws_api_gateway_rest_api" "this" {
 
 
 resource "aws_api_gateway_deployment" "this" {
-  rest_api_id       = aws_api_gateway_rest_api.this.id
-  stage_description = md5(file("../modules/api-server/main.tf"))
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  triggers = {
+    code_hash = md5(file("../modules/api-server/main.tf"))
+  }
   lifecycle {
     create_before_destroy = true
   }
@@ -243,6 +282,9 @@ data "aws_iam_policy_document" "apigateway_putlog_assume_role" {
 
 resource "aws_api_gateway_account" "this" {
   cloudwatch_role_arn = aws_iam_role.apigateway_putlog.arn
+  depends_on = [
+    aws_iam_role_policy_attachment.apigateway_putlog
+  ]
   lifecycle {
     ignore_changes = [cloudwatch_role_arn]
   }
@@ -278,8 +320,8 @@ resource "aws_api_gateway_method" "this" {
   rest_api_id      = aws_api_gateway_rest_api.this.id
   resource_id      = aws_api_gateway_resource.this.id
   http_method      = "ANY"
-  authorization    = var.use_cognito_authorizer ? "COGNITO_USER_POOLS" : "NONE"
-  authorizer_id    = var.use_cognito_authorizer ? aws_api_gateway_authorizer.this[0].id : null
+  authorization    = lookup(local.authorizations, var.authorizer_type, "CUSTOM")
+  authorizer_id    = lookup(local.authorizer_ids, var.authorizer_type, null)
   api_key_required = var.require_api_key
 
   request_parameters = {
@@ -319,10 +361,69 @@ resource "aws_lambda_permission" "api_lambda_permission" {
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
 
-resource "aws_api_gateway_authorizer" "this" {
-  count         = var.use_cognito_authorizer ? 1 : 0
+resource "aws_api_gateway_authorizer" "cognito" {
+  count         = var.authorizer_type == "COGNITO" ? 1 : 0
   name          = "${var.product}-${var.org}-${var.env}-${var.identifier}"
   rest_api_id   = aws_api_gateway_rest_api.this.id
   type          = "COGNITO_USER_POOLS"
   provider_arns = var.cognito_user_pool_arns
+}
+
+resource "aws_api_gateway_authorizer" "lambda" {
+  count                            = var.authorizer_type == "LAMBDA" ? 1 : 0
+  name                             = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
+  rest_api_id                      = aws_api_gateway_rest_api.this.id
+  type                             = "REQUEST"
+  authorizer_result_ttl_in_seconds = 0
+  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
+}
+
+resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
+  count         = var.authorizer_type == "LAMBDA" ? 1 : 0
+  statement_id  = "AllowAPIGatewayInvokeForLambdaAuth"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_authorizer_arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
+}
+
+resource "aws_api_gateway_method" "options" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.this.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.this.id
+  http_method = aws_api_gateway_method.options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+resource "aws_api_gateway_method_response" "options" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.this.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.this.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'${var.allow_origins}'"
+    "method.response.header.Access-Control-Allow-Headers" = "'${var.allow_headers}'",
+    "method.response.header.Access-Control-Allow-Methods" = "'${var.allow_methods}'",
+  }
+  depends_on = [aws_api_gateway_integration.options]
 }

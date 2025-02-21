@@ -39,12 +39,13 @@ resource "aws_cognito_user_pool" "this" {
     device_only_remembered_on_user_prompt = "true"
   }
 
+  auto_verified_attributes = ["email"]
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
   }
 
-  # mfa_configuration = "ON"
-  name = "${var.product}-${var.org}-${var.env}-${var.identifier}"
+  mfa_configuration = "OPTIONAL"
+  name              = "${var.product}-${var.org}-${var.env}-${var.identifier}"
 
   password_policy {
     minimum_length                   = "12"
@@ -68,9 +69,9 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
-  # software_token_mfa_configuration {
-  #   enabled = "true"
-  # }
+  software_token_mfa_configuration {
+    enabled = "true"
+  }
 
   username_configuration {
     case_sensitive = "false"
@@ -91,7 +92,7 @@ resource "aws_cognito_user_pool_client" "this" {
   enable_propagate_additional_user_context_data = "false"
   enable_token_revocation                       = "true"
   explicit_auth_flows = [
-    # 認証フローの指定
+    # Authentication flow specification
     "ADMIN_NO_SRP_AUTH"
   ]
   id_token_validity             = "60"
