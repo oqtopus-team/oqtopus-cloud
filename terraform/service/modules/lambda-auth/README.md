@@ -3,24 +3,23 @@
 
 ## Description
 
-This module creates an API Gateway and Lambda function to serve as the backend for the Oqtopus API.
+This module creates an Lambda function to serve as the backend for the Oqtopus API.
 
 ## Usage
 
 ```hcl
-module "user_api" {
-  source = "./modules/api-gateway"
+module "user_lambda" {
+  source = "./modules/lambda-auth"
   product = "oqtopus"
   org = "example"
   env = "dev"
-  identifier = "api"
+  identifier = "lambda1"
   region = "us-west-2"
   lambda_handler = "app.lambda_handler"
   db_proxy_endpoint = "oqtopus.cluster-cjxjxjxjxjxj.us-west-2.rds.amazonaws.com"
-  db_secret_arn = "arn:aws:secretsmanager:us-west-2:123
+  db_secret_arn = "arn:aws:secretsmanager:us-west-2:123"
   lambda_security_group_ids = ["sg-123"]
   lambda_subnet_ids = ["subnet-123"]
-  cognito_user_pool_arns = ["arn:aws:cognito-idp:us-west-2:123"]
 }
 ```
 
@@ -50,6 +49,7 @@ module "user_api" {
 | [aws_iam_role_policy_attachment.vpc_access_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_lambda_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_iam_policy_document.lambda_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.lambda_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.vpc_access_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -58,11 +58,13 @@ module "user_api" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_allow_api_gateway_arn"></a> [allow\_api\_gateway\_arn](#input\_allow\_api\_gateway\_arn) | The ARN of the API Gateway | `string` | `""` | no |
 | <a name="input_allow_credentials"></a> [allow\_credentials](#input\_allow\_credentials) | The allowed credentials for the API Gateway | `string` | n/a | yes |
 | <a name="input_allow_headers"></a> [allow\_headers](#input\_allow\_headers) | The allowed headers for the API Gateway | `string` | n/a | yes |
 | <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | n/a | yes |
 | <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | n/a | yes |
-| <a name="input_cognito_user_pool_arns"></a> [cognito\_user\_pool\_arns](#input\_cognito\_user\_pool\_arns) | The ARNs of the Cognito user pools | `list(string)` | n/a | yes |
+| <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | The ID of the Cognito user pool | `string` | `""` | no |
+| <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | The web client ID of the Cognito user pool | `string` | `""` | no |
 | <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
@@ -76,15 +78,11 @@ module "user_api" {
 | <a name="input_power_tools_service_name"></a> [power\_tools\_service\_name](#input\_power\_tools\_service\_name) | The service name for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
-| <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
-| <a name="input_authorizer_type"></a> [authorizer_type](#input_authorizer_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `NONE` if no authorization is required. | `string` | `COGNITO` | no |
-| <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | ARN of Cognito user pool ID for the users | `string` | n/a | no |
-| <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | ARN of Cognito user pool web client ID for the users | `string` | n/a | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
 | <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | The ARN of the IAM role |
-| <a name="output_lambda_auth_arn"></a> [lambda\_auth\_arn](#output\_lambda\_auth\_arn) | The ARN of the lambda_auth lambda function |
+| <a name="output_lambda_auth_arn"></a> [lambda\_auth\_arn](#output\_lambda\_auth\_arn) | ARN of the lambda\_auth lambda function |
 <!-- END_TF_DOCS -->
