@@ -146,6 +146,9 @@ def update_device_data(
         for field, value in update_fields.items():
             if field == "basis_gates" and isinstance(value, list):
                 value = json.dumps(value)
+            if field == "supported_instructions" and isinstance(value, list):
+                value = json.dumps(value)
+                field = "instructions"
             setattr(query, field, value)
         # commit the transaction
         db.commit()

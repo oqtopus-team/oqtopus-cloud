@@ -332,18 +332,29 @@ def test_update_device_data_full(
     test_db.commit()
     body = {
         "device_info": json.dumps(device_info),
-        "device_type": "simulator",
-        "status": "available",
-        "n_qubits": 2,
-        "available_at": "2023-01-02T12:34:56+00:00",
-        "basis_gates": ["x", "sx", "rz", "cx"],
-        "supported_instructions": ["measure", "barrier", "reset"],
-        "calibrated_at": "2024-03-04T12:34:56+00:00",
-        "description": "State vector-based quantum circuit simulator",
+        "device_type": "QPU",
+        "status": "unavailable",
+        "n_qubits": 4,
+        "available_at": "2023-01-02T12:35:56+00:00",
+        "basis_gates": ["x", "sx", "rz", "cx", "cy"],
+        "supported_instructions": ["measure", "barrier"],
+        "calibrated_at": "2024-03-04T12:54:56+00:00",
+        "description": "State vector-based quantum circuit simulator updated",
     }
+
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 200
     assert response.json() == {"message": "Device updated successfully"}
+    # confirm the device is updated
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device.device_type == "QPU"
+    assert device.status == "unavailable"
+    assert device.n_qubits == 4
+    assert device.available_at == datetime(2023, 1, 2, 12, 35, 56)
+    assert device.basis_gates == '["x", "sx", "rz", "cx", "cy"]'
+    assert device.instructions == '["measure", "barrier"]'
+    assert device.calibrated_at == datetime(2024, 3, 4, 12, 54, 56)
+    assert device.description == "State vector-based quantum circuit simulator updated"
 
 
 def test_update_device_data_partial(
