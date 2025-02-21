@@ -22,6 +22,11 @@ output "lambda_security_group_ids" {
   description = "The security group IDs for the Lambda function"
 }
 
+output "lambda_with_cognito_security_group_ids" {
+  value       = [aws_security_group.lambda.id, aws_security_group.cognito.id]
+  description = "The security group IDs for the Lambda function"
+}
+
 output "secret_manager_security_group_ids" {
   value       = [aws_security_group.secret_manager.id]
   description = "The security group IDs for the Secret Manager"

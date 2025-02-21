@@ -214,29 +214,33 @@ def test_update_job(test_db: Session):
 
 
 def test_update_job_info_result(test_db: Session):
-    cases: list[tuple[int, JobType, JobResult, int]] = [
+    cases: list[tuple[int, JobType, JobResult, float, int]] = [
         (
             1,
             JobType.sampling,
             JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
+            123.45,
             200,
         ),
         (
             2,
             JobType.estimation,
             JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            45.6,
             200,
         ),
         (
             3,
             JobType.sampling,
             JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            7.89,
             400,
         ),
         (
             4,
             JobType.estimation,
             JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
+            10,
             400,
         ),
     ]
@@ -244,14 +248,16 @@ def test_update_job_info_result(test_db: Session):
     test_db.flush()
     test_db.add(_get_device_model())
 
-    for n, jt, res, resp_expect in cases:
+    for n, jt, res, exectime, resp_expect in cases:
         job_model = _get_job_model(n, jt)
         bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
         test_db.add(job_model)
         test_db.commit()
 
         # Submitting
-        body = UpdateJobInfoRequest(job_info=UpdateJobInfo(result=res))
+        body = UpdateJobInfoRequest(
+            job_info=UpdateJobInfo(result=res), execution_time=exectime
+        )
         submit_resp = client.patch(
             f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
         )
@@ -265,6 +271,7 @@ def test_update_job_info_result(test_db: Session):
             assert aft_job_info.result == res
             assert aft_job_info.message is None
             assert aft_job.status == JobStatus.succeeded
+            assert aft_job.execution_time == exectime
             assert aft_job.ended_at is not None
             assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
 

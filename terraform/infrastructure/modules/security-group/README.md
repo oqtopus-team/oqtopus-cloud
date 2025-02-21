@@ -40,6 +40,8 @@ module "security_group" {
 | [aws_security_group.eic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_security_group.cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_security_group_rule.lambda_to_cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_vpc_security_group_egress_rule.db_proxy_to_db](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.ec2_bastion_to_db_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.ec2_bastion_to_secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
@@ -71,5 +73,6 @@ module "security_group" {
 | <a name="output_ec2_bastion_security_group_ids"></a> [ec2\_bastion\_security\_group\_ids](#output\_ec2\_bastion\_security\_group\_ids) | The security group IDs for the EC2 instance |
 | <a name="output_eic_security_group_ids"></a> [eic\_security\_group\_ids](#output\_eic\_security\_group\_ids) | The security group IDs for the EIC instance |
 | <a name="output_lambda_security_group_ids"></a> [lambda\_security\_group\_ids](#output\_lambda\_security\_group\_ids) | The security group IDs for the Lambda function |
+| <a name="output_lambda_with_cognito_security_group_ids"></a> [lambda\_with\_cognito\_security\_group\_ids](#output\_lambda\_with\_cognito\_security\_group\_ids) | The security group IDs for the Lambda with Cognito |
 | <a name="output_secret_manager_security_group_ids"></a> [secret\_manager\_security\_group\_ids](#output\_secret\_manager\_security\_group\_ids) | The security group IDs for the Secret Manager |
 <!-- END_TF_DOCS -->
