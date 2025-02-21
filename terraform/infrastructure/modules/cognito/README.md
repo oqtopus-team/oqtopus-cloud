@@ -53,4 +53,5 @@ module "user_cognito" {
 |------|-------------|
 | <a name="output_user_pool_arn"></a> [user\_pool\_arn](#output\_user\_pool\_arn) | The ARN of the user pool |
 | <a name="output_user_pool_id"></a> [user\_pool\_id](#output\_user\_pool\_id) | The ID of the user pool |
+| <a name="output_user_pool_web_client_id"></a> [user\_pool\_web\_client\_id](#output\_user\_pool\_web\_client\_id) | The ID of the user pool web client |
 <!-- END_TF_DOCS -->
