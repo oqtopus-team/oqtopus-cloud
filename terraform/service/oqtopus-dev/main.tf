@@ -78,6 +78,28 @@ module "admin_api" {
   allow_headers                 = "*"
   log_level                     = "INFO"
 }
+  
+module "pending_jobs_updater" {
+  source = "../modules/worker"
+
+  product                       = var.product
+  org                           = var.org
+  env                           = var.env
+  identifier                    = "pending-jobs-updater"
+  region                        = var.region
+  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                = "oqtopus_cloud.worker.pending_jobs_updater.lambda_function.lambda_handler"
+  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  power_tools_metrics_namespace = "pending-jobs-updater"
+  power_tools_service_name      = "pending-jobs-updater"
+  allow_origins                 = "*"
+  allow_credentials             = "true"
+  allow_methods                 = "*"
+  allow_headers                 = "*"
+  log_level                     = "INFO"
+}
 
 module "vpc_endpoint" {
   source = "../modules/vpc-endpoint"
@@ -88,11 +110,12 @@ module "vpc_endpoint" {
   vpc_id                            = data.terraform_remote_state.infrastructure.outputs.network.vpc_id
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
-  identifiers                       = [module.user_api.iam_role_arn, module.provider_api.iam_role_arn]
+  identifiers                       = [module.user_api.iam_role_arn, module.provider_api.iam_role_arn, module.pending_jobs_updater.iam_role_arn]
 
   depends_on = [
     module.user_api,
-    module.provider_api
+    module.provider_api,
+    module.pending_jobs_updater
   ]
 }
 

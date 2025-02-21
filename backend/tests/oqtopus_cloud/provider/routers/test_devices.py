@@ -8,13 +8,11 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.provider.routers.devices import (
     update_device_calibration,
-    update_device_pending_jobs,
     update_device_status,
 )
 from oqtopus_cloud.provider.schemas.devices import (
-    DeviceCalibrationUpdate,
     DeviceDataUpdateResponse,
-    DevicePendingJobsUpdate,
+    DeviceInfoUpdate,
     DeviceStatusUpdate,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
@@ -38,7 +36,7 @@ def _get_calibration_dict() -> Dict:
     return calib_dict
 
 
-def _get_model():
+def _get_model_sim():
     mode_dict = {
         "id": "SC2",
         "device_type": "simulator",
@@ -56,31 +54,32 @@ def _get_model():
     return Device(**mode_dict)
 
 
-def test_update_device_pending_jobs(test_db):
-    # Arrange
-    test_db.add(_get_model())
-    test_db.commit()
-    device = test_db.get(Device, "SC2")
-    # Act
-    request = DevicePendingJobsUpdate(
-        command="DevicePendingJobsUpdate", n_pending_jobs=8
-    )
-    actual = update_device_pending_jobs(device=device, request=request, db=test_db)
-    # Assert
-    expected = DeviceDataUpdateResponse(message="Device's data updated")
-    assert actual == expected
+def _get_model_qpu():
+    mode_dict = {
+        "id": "SC",
+        "device_type": "QPU",
+        "status": "available",
+        "available_at": datetime(2023, 1, 2, 12, 34, 56),
+        "pending_jobs": 8,
+        "n_qubits": 39,
+        "basis_gates": '["x", "sx", "rz", "cx"]',
+        "instructions": '["measure", "barrier", "reset"]',
+        "device_info": "{}",
+        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
+        "description": "State vector-based quantum circuit simulator",
+        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+    }
+    return Device(**mode_dict)
 
 
 def test_update_device_status_available(test_db):
     # Arrange
-    test_db.add(_get_model())
+    test_db.add(_get_model_sim())
     test_db.commit()
     device = test_db.get(Device, "SC2")
     # Act
-    request = DeviceStatusUpdate(
-        command="DeviceStatusUpdate", status=DeviceStatus.available, available_at=None
-    )
-    actual = update_device_status(device=device, request=request, db=test_db)
+    request = DeviceStatusUpdate(status=DeviceStatus.available)
+    actual = update_device_status(device_id=device.id, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
@@ -88,36 +87,31 @@ def test_update_device_status_available(test_db):
 
 def test_update_device_status_not_available(test_db):
     # Arrange
-    test_db.add(_get_model())
+    test_db.add(_get_model_sim())
     test_db.commit()
     device = test_db.get(Device, "SC2")
     # Act
-    request = DeviceStatusUpdate(
-        command="DeviceStatusUpdate",
-        status=DeviceStatus.unavailable,
-        available_at=datetime.now(tz=timezone.utc),
-    )
-    actual = update_device_status(device=device, request=request, db=test_db)
+    request = DeviceStatusUpdate(status=DeviceStatus.unavailable)
+    actual = update_device_status(device_id=device.id, request=request, db=test_db)
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
 
 
-# def test_update_device_calibration(test_db):
-#     # Arrange
-#     test_db.add(_get_model())
-#     test_db.commit()
-#     device = test_db.get(Device, "SC2")
-#     # Act
-#     request = DeviceCalibrationUpdate(
-#         command="DeviceCalibrationUpdate",
-#         calibrationData=CalibrationData(**_get_calibration_dict()),
-#         calibrated_at=datetime.now(),
-#     )
-#     actual = update_device_calibration(device=device, request=request, db=test_db)
-#     # Assert
-#     expected = DeviceDataUpdateResponse(message="Device's data updated")
-#     assert actual == expected
+def test_update_device_calibration(test_db):
+    # Arrange
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    device = test_db.get(Device, "SC")
+    # Act
+    request = DeviceInfoUpdate(
+        device_info=json.dumps(_get_calibration_dict()),
+        calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+    )
+    actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
+    # Assert
+    expected = DeviceDataUpdateResponse(message="Device's data updated")
+    assert actual == expected
 
 
 # TODO: add invalid test cases

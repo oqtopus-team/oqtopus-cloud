@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help zip-user zip-provider zip-admin zip-all zip deploy-user deploy-provider deploy-admin deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
+.PHONY: help zip-user zip-provider zip-admin zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-all deploy test-user test-provider test-admin test-all test all-user all-provider all-admin all
 
 include .env
 export
@@ -30,7 +30,15 @@ zip-admin: ## Build admin API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/admin
 
-zip-all: zip-user zip-provider zip-admin ## Build All Lambda Packages
+zip-pending-jobs-updater-worker: ## Build pending-jobs-updater Lambda Package
+	@$(MAKE) zip \
+	WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/worker/pending_jobs_updater \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/pending-jobs-updater
+
+zip-all: zip-user zip-provider zip-admin zip-pending-jobs-updater-worker## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -68,8 +76,12 @@ deploy-admin: zip-admin	## Deploy Admin API Lambda Package
 	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
 	BIN=./bin/admin
 
-deploy-all: deploy-user deploy-provider deploy-admin ## Deploy All Lambda Packages
+deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pending-jobs-updater-worker Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
+	BIN=./bin/pending-jobs-updater
 
+deploy-all: deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
 deploy:
 	@echo "Deploy ${FUNCTION_NAME} ..."
