@@ -90,16 +90,19 @@ def register_devices(
         logger.info("invoked register_devices")
         device_id = get_device_id(device_info)
         if device_id is None:
+            logger.error("device_id is required")
             return BadRequestErrorResponse(message="device_id is required")
         existing_device = db.scalars(
             select(Device).where(Device.id == device_id)
         ).first()
         if existing_device:
+            logger.error(f"device_id={device_id} already exists")
             return BadRequestErrorResponse(
                 message=f"device_id={device_id} already exists"
             )
         new_device = schema_to_model(device_id, device_info)
         if new_device is None:
+            logger.error("Invalid device timezone")
             return BadRequestErrorResponse(message="Invalid device timezone")
         db.add(new_device)
         db.commit()
