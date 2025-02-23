@@ -454,7 +454,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
-  /jobs/{job_id}/sse-log:
+  /jobs/{job_id}/sselog:
     get:
       tags:
         - job

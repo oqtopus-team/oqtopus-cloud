@@ -25,9 +25,9 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.jobStatus
   /jobs/{job_id}/job_info:
     $ref: ./paths/jobs.yaml#/jobs.jobInfo
-  /jobs/{job_id}/sse-src:
+  /jobs/{job_id}/ssesrc:
     $ref: ./paths/jobs.yaml#/jobs.jobId.ssesrc
-  /jobs/{job_id}/sse-log:
+  /jobs/{job_id}/sselog:
     $ref: ./paths/jobs.yaml#/jobs.jobId.sselog
 components:
   securitySchemes:

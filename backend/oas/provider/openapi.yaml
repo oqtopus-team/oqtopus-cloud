@@ -282,7 +282,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: Job not found
-  /jobs/{job_id}/sse-src:
+  /jobs/{job_id}/ssesrc:
     get:
       tags:
         - job
@@ -328,7 +328,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal server error
-  /jobs/{job_id}/sse-log:
+  /jobs/{job_id}/sselog:
     patch:
       tags:
         - job
