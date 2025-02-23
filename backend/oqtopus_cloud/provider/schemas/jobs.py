@@ -22,6 +22,7 @@ class JobStatus(str, Enum):
 class JobType(str, Enum):
     sampling = "sampling"
     estimation = "estimation"
+    multi_manual = "multi_manual"
 
 
 class OperatorItem(BaseModel):

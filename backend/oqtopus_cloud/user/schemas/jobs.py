@@ -13,6 +13,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 class JobType(str, Enum):
     estimation = "estimation"
     sampling = "sampling"
+    multi_manual = "multi_manual"
 
 
 class JobStatus(str, Enum):

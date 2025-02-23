@@ -177,6 +177,7 @@ jobs.JobType:
   enum:
     - sampling
     - estimation
+    - multi_manual
 
 jobs.JobDef:
   type: object

@@ -421,6 +421,7 @@ components:
       enum:
         - sampling
         - estimation
+        - multi_manual
     jobs.OperatorItem:
       type: object
       properties:
