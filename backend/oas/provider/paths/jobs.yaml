@@ -192,7 +192,6 @@ jobs.jobId.ssesrc:
     summary: "Get SSE program source file"
     description: "Get SSE program source file of selected job"
     operationId: getSsesrc
-    security: []
     parameters:
         - in: path
           name: job_id
@@ -239,7 +238,6 @@ jobs.jobId.sselog:
     summary: "Upload SSE log file"
     description: "Upload SSE log file of selected job"
     operationId: patchSselog
-    security: []
     parameters:
       - in: path
         name: job_id
