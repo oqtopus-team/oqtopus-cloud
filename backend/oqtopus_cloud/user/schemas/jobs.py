@@ -45,6 +45,14 @@ class SamplingResult(BaseModel):
         str | None,
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ] = None
+    divided_counts: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
+            ]
+        ),
+    ] = None
 
 
 class EstimationResult(BaseModel):

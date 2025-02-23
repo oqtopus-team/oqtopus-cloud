@@ -232,6 +232,7 @@ def update_job_info(
         # The job result must be compatible with the job info.
         if (
             request.job_info is not None
+            and model.job_type != JobType.multi_manual
             and request.job_info.result is not None
             and model.job_type != jobtype_of_result(request.job_info.result)
         ):
