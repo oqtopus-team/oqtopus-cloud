@@ -179,8 +179,10 @@ def submit_jobs(
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
-
-        if jobtype_of_jobinfo(request.job_info) != request.job_type:
+        if (
+            jobtype_of_jobinfo(request.job_info) != request.job_type
+            and request.job_type != JobType.multi_manual
+        ):
             return BadRequestResponse("job_info is not compatible with job_type")
 
         # NOTE: method and operator is validated by pydantic
