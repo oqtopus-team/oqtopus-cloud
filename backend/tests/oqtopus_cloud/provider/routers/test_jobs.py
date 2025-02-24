@@ -273,7 +273,7 @@ def test_update_job_info_result(test_db: Session):
             assert aft_job.status == JobStatus.succeeded
             assert aft_job.execution_time == exectime
             assert aft_job.ended_at is not None
-            assert aft_job.job_type == jobtype_of_result(aft_job_info.result)
+            assert aft_job.job_type in jobtype_of_result(aft_job_info.result)
 
 
 def test_update_job_info_transpile_result(test_db: Session):

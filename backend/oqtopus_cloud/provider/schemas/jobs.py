@@ -183,6 +183,7 @@ class JobStatusUpdateResponse(BaseModel):
 
 
 class UpdateJobInfo(BaseModel):
+    combined_program: str | None = None
     transpile_result: TranspileResult | None = None
     result: JobResult | None = None
     message: str | None = None

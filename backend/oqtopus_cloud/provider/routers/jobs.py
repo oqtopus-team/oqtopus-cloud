@@ -208,6 +208,9 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
+        if incoming.combined_program is not None:
+            job_info.combined_program = incoming.combined_program
+
         if incoming.transpile_result is not None:
             job_info.transpile_result = incoming.transpile_result
 
@@ -232,9 +235,8 @@ def update_job_info(
         # The job result must be compatible with the job info.
         if (
             request.job_info is not None
-            and model.job_type != JobType.multi_manual
             and request.job_info.result is not None
-            and model.job_type != jobtype_of_result(request.job_info.result)
+            and model.job_type not in jobtype_of_result(request.job_info.result)
         ):
             return BadRequestResponse(
                 message="The job result type is not compatible with job info."
@@ -299,12 +301,12 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> JobType | None:
+def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
-        return JobType.sampling
+        return [JobType.sampling, JobType.multi_manual]
     elif r.estimation is not None:
-        return JobType.estimation
-    return None
+        return [JobType.estimation]
+    return [None]
 
 
 def decode_job_status(s: str) -> JobStatus | ValueError:

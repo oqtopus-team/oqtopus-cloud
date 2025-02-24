@@ -179,10 +179,7 @@ def submit_jobs(
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
-        if (
-            jobtype_of_jobinfo(request.job_info) != request.job_type
-            and request.job_type != JobType.multi_manual
-        ):
+        if request.job_type not in jobtype_of_jobinfo(request.job_info):
             return BadRequestResponse("job_info is not compatible with job_type")
 
         # NOTE: method and operator is validated by pydantic
@@ -458,8 +455,8 @@ def model_to_schema(
         return None
 
 
-def jobtype_of_jobinfo(info: SubmitJobInfo) -> JobType:
+def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
     if info.operator is not None:
-        return JobType.estimation
+        return [JobType.estimation]
     else:
-        return JobType.sampling
+        return [JobType.sampling, JobType.multi_manual]

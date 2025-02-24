@@ -540,6 +540,9 @@ jobs.JobStatusUpdateResponse:
 jobs.UpdateJobInfo:
   type: object
   properties:
+    combined_program:
+        type: string
+        nullable: true
     transpile_result:
       $ref: "#/jobs.TranspileResult"
       nullable: true

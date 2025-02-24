@@ -752,6 +752,9 @@ components:
     jobs.UpdateJobInfo:
       type: object
       properties:
+        combined_program:
+          type: string
+          nullable: true
         transpile_result:
           $ref: '#/components/schemas/jobs.TranspileResult'
           nullable: true
