@@ -53,6 +53,23 @@ jobs.SamplingResult:
           "10": 454,
           "01": 75
         }
+    divided_counts:
+      type: string
+      nullable: true
+      example: >-
+        {
+          "0": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          },
+          "1": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          }
 
 jobs.EstimationResult:
   type: object
@@ -196,6 +213,7 @@ jobs.JobType:
   enum:
     - estimation
     - sampling
+    - multi_manual
     - sse
   example: sampling
 

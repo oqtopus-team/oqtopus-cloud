@@ -64,6 +64,7 @@ class Job(Base):
             "sampling",
             "estimation",
             "sse",
+            "multi_manual",
         ),
         nullable=False,
     )

@@ -185,7 +185,6 @@ def submit_jobs(
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
-
         if request.job_type not in jobtype_of_jobinfo(request.job_info):
             return BadRequestResponse("job_info is not compatible with job_type")
 
@@ -583,4 +582,4 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
     if info.operator is not None:
         return [JobType.estimation]
     else:
-        return [JobType.sampling, JobType.sse]
+        return [JobType.sampling, JobType.multi_manual, JobType.sse]

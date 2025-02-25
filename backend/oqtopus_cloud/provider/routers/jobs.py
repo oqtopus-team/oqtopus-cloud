@@ -213,6 +213,9 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
+        if incoming.combined_program is not None:
+            job_info.combined_program = incoming.combined_program
+
         if incoming.transpile_result is not None:
             job_info.transpile_result = incoming.transpile_result
 
@@ -364,7 +367,7 @@ MAP_MODEL_TO_SCHEMA = {
 
 def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
-        return [JobType.sampling, JobType.sse]
+        return [JobType.sampling, JobType.multi_manual, JobType.sse]
     elif r.estimation is not None:
         return [JobType.estimation]
     return [None]

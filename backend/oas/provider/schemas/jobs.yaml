@@ -58,6 +58,23 @@ jobs.SamplingResult:
           "10": 454,
           "01": 75
         }
+    divided_counts:
+      type: string
+      nullable: true
+      example: >-
+        {
+          "0": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          },
+          "1": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          }
   required:
     - counts
 
@@ -177,6 +194,7 @@ jobs.JobType:
   enum:
     - sampling
     - estimation
+    - multi_manual
     - sse
 
 jobs.JobDef:
@@ -523,6 +541,9 @@ jobs.JobStatusUpdateResponse:
 jobs.UpdateJobInfo:
   type: object
   properties:
+    combined_program:
+        type: string
+        nullable: true
     transpile_result:
       $ref: "#/jobs.TranspileResult"
       nullable: true
