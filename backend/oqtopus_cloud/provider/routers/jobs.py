@@ -236,10 +236,9 @@ def update_job_info(
 
         # The job result must be compatible with the job info.
         if (
-            model.job_type != JobType.sse
-            and request.job_info is not None
+            request.job_info is not None
             and request.job_info.result is not None
-            and model.job_type != jobtype_of_result(request.job_info.result)
+            and model.job_type not in jobtype_of_result(request.job_info.result)
         ):
             return BadRequestResponse(
                 message="The job result type is not compatible with job info."
@@ -363,12 +362,12 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> JobType | None:
+def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
-        return JobType.sampling
+        return [JobType.sampling, JobType.sse]
     elif r.estimation is not None:
-        return JobType.estimation
-    return None
+        return [JobType.estimation]
+    return [None]
 
 
 def decode_job_status(s: str) -> JobStatus | ValueError:
