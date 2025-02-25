@@ -18,6 +18,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     Message,
 )
+from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.admin.schemas.whitelist_users import (
     ListWhitelistUserResponse,
     ListWhitelistUsersResponse,
@@ -39,6 +40,12 @@ utc = ZoneInfo("UTC")
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
+class FormatError(Exception):
+    """Custom exception for formatting errors"""
+
+    pass
+
+
 def is_unique_email(session, email):
     return session.query(WhitelistUser).filter_by(email=email).first() is None
 
@@ -48,24 +55,24 @@ def validated_whitelist_user(
 ) -> WhitelistUser:
     required_msg = "{} is required."
     too_long_msg = (
-        "The length of {} exceeds the limit. Please enter within {} characters."
+        "The length of {} exceeds the limit. Please enter within {} characters"
     )
     if not user.email:
-        raise Exception(required_msg.format("email address"))
+        raise FormatError(required_msg.format("email address"))
     if not user.group_id:
-        raise Exception(required_msg.format("group_id"))
+        raise FormatError(required_msg.format("group_id"))
 
     if len(str(user.email)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.email, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.email, LEN_VARCHAR))
     if len(str(user.group_id)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.group_id, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.group_id, LEN_VARCHAR))
     if user.username and len(str(user.username)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.username, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.username, LEN_VARCHAR))
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
-        raise Exception(too_long_msg.format(user.organization, LEN_VARCHAR))
+        raise FormatError(too_long_msg.format(user.organization, LEN_VARCHAR))
 
     if not is_unique_email(db, user.email):
-        raise Exception(f"{user.email} is already registered.")
+        raise FormatError(f"{user.email} is already registered.")
 
     validated_user = {
         "email": str(user.email),
@@ -113,13 +120,13 @@ def get_whitelist_users(
 
         return ListWhitelistUsersResponse(users=whitelist_users)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
 @router.post(
     "/whitelist_users",
-    response_model=None,
+    response_model=SuccessResponse,
     status_code=status.HTTP_200_OK,
     responses={400: {"model": Message}, 500: {"model": Message}},
 )
@@ -127,7 +134,7 @@ def get_whitelist_users(
 def register_whitelist_user(
     users: RegisterWhitelistUsersRequest,
     db: Session = Depends(get_db),
-) -> None | BadRequestErrorResponse | InternalServerErrorResponse:
+) -> SuccessResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked create_whitelist_user")
     valid_users_list = []
     try:
@@ -139,7 +146,7 @@ def register_whitelist_user(
             validated_whitelist_user(db, one_user) for one_user in users_list
         ]
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return BadRequestErrorResponse(message=str(e))
     if not valid_users_list:
         logger.error("No valid user to register")
@@ -157,9 +164,9 @@ def register_whitelist_user(
             )
             db.add(new_whitelist_user)
             db.commit()
-        return None
+        return SuccessResponse(message="Successfully registered")
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -177,6 +184,7 @@ def delete_whitelist_user(
     logger.info("invoked delete whitelist_user")
     try:
         if user_emails.user_emails is None:
+            logger.info("No users to delete")
             return None
         stmt = select(WhitelistUser).where(
             WhitelistUser.email.in_(user_emails.user_emails)
@@ -184,12 +192,14 @@ def delete_whitelist_user(
         # delete from RDS
         users_to_delete = db.scalars(stmt)
         if not users_to_delete:
+            logger.info("No users to delete")
             return None
         for user in users_to_delete:
             db.delete(user)
         db.commit()
         return None
     except Exception as e:
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 

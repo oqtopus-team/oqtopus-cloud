@@ -44,6 +44,13 @@ def test_signup_success(test_db):
     assert whitelist_user.is_signup_completed is True
 
 
+def test_signup_500():
+    client = TestClient(app)
+    body = SignupRequest(email="email_2", password="password_1")
+    response = client.post("/signup", json=body.model_dump())
+    assert response.status_code == 500
+
+
 def test_signup_not_in_whitelist(test_db):
     client = TestClient(app)
     test_db.flush()

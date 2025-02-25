@@ -61,7 +61,8 @@ def get_users(
         if status:
             status_num = enum_to_status(status)
             if status_num is None:
-                return BadRequestErrorResponse(message="Invalid status")
+                logger.error(f"Invalid status: {status}")
+                return BadRequestErrorResponse(message=f"Invalid status: {status}")
             stmt = stmt.where(User.userstatus == status_num)
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
@@ -70,7 +71,8 @@ def get_users(
 
         return GetUsersResponse(offset=str(offset), limit=str(limit), users=users)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        tracer.put_annotation("db_error", str(e))
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -90,11 +92,12 @@ def update_user_status(
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     try:
         logger.info("invoked update userstatus")
-        # query
+        # search the user
         stmt = select(User).where(User.id == user_id)
         query = db.execute(stmt).scalars().first()
         if not query:
-            return NotFoundErrorResponse(message="User not found")
+            logger.error(f"User not found: {user_id}")
+            return NotFoundErrorResponse(message=f"User not found: {user_id}")
         query.userstatus = enum_to_status(status_update.status)
 
         # commit the transaction
@@ -106,7 +109,8 @@ def update_user_status(
         return user
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
-        return InternalServerErrorResponse(message="Internal Server Error")
+        logger.exception(f"error: {str(e)}")
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.delete(
@@ -134,7 +138,8 @@ def delete_user(
         # pageination
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
-            return NotFoundErrorResponse(message="User not found")
+            logger.error(f"User not found: {user_id}")
+            return NotFoundErrorResponse(message=f"User not found: {user_id}")
         # delete from RDS
         db.delete(query_result)
         db.commit()
@@ -148,6 +153,7 @@ def delete_user(
         return None
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
