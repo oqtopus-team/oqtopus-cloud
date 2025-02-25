@@ -216,6 +216,7 @@ def test_patch_job_status_to_unapproved(
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
+        require_mfa_reset=True,
     )
     assert response.status_code == 200
     assert actual == expect

@@ -65,6 +65,21 @@ def test_mfa_reset_request_500():
     assert response.status_code == 500
 
 
+def test_mfa_reset_request_no_user_found(test_db, fake_cognito_client_fixture):
+    fake_cognito_client_fixture.admin_initiate_auth = Exception("Invalid token")
+    client = TestClient(app)
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    body = MfaResetRequest(
+        email="email1@example.com",
+        password="confirmation_code_1",
+        client_id="client_id_1",
+    )
+    response = client.put("/mfa_reset_request", json=body.model_dump())
+    assert response.status_code == 400
+
+
 def test__request_no_user_found(test_db):
     client = TestClient(app)
     test_db.flush()
