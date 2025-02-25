@@ -310,6 +310,7 @@ def get_ssesrc(
         return PlainTextResponse(content=program_base64)
 
     except Exception as e:
+        logger.exception("Failed to get SSE user program file: %s", e)
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
@@ -317,6 +318,8 @@ def get_ssesrc(
     "/jobs/{job_id}/sselog",
     response_model=UploadSselogResponse,
     responses={
+        400: {"model": Message},
+        404: {"model": Message},
         500: {"model": Message},
     },
 )
@@ -324,10 +327,25 @@ def get_ssesrc(
 def upload_sselog(
     job_id: str,
     file: UploadFile = Form(...),
+    db: Session = Depends(get_db),
 ) -> UploadSselogResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+
     try:
-        bucket_name = os.environ["SSE_BUCKET"]
-        file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+        # Check that the job exists
+        job_model = db.query(Job).filter(Job.id == job_id).first()
+        if job_model is None:
+            logger.info("job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        job = model_to_schema(job_model)
+        if isinstance(job, ValueError):
+            logger.warning("warn: Failed to encode job model to schema.")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        if job.job_type != JobType.sse:
+            logger.info("job is not an SSE job")
+            return BadRequestResponse(message="job is not an SSE job")
+
         binary = file.file.read()
 
         s3_client = boto3.client("s3")
@@ -338,6 +356,7 @@ def upload_sselog(
         )
         return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
+        logger.exception("Failed to upload SSE log file: %s", e)
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 

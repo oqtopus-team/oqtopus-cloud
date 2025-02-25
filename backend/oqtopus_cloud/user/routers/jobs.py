@@ -215,9 +215,6 @@ def submit_jobs(
         # put the user program to S3 when SSE
         is_success_put_s3 = put_user_program_to_s3(job)
         if not is_success_put_s3:
-            set_job_failure(job)
-            db.add(job)
-            db.commit()
             return InternalServerErrorResponse(
                 message="Failed to upload the user program to S3"
             )
@@ -405,11 +402,16 @@ def get_sselog(
             return BadRequestResponse(message="job has not finished yet")
 
         # get the logs from the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        log_object = s3_client.get_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{log_name}",
-        )
+        log_object = None
+        try:
+            s3_client = boto3.client("s3")
+            log_object = s3_client.get_object(
+                Bucket=bucket_name,
+                Key=f"{job_id}/{log_name}",
+            )
+        except Exception as e:
+            logger.exception(f"Failed to get the log file: {str(e)}")
+
         if log_object is None:
             return NotFoundErrorResponse(message="log file not found")
 
@@ -429,7 +431,7 @@ def get_sselog(
         return GetSselogResponse(file=zip_base64, file_name=file_name)
 
     except Exception as e:
-        logger.error(f"Failed to get the log file: {str(e)}")
+        logger.exception(f"Failed to get the log file: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
@@ -463,7 +465,7 @@ def put_user_program_to_s3(job: Job) -> bool:
 
         return True
     except Exception as e:
-        logger.error(f"Failed to upload the user program to S3: {str(e)}")
+        logger.exception(f"Failed to upload the user program to S3: {str(e)}")
         return False
 
 
