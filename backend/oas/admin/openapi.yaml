@@ -272,10 +272,6 @@ paths:
       responses:
         '204':
           description: Delete success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/success.SuccessResponse'
         '401':
           description: Unauthorized
         '403':

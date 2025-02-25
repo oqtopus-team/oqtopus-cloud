@@ -38,7 +38,7 @@ def signup(
     user_pool_id = event.state.pool_id
     try:
         logger.info("invoked pre signup confirmation")
-        # check if user exists
+        # check if user exists in whitelist_users table
         email = request.email
         password = request.password
         stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
@@ -86,5 +86,5 @@ def signup(
         db.commit()
         return None
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
