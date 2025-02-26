@@ -16,19 +16,19 @@ security:
   - ApiKeyAuth: []
 paths:
   /devices/{device_id}:
-    $ref: ./paths/devices.yaml#/devices.deviceId
+    $ref: ./paths/devices.yaml#/devices.device_id
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
-    $ref: ./paths/jobs.yaml#/jobs.jobId
+    $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:
-    $ref: ./paths/jobs.yaml#/jobs.jobStatus
+    $ref: ./paths/jobs.yaml#/jobs.job_status
   /jobs/{job_id}/job_info:
-    $ref: ./paths/jobs.yaml#/jobs.jobInfo
+    $ref: ./paths/jobs.yaml#/jobs.job_info
   /jobs/{job_id}/ssesrc:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.ssesrc
+    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_src
   /jobs/{job_id}/sselog:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.sselog
+    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
 components:
   securitySchemes:
     ApiKeyAuth:

@@ -58,7 +58,7 @@ jobs:
             example:
               message: Internal server error
 
-jobs.jobId:
+jobs.job_id:
   get:
     summary: Get a job by ID
     description: Get a job by ID
@@ -94,7 +94,7 @@ jobs.jobId:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
-jobs.jobStatus:
+jobs.job_status:
   patch:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
@@ -138,7 +138,7 @@ jobs.jobStatus:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
               message: The specified job is not in a status thatt allows transition to the requested status.
-jobs.jobInfo:
+jobs.job_info:
   patch:
     summary: "Update selected quantum job's job_info by placing job results"
     description: |
@@ -185,7 +185,7 @@ jobs.jobInfo:
             example:
               message: Job not found
 
-jobs.jobId.ssesrc:
+jobs.job_id.sse_src:
   get:
     tags:
       - job
@@ -231,7 +231,7 @@ jobs.jobId.ssesrc:
             example:
               message: Internal server error
 
-jobs.jobId.sselog:
+jobs.job_id.sse_log:
   patch:
     tags:
       - job

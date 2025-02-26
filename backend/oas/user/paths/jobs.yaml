@@ -194,7 +194,7 @@ jobs:
             example:
               message: Unauthorized
 
-jobs.jobId:
+jobs.job_id:
   get:
     tags:
       - job
@@ -288,7 +288,7 @@ jobs.jobId:
             example:
               message: job not found
 
-jobs.jobId.status:
+jobs.job_id.status:
   get:
     tags:
       - job
@@ -335,7 +335,7 @@ jobs.jobId.status:
             example:
               message: job not found
 
-jobs.jobId.cancel:
+jobs.job_id.cancel:
   post:
     tags:
       - job
@@ -384,7 +384,7 @@ jobs.jobId.cancel:
             example:
               message: job not found
 
-jobs.jobId.sselog:
+jobs.job_id.sse_log:
   get:
     tags:
       - job

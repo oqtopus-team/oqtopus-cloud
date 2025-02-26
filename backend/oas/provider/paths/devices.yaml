@@ -1,4 +1,4 @@
-devices.deviceId:
+devices.device_id:
     patch:
       tags:
       - devices
