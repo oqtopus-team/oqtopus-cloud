@@ -169,10 +169,6 @@ class JobDef(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class JobStatusUpdate(BaseModel):
