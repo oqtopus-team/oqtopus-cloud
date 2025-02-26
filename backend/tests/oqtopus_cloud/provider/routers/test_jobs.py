@@ -1,14 +1,14 @@
+import base64
+import io
 import json
+import os
+import zipfile
 from datetime import datetime
 from typing import List
-import os
-import io
-import zipfile
-import boto3
-import base64
-from moto import mock_aws
 
+import boto3
 from fastapi.testclient import TestClient
+from moto import mock_aws
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -157,6 +157,89 @@ def test_get_jobs(test_db: Session):
     if isinstance(job, JobDef):
         assert job.job_id == job_id
         assert job.status != JobStatus.submitted
+
+
+def test_get_jobs_ignore_illegal_job(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    # job3 has invalid job_info
+    job_3 = _get_job_model(3, JobType.sampling)
+    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(job_3)
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC2")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert len(actual) == 2
+    assert actual[0].job_id == "testjob1id"
+    assert actual[1].job_id == "testjob2id"
+
+
+def test_get_jobs_filtering(test_db: Session):
+    # Arrange
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.estimation))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC2&fields=job_id%2Cdescription%2Cjob_info")
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob1id",
+            description="test job 1",
+            job_info=_get_job_info(JobType.sampling),
+        ),
+        GetJobsResponse(
+            job_id="testjob2id",
+            description="test job 2",
+            job_info=_get_job_info(JobType.estimation),
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_timestamp(test_db: Session):
+    # Arrange
+    test_db.flush()
+    for i in range(1, 10):
+        test_db.add(_get_job_model(i, JobType.sampling))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get(
+        "/jobs?device_id=SC2&fields=job_id&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    expect = [
+        GetJobsResponse(
+            job_id="testjob7id",
+        ),
+        GetJobsResponse(
+            job_id="testjob8id",
+        ),
+        GetJobsResponse(
+            job_id="testjob9id",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
 
 
 def test_get_jobs_max_results(test_db: Session):
@@ -418,8 +501,13 @@ def test_get_ssesrc():
     job_id = "testjob1id"
     src_body = "program1"
     s3client = boto3.client("s3")
-    s3client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"})
-    s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/{program_name}", Body=src_body)
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(
+        Bucket=bucket_name, Key=f"{job_id}/{program_name}", Body=src_body
+    )
 
     resp = client.get(f"/jobs/{job_id}/ssesrc")
     resp.status_code == 200
@@ -429,16 +517,21 @@ def test_get_ssesrc():
     # clean up
     s3client.delete_object(Bucket=bucket_name, Key=f"{job_id}/oqtopus_test_program.py")
 
+
 @mock_aws
 def test_get_ssesrc_no_src():
     # Arrange skip creating object for this test
     bucket_name = os.environ["SSE_BUCKET"]
     job_id = "testjob1id"
     s3client = boto3.client("s3")
-    s3client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"})
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
 
     resp = client.get(f"/jobs/{job_id}/ssesrc")
     assert resp.status_code == 500
+
 
 @mock_aws
 def test_upload_sselog(test_db: Session):
@@ -451,7 +544,10 @@ def test_upload_sselog(test_db: Session):
     job_id = "testjob1id"
     src_body = "program1"
     s3client = boto3.client("s3")
-    s3client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"})
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
 
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
@@ -482,14 +578,18 @@ def test_upload_sselog_unknown_jobid(test_db: Session):
     bucket_name = os.environ["SSE_BUCKET"]
     src_body = "program1"
     s3client = boto3.client("s3")
-    s3client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"})
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
 
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
 
-    resp = client.patch(f"/jobs/anotherjobid/sselog", files=form_data)
+    resp = client.patch("/jobs/anotherjobid/sselog", files=form_data)
 
     assert resp.status_code == 404
+
 
 @mock_aws
 def test_upload_sselog_invalid_jobtype(test_db: Session):
@@ -502,7 +602,10 @@ def test_upload_sselog_invalid_jobtype(test_db: Session):
     job_id = "testjob1id"
     src_body = "program1"
     s3client = boto3.client("s3")
-    s3client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"})
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
 
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
@@ -510,4 +613,3 @@ def test_upload_sselog_invalid_jobtype(test_db: Session):
     resp = client.patch(f"/jobs/{job_id}/sselog", files=form_data)
 
     assert resp.status_code == 400
-
