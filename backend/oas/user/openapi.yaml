@@ -19,7 +19,7 @@ paths:
         - device
       summary: List available devices
       description: List available devices
-      operationId: listDevices
+      operationId: list_devices
       security:
         - BearerAuth: []
       responses:
@@ -51,7 +51,7 @@ paths:
         - device
       summary: Get specified device details
       description: get device
-      operationId: getDevice
+      operationId: get_device
       security:
         - BearerAuth: []
       parameters:
@@ -92,7 +92,7 @@ paths:
         List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
-      operationId: listJobs
+      operationId: list_jobs
       security:
         - BearerAuth: []
       parameters:
@@ -185,7 +185,7 @@ paths:
         - job
       summary: Submit a quantum job
       description: Submit a quantum job
-      operationId: submitJob
+      operationId: submit_job
       security:
         - BearerAuth: []
       requestBody:
@@ -269,7 +269,7 @@ paths:
         - job
       summary: Get selected job
       description: Get selected job
-      operationId: getSamplingJob
+      operationId: get_sampling_job
       security:
         - BearerAuth: []
       parameters:
@@ -315,7 +315,7 @@ paths:
         - job
       summary: Delete job
       description: 'Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion.'
-      operationId: deleteSamplingJob
+      operationId: delete_sampling_job
       security:
         - BearerAuth: []
       parameters:
@@ -364,7 +364,7 @@ paths:
         - job
       summary: Get selected job's status
       description: Get selected job's status
-      operationId: getSamplingJobStatus
+      operationId: get_sampling_job_status
       security:
         - BearerAuth: []
       parameters:
@@ -411,7 +411,7 @@ paths:
         - job
       summary: Cancel job
       description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running.'
-      operationId: cancelSamplingJob
+      operationId: cancel_sampling_job
       security:
         - BearerAuth: []
       parameters:
@@ -460,7 +460,7 @@ paths:
         - job
       summary: Get SSE log file
       description: Get SSE log file of selected job
-      operationId: getSselog
+      operationId: get_sselog
       security:
         - BearerAuth: []
       parameters:
@@ -515,7 +515,7 @@ paths:
         - api-token
       summary: get api token
       description: Get api token
-      operationId: GetApiToken
+      operationId: get_api_token
       security:
         - BearerAuth: []
       responses:
@@ -554,7 +554,7 @@ paths:
         - api-token
       summary: create api token
       description: Create api token
-      operationId: CreateApiToken
+      operationId: create_api_token
       security:
         - BearerAuth: []
       responses:
@@ -593,7 +593,7 @@ paths:
         - api-token
       summary: delete api token
       description: Delete api token
-      operationId: DeleteApiToken
+      operationId: delete_api_token
       security:
         - BearerAuth: []
       responses:
