@@ -1,9 +1,13 @@
 import json
 from datetime import datetime
+import os
+import base64
+import boto3
 from typing import Any, Optional
 
 import pytz
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -25,6 +29,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
+    UploadSselogResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
@@ -208,6 +213,9 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
+        if incoming.combined_program is not None:
+            job_info.combined_program = incoming.combined_program
+
         if incoming.transpile_result is not None:
             job_info.transpile_result = incoming.transpile_result
 
@@ -233,7 +241,7 @@ def update_job_info(
         if (
             request.job_info is not None
             and request.job_info.result is not None
-            and model.job_type != jobtype_of_result(request.job_info.result)
+            and model.job_type not in jobtype_of_result(request.job_info.result)
         ):
             return BadRequestResponse(
                 message="The job result type is not compatible with job info."
@@ -274,6 +282,84 @@ def update_job_info(
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
+@router.get(
+    "/jobs/{job_id}/ssesrc",
+    response_model=None,
+    response_class=PlainTextResponse,
+    responses={
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_ssesrc(
+    job_id: str,
+) -> PlainTextResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
+    try:
+        # get the program file from the AWS S3 bucket
+        s3_client = boto3.client("s3")
+        program = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+        )
+        program = program["Body"].read()
+
+        # encode the file to base64
+        program_base64 = base64.b64encode(program).decode("utf-8")
+        return PlainTextResponse(content=program_base64)
+
+    except Exception as e:
+        logger.exception("Failed to get SSE user program file: %s", e)
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.patch(
+    "/jobs/{job_id}/sselog",
+    response_model=UploadSselogResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def upload_sselog(
+    job_id: str,
+    file: UploadFile = Form(...),
+    db: Session = Depends(get_db),
+) -> UploadSselogResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+
+    try:
+        # Check that the job exists
+        job_model = db.query(Job).filter(Job.id == job_id).first()
+        if job_model is None:
+            logger.info("job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        job = model_to_schema(job_model)
+        if isinstance(job, ValueError):
+            logger.warning("warn: Failed to encode job model to schema.")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        if job.job_type != JobType.sse:
+            logger.info("job is not an SSE job")
+            return BadRequestResponse(message="job is not an SSE job")
+
+        binary = file.file.read()
+
+        s3_client = boto3.client("s3")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+            Body=binary,
+        )
+        return UploadSselogResponse(message="SSE log uploaded")
+    except Exception as e:
+        logger.exception("Failed to upload SSE log file: %s", e)
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
 # TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {
     "id": "job_id",
@@ -298,12 +384,12 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> JobType | None:
+def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
-        return JobType.sampling
+        return [JobType.sampling, JobType.multi_manual, JobType.sse]
     elif r.estimation is not None:
-        return JobType.estimation
-    return None
+        return [JobType.estimation]
+    return [None]
 
 
 def decode_job_status(s: str) -> JobStatus | ValueError:

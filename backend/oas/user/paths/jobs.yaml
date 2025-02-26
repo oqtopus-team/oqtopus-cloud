@@ -383,3 +383,58 @@ jobs.jobId.cancel:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
+
+jobs.jobId.sselog:
+  get:
+    tags:
+      - job
+    summary: "Get SSE log file"
+    description: "Get SSE log file of selected job"
+    operationId: getSselog
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return SSE log file"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.GetSselogResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error

@@ -13,6 +13,8 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 class JobType(str, Enum):
     estimation = "estimation"
     sampling = "sampling"
+    multi_manual = "multi_manual"
+    sse = "sse"
 
 
 class JobStatus(str, Enum):
@@ -43,6 +45,14 @@ class SamplingResult(BaseModel):
     counts: Annotated[
         str | None,
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ] = None
+    divided_counts: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
+            ]
+        ),
     ] = None
 
 
@@ -288,3 +298,14 @@ class GetJobStatusResponse(BaseModel):
 
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     status: JobStatus
+
+
+class GetSselogResponse(BaseModel):
+    """
+    sse log file
+    """
+
+    file: str | None = None
+    file_name: Annotated[
+        str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
+    ] = None

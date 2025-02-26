@@ -25,6 +25,8 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.jobId.status
   /jobs/{job_id}/cancel:
     $ref: ./paths/jobs.yaml#/jobs.jobId.cancel
+  /jobs/{job_id}/sselog:
+    $ref: ./paths/jobs.yaml#/jobs.jobId.sselog
   /api-token:
     $ref: ./paths/api-token.yaml#/api-token
 components:
