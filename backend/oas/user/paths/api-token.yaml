@@ -9,7 +9,7 @@ api-token:
       - api-token
     summary: "get api token"
     description: "Get api token"
-    operationId: GetApiToken
+    operationId: get_api_token
     security:
       - BearerAuth: []
     responses:
@@ -48,7 +48,7 @@ api-token:
       - api-token
     summary: "create api token"
     description: "Create api token"
-    operationId: CreateApiToken
+    operationId: create_api_token
     security:
       - BearerAuth: []
     responses:
@@ -87,7 +87,7 @@ api-token:
       - api-token
     summary: "delete api token"
     description: "Delete api token"
-    operationId: DeleteApiToken
+    operationId: delete_api_token
     security:
       - BearerAuth: []
     responses:

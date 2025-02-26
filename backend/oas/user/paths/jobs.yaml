@@ -9,7 +9,7 @@ jobs:
         List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
-    operationId: listJobs
+    operationId: list_jobs
     security:
       - BearerAuth: []
     parameters:
@@ -106,7 +106,7 @@ jobs:
       - job
     summary: "Submit a quantum job"
     description: "Submit a quantum job"
-    operationId: submitJob
+    operationId: submit_job
     security:
       - BearerAuth: []
     requestBody:
@@ -194,13 +194,13 @@ jobs:
             example:
               message: Unauthorized
 
-jobs.jobId:
+jobs.job_id:
   get:
     tags:
       - job
     summary: "Get selected job"
     description: "Get selected job"
-    operationId: getSamplingJob
+    operationId: get_sampling_job
     security:
       - BearerAuth: []
     parameters:
@@ -245,7 +245,7 @@ jobs.jobId:
       - job
     summary: "Delete job"
     description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion."
-    operationId: deleteSamplingJob
+    operationId: delete_sampling_job
     security:
       - BearerAuth: []
     parameters:
@@ -288,13 +288,13 @@ jobs.jobId:
             example:
               message: job not found
 
-jobs.jobId.status:
+jobs.job_id.status:
   get:
     tags:
       - job
     summary: "Get selected job's status"
     description: "Get selected job's status"
-    operationId: getSamplingJobStatus
+    operationId: get_sampling_job_status
     security:
       - BearerAuth: []
     parameters:
@@ -335,13 +335,13 @@ jobs.jobId.status:
             example:
               message: job not found
 
-jobs.jobId.cancel:
+jobs.job_id.cancel:
   post:
     tags:
       - job
     summary: "Cancel job"
     description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running."
-    operationId: cancelSamplingJob
+    operationId: cancel_sampling_job
     security:
       - BearerAuth: []
     parameters:
@@ -384,13 +384,13 @@ jobs.jobId.cancel:
             example:
               message: job not found
 
-jobs.jobId.sselog:
+jobs.job_id.sse_log:
   get:
     tags:
       - job
     summary: "Get SSE log file"
     description: "Get SSE log file of selected job"
-    operationId: getSselog
+    operationId: get_sselog
     security:
       - BearerAuth: []
     parameters:

@@ -4,7 +4,7 @@ users:
       - user
     summary: "get users"
     description: "get users"
-    operationId: getUsers
+    operationId: get_users
     security:
       - BearerAuth: []
     parameters:
@@ -78,7 +78,7 @@ users.user_id:
       - user
     summary: "update user status"
     description: "update user status"
-    operationId: updatetUserStatusById
+    operationId: updatet_user_status_by_id
     security:
       - BearerAuth: []
     parameters:
@@ -125,7 +125,7 @@ users.user_id:
       - user
     summary: "delete user"
     description: "delete user with designated id"
-    operationId: deleteUserById
+    operationId: delete_user_by_id
     security:
       - BearerAuth: []
     parameters:
@@ -164,7 +164,7 @@ users.user_id.mfa_reset:
       - user
     summary: "reset user mfa"
     description: "reset user mfa"
-    operationId: resetUserMfa
+    operationId: reset_user_mfa
     security:
       - BearerAuth: []
     parameters:

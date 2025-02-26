@@ -4,7 +4,7 @@ mfa_reset_request:
       - signup
     summary: MFA Reset Request
     description: Request to reset MFA
-    operationId: requestToResetMFA
+    operationId: request_to_reset_mfa
     security:
       - BearerAuth: []
     requestBody:

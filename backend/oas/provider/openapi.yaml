@@ -21,7 +21,7 @@ paths:
         - devices
       summary: Update data of selected device
       description: Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)
-      operationId: patchDeviceData
+      operationId: patch_device_data
       parameters:
         - in: path
           name: device_id
@@ -95,7 +95,7 @@ paths:
         - jobs
       summary: Search jobs for a device
       description: Search jobs for a device
-      operationId: getjobs
+      operationId: get_jobs
       parameters:
         - in: query
           name: device_id
@@ -154,7 +154,7 @@ paths:
     get:
       summary: Get a job by ID
       description: Get a job by ID
-      operationId: getJob
+      operationId: get_job
       tags:
         - jobs
       parameters:
@@ -192,7 +192,7 @@ paths:
     patch:
       summary: Modify selected quantum job (update status).
       description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
-      operationId: patchJob
+      operationId: patch_job
       tags:
         - jobs
       parameters:
@@ -240,7 +240,7 @@ paths:
       description: |
         Used by device to set results or error details in job_info、accompanied by appropriate status updating.
         Note that job info descriptor (sampling, estimation, etc) cannot be modified.
-      operationId: patchJobInfo
+      operationId: patch_job_info
       tags:
         - jobs
       parameters:
@@ -288,7 +288,7 @@ paths:
         - job
       summary: Get SSE program source file
       description: Get SSE program source file of selected job
-      operationId: getSsesrc
+      operationId: get_ssesrc
       parameters:
         - in: path
           name: job_id
@@ -334,7 +334,7 @@ paths:
         - job
       summary: Upload SSE log file
       description: Upload SSE log file of selected job
-      operationId: patchSselog
+      operationId: patch_sselog
       parameters:
         - in: path
           name: job_id

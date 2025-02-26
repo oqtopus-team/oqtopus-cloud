@@ -1,10 +1,10 @@
-devices.deviceId:
+devices.device_id:
     patch:
       tags:
       - devices
       summary: "Update data of selected device"
       description: "Update data of selected device.<br/>Modifiable device propeties are:<br/><br/> - status (all device types)<br/> - number of pending jobs  (all device types)<br/>- calibrationData (QPU devices only)"
-      operationId: patchDeviceData
+      operationId: patch_device_data
       parameters:
         - in: path
           name: device_id
