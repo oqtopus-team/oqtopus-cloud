@@ -282,6 +282,97 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: Job not found
+  /jobs/{job_id}/ssesrc:
+    get:
+      tags:
+        - job
+      summary: Get SSE program source file
+      description: Get SSE program source file of selected job
+      operationId: getSsesrc
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return SSE program source file
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
+  /jobs/{job_id}/sselog:
+    patch:
+      tags:
+        - job
+      summary: Upload SSE log file
+      description: Upload SSE log file of selected job
+      operationId: patchSselog
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      requestBody:
+        description: Log file to be uploaded
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/jobs.UploadSselogRequest'
+      responses:
+        '200':
+          description: Log uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobs.UploadSselogResponse'
+              example:
+                message: Log uploaded
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -421,6 +512,8 @@ components:
       enum:
         - sampling
         - estimation
+        - multi_manual
+        - sse
     jobs.OperatorItem:
       type: object
       properties:
@@ -454,6 +547,23 @@ components:
               "10": 454,
               "01": 75
             }
+        divided_counts:
+          type: string
+          nullable: true
+          example: |-
+            {
+              "0": {
+                "10": 84,
+                "11": 387,
+                "10": 454,
+                "01": 75
+              },
+              "1": {
+                "10": 84,
+                "11": 387,
+                "10": 454,
+                "01": 75
+              }
       required:
         - counts
     jobs.EstimationResult:
@@ -734,6 +844,9 @@ components:
     jobs.UpdateJobInfo:
       type: object
       properties:
+        combined_program:
+          type: string
+          nullable: true
         transpile_result:
           $ref: '#/components/schemas/jobs.TranspileResult'
           nullable: true
@@ -763,5 +876,20 @@ components:
         message:
           type: string
           nullable: false
+      required:
+        - message
+    jobs.UploadSselogRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+        - file
+    jobs.UploadSselogResponse:
+      type: object
+      properties:
+        message:
+          type: string
       required:
         - message
