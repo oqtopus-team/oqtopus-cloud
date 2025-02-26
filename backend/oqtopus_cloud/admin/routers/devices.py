@@ -204,7 +204,9 @@ def get_device_id(device_base: DeviceBase) -> str | None:
 
 
 def ensure_timezone(dt):
-    if dt is not None and dt.tzinfo is None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
         return dt.replace(tzinfo=utc)
     if dt.utcoffset() != timedelta(0):
         raise ValueError("Datetime is not in UTC.")
