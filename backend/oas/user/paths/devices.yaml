@@ -9,7 +9,7 @@ devices:
       - device
     summary: List available devices
     description: List available devices
-    operationId: listDevices
+    operationId: list_devices
     security:
       - BearerAuth: []
     responses:
@@ -42,7 +42,7 @@ devices.deviceId:
       - device
     summary: Get specified device details
     description: get device
-    operationId: getDevice
+    operationId: get_device
     security:
       - BearerAuth: []
     parameters:

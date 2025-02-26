@@ -4,7 +4,7 @@ devices:
       - devices
     summary: List available devices
     description: List available devices
-    operationId: listDevices
+    operationId: list_devices
     security:
       - BearerAuth: []
     responses:
@@ -31,7 +31,7 @@ devices:
     - devices
     summary: "Register a new device"
     description: "Register a new device to the system."
-    operationId: registerDevice
+    operationId: register_device
     security:
       - BearerAuth: []
     requestBody:
@@ -75,7 +75,7 @@ devices.device_id:
       - devices
     summary: Get specified device details
     description: get device
-    operationId: getDevice
+    operationId: get_device
     security:
       - BearerAuth: []
     parameters:
@@ -110,7 +110,7 @@ devices.device_id:
     - devices
     summary: "Update data of selected device"
     description: "Update the properties of selected device."
-    operationId: updateDeviceData
+    operationId: update_device_data
     security:
       - BearerAuth: []
     parameters:
@@ -169,7 +169,7 @@ devices.device_id:
     - devices
     summary: "Delete a device"
     description: "Delete a device from the system."
-    operationId: deleteDevice
+    operationId: delete_device
     security:
       - BearerAuth: []
     parameters:

@@ -53,7 +53,7 @@ paths:
         - signup
       summary: Confirm signup
       description: Confirm a new user
-      operationId: confirmSignup
+      operationId: confirm_signup
       security:
         - BearerAuth: []
       requestBody:
@@ -87,7 +87,7 @@ paths:
         - signup
       summary: MFA Reset Request
       description: Request to reset MFA
-      operationId: requestToResetMFA
+      operationId: request_to_reset_m_f_a
       security:
         - BearerAuth: []
       requestBody:
