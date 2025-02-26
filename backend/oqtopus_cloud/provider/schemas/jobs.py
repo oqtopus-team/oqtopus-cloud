@@ -126,11 +126,6 @@ class JobInfo(BaseModel):
     """
 
 
-class JobType(str, Enum):
-    sampling = "sampling"
-    estimation = "estimation"
-
-
 class JobDef(BaseModel):
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
