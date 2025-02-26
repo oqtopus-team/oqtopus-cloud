@@ -174,6 +174,7 @@ def lambda_handler(event, context):
     headers = event["headers"]
     method_arn = event["methodArn"]
     owner = None
+    unknown_owner = "unknown"
 
     try:
         if "q-api-token" in headers:
@@ -184,23 +185,30 @@ def lambda_handler(event, context):
             owner = _verify_id_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
-            policy_document = _generate_policy_deny()
+            policy_document = _generate_policy_deny(
+                unknown_owner, method_arn, unknown_owner
+            )
             return policy_document
-
-        if owner is not None and owner != "":
+        if not owner:
+            # Generate deny policy
+            policy_document = _generate_policy_deny(
+                unknown_owner, method_arn, unknown_owner
+            )
+            return policy_document
+        else:
             # Generate allow policy
             policy_document = _generate_policy_allow(owner, method_arn, owner)
             logger.info(f"Authorization success {policy_document}")
             return policy_document
-        else:
-            # Generate deny policy
-            policy_document = _generate_policy_deny(owner, method_arn, owner)
-            return policy_document
     except AuthError as e:
         logger.exception(f"Authentication/Authorization failed: {str(e)}")
-        policy_document = _generate_policy_deny(owner, method_arn, owner)
+        policy_document = _generate_policy_deny(
+            unknown_owner, method_arn, unknown_owner
+        )
         return policy_document
     except Exception as e:
         logger.exception(f"Unexpected error occurred: {str(e)}")
-        policy_document = _generate_policy_deny(owner, method_arn, owner)
+        policy_document = _generate_policy_deny(
+            unknown_owner, method_arn, unknown_owner
+        )
         return policy_document
