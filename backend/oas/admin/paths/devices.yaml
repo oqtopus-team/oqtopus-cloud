@@ -1,0 +1,217 @@
+devices:
+  get:
+    tags:
+      - devices
+    summary: List available devices
+    description: List available devices
+    operationId: listDevices
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: Returns a list of available devices
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/devices.yaml#/devices.DeviceInfo"
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+  post:
+    tags:
+    - devices
+    summary: "Register a new device"
+    description: "Register a new device to the system."
+    operationId: registerDevice
+    security:
+      - BearerAuth: []
+    requestBody:
+      description: "Device data"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/devices.yaml#/devices.DeviceBase"
+    responses:
+      "200":
+        description: Device registered
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Device registered
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+
+
+devices.device_id:
+  get:
+    tags:
+      - devices
+    summary: Get specified device details
+    description: get device
+    operationId: getDevice
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: device_id
+        in: path
+        description: "Device identifier"
+        required: true
+        schema:
+          type: string
+        example: "Kawasaki"
+    responses:
+      "200":
+        description: device response
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfo"
+      "404":
+        description: "Device with device_id not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+  patch:
+    tags:
+    - devices
+    summary: "Update data of selected device"
+    description: "Update the properties of selected device."
+    operationId: updateDeviceData
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: device_id
+        description: "Device ID"
+        required: true
+        schema:
+          type: string
+          example: "Kawasaki"
+    requestBody:
+      description: "New calibration data"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/devices.yaml#/devices.DeviceBase"
+    responses:
+      "200":
+        description: Device's data updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Device's data updated
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: Device not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error
+  delete:
+    tags:
+    - devices
+    summary: "Delete a device"
+    description: "Delete a device from the system."
+    operationId: deleteDevice
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: device_id
+        description: "Device ID"
+        required: true
+        schema:
+          type: string
+          example: "Kawasaki"
+    responses:
+      "204":
+        description: Device deleted
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Device deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: Device not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
