@@ -1,6 +1,15 @@
 #!/bin/bash
 
-config="exclude:\n  - message: \"ignores\"\n    paths:\n      - 'site/**'\n      - 'docs/**'\n      - 'poetry.lock'\n"
+config=$(cat <<EOF
+exclude:
+  - message: "ignores"
+    paths:
+      - 'site/**'
+      - 'docs/**'
+      - 'poetry.lock'
+      - '*.html'
+EOF
+)
 
 while IFS= read -r line; do
     if [[ -n "$line" && ! "$line" =~ ^# ]]; then
