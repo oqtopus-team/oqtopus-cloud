@@ -51,6 +51,18 @@ Docker version: Docker version 26.1.4, build 5650f9b
 
 ```
 
+## Generating Git Hooks File
+
+This repository uses the Git hook `pre-commit` to scan for credentials.
+
+To generate the script, run the following command:
+
+```bash
+make setup_hooks
+```
+
+The script will be generated in `.git/hooks/pre-commit`.
+
 ## Setting Up the Python Environment
 
 ### Pyenv (Recommended)
