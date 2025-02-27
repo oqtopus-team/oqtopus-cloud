@@ -5,7 +5,8 @@ exclude:
       - 'docs/**'
       - 'poetry.lock'
       - 'scripts/setup_aqua.sh'
-      - '*.html'      - '__pycache__/'
+      - '*.html'
+      - '__pycache__/'
       - '*.py[cod]'
       - '*$py.class'
       - '*.so'
@@ -100,4 +101,3 @@ exclude:
       - 'bin/'
       - '*.env'
       - '*lambda.zip'
-

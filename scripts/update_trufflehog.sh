@@ -14,7 +14,7 @@ EOF
 
 while IFS= read -r line; do
     if [[ -n "$line" && ! "$line" =~ ^# ]]; then
-        config+="      - '$line'\n"
+        config+="\n      - '$line'"
     fi
 done < ".gitignore"
 
