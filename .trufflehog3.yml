@@ -4,6 +4,7 @@ exclude:
       - 'site/**'
       - 'docs/**'
       - 'poetry.lock'
+      - 'scripts/setup_aqua.sh'
       - '*.html'      - '__pycache__/'
       - '*.py[cod]'
       - '*$py.class'

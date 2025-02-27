@@ -7,6 +7,7 @@ exclude:
       - 'site/**'
       - 'docs/**'
       - 'poetry.lock'
+      - 'scripts/setup_aqua.sh'
       - '*.html'
 EOF
 )
