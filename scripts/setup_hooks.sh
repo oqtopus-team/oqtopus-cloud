@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# pre-commit
 pre_commit=$(cat <<EOF
 #!/bin/bash
 
