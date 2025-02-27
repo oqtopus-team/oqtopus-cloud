@@ -67,7 +67,3 @@ setup-hooks:
 	@echo "Setting up lefthook..."
 	@bash scripts/setup_hooks.sh
 	@echo "Done."
-
-update-trufflehog:
-	@bash scripts/update_trufflehog.sh
-	@echo "trufflehog config updated."
