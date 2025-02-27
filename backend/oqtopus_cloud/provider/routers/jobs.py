@@ -1,12 +1,12 @@
-import json
-from datetime import datetime
-import os
 import base64
-import boto3
+import json
+import os
+from datetime import datetime
 from typing import Any, Optional
 
+import boto3
 import pytz
-from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
@@ -108,7 +108,8 @@ def get_jobs(
             job = model_to_schema(model, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
-                return NotFoundErrorResponse("Job not found")
+                # ignore illegal jobs
+                continue
             else:
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:
@@ -499,6 +500,4 @@ def model_to_schema(
         ready_at=localize(model.ready_at),
         running_at=localize(model.running_at),
         ended_at=localize(model.ended_at),
-        created_at=pytz.utc.localize(model.created_at),
-        updated_at=localize(model.updated_at),
     )

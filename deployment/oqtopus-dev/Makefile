@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-all zip deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
+.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
 export
@@ -29,6 +29,14 @@ zip-admin: ## Build admin API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/admin
 
+zip-pending-jobs-updater-worker: ## Build pending-jobs-updater Lambda Package
+	@$(MAKE) zip \
+	WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/worker/pending_jobs_updater \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/pending-jobs-updater
+
 zip-lambda_auth: ## Build lambda_auth API Lambda Package
 	@$(MAKE) zip WORKSPACE=../../backend \
 	DEPLOY_PACKAGES_DIR=./deploy-packages \
@@ -43,7 +51,7 @@ zip-user_signup: ## Build user_signup API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/user_signup
 
-zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup ## Build All Lambda Packages
+zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -91,7 +99,12 @@ deploy-user_signup: zip-user_signup	## Deploy user_signup API Lambda Package
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
 	BIN=./bin/user_signup
 
-deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup ## Deploy All Lambda Packages
+deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pending-jobs-updater-worker Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
+	BIN=./bin/pending-jobs-updater
+
+deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
 deploy:
 	@echo "Deploy ${FUNCTION_NAME} ..."

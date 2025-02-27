@@ -291,17 +291,6 @@ jobs.JobDef:
       example: 2022-10-19T11:45:34+09:00
       nullable: true
       default: null
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-      nullable: false
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-      nullable: true
-      default: null
   required:
     - job_id
     - device_id
@@ -309,7 +298,6 @@ jobs.JobDef:
     - job_info
     - shots
     - status
-    - created_at
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
@@ -358,8 +346,6 @@ jobs.JobDef:
       ready_at: 2022-10-19T11:45:34+09:00
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.GetJobsResponse:
   type: object
@@ -453,17 +439,6 @@ jobs.GetJobsResponse:
       nullable: true
       default: null
       example: 2022-10-19T11:45:34+09:00
-    created_at:
-      type: string
-      format: date-time
-      nullable: false
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      nullable: true
-      default: null
-      example: 2022-10-19T11:45:34+09:00
   required: []
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -514,8 +489,6 @@ jobs.GetJobsResponse:
       ready_at: 2022-10-19T11:45:34+09:00
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.JobStatusUpdate:
   type: object
