@@ -50,7 +50,7 @@ module "user_api" {
   cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   power_tools_metrics_namespace = "user-api"
   power_tools_service_name      = "user-api"
-  allow_origins                 = "*"
+  allow_origins                 = "*" # restrict this depending on the client
   allow_credentials             = "true"
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization"
@@ -102,7 +102,7 @@ module "admin_api" {
   manage_cognito_user_pool               = true
   power_tools_metrics_namespace          = "admin-api"
   power_tools_service_name               = "admin-api"
-  allow_origins                          = "*"
+  allow_origins                          = "*" # restrict this depending on the client
   allow_credentials                      = "true"
   allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                          = "Content-type,Accept,Authorization"
@@ -129,7 +129,7 @@ module "user_signup_api" {
   manage_cognito_user_pool               = true
   power_tools_metrics_namespace          = "user_signup-api"
   power_tools_service_name               = "user_signup-api"
-  allow_origins                          = "*"
+  allow_origins                          = "*" # restrict this depending on the client
   allow_credentials                      = "true"
   allow_methods                          = "POST,PUT"
   allow_headers                          = "Content-type,Accept"
