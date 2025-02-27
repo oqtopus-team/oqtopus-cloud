@@ -4,7 +4,7 @@ exclude:
       - 'site/**'
       - 'docs/**'
       - 'poetry.lock'
-      - '__pycache__/'
+      - '*.html'      - '__pycache__/'
       - '*.py[cod]'
       - '*$py.class'
       - '*.so'
@@ -99,4 +99,4 @@ exclude:
       - 'bin/'
       - '*.env'
       - '*lambda.zip'
-      - '*.html'
+
