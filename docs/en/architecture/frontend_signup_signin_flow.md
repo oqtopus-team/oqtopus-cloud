@@ -1,4 +1,6 @@
-This page shows a sequence diagram of user sign-up, sign-in, MFA reset, and password reset procedure.
+# Sign-up and Sign-in sequence diagram
+
+This page shows a sequence diagram of user sign-up, sign-in, MFA reset, and password reset procedures.
 
 ## Sequence of User Sign-up (Success case)
 
@@ -31,7 +33,7 @@ sequenceDiagram
 
 ## Sequence of User Sign-up (Email not in whitelist failure case)
 
-The following sequence diagram shows the case where the user is not listed in whitelist.
+The following sequence diagram shows the case where the user is not listed in the whitelist.
 
 ```mermaid
 sequenceDiagram
@@ -78,7 +80,7 @@ sequenceDiagram
 
 ## Sequence of User Sign-in
 
-The brief sequence diagram shows the sign-in procedure. No intermidiate service like API Gateway and Lambda does not exist.
+The brief sequence diagram shows the sign-in procedure. No intermidiate service like API Gateway and Lambda exists.
 
 ```mermaid
 sequenceDiagram
