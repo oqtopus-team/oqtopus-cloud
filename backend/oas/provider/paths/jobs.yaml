@@ -4,7 +4,7 @@ jobs:
       - jobs
     summary: Search jobs for a device
     description: Search jobs for a device
-    operationId: getjobs
+    operationId: get_jobs
     parameters:
       - in: query
         name: device_id
@@ -58,11 +58,11 @@ jobs:
             example:
               message: Internal server error
 
-jobs.jobId:
+jobs.job_id:
   get:
     summary: Get a job by ID
     description: Get a job by ID
-    operationId: getJob
+    operationId: get_job
     tags:
       - jobs
     parameters:
@@ -94,11 +94,11 @@ jobs.jobId:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
-jobs.jobStatus:
+jobs.job_status:
   patch:
     summary: "Modify selected quantum job (update status)."
     description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
-    operationId: patchJob
+    operationId: patch_job
     tags:
       - jobs
     parameters:
@@ -138,13 +138,13 @@ jobs.jobStatus:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
               message: The specified job is not in a status thatt allows transition to the requested status.
-jobs.jobInfo:
+jobs.job_info:
   patch:
     summary: "Update selected quantum job's job_info by placing job results"
     description: |
       Used by device to set results or error details in job_info、accompanied by appropriate status updating.
       Note that job info descriptor (sampling, estimation, etc) cannot be modified.
-    operationId: patchJobInfo
+    operationId: patch_job_info
     tags:
       - jobs
     parameters:
@@ -184,3 +184,94 @@ jobs.jobInfo:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: Job not found
+
+jobs.job_id.sse_src:
+  get:
+    tags:
+      - job
+    summary: "Get SSE program source file"
+    description: "Get SSE program source file of selected job"
+    operationId: get_ssesrc
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return SSE program source file"
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: binary
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error
+
+jobs.job_id.sse_log:
+  patch:
+    tags:
+      - job
+    summary: "Upload SSE log file"
+    description: "Upload SSE log file of selected job"
+    operationId: patch_sselog
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        description: "Job identifier"
+        schema: {type: string}
+    requestBody:
+      description: "Log file to be uploaded"
+      content:
+        multipart/form-data:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.UploadSselogRequest"
+    responses:
+      "200":
+        description: "Log uploaded"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.UploadSselogResponse"
+            example:
+              message: Log uploaded
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error

@@ -1,9 +1,15 @@
+import base64
+import io
 import json
+import os
+import zipfile
 from datetime import datetime
 from typing import List
 
+import boto3
 import pytz
 from fastapi.testclient import TestClient
+from moto import mock_aws
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.schemas.errors import (
@@ -26,6 +32,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobRequest,
     SubmitJobResponse,
 )
+from pydantic import ValidationError
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy import select
 
@@ -104,8 +111,6 @@ def test_get_jobs_simple(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
         JobDef(
             job_id="testjob2id",
@@ -126,13 +131,37 @@ def test_get_jobs_simple(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_get_jobs_ignore_illegal_job(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    # job3 has invalid job_info
+    job_3 = _get_model(3)
+    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(job_3)
+    test_db.commit()
+
+    response = client.get("/jobs")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert len(actual) == 2
+    assert actual[0].job_id == "testjob1id"
+    assert actual[1].job_id == "testjob2id"
 
 
 def test_get_jobs_filtering_fields(
@@ -191,7 +220,7 @@ def test_get_jobs_invalid_fields(
     assert actual == expect
 
 
-def test_get_jobs_filtering_startTime(
+def test_get_jobs_filtering_start_time(
     test_db,
 ):
     """_summary_
@@ -203,7 +232,9 @@ def test_get_jobs_filtering_startTime(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?startTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    response = client.get(
+        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+    )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -226,8 +257,6 @@ def test_get_jobs_filtering_startTime(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -235,11 +264,11 @@ def test_get_jobs_filtering_startTime(
     assert actual == expect
 
 
-def test_get_jobs_filtering_endTime(
+def test_get_jobs_filtering_end_time(
     test_db,
 ):
     """_summary_
-    filterling endtime, expect only testjob1 will be got
+    filterling end_time, expect only testjob1 will be got
     """
 
     test_db.flush()
@@ -247,7 +276,7 @@ def test_get_jobs_filtering_endTime(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?endTime=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -270,8 +299,6 @@ def test_get_jobs_filtering_endTime(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -314,8 +341,6 @@ def test_get_jobs_filtering_search_string(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -358,8 +383,6 @@ def test_get_jobs_desc_order(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            updated_at=None,
         ),
         GetJobsResponse(
             job_id="testjob1id",
@@ -380,8 +403,6 @@ def test_get_jobs_desc_order(
             ready_at=None,
             running_at=None,
             ended_at=None,
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-            updated_at=None,
         ),
     ]
 
@@ -424,7 +445,7 @@ def test_get_jobs_all_parameters(
     test_db,
 ):
     """_summary_
-    filtering starttime, endtime, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
+    filtering start_time, end_time, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
     """
 
     test_db.flush()
@@ -433,7 +454,7 @@ def test_get_jobs_all_parameters(
     test_db.commit()
 
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&startTime=2024-03-04T16%3A12%3A29%2B09%3A00&endTime=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -459,7 +480,6 @@ def test_job_sortedness(test_db):
         return SubmitJobRequest(
             name=f"test-job-{n}",
             device_id="Kawasaki",
-            status=JobStatus.submitted,
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["code"]),
             simulator_info="{}",
@@ -524,7 +544,6 @@ def test_get_jobs_handler(
         ready_at=None,
         running_at=None,
         ended_at=None,
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
     )
     assert jobs[0] == expected
 
@@ -589,7 +608,6 @@ def test_submit_get(
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -608,7 +626,7 @@ def test_submit_get(
     assert resp_job.job_info.result is None
 
 
-def test_submit_delete(test_db):
+def test_submit_cancel_delete(test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -637,7 +655,6 @@ def test_submit_delete(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.running,
     )
 
     # Submitting
@@ -648,6 +665,11 @@ def test_submit_delete(test_db):
     # Deleting the job of reteurned job_id (Before deleting, canceling is required)
     cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
     assert cancel_resp.status_code == 200
+
+    # After cancelling, the same cancel request returs 200
+    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    assert cancel_resp.status_code == 200
+
     delete_resp = client.delete(f"/jobs/{resp_job_id}")
     assert delete_resp.status_code == 200
 
@@ -686,9 +708,390 @@ def test_submit_job_compat_error(test_db):
         simulator_info='"This is simulator info"',
         transpiler_info="{}",
         shots=1024,
-        status=JobStatus.submitted,
     )
 
     # Submitting
     submit_resp = client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 400
+
+
+def test_submit_job_shots_boundary(test_db):
+    """_summary_
+    Test for checking out of range shots
+    """
+
+    try:
+        SubmitJobRequest(
+            name="submit-job-test",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=SubmitJobInfo(program=["codecodecode"]),
+            shots=int(1e7) + 1,
+        )
+    except ValidationError as e:
+        error_title = e.title
+
+    # expcet to raise ValidationError by pydantic
+    assert error_title == "SubmitJobRequest"
+
+    error_title = ""
+    try:
+        SubmitJobRequest(
+            name="submit-job-test",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=SubmitJobInfo(program=["codecodecode"]),
+            shots=int(1e7),
+        )
+    except ValidationError as e:
+        error_title = e.title
+
+    # expcet no ValidationError
+    assert error_title == ""
+
+
+@mock_aws
+def test_get_sselog(
+    test_db,
+):
+    """_summary_
+    Test for get sselog
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_body = "log1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}", Body=log_body)
+
+    # expected zip file with base64 encode
+    zip_stream = io.BytesIO()
+    with zipfile.ZipFile(zip_stream, "w", compression=zipfile.ZIP_DEFLATED) as zip_data:
+        zip_data.writestr(log_name, log_body)
+    zip_stream.seek(0)
+    zip_bin = zip_stream.read()
+    zip_base64 = base64.b64encode(zip_bin).decode("utf-8")
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    actual = adapter.validate_python(response.json())
+
+    expect = {"file": zip_base64, "file_name": "oqtopus_test_sse_log_testjob1id.zip"}
+
+    assert response.status_code == 200
+    assert actual == expect
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}")
+
+
+@mock_aws
+def test_get_sselog_invalid_owner(
+    test_db,
+):
+    """_summary_
+    Test for get sselog when the job owner is invalid
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    job_model.owner = "user1"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_body = "log1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}", Body=log_body)
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    adapter.validate_python(response.json())
+
+    assert response.status_code == 404
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}")
+
+
+@mock_aws
+def test_get_sselog_unknown_jobid(
+    test_db,
+):
+    """_summary_
+    Test for get sselog when the job_id is invalid
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    job_model.id = "anotherjobid"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_body = "log1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}", Body=log_body)
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    adapter.validate_python(response.json())
+
+    assert response.status_code == 404
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}")
+
+
+@mock_aws
+def test_get_sselog_invalid_jobtype(
+    test_db,
+):
+    """_summary_
+    Test for get sselog when the job_type is not sse
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sampling"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_body = "log1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}", Body=log_body)
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    adapter.validate_python(response.json())
+
+    assert response.status_code == 400
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}")
+
+
+@mock_aws
+def test_get_sselog_running_job(
+    test_db,
+):
+    """_summary_
+    Test for get sselog when the job status is neighter succeeded nor failed
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "running"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    log_body = "log1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}", Body=log_body)
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    adapter.validate_python(response.json())
+
+    assert response.status_code == 400
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/{log_name}")
+
+
+@mock_aws
+def test_get_sselog_no_log(
+    test_db,
+):
+    """_summary_
+    Test for get sselog when the job failed and there is no log file in S3
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "failed"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    response = client.get("/jobs/testjob1id/sselog")
+    adapter = TypeAdapter(dict[str, str])
+    adapter.validate_python(response.json())
+
+    assert response.status_code == 404
+
+
+@mock_aws
+def test_put_user_program_to_s3(
+    test_db,
+):
+    """_summary_
+    Test for put user program to S3 when SSE
+    """
+
+    test_db.flush()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    program = base64.b64encode(b"program1").decode("utf-8")
+
+    body = SubmitJobRequest(
+        name="submit-sse-job-test",
+        description="Submit sse job test",
+        device_id="Kawasaki",
+        job_type=JobType.sse,
+        job_info=SubmitJobInfo(program=[program]),
+        transpiler_info="",
+        mitigation_info="",
+        simulator_info="",
+        shots=1,
+        status=JobStatus.submitted,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 200
+    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
+    # Getting the job of reteurned job_id
+    get_resp = client.get(f"/jobs/{resp_job_id}")
+    assert get_resp.status_code == 200
+    resp_job = JobDef.model_validate(get_resp.json())
+    # And these jobs should be same.
+    assert resp_job.name == body.name
+    assert resp_job.description == body.description
+    assert resp_job.job_type == body.job_type
+    assert resp_job.job_info.program == body.job_info.program
+    assert resp_job.job_info.result is None
+
+    s3object = s3client.get_object(
+        Bucket=bucket_name, Key=f"{resp_job_id}/oqtopus_test_program.py"
+    )
+    assert s3object["Body"].read().decode() == "program1"
+
+    # clean up
+    s3client.delete_object(
+        Bucket=bucket_name, Key=f"{resp_job_id}/oqtopus_test_program.py"
+    )
+
+
+@mock_aws
+def test_put_user_program_to_s3_invalid_program(
+    test_db,
+):
+    """_summary_
+    Test for put user program to S3 when SSE
+    """
+
+    test_db.flush()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    program = "invalid_program"  # not base64 encoded
+
+    body = SubmitJobRequest(
+        name="submit-sse-job-test",
+        description="Submit sse job test",
+        device_id="Kawasaki",
+        job_type=JobType.sse,
+        job_info=SubmitJobInfo(program=[program]),
+        transpiler_info="",
+        mitigation_info="",
+        simulator_info="",
+        shots=1,
+        status=JobStatus.submitted,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 500
+
+
+@mock_aws
+def test_put_user_program_to_s3_no_program(
+    test_db,
+):
+    """_summary_
+    Test for put user program to S3 when SSE
+    """
+
+    test_db.flush()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    body = SubmitJobRequest(
+        name="submit-sse-job-test",
+        description="Submit sse job test",
+        device_id="Kawasaki",
+        job_type=JobType.sse,
+        job_info=SubmitJobInfo(program=[]),
+        transpiler_info="",
+        mitigation_info="",
+        simulator_info="",
+        shots=1,
+        status=JobStatus.submitted,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 500

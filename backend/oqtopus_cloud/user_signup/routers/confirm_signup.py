@@ -38,13 +38,14 @@ def cleanup_user(
         stmt = select(User).where(User.email == email)
         user = db.execute(stmt).scalars().first()
         db.delete(user)
+        # change the is_signup_completed flag to False
         stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
         query_whitelist = db.execute(stmt_whitelist).scalars().first()
         if query_whitelist:
             query_whitelist.is_signup_completed = False
         db.commit()
     except Exception as delete_error:
-        logger.error(f"Failed to delete Cognito user: {delete_error}")
+        logger.exception(f"Failed to delete Cognito user: {delete_error}")
 
 
 @router.put(
@@ -77,10 +78,10 @@ def confirm_signup(
         return None
     except ClientError as e:
         # catch the cognito error
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         cleanup_user(db, cognito_client, email, user_pool_id)
         return BadRequestResponse(message=str(e))
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         cleanup_user(db, cognito_client, email, user_pool_id)
         return InternalServerErrorResponse(message=str(e))

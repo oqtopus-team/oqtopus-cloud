@@ -156,6 +156,9 @@ class FakeCognitoClient:
     ):
         return {"Response": "Ok"}
 
+    def admin_delete_user(UserPoolId=None, Username=None):
+        return {"Response": "Ok"}
+
 
 def fake_boto3_client(service, region_name=None, **kwargs):
     if service == "cognito-idp":

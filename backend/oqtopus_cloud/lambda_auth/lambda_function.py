@@ -15,10 +15,15 @@ jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 
+class AuthError(Exception):
+    """Custom exception for authentication errors"""
+
+    pass
+
+
 def _verify_id_token(id_token: Optional[str]) -> str:
     if id_token is None:
-        logger.error("ID token is None")
-        raise Exception("Internal Server Error")
+        raise AuthError("ID token is not found")
 
     id_token = id_token.replace("Bearer ", "")
 
@@ -28,8 +33,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
         USER_POOL_ID = os.environ["AUTH_USER_POOL_ID"]
         CLIENT_ID = os.environ["USER_POOL_WEB_CLIENT_ID"]
     except Exception as e:
-        logger.error(f"Environment variable is not set {e}")
-        raise Exception("Internal Server Error")
+        raise AuthError(f"Environment variable is not set {e}")
 
     # Construct the issuer and JWKS URL for the Cognito user pool
     issuer = f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}"
@@ -40,8 +44,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
         jwks_client = jwt.PyJWKClient(jwks_url)
         signing_key = jwks_client.get_signing_key_from_jwt(id_token)
     except Exception as e:
-        logger.error(f"Failed to get signing key from JWT: {e}")
-        raise Exception("Internal Server Error")
+        raise AuthError(f"Failed to get signing key from JWT: {e}")
 
     try:
         # Decode and verify the ID token
@@ -61,26 +64,22 @@ def _verify_id_token(id_token: Optional[str]) -> str:
 
         # verify the token_use claim
         if token["token_use"] != "id":
-            logger.error("ID token is invalid.")
-            raise Exception("Internal Server Error")
+            raise AuthError("Invalid token_use")
 
         return token["cognito:username"]
-    except Exception as e:
-        logger.error(f"Failed to decode JWT: {e}")
-        raise Exception("Internal Server Error")
+    except Exception:
+        raise AuthError("ID token is invalid")
 
 
 def _verify_api_token(api_token: Optional[str]) -> str:
     if api_token is None or api_token == "":
-        logger.error("API token is None")
-        raise Exception("Internal Server Error")
+        raise AuthError("API token is None")
 
     # Get environment variables
     try:
         USER_POOL_ID = os.environ["AUTH_USER_POOL_ID"]
     except Exception as e:
-        logger.error(f"Environment variable is not set {e}")
-        raise Exception("Internal Server Error")
+        raise AuthError(f"Environment variable is not set {e}")
 
     try:
         # Get a database session
@@ -97,8 +96,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         if (api_token_expiration is None) or (
             api_token_expiration.astimezone(utc) < datetime.now(utc)
         ):
-            logger.error("API token is expired.")
-            raise Exception("Internal Server Error")
+            raise AuthError("API token is expired")
 
         # Get the Cognito ID from the database
         stmt_cognito_id = select(User.cognito_id).where(
@@ -107,12 +105,10 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         cognito_id = db.execute(stmt_cognito_id).scalars().first()
         db.close()
     except Exception as e:
-        logger.error(f"Database error {e}")
-        raise Exception("Internal Server Error")
+        raise AuthError(f"Database error {e}")
 
     if cognito_id is None:
-        logger.error("Cognito id is not found.")
-        raise Exception("Internal Server Error")
+        raise AuthError("Cognito id is not found")
 
     try:
         # Initialize the Cognito client
@@ -123,19 +119,17 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         )
         logger.info(len(response["Users"]))
         if len(response["Users"]) == 0:
-            logger.error("Cognito user is not found.")
-            raise Exception()
+            raise AuthError("Cognito user is not found")
         elif len(response["Users"]) > 1:
-            logger.error("Cognito user is duplicated.")
-            raise Exception()
+            raise AuthError("Cognito user is duplicated")
         else:
             return response["Users"][0]["Username"]
     except Exception as e:
-        logger.error(f"Failed to list users from Cognito {e}")
-        raise Exception("Internal Server Error")
+        raise AuthError(f"Failed to list users from Cognito {e}")
 
 
 def _generate_policy_allow(principal_id="", resource="", owner=""):
+    # Generate allow policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
     if resource is not None:
@@ -158,6 +152,7 @@ def _generate_policy_allow(principal_id="", resource="", owner=""):
 
 
 def _generate_policy_deny(principal_id="", resource="", owner=""):
+    # Generate deny policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
     if resource is not None:
@@ -179,32 +174,41 @@ def lambda_handler(event, context):
     headers = event["headers"]
     method_arn = event["methodArn"]
     owner = None
+    unknown_owner = "unknown"
 
-    if "q-api-token" in headers:
-        # Verify API token
-        try:
+    try:
+        if "q-api-token" in headers:
+            # Verify API token
             owner = _verify_api_token(headers["q-api-token"])
-        except Exception:
-            policy_document = _generate_policy_deny(owner, method_arn, owner)
-            return policy_document
-    elif "authorization" in headers:
-        # Verify Cognito ID token
-        try:
+        elif "authorization" in headers:
+            # Verify Cognito ID token
             owner = _verify_id_token(headers["authorization"])
-        except Exception:
-            policy_document = _generate_policy_deny(owner, method_arn, owner)
+        else:
+            logger.error("Unexpected header")
+            policy_document = _generate_policy_deny(
+                unknown_owner, method_arn, unknown_owner
+            )
             return policy_document
-    else:
-        logger.error("Unexpected header")
-        policy_document = _generate_policy_deny()
+        if not owner:
+            # Generate deny policy
+            policy_document = _generate_policy_deny(
+                unknown_owner, method_arn, unknown_owner
+            )
+            return policy_document
+        else:
+            # Generate allow policy
+            policy_document = _generate_policy_allow(owner, method_arn, owner)
+            logger.info(f"Authorization success {policy_document}")
+            return policy_document
+    except AuthError as e:
+        logger.exception(f"Authentication/Authorization failed: {str(e)}")
+        policy_document = _generate_policy_deny(
+            unknown_owner, method_arn, unknown_owner
+        )
         return policy_document
-
-    if owner is not None and owner != "":
-        # Generate allow policy
-        policy_document = _generate_policy_allow(owner, method_arn, owner)
-        logger.info(f"Authorization success {policy_document}")
-        return policy_document
-    else:
-        # Generate deny policy
-        policy_document = _generate_policy_deny(owner, method_arn, owner)
+    except Exception as e:
+        logger.exception(f"Unexpected error occurred: {str(e)}")
+        policy_document = _generate_policy_deny(
+            unknown_owner, method_arn, unknown_owner
+        )
         return policy_document
