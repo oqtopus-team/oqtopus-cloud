@@ -99,3 +99,4 @@ exclude:
       - 'bin/'
       - '*.env'
       - '*lambda.zip'
+      - '*.html'
