@@ -1,13 +1,14 @@
-# Sign-up and Sign-in sequence diagram
+# Sign-up and Sign-in Sequence Diagrams
 
 This page shows a sequence diagram of user sign-up, sign-in, MFA reset, and password reset procedures.
 
-## Sequence of User Sign-up (Success case)
+## User Sign-up Sequence (Success case)
 
 The following sequence diagram shows successful user registration: the API Gateway and Lambda function are between the user and Cognito user pool, ensuring the user is whitelisted.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant AG as API Gateway
     participant L as Lambda
@@ -31,12 +32,13 @@ sequenceDiagram
     C-->>U: Session
 ```
 
-## Sequence of User Sign-up (Email not in whitelist failure case)
+## User Sign-up Sequence (Email not in whitelist failure case)
 
 The following sequence diagram shows the case where the user is not listed in the whitelist.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant AG as API Gateway
     participant L as Lambda
@@ -50,12 +52,13 @@ sequenceDiagram
     L-->>U: Error response
 ```
 
-## Sequence of User Sign-up (Email confirmation failure case)
+## User Sign-up Sequence (Email confirmation failure case)
 
 The following sequence diagram shows the the case where the user failed to validate the confirmation code.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant AG as API Gateway
     participant L as Lambda
@@ -78,12 +81,13 @@ sequenceDiagram
     L-->>U: Error response
 ```
 
-## Sequence of User Sign-in
+## User Sign-in Sequence
 
 The brief sequence diagram shows the sign-in procedure. No intermidiate service like API Gateway and Lambda exists.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant C as Cognito
 
@@ -91,12 +95,13 @@ sequenceDiagram
     C-->>U: Session
 ```
 
-## Sequence of User MFA Reset
+## User MFA Reset Sequence
 
-The following sequence diagram shows MFA reset procedure. The user can reset MFA device anytime if the Email and the password match.
+The following sequence diagram shows the MFA reset procedure. The user can reset the MFA device anytime if the Email and the password match.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant AG as API Gateway
     participant L as Lambda
@@ -117,6 +122,7 @@ The following sequence diagram shows a user resetting a password.
 
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as User
     participant C as Cognito
 
