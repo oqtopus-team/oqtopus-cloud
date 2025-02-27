@@ -63,24 +63,12 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-setup-lefthook:
-	@echo "Installing lefthook..."
-	@if command -v brew >/dev/null 2>&1; then \
-		brew install lefthook; \
-	elif command -v apt >/dev/null 2>&1; then \
-		sudo apt update && sudo apt install -y lefthook; \
-	elif command -v dnf >/dev/null 2>&1; then \
-		sudo dnf install -y lefthook; \
-	elif command -v pacman >/dev/null 2>&1; then \
-		sudo pacman -Sy --noconfirm lefthook; \
-	elif command -v gem >/dev/null 2>&1; then \
-		gem install lefthook; \
-	elif command -v cargo >/dev/null 2>&1; then \
-		cargo install lefthook; \
-	else \
-		echo "No supported package manager found. Install lefthook manually." && exit 1; \
-	fi
-	@lefthook install
+setup-hooks:
+	@echo "Setting up lefthook..."
+	@echo '#!/bin/bash' > .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo 'aqua exec -- lefthook run pre-commit --no-auto-install' >> .git/hooks/pre-commit
+	@echo "Done."
 
 update-trufflehog:
 	@bash scripts/update_trufflehog.sh
