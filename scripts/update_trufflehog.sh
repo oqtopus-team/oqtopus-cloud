@@ -18,4 +18,4 @@ while IFS= read -r line; do
     fi
 done < ".gitignore"
 
-echo -e "$config" > ".trufflehog-config.yml"
+echo -e "$config" > "trufflehog-config.yaml"
