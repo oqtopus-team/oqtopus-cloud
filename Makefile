@@ -67,9 +67,9 @@ setup-hooks:
 	@echo "Setting up lefthook..."
 	@echo '#!/bin/bash' > .git/hooks/pre-commit
 	@echo '' >> .git/hooks/pre-commit
-	@echo 'aqua exec -- lefthook run pre-commit --no-auto-install' >> .git/hooks/pre-commit
+	@echo 'aqua exec -- lefthook run pre-commit --no-auto-install --config .trufflehog-config.yaml' >> .git/hooks/pre-commit
 	@echo "Done."
 
 update-trufflehog:
 	@bash scripts/update_trufflehog.sh
-	@echo ".trufflehog3.yml Updated."
+	@echo "trufflehog config updated."
