@@ -1,0 +1,126 @@
+devices.DeviceBase:
+  type: object
+  properties:
+    device_info:
+      type: string
+      example: '{"device_id": "Kawasaki", "qubits": []}'
+    device_type:
+      type: string
+      enum:
+        - QPU
+        - simulator
+      example: "simulator"
+    status:
+      type:
+        string
+      enum:
+        - available
+        - unavailable
+      example: "available"
+    n_qubits:
+      type: integer
+      example: 64
+    available_at:
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+00:00"
+    calibrated_at:
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+00:00"
+    basis_gates:
+      type: array
+      items:
+        type: string
+      example: ["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]
+    supported_instructions:
+      type: array
+      items:
+        type: string
+      example: ["measure", "barrier", "reset"]
+    description:
+      type: string
+      example: "Superconducting quantum computer"
+
+devices.DeviceInfo:
+  type: object
+  properties:
+    device_id:
+      type: string
+      example: "SVSim"
+    device_type:
+      type: string
+      enum:
+        - QPU
+        - simulator
+      example: "simulator"
+    status:
+      type:
+        string
+      enum:
+        - available
+        - unavailable
+      example: "available"
+    available_at:
+      description: "Parameter mandatory and valid for 'unavailable' devices"
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+00:00"
+    n_pending_jobs:
+      type: integer
+      example: 8
+    n_qubits:
+      type: integer
+      example: 64
+    basis_gates:
+      type: array
+      items:
+        type: string
+      example: ["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]
+    supported_instructions:
+      type: array
+      items:
+        type: string
+      example: ["measure", "barrier", "reset"]
+    device_info:
+      description: "json format calibration_data and n_nodes etc"
+      type: string
+    calibrated_at:
+      description: "Parameter available only for `QPU` devices with available calibration data"
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+00:00"
+    description:
+      type: string
+      example: "State vector-based quantum circuit simulator"
+  required:
+    - device_id
+    - device_type
+    - status
+    - n_pending_jobs
+    - basis_gates
+    - supported_instructions
+    - description
+  example:
+    - device_id: "SVSim"
+      device_type: "simulator"
+      status: "available"
+      n_pending_jobs: 8
+      n_qubits: 39
+      n_nodes: 512
+      basis_gates: ["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]
+      supported_instructions: ["measure", "barrier", "reset"]
+      device_info: >-
+        {
+          "n_nodes": 512,
+          "calibration_data": {
+            "qubit_connectivity": [ "(1,4)", "(4,5)", "(5,8)"],
+            "t1": {
+              "0": 55.51,
+              "1": 37.03,
+              "2": 57.13
+            }
+          }
+        }
+      calibrated_at: "2022-10-19T11:45:34"
+      description: "State vector-based quantum circuit simulator"

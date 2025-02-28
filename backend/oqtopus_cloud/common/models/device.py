@@ -77,7 +77,7 @@ class Device(Base):
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        nullable=False,
+        nullable=True,
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,

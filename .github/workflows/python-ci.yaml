@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [common, user, provider, admin, lambda_auth, user_signup]
+        target: [common, user, provider, admin, lambda_auth, user_signup, worker]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     needs: lint-format
     strategy:
       matrix:
-        target: [common, user, provider, admin, lambda_auth, user_signup]
+        target: [common, user, provider, admin, lambda_auth, user_signup, worker]
 
     steps:
     - name: Checkout repository

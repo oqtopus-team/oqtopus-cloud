@@ -16,6 +16,9 @@ from starlette.middleware.cors import CORSMiddleware
 from oqtopus_cloud.admin.conf import logger, metrics, tracer
 from oqtopus_cloud.admin.middleware import CustomMiddleware
 from oqtopus_cloud.admin.routers import (
+    devices as devices_router,
+)
+from oqtopus_cloud.admin.routers import (
     users as users_router,
 )
 from oqtopus_cloud.admin.routers import (
@@ -49,6 +52,11 @@ app.include_router(
 app.include_router(
     whitelist_router.router,
     tags=["whitelist"],
+)
+
+app.include_router(
+    devices_router.router,
+    tags=["device"],
 )
 
 handler: Mangum = Mangum(

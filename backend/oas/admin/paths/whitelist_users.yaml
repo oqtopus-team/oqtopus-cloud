@@ -4,7 +4,7 @@ whitelist_users:
       - WhitelistUsers
     summary: "List whitelist users"
     description: "List whitelist users"
-    operationId: listWhitelistUsers
+    operationId: list_whitelist_users
     security:
       - BearerAuth: []
     parameters:
@@ -40,7 +40,7 @@ whitelist_users:
       - WhitelistUsers
     summary: "register a user to the whitelist"
     description: "register a user to the whitelist"
-    operationId: registerWhitelistUser
+    operationId: register_whitelist_user
     security:
       - BearerAuth: []
     requestBody:
@@ -76,7 +76,7 @@ whitelist_users:
       - WhitelistUsers
     summary: "delete a user from the whitelist"
     description: "delete a user from the whitelist"
-    operationId: deleteWhitelistUser
+    operationId: delete_whitelist_user
     security:
       - BearerAuth: []
     parameters:

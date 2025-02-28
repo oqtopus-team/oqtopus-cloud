@@ -22,6 +22,8 @@ class JobStatus(str, Enum):
 class JobType(str, Enum):
     sampling = "sampling"
     estimation = "estimation"
+    multi_manual = "multi_manual"
+    sse = "sse"
 
 
 class OperatorItem(BaseModel):
@@ -44,6 +46,14 @@ class SamplingResult(BaseModel):
         str,
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ]
+    divided_counts: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
+            ]
+        ),
+    ] = None
 
 
 class EstimationResult(BaseModel):
@@ -159,10 +169,6 @@ class JobDef(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class JobStatusUpdate(BaseModel):
@@ -174,6 +180,7 @@ class JobStatusUpdateResponse(BaseModel):
 
 
 class UpdateJobInfo(BaseModel):
+    combined_program: str | None = None
     transpile_result: TranspileResult | None = None
     result: JobResult | None = None
     message: str | None = None
@@ -192,4 +199,12 @@ class UpdateJobInfoRequest(BaseModel):
 
 
 class UpdateJobInfoResponse(BaseModel):
+    message: str
+
+
+class UploadSselogRequest(BaseModel):
+    file: bytes
+
+
+class UploadSselogResponse(BaseModel):
     message: str
