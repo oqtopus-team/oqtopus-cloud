@@ -53,7 +53,7 @@ module "user_api" {
   allow_origins                 = "*"
   allow_credentials             = "true"
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
-  allow_headers                 = "Content-type,Accept,Authorization"
+  allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
 }
 
