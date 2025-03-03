@@ -1,16 +1,3 @@
-devices.DeviceDataUpdate:
-  discriminator:
-    propertyName: command
-    mapping:
-      DeviceStatusUpdate: '#/devices.DeviceStatusUpdate'
-      DevicePendingJobsUpdate: '#/devices.DevicePendingJobsUpdate'
-      DeviceCalibrationUpdate: '#/devices.DeviceCalibrationUpdate'
-  oneOf:
-  - $ref: '#/devices.DeviceStatusUpdate'
-  - $ref: '#/devices.DevicePendingJobsUpdate'
-  - $ref: '#/devices.DeviceCalibrationUpdate'
-
-
 devices.DeviceDataUpdateResponse:
   type: object
   properties:
@@ -25,46 +12,18 @@ devices.DeviceDataUpdateResponse:
 devices.DeviceStatusUpdate:
   type: object
   properties:
-    command:
-      type: string
-      example: DeviceStatusUpdate
-      nullable: false
     status:
       type: string
       enum:
         - available
         - unavailable
       nullable: false
-    available_at:
-      description: Parameter mandatory and valid for status `unavailable`
-      type: string
-      format: date-time
-      example: 2023-09-10T14:00:00
-      nullable: true
   required:
-    - command
     - status
 
-devices.DevicePendingJobsUpdate:
+devices.DeviceInfoUpdate:
   type: object
   properties:
-    command:
-      type: string
-      example: DevicePendingJobsUpdate
-      nullable: false
-    n_pending_jobs:
-      type: integer
-      nullable: true
-  required:
-    - command
-
-devices.DeviceCalibrationUpdate:
-  type: object
-  properties:
-    command:
-      type: string
-      nullable: false
-      example: DeviceCalibrationUpdate
     device_info:
       description: Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
       type: string
@@ -92,4 +51,4 @@ devices.DeviceCalibrationUpdate:
       example: 2023-09-10T14:00:00
       nullable: true
   required:
-    - command
+    - device_info

@@ -19,7 +19,7 @@ paths:
         - user
       summary: get users
       description: get users
-      operationId: getUsers
+      operationId: get_users
       security:
         - BearerAuth: []
       parameters:
@@ -98,7 +98,7 @@ paths:
         - user
       summary: update user status
       description: update user status
-      operationId: updatetUserStatusById
+      operationId: updatet_user_status_by_id
       security:
         - BearerAuth: []
       parameters:
@@ -146,7 +146,7 @@ paths:
         - user
       summary: delete user
       description: delete user with designated id
-      operationId: deleteUserById
+      operationId: delete_user_by_id
       security:
         - BearerAuth: []
       parameters:
@@ -185,7 +185,7 @@ paths:
         - WhitelistUsers
       summary: List whitelist users
       description: List whitelist users
-      operationId: listWhitelistUsers
+      operationId: list_whitelist_users
       security:
         - BearerAuth: []
       parameters:
@@ -223,7 +223,7 @@ paths:
         - WhitelistUsers
       summary: register a user to the whitelist
       description: register a user to the whitelist
-      operationId: registerWhitelistUser
+      operationId: register_whitelist_user
       security:
         - BearerAuth: []
       requestBody:
@@ -259,7 +259,7 @@ paths:
         - WhitelistUsers
       summary: delete a user from the whitelist
       description: delete a user from the whitelist
-      operationId: deleteWhitelistUser
+      operationId: delete_whitelist_user
       security:
         - BearerAuth: []
       parameters:
@@ -288,7 +288,7 @@ paths:
         - devices
       summary: List available devices
       description: List available devices
-      operationId: listDevices
+      operationId: list_devices
       security:
         - BearerAuth: []
       responses:
@@ -315,7 +315,7 @@ paths:
         - devices
       summary: Register a new device
       description: Register a new device to the system.
-      operationId: registerDevice
+      operationId: register_device
       security:
         - BearerAuth: []
       requestBody:
@@ -357,7 +357,7 @@ paths:
         - devices
       summary: Get specified device details
       description: get device
-      operationId: getDevice
+      operationId: get_device
       security:
         - BearerAuth: []
       parameters:
@@ -392,7 +392,7 @@ paths:
         - devices
       summary: Update data of selected device
       description: Update the properties of selected device.
-      operationId: updateDeviceData
+      operationId: update_device_data
       security:
         - BearerAuth: []
       parameters:
@@ -451,7 +451,7 @@ paths:
         - devices
       summary: Delete a device
       description: Delete a device from the system.
-      operationId: deleteDevice
+      operationId: delete_device
       security:
         - BearerAuth: []
       parameters:
