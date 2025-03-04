@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field
 
 
 class Status(str, Enum):
@@ -16,29 +16,16 @@ class Status(str, Enum):
 
 
 class DeviceStatusUpdate(BaseModel):
-    command: Annotated[
-        Literal["DeviceStatusUpdate"], Field(examples=["DeviceStatusUpdate"])
-    ]
     status: Status
-    available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
-    ] = None
-    """
-    Parameter mandatory and valid for status `unavailable`
-    """
 
 
-class DevicePendingJobsUpdate(BaseModel):
-    command: Annotated[
-        Literal["DevicePendingJobsUpdate"], Field(examples=["DevicePendingJobsUpdate"])
-    ]
-    n_pending_jobs: int | None = None
+class DeviceDataUpdateResponse(BaseModel):
+    message: Annotated[str, Field(examples=["Device's data updated"])] = (
+        "Device's data updated"
+    )
 
 
-class DeviceCalibrationUpdate(BaseModel):
-    command: Annotated[
-        Literal["DeviceCalibrationUpdate"], Field(examples=["DeviceCalibrationUpdate"])
-    ]
+class DeviceInfoUpdate(BaseModel):
     device_info: Annotated[
         str | None,
         Field(
@@ -56,18 +43,3 @@ class DeviceCalibrationUpdate(BaseModel):
     """
     Parameter mandatory and valid if calibrationData not null
     """
-
-
-class DeviceDataUpdate(
-    RootModel[DeviceStatusUpdate | DevicePendingJobsUpdate | DeviceCalibrationUpdate]
-):
-    root: Annotated[
-        DeviceStatusUpdate | DevicePendingJobsUpdate | DeviceCalibrationUpdate,
-        Field(discriminator="command"),
-    ]
-
-
-class DeviceDataUpdateResponse(BaseModel):
-    message: Annotated[str, Field(examples=["Device's data updated"])] = (
-        "Device's data updated"
-    )

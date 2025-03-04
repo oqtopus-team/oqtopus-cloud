@@ -1,9 +1,13 @@
+import base64
 import json
+import os
 from datetime import datetime
 from typing import Any, Optional
 
+import boto3
 import pytz
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -25,6 +29,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
+    UploadSselogResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
@@ -103,12 +108,12 @@ def get_jobs(
             job = model_to_schema(model, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
-                return NotFoundErrorResponse("Job not found")
+                # ignore illegal jobs
+                continue
             else:
                 # if status is "submitted", then update status to "ready"
                 if decode_job_status(model.status) == JobStatus.submitted:
-                    model.status = JobStatus.ready
-                    model.ready_at = datetime.now()
+                    set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
                     job.status = JobStatus(model.status)
@@ -176,7 +181,7 @@ def update_job_status(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
 
-        model.status = request.status
+        set_job_status(model, request.status)
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
@@ -209,6 +214,9 @@ def update_job_info(
         if incoming is None:
             return (status, job_info)
 
+        if incoming.combined_program is not None:
+            job_info.combined_program = incoming.combined_program
+
         if incoming.transpile_result is not None:
             job_info.transpile_result = incoming.transpile_result
 
@@ -234,7 +242,7 @@ def update_job_info(
         if (
             request.job_info is not None
             and request.job_info.result is not None
-            and model.job_type != jobtype_of_result(request.job_info.result)
+            and model.job_type not in jobtype_of_result(request.job_info.result)
         ):
             return BadRequestResponse(
                 message="The job result type is not compatible with job info."
@@ -260,10 +268,96 @@ def update_job_info(
 
         model.job_info = JobInfo.model_dump_json(job_info)
         if status is not None:
-            model.status = status
+            set_job_status(model, status)
+        # execution time
+        if request.execution_time is not None:
+            if request.execution_time < 0:
+                return BadRequestResponse(
+                    message="Execution time should not be negative."
+                )
+            model.execution_time = request.execution_time
+
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.get(
+    "/jobs/{job_id}/ssesrc",
+    response_model=None,
+    response_class=PlainTextResponse,
+    responses={
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_ssesrc(
+    job_id: str,
+) -> PlainTextResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
+    try:
+        # get the program file from the AWS S3 bucket
+        s3_client = boto3.client("s3")
+        program = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+        )
+        program = program["Body"].read()
+
+        # encode the file to base64
+        program_base64 = base64.b64encode(program).decode("utf-8")
+        return PlainTextResponse(content=program_base64)
+
+    except Exception as e:
+        logger.exception("Failed to get SSE user program file: %s", e)
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.patch(
+    "/jobs/{job_id}/sselog",
+    response_model=UploadSselogResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def upload_sselog(
+    job_id: str,
+    file: UploadFile = Form(...),
+    db: Session = Depends(get_db),
+) -> UploadSselogResponse | ErrorResponse:
+    bucket_name = os.environ["SSE_BUCKET"]
+    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+
+    try:
+        # Check that the job exists
+        job_model = db.query(Job).filter(Job.id == job_id).first()
+        if job_model is None:
+            logger.info("job not found with the given id")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        job = model_to_schema(job_model)
+        if isinstance(job, ValueError):
+            logger.warning("warn: Failed to encode job model to schema.")
+            return NotFoundErrorResponse(message="job not found with the given id")
+        if job.job_type != JobType.sse:
+            logger.info("job is not an SSE job")
+            return BadRequestResponse(message="job is not an SSE job")
+
+        binary = file.file.read()
+
+        s3_client = boto3.client("s3")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=f"{job_id}/{file_name}",
+            Body=binary,
+        )
+        return UploadSselogResponse(message="SSE log uploaded")
+    except Exception as e:
+        logger.exception("Failed to upload SSE log file: %s", e)
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
@@ -291,12 +385,12 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> JobType | None:
+def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
-        return JobType.sampling
+        return [JobType.sampling, JobType.multi_manual, JobType.sse]
     elif r.estimation is not None:
-        return JobType.estimation
-    return None
+        return [JobType.estimation]
+    return [None]
 
 
 def decode_job_status(s: str) -> JobStatus | ValueError:
@@ -344,6 +438,27 @@ def is_datetime_field(fld: str) -> bool:
     return False
 
 
+def set_job_status(model: Job, status: str | JobStatus) -> None:
+    if isinstance(status, str):
+        status = JobStatus(status)
+
+    model.status = status
+    if status == JobStatus.ready:
+        if model.ready_at is None:
+            model.ready_at = datetime.now()
+    elif status == JobStatus.running:
+        if model.running_at is None:
+            model.running_at = datetime.now()
+    elif (
+        status == JobStatus.succeeded
+        or status == JobStatus.failed
+        or status == JobStatus.cancelled
+    ):
+        if model.ended_at is None:
+            model.ended_at = datetime.now()
+    return
+
+
 def stage_of_status(st: JobStatus) -> int:
     match st:
         case JobStatus.submitted:
@@ -385,6 +500,4 @@ def model_to_schema(
         ready_at=localize(model.ready_at),
         running_at=localize(model.running_at),
         ended_at=localize(model.ended_at),
-        created_at=pytz.utc.localize(model.created_at),
-        updated_at=localize(model.updated_at),
     )

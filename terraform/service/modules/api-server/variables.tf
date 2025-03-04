@@ -40,10 +40,10 @@ variable "lambda_handler" {
   type        = string
 }
 
-variable "use_cognito_authorizer" {
-  description = "Set `true` if API is authorized with cognito userpool."
-  type        = bool
-  default     = true
+variable "authorizer_type" {
+  description = "Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required."
+  type        = string
+  default     = "COGNITO"
 }
 
 variable "require_api_key" {
@@ -91,4 +91,28 @@ variable "allow_headers" {
 variable "log_level" {
   description = "The log level for the Lambda function"
   type        = string
+}
+
+variable "client_cognito_user_pool_id" {
+  description = "The ID of the Cognito user pool"
+  type        = string
+  default     = ""
+}
+
+variable "client_cognito_user_pool_web_client_id" {
+  description = "The web client ID of the Cognito user pool"
+  type        = string
+  default     = ""
+}
+
+variable "manage_cognito_user_pool" {
+  description = "Set `true` if the module should manage the Cognito user pool"
+  type        = bool
+  default     = false
+}
+
+variable "lambda_authorizer_arn" {
+  type        = string
+  default     = ""
+  description = "ARN of the Lambda function used for authorizer"
 }

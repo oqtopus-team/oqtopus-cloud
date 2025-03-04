@@ -19,7 +19,7 @@ paths:
         - user
       summary: get users
       description: get users
-      operationId: getUsers
+      operationId: get_users
       security:
         - BearerAuth: []
       parameters:
@@ -98,7 +98,7 @@ paths:
         - user
       summary: update user status
       description: update user status
-      operationId: updatetUserStatusById
+      operationId: updatet_user_status_by_id
       security:
         - BearerAuth: []
       parameters:
@@ -146,7 +146,7 @@ paths:
         - user
       summary: delete user
       description: delete user with designated id
-      operationId: deleteUserById
+      operationId: delete_user_by_id
       security:
         - BearerAuth: []
       parameters:
@@ -185,7 +185,7 @@ paths:
         - WhitelistUsers
       summary: List whitelist users
       description: List whitelist users
-      operationId: listWhitelistUsers
+      operationId: list_whitelist_users
       security:
         - BearerAuth: []
       parameters:
@@ -223,7 +223,7 @@ paths:
         - WhitelistUsers
       summary: register a user to the whitelist
       description: register a user to the whitelist
-      operationId: registerWhitelistUser
+      operationId: register_whitelist_user
       security:
         - BearerAuth: []
       requestBody:
@@ -259,7 +259,7 @@ paths:
         - WhitelistUsers
       summary: delete a user from the whitelist
       description: delete a user from the whitelist
-      operationId: deleteWhitelistUser
+      operationId: delete_whitelist_user
       security:
         - BearerAuth: []
       parameters:
@@ -272,14 +272,225 @@ paths:
       responses:
         '204':
           description: Delete success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/success.SuccessResponse'
         '401':
           description: Unauthorized
         '403':
           description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /devices:
+    get:
+      tags:
+        - devices
+      summary: List available devices
+      description: List available devices
+      operationId: list_devices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Returns a list of available devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/devices.DeviceInfo'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - devices
+      summary: Register a new device
+      description: Register a new device to the system.
+      operationId: register_device
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Device data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/devices.DeviceBase'
+      responses:
+        '200':
+          description: Device registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Device registered
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /devices/{device_id}:
+    get:
+      tags:
+        - devices
+      summary: Get specified device details
+      description: get device
+      operationId: get_device
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          description: Device identifier
+          required: true
+          schema:
+            type: string
+          example: Kawasaki
+      responses:
+        '200':
+          description: device response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfo'
+        '404':
+          description: Device with device_id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    patch:
+      tags:
+        - devices
+      summary: Update data of selected device
+      description: Update the properties of selected device.
+      operationId: update_device_data
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: device_id
+          description: Device ID
+          required: true
+          schema:
+            type: string
+            example: Kawasaki
+      requestBody:
+        description: New calibration data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/devices.DeviceBase'
+      responses:
+        '200':
+          description: Device's data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Device's data updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
+    delete:
+      tags:
+        - devices
+      summary: Delete a device
+      description: Delete a device from the system.
+      operationId: delete_device
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: device_id
+          description: Device ID
+          required: true
+          schema:
+            type: string
+            example: Kawasaki
+      responses:
+        '204':
+          description: Device deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: Device deleted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Device not found
         '500':
           description: Internal Server Error
           content:
@@ -429,3 +640,201 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/whitelist_users.Email'
+    devices.DeviceInfo:
+      type: object
+      properties:
+        device_id:
+          type: string
+          example: SVSim
+        device_type:
+          type: string
+          enum:
+            - QPU
+            - simulator
+          example: simulator
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          example: available
+        available_at:
+          description: Parameter mandatory and valid for 'unavailable' devices
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+00:00'
+        n_pending_jobs:
+          type: integer
+          example: 8
+        n_qubits:
+          type: integer
+          example: 64
+        basis_gates:
+          type: array
+          items:
+            type: string
+          example:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+        supported_instructions:
+          type: array
+          items:
+            type: string
+          example:
+            - measure
+            - barrier
+            - reset
+        device_info:
+          description: json format calibration_data and n_nodes etc
+          type: string
+        calibrated_at:
+          description: Parameter available only for `QPU` devices with available calibration data
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+00:00'
+        description:
+          type: string
+          example: State vector-based quantum circuit simulator
+      required:
+        - device_id
+        - device_type
+        - status
+        - n_pending_jobs
+        - basis_gates
+        - supported_instructions
+        - description
+      example:
+        - device_id: SVSim
+          device_type: simulator
+          status: available
+          n_pending_jobs: 8
+          n_qubits: 39
+          n_nodes: 512
+          basis_gates:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+          supported_instructions:
+            - measure
+            - barrier
+            - reset
+          device_info: |-
+            {
+              "n_nodes": 512,
+              "calibration_data": {
+                "qubit_connectivity": [ "(1,4)", "(4,5)", "(5,8)"],
+                "t1": {
+                  "0": 55.51,
+                  "1": 37.03,
+                  "2": 57.13
+                }
+              }
+            }
+          calibrated_at: '2022-10-19T11:45:34'
+          description: State vector-based quantum circuit simulator
+    devices.DeviceBase:
+      type: object
+      properties:
+        device_info:
+          type: string
+          example: '{"device_id": "Kawasaki", "qubits": []}'
+        device_type:
+          type: string
+          enum:
+            - QPU
+            - simulator
+          example: simulator
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          example: available
+        n_qubits:
+          type: integer
+          example: 64
+        available_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+00:00'
+        calibrated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+00:00'
+        basis_gates:
+          type: array
+          items:
+            type: string
+          example:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+        supported_instructions:
+          type: array
+          items:
+            type: string
+          example:
+            - measure
+            - barrier
+            - reset
+        description:
+          type: string
+          example: Superconducting quantum computer

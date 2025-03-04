@@ -105,6 +105,9 @@ fmt-user: ## Format user code
 fmt-provider: ## Format provider code
 	@poetry run ruff format oqtopus_cloud/provider
 
+fmt-worker: ## Format worker code
+	@poetry run ruff format oqtopus_cloud/worker
+
 fmt-admin: ## Format admin code
 	@poetry run ruff format oqtopus_cloud/admin
 
@@ -114,7 +117,7 @@ fmt-lambda_auth: ## Format lambda_auth code
 fmt-user_signup: ## Format user_signup code
 	@poetry run ruff format oqtopus_cloud/user_signup
 
-fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup fmt-worker ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -128,6 +131,10 @@ lint-provider: ## Run provider linters
 	@poetry run ruff check oqtopus_cloud/provider
 	@poetry run mypy -p oqtopus_cloud.provider
 
+lint-worker: ## Run worker linters
+	@poetry run ruff check oqtopus_cloud/worker
+	@poetry run mypy -p oqtopus_cloud.worker
+
 lint-admin: ## Run admin linters
 	@poetry run ruff check oqtopus_cloud/admin
 	@poetry run mypy -p oqtopus_cloud.admin
@@ -140,7 +147,7 @@ lint-user_signup: ## Run user_signup linters
 	@poetry run ruff check oqtopus_cloud/user_signup
 	@poetry run mypy -p oqtopus_cloud.user_signup
 
-lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-user_signup ## Run all linters
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-user_signup lint-worker ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -159,6 +166,12 @@ test-provider: fmt-provider lint-provider ## Run Provider tests
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
 	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
 	@mv .coverage .coverage-provider
+
+test-worker: fmt-worker lint-worker ## Run worker tests
+	@export POWERTOOLS_METRICS_NAMESPACE=worker && \
+	export POWERTOOLS_SERVICE_NAME=worker && \
+	poetry run pytest tests/oqtopus_cloud/worker/ -vv --cov=oqtopus_cloud/worker --cov-report=xml:coverage-worker.xml --cov-report=html:htmlcov-worker
+	@mv .coverage .coverage-worker
 
 test-admin: fmt-admin lint-admin ## Run admin tests
 	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \

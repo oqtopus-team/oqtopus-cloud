@@ -64,7 +64,95 @@ def test_get_api_token(
     )
 
 
-def test_post_api_token(
+def test_get_api_token_no_user_found(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_2"
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = get_api_token(
+        request,
+        test_db,
+    )
+    assert response.status_code == 404
+
+
+def test_get_api_token_no_user_status_suspended(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    test_db.flush()
+    new_user = _get_model(1)
+    new_user.userstatus = UserStatus.suspended
+    test_db.add(new_user)
+    test_db.commit()
+
+    response = get_api_token(
+        request,
+        test_db,
+    )
+    assert response.status_code == 403
+
+
+def test_get_api_token_500(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    test_db.flush()
+    new_user = _get_model(1)
+    new_user.userstatus = UserStatus.suspended
+    test_db.add(new_user)
+    test_db.commit()
+
+    response = get_api_token(
+        request,
+        None,
+    )
+    assert response.status_code == 500
+
+
+def test_create_api_token(
     test_db,
 ):
     # Create a dummy-request object
@@ -101,6 +189,95 @@ def test_post_api_token(
     # check if api token is created
     assert response.api_token_secret != "api_token_secret_1"
     assert len(response.api_token_secret) != 0
+
+
+def test_create_api_token_no_user_found(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_2"
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = create_api_token(
+        request,
+        test_db,
+    )
+
+    assert response.status_code == 404
+
+
+def test_create_api_token_user_status_suspended(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    test_db.flush()
+    new_user = _get_model(1)
+    new_user.userstatus = UserStatus.suspended
+    test_db.add(new_user)
+    test_db.commit()
+
+    response = create_api_token(
+        request,
+        test_db,
+    )
+
+    assert response.status_code == 403
+
+
+def test_create_api_token_500(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = create_api_token(
+        request,
+        None,
+    )
+
+    assert response.status_code == 500
 
 
 def test_delete_api_token(
@@ -145,4 +322,120 @@ def test_delete_api_token(
         .first()
         .api_token_secret
         is None
+    )
+
+
+def test_delete_api_token_500(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    response = delete_api_token(
+        request,
+        None,
+    )
+    assert response.status_code == 500
+
+
+def test_delete_api_token_no_user_found(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_2"
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    # check if user has api token
+    assert (
+        test_db.query(User)
+        .filter(User.username == "username_1")
+        .first()
+        .api_token_secret
+        == "api_token_secret_1"
+    )
+
+    response = delete_api_token(
+        request,
+        test_db,
+    )
+    assert response.status_code == 404
+    # check if api token is NOT deleted
+    assert (
+        test_db.query(User)
+        .filter(User.username == "username_1")
+        .first()
+        .api_token_secret
+        == "api_token_secret_1"
+    )
+
+
+def test_delete_api_token_user_status_suspended(
+    test_db,
+):
+    # Create a dummy-request object
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    async def receive() -> Dict[str, Any]:
+        return {"type": "http.request", "body": b""}
+
+    request = Request(scope=scope, receive=receive)
+    request.state.owner = "username_1"
+
+    test_db.flush()
+    new_user = _get_model(1)
+    new_user.userstatus = UserStatus.suspended
+    test_db.add(new_user)
+    test_db.commit()
+
+    # check if user has api token
+    assert (
+        test_db.query(User)
+        .filter(User.username == "username_1")
+        .first()
+        .api_token_secret
+        == "api_token_secret_1"
+    )
+
+    response = delete_api_token(
+        request,
+        test_db,
+    )
+    assert response.status_code == 403
+    # check if api token is NOT deleted
+    assert (
+        test_db.query(User)
+        .filter(User.username == "username_1")
+        .first()
+        .api_token_secret
+        == "api_token_secret_1"
     )
