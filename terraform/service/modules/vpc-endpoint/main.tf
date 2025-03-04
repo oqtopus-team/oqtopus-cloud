@@ -56,3 +56,37 @@ resource "aws_vpc_endpoint" "secret_manager" {
   vpc_endpoint_type = "Interface"
   vpc_id            = var.vpc_id
 }
+
+data "aws_route_tables" "private" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+  filter {
+    name   = "tag:Type"
+    values = ["private"]
+  }
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id       = var.vpc_id
+  service_name = "com.amazonaws.ap-northeast-1.s3"
+  # attach the VPC endpoint to the private route tables
+  route_table_ids = data.aws_route_tables.private.ids
+
+  # allow all actions on all resources in S3
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : "*",
+        "Action" : "s3:*",
+        "Resource" : [
+          "arn:aws:s3:::${var.product}-${var.org}-${var.env}-sselog",
+          "arn:aws:s3:::${var.product}-${var.org}-${var.env}-sselog/*"
+        ]
+      }
+    ]
+  })
+}

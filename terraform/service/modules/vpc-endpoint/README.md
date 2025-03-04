@@ -38,6 +38,8 @@ module "vpc_endpoint" {
 | Name | Type |
 |------|------|
 | [aws_vpc_endpoint.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_endpoint) | resource |
+| [aws_vpc_endpoint.s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_endpoint) | resource |
+| [aws_route_tables.private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-source) | data source |
 
 ## Inputs
 

@@ -91,3 +91,11 @@ module "admin_cognito" {
   env        = var.env
   identifier = "admin"
 }
+
+module "s3_bucket_sselog" {
+  source = "../modules/s3"
+
+  product = var.product
+  org     = var.org
+  env     = var.env
+}

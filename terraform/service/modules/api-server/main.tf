@@ -127,6 +127,20 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
+resource "aws_iam_role_policy" "lambda_s3_policy" {
+  name = "lambda_s3_access"
+  role = aws_iam_role.lambda.name
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : "s3:*",
+        "Resource" : "arn:aws:s3:::${var.product}-${var.org}-${var.env}-sselog/*"
+      }
+    ]
+  })
+}
 
 resource "aws_iam_role_policy_attachment" "lambda_execution" {
   role       = aws_iam_role.lambda.name
