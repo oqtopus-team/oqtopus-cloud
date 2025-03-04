@@ -408,10 +408,17 @@ resource "aws_api_gateway_method_response" "options" {
   resource_id = aws_api_gateway_resource.this.id
   http_method = aws_api_gateway_method.options.http_method
   status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  # The boolean flag indicates that the response header is required/can be omitted, respectively.
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Credentials" = true
+    "method.response.header.Access-Control-Allow-Headers"     = true
+    "method.response.header.Access-Control-Allow-Methods"     = true
+    "method.response.header.Access-Control-Allow-Origin"      = true
   }
 }
 
