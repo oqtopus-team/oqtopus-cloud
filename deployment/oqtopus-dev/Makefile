@@ -116,6 +116,15 @@ deploy:
 	@$(MAKE) tag-version
 	@echo "Deploy Completed"
 
+tag-version: ## Tag version
+	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
+	@AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text) && \
+	 AWS_REGION=$$(aws configure get region)
+	@aws lambda tag-resource \
+    --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+    --tags github-sha=${GITHUB_SHA}
+	@echo "🏷️ Tagging Completed"
+
 
 deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
 	@$(MAKE) deploy-via-actions \
@@ -148,15 +157,16 @@ deploy-via-actions: ## Deploy Lambda Package via Github Actions
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip
-	@$(MAKE) tag-version
+	@$(MAKE) tag-version-via-actions
 	@echo "Deploy Completed"
 
-tag-version:
+tag-version-via-actions: ## Tag version via Github Actions
 	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
 	@aws lambda tag-resource \
     --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
     --tags github-sha=${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
+
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
