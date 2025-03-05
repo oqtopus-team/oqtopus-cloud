@@ -93,9 +93,7 @@ def _get_model(n: int, expiration_day=90) -> User:
         "userstatus": UserStatus.approved,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
-        "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
-        "require_mfa_reset": False,
         "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }
