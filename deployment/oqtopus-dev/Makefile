@@ -113,6 +113,7 @@ deploy:
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip \
 	--profile $(PROFILE)
+	@$(MAKE) tag-version
 	@echo "Deploy Completed"
 
 
@@ -151,11 +152,11 @@ deploy-via-actions: ## Deploy Lambda Package via Github Actions
 	@echo "Deploy Completed"
 
 tag-version:
-	@echo "🏷️Tagging version: ${GITHUB_SHA}"
+	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
 	@aws lambda tag-resource \
     --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
     --tags github-sha=${GITHUB_SHA}
-	@echo "🏷️Tagging Completed"
+	@echo "🏷️ Tagging Completed"
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
