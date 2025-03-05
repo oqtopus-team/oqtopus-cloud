@@ -55,6 +55,10 @@ module "user_api" {
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
+  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name        = "ssecontainer.log"
+  sse_user_program_name         = "userprogram.py"
+  sse_zip_file_name             = "sselog_{job_id}.zip"
 }
 
 module "provider_api" {
@@ -80,6 +84,10 @@ module "provider_api" {
   allow_methods                 = "*"
   allow_headers                 = "*"
   log_level                     = "INFO"
+  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name        = "ssecontainer.log"
+  sse_user_program_name         = "userprogram.py"
+  sse_zip_file_name             = "sselog_{job_id}.zip"
 }
 
 module "admin_api" {
@@ -164,9 +172,11 @@ module "vpc_endpoint" {
   product                           = var.product
   org                               = var.org
   env                               = var.env
+  region                            = var.region
   vpc_id                            = data.terraform_remote_state.infrastructure.outputs.network.vpc_id
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
+  s3_bucket_name                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
 
   identifiers = [
     module.user_api.iam_role_arn,
@@ -174,6 +184,11 @@ module "vpc_endpoint" {
     module.admin_api.iam_role_arn,
     module.user_signup_api.iam_role_arn,
     module.pending_jobs_updater.iam_role_arn
+  ]
+
+  s3_lambda_iam_role_arns = [
+    module.user_api.iam_role_arn,
+    module.provider_api.iam_role_arn,
   ]
 
   depends_on = [
