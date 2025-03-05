@@ -154,7 +154,7 @@ tag-version:
 	@echo "Tagging version ${GITHUB_SHA}"
 	@aws lambda tag-resource \
     --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
-    --tags github_sha=${GITHUB_SHA}
+    --tags github-sha=${GITHUB_SHA}
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
