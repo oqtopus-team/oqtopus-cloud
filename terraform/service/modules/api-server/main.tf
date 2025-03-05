@@ -73,6 +73,7 @@ resource "aws_lambda_function" "this" {
         AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
       } : {},
       var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+      var.lambda_additional_env
     )
   }
 
@@ -88,7 +89,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "15"
+  timeout                        = var.lambda_timeout
 
   tracing_config {
     mode = "Active"
@@ -101,9 +102,9 @@ resource "aws_lambda_function" "this" {
   }
 
   # snap_start is not supported in python3.12
-  # snap_start {
-  #   apply_on = "PublishedVersions"
-  # }
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -388,6 +389,8 @@ resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
 }
 
 resource "aws_api_gateway_method" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id   = aws_api_gateway_rest_api.this.id
   resource_id   = aws_api_gateway_resource.this.id
   http_method   = "OPTIONS"
@@ -395,18 +398,22 @@ resource "aws_api_gateway_method" "options" {
 }
 
 resource "aws_api_gateway_integration" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 resource "aws_api_gateway_method_response" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   status_code = "200"
 
   response_models = {
@@ -423,9 +430,11 @@ resource "aws_api_gateway_method_response" "options" {
 }
 
 resource "aws_api_gateway_integration_response" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   status_code = "200"
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'${var.allow_origins}'"

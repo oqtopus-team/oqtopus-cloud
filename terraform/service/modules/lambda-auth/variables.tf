@@ -27,6 +27,7 @@ variable "db_secret_arn" {
   description = "The ARN of the secret for the RDS instance"
   type        = string
 }
+
 variable "lambda_security_group_ids" {
   description = "The security group IDs for the Lambda function"
   type        = list(string)
@@ -92,4 +93,10 @@ variable "allow_api_gateway_arn" {
   description = "The ARN of the API Gateway"
   type        = string
   default     = ""
+}
+
+variable "lambda_timeout" {
+  type        = number
+  description = "Lambda execution timeout"
+  default     = 15
 }

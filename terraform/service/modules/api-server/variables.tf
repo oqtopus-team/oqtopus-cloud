@@ -66,25 +66,35 @@ variable "power_tools_service_name" {
   type        = string
 }
 
+variable "enable_cors" {
+  type        = bool
+  description = "Should enable CORS? (APIs for web client, this should be true, otherse false)"
+  default     = true
+}
+
 variable "allow_origins" {
   description = "The allowed origins for the API Gateway"
   type        = string
+  default     = null
 }
 
 variable "allow_credentials" {
   description = "The allowed credentials for the API Gateway"
   type        = string
+  default     = null
 }
 
 
 variable "allow_methods" {
   description = "The allowed methods for the API Gateway"
   type        = string
+  default     = null
 }
 
 variable "allow_headers" {
   description = "The allowed headers for the API Gateway"
   type        = string
+  default     = null
 }
 
 
@@ -115,4 +125,16 @@ variable "lambda_authorizer_arn" {
   type        = string
   default     = ""
   description = "ARN of the Lambda function used for authorizer"
+}
+
+variable "lambda_timeout" {
+  type        = number
+  default     = 15
+  description = "Lambda timeout"
+}
+
+variable "lambda_additional_env" {
+  type        = map(any)
+  default     = {}
+  description = "Additional environment variables"
 }
