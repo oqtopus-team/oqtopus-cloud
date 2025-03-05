@@ -166,7 +166,6 @@ def model_to_schema(model: User) -> GetOneUserResponse:
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
         status=status,
-        require_mfa_reset=getattr(model, "require_mfa_reset", None),
     )
 
 

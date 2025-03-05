@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -32,9 +32,7 @@ class User(Base):
     userstatus (int)                Status of the user.
     api_token_secret (str)          API token secret of the user.
     organization (str)              Organization of the user.
-    purpose (str)                   Purpose of the user.
     group_id  (str)                 Group ID of the user.
-    require_mfa_reset (bool)        Whether the user requires MFA reset.
     api_token_expiration (datetime) The expiration date of the API token.
     created_at (datetime)           The timestamp when the user was created.
     updated_at (datetime)           The timestamp when the user was last updated.
@@ -48,9 +46,7 @@ class User(Base):
     userstatus: Mapped[Optional[UserStatus]] = mapped_column(String, nullable=True)
     api_token_secret: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    purpose: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    require_mfa_reset: Mapped[bool] = mapped_column(Boolean, nullable=True)
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime, default=default_datetime, nullable=True
     )
