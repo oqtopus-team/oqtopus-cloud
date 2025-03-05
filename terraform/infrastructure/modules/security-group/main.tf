@@ -76,11 +76,11 @@ resource "aws_security_group" "secret_manager" {
 }
 # Cognito
 resource "aws_security_group" "cognito" {
-  name        = "${var.product}-${var.org}-${var.env}-cognito"
+  name        = "${var.product}-${var.org}-${var.env}-to-cognito"
   vpc_id      = var.vpc_id
-  description = "Cognito access from VPC"
+  description = "access to Cognito through Nat Gateway"
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-cognito"
+    Name = "${var.product}-${var.org}-${var.env}-to-cognito"
   }
 }
 
