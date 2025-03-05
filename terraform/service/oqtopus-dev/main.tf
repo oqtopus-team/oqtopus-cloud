@@ -21,6 +21,7 @@ module "lambda_auth" {
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
   lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  client_cognito_user_pool_arn           = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
   power_tools_metrics_namespace          = "lambda_auth"

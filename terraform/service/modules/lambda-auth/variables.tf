@@ -77,6 +77,11 @@ variable "log_level" {
   type        = string
 }
 
+variable "client_cognito_user_pool_arn" {
+  description = "The ARN of the Cognito user pool"
+  type        = string
+}
+
 variable "client_cognito_user_pool_id" {
   description = "The ID of the Cognito user pool"
   type        = string

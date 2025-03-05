@@ -154,6 +154,11 @@ data "aws_iam_policy_document" "lambda_execution" {
     resources = ["*"]
 
   }
+  statement {
+    actions   = ["cognito-idp:ListUsers"]
+    effect    = "Allow"
+    resources = [var.client_cognito_user_pool_arn]
+  }
 }
 
 data "aws_iam_policy_document" "vpc_access_execution" {
