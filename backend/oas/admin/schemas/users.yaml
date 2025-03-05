@@ -14,8 +14,6 @@ users.GetOneUserResponse:
       $ref: "#/users.UserStatus"
     group_id:
       type: string
-    require_mfa_reset:
-      type: boolean
   xml:
     name: User
   required: [

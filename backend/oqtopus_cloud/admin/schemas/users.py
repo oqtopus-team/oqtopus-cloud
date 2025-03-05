@@ -26,7 +26,6 @@ class GetOneUserResponse(BaseModel):
     organization: str | None = None
     status: UserStatus | None = None
     group_id: str | None = None
-    require_mfa_reset: bool | None = None
 
 
 class GetUsersResponse(BaseModel):

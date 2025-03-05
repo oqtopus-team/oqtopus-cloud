@@ -78,7 +78,6 @@ def signup(
             userstatus=UserStatus.approved,
             organization=whitelist_user.organization,
             group_id=whitelist_user.group_id,
-            require_mfa_reset=False,
         )
         db.add(new_user)
         # update whitelist_user status to completed
