@@ -52,11 +52,11 @@ def mfa_reset_request(
             AuthParameters={"USERNAME": email, "PASSWORD": password},
         )
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return BadRequestResponse(message="Failed to authenticate user")
     try:
         logger.info("invoked mfa reset request")
-        # check if user exists
+        # check if user exists in users table
         stmt = select(User).where(User.email == email)
         user = db.execute(stmt).scalars().first()
         if not user:
@@ -72,5 +72,5 @@ def mfa_reset_request(
         logger.info(f"mfa reset response: {response}")
         return None
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
+        logger.exception(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))

@@ -14,18 +14,16 @@ from pydantic.type_adapter import TypeAdapter
 client = TestClient(app)
 
 
-def _get_model(n: int) -> User:
+def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
         "username": f"username_{n}",
-        "userstatus": UserStatus.approved,
+        "userstatus": status,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
-        "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
-        "require_mfa_reset": True,
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -38,7 +36,7 @@ def test_get_users_simple(
 ):
     test_db.flush()
     test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_model(2, UserStatus.unapproved))
     test_db.commit()
 
     response = client.get("/users")
@@ -55,16 +53,14 @@ def test_get_users_simple(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             ),
             GetOneUserResponse(
                 id="2",
                 email="email_2",
                 name="username_2",
-                status=UserStatus.approved,
+                status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
-                require_mfa_reset=True,
             ),
         ],
     )
@@ -96,7 +92,6 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
-                require_mfa_reset=True,
             ),
             GetOneUserResponse(
                 id="3",
@@ -105,7 +100,6 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
-                require_mfa_reset=True,
             ),
         ],
     )
@@ -137,7 +131,6 @@ def test_get_user_by_email(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )
@@ -170,7 +163,6 @@ def test_get_user_by_name_organization_groupid_status(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )
@@ -178,7 +170,14 @@ def test_get_user_by_name_organization_groupid_status(
     assert actual == expect
 
 
-def test_patch_job(
+def test_get_user_500():
+    response = client.get(
+        "/users?name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
+    )
+    assert response.status_code == 500
+
+
+def test_patch_job_status_to_suspended(
     test_db,
 ):
     test_db.flush()
@@ -195,7 +194,28 @@ def test_patch_job(
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
-        require_mfa_reset=True,
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_patch_job_status_to_unapproved(
+    test_db,
+):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserStatusRequest(status=UserStatus.unapproved)
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id="1",
+        email="email_1",
+        name="username_1",
+        organization="organization_1",
+        status=UserStatus.unapproved,
+        group_id="group_id_1",
     )
     assert response.status_code == 200
     assert actual == expect
@@ -210,27 +230,13 @@ def test_patch_job_404(
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
-    assert response.json() == {"message": "User not found"}
+    assert response.json() == {"message": "User not found: 2"}
 
 
-def test_post_job_mfa_reset(test_db):
-    test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.commit()
-    response = client.patch("/users/1/mfa_reset")
-    adapter = TypeAdapter(GetOneUserResponse)
-    actual = adapter.validate_python(response.json())
-    expect = GetOneUserResponse(
-        id="1",
-        email="email_1",
-        name="username_1",
-        organization="organization_1",
-        status=UserStatus.approved,
-        group_id="group_id_1",
-        require_mfa_reset=False,
-    )
-    assert response.status_code == 200
-    assert actual == expect
+def test_patch_job_500():
+    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    response = client.patch("/users/2", json=update_data.model_dump())
+    assert response.status_code == 500
 
 
 def test_delete_user(
@@ -259,7 +265,6 @@ def test_delete_user(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )
@@ -273,3 +278,21 @@ def test_delete_user(
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404
+
+
+def test_delete_user_404(
+    test_db,
+):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(2))
+    test_db.commit()
+    # confirm the user is in the database
+    response = client.delete("/users/1")
+    assert response.status_code == 404
+
+
+def test_delete_user_500():
+    # confirm the user is in the database
+    response = client.delete("/users/1")
+    assert response.status_code == 500

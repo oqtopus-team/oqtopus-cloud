@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS main.devices (
   device_info TEXT,
   calibrated_at DATETIME,
   description VARCHAR(128) NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   ready_at DATETIME,
   running_at DATETIME,
   ended_at DATETIME,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -47,9 +47,7 @@ drop table if exists main.users;
       userstatus        VARCHAR(10),
       api_token_secret  VARCHAR(255) UNIQUE,
       organization      VARCHAR(255),
-      purpose           VARCHAR(255),
       group_id          VARCHAR(255),
-      require_mfa_reset BOOLEAN,
       api_token_expiration TIMESTAMP,
       created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

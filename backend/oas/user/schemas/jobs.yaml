@@ -53,6 +53,23 @@ jobs.SamplingResult:
           "10": 454,
           "01": 75
         }
+    divided_counts:
+      type: string
+      nullable: true
+      example: >-
+        {
+          "0": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          },
+          "1": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          }
 
 jobs.EstimationResult:
   type: object
@@ -196,6 +213,8 @@ jobs.JobType:
   enum:
     - estimation
     - sampling
+    - multi_manual
+    - sse
   example: sampling
 
 jobs.JobDef:
@@ -248,14 +267,6 @@ jobs.JobDef:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
   required:
     - job_id
     - name
@@ -292,8 +303,6 @@ jobs.JobDef:
       ready_at: 2022-10-19T11:45:34+09:00
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
 
 jobs.SubmitJobInfo:
   description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
@@ -358,18 +367,9 @@ jobs.SubmitJobRequest:
       example: "{}"
     shots:
       type: integer
+      minimum: 1
+      maximum: 1e7
       example: 1000
-    status:
-      $ref: "#/jobs.JobStatus"
-      example: submitted
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
   required:
     - device_id
     - shots
@@ -426,14 +426,6 @@ jobs.GetJobsResponse:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
   required: []
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -462,5 +454,15 @@ jobs.GetJobsResponse:
       ready_at: 2022-10-19T11:45:34+09:00
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
+
+jobs.GetSselogResponse:
+  description: sse log file
+  type: object
+  properties:
+    file:
+      type: string
+      format: byte
+    file_name:
+      type: string
+      example: "sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"
+  required: []

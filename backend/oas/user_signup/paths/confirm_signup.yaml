@@ -4,7 +4,7 @@ confirm_signup:
       - signup
     summary: Confirm signup
     description: Confirm a new user
-    operationId: confirmSignup
+    operationId: confirm_signup
     security:
       - BearerAuth: []
     requestBody:

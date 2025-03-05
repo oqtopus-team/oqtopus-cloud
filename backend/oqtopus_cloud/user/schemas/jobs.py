@@ -13,6 +13,8 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 class JobType(str, Enum):
     estimation = "estimation"
     sampling = "sampling"
+    multi_manual = "multi_manual"
+    sse = "sse"
 
 
 class JobStatus(str, Enum):
@@ -43,6 +45,14 @@ class SamplingResult(BaseModel):
     counts: Annotated[
         str | None,
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+    ] = None
+    divided_counts: Annotated[
+        str | None,
+        Field(
+            examples=[
+                '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
+            ]
+        ),
     ] = None
 
 
@@ -161,12 +171,6 @@ class GetJobsResponse(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class SubmitJobInfo(BaseModel):
@@ -212,14 +216,7 @@ class SubmitJobRequest(BaseModel):
     """
     When specified, valid JSON string is required
     """
-    shots: Annotated[int, Field(examples=[1000])]
-    status: Annotated[JobStatus | None, Field(examples=["submitted"])] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
+    shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
 
 
 class SubmitJobResponse(BaseModel):
@@ -273,12 +270,6 @@ class JobDef(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
-    created_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    updated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
 
 
 class GetJobStatusResponse(BaseModel):
@@ -288,3 +279,14 @@ class GetJobStatusResponse(BaseModel):
 
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     status: JobStatus
+
+
+class GetSselogResponse(BaseModel):
+    """
+    sse log file
+    """
+
+    file: str | None = None
+    file_name: Annotated[
+        str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
+    ] = None

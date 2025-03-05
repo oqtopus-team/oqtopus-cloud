@@ -19,7 +19,7 @@ paths:
         - device
       summary: List available devices
       description: List available devices
-      operationId: listDevices
+      operationId: list_devices
       security:
         - BearerAuth: []
       responses:
@@ -51,7 +51,7 @@ paths:
         - device
       summary: Get specified device details
       description: get device
-      operationId: getDevice
+      operationId: get_device
       security:
         - BearerAuth: []
       parameters:
@@ -89,10 +89,10 @@ paths:
       description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
-      operationId: listJobs
+      operationId: list_jobs
       security:
         - BearerAuth: []
       parameters:
@@ -109,17 +109,17 @@ paths:
             type: string
             maxLength: 1024
             example: job_id,status,name
-        - name: startTime
+        - name: start_time
           in: query
-          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
           required: false
           schema:
             type: string
             format: date-time
             example: '2022-10-19T11:45:34+09:00'
-        - name: endTime
+        - name: end_tiime
           in: query
-          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
           required: false
           schema:
             type: string
@@ -185,7 +185,7 @@ paths:
         - job
       summary: Submit a quantum job
       description: Submit a quantum job
-      operationId: submitJob
+      operationId: submit_job
       security:
         - BearerAuth: []
       requestBody:
@@ -209,9 +209,6 @@ paths:
                   simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}'
                   mitigation_info: '{}'
                   shots: 1000
-                  status: submitted
-                  created_at: '2022-10-19T11:45:34'
-                  updated_at: '2022-10-19T11:45:34'
               qpu:
                 description: QPU example
                 value:
@@ -235,9 +232,6 @@ paths:
                   simulator_info: '{}'
                   mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}'
                   shots: 1000
-                  status: submitted
-                  created_at: '2022-10-19T11:45:34'
-                  updated_at: '2022-10-19T11:45:34'
       responses:
         '200':
           description: Job submitted
@@ -269,7 +263,7 @@ paths:
         - job
       summary: Get selected job
       description: Get selected job
-      operationId: getSamplingJob
+      operationId: get_job
       security:
         - BearerAuth: []
       parameters:
@@ -315,7 +309,7 @@ paths:
         - job
       summary: Delete job
       description: 'Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion.'
-      operationId: deleteSamplingJob
+      operationId: delete_job
       security:
         - BearerAuth: []
       parameters:
@@ -364,7 +358,7 @@ paths:
         - job
       summary: Get selected job's status
       description: Get selected job's status
-      operationId: getSamplingJobStatus
+      operationId: get_job_status
       security:
         - BearerAuth: []
       parameters:
@@ -411,7 +405,7 @@ paths:
         - job
       summary: Cancel job
       description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running.'
-      operationId: cancelSamplingJob
+      operationId: cancel_job
       security:
         - BearerAuth: []
       parameters:
@@ -454,13 +448,68 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /jobs/{job_id}/sselog:
+    get:
+      tags:
+        - job
+      summary: Get SSE log file
+      description: Get SSE log file of selected job
+      operationId: get_sselog
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return SSE log file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobs.GetSselogResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                message: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
   /api-token:
     get:
       tags:
         - api-token
       summary: get api token
       description: Get api token
-      operationId: GetApiToken
+      operationId: get_api_token
       security:
         - BearerAuth: []
       responses:
@@ -499,7 +548,7 @@ paths:
         - api-token
       summary: create api token
       description: Create api token
-      operationId: CreateApiToken
+      operationId: create_api_token
       security:
         - BearerAuth: []
       responses:
@@ -538,7 +587,7 @@ paths:
         - api-token
       summary: delete api token
       description: Delete api token
-      operationId: DeleteApiToken
+      operationId: delete_api_token
       security:
         - BearerAuth: []
       responses:
@@ -745,6 +794,8 @@ components:
       enum:
         - estimation
         - sampling
+        - multi_manual
+        - sse
       example: sampling
     jobs.JobStatus:
       type: string
@@ -785,6 +836,23 @@ components:
               "10": 454,
               "01": 75
             }
+        divided_counts:
+          type: string
+          nullable: true
+          example: |-
+            {
+              "0": {
+                "10": 84,
+                "11": 387,
+                "10": 454,
+                "01": 75
+              },
+              "1": {
+                "10": 84,
+                "11": 387,
+                "10": 454,
+                "01": 75
+              }
     jobs.EstimationResult:
       type: object
       description: |
@@ -938,14 +1006,6 @@ components:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
       required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -971,8 +1031,6 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
-        created_at: '2022-10-19T11:45:34+09:00'
-        updated_at: '2022-10-19T11:45:34+09:00'
     jobs.SubmitJobInfo:
       description: All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
       type: object
@@ -1031,18 +1089,9 @@ components:
           example: '{}'
         shots:
           type: integer
+          minimum: 1
+          maximum: 10000000
           example: 1000
-        status:
-          $ref: '#/components/schemas/jobs.JobStatus'
-          example: submitted
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
       required:
         - device_id
         - shots
@@ -1113,14 +1162,6 @@ components:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
       required:
         - job_id
         - name
@@ -1155,8 +1196,6 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
-        created_at: '2022-10-19T11:45:34+09:00'
-        updated_at: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:
       type: object
       properties:
@@ -1175,6 +1214,17 @@ components:
       required:
         - job_id
         - status
+    jobs.GetSselogResponse:
+      description: sse log file
+      type: object
+      properties:
+        file:
+          type: string
+          format: byte
+        file_name:
+          type: string
+          example: sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip
+      required: []
     api-token.ApiToken:
       type: object
       properties:
