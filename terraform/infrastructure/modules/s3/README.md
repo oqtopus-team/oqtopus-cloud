@@ -4,17 +4,16 @@
 
 ## Description
 
-This module creates a Cognito User Pool and User Pool Client.
+This module creates a S3 bucket for SSE log.
 
 ## Usage
 
 ```hcl
-module "user_cognito" {
-  source = "./modules/cognito"
+module "s3" {
+  source = "./modules/s3"
   product = "oqtopus"
   org = "example"
   env = "dev"
-  identifier = "user"
 }
 ```
 
@@ -35,23 +34,17 @@ module "user_cognito" {
 
 | Name | Type |
 |------|------|
-| [aws_cognito_user_pool.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cognito_user_pool) | resource |
-| [aws_cognito_user_pool_client.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cognito_user_pool_client) | resource |
+| [aws_s3_bucket.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 
 ## Outputs
+None
 
-| Name | Description |
-|------|-------------|
-| <a name="output_user_pool_arn"></a> [user\_pool\_arn](#output\_user\_pool\_arn) | The ARN of the user pool |
-| <a name="output_user_pool_id"></a> [user\_pool\_id](#output\_user\_pool\_id) | The ID of the user pool |
-| <a name="output_user_pool_web_client_id"></a> [user\_pool\_web\_client\_id](#output\_user\_pool\_web\_client\_id) | The client ID of the user Cognito |
 <!-- END_TF_DOCS -->

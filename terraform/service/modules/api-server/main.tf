@@ -73,6 +73,10 @@ resource "aws_lambda_function" "this" {
         AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
       } : {},
       var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+      var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
+      var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
+      var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
+      var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
     )
   }
 
@@ -254,7 +258,7 @@ resource "aws_kms_key" "api_gateway_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-1.amazonaws.com"
+          "Service" : "logs.${var.region}.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"

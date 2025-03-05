@@ -102,6 +102,10 @@ module "user_api" {
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_power_tools_metrics_namespace"></a> [power\_tools\_metrics\_namespace](#input\_power\_tools\_metrics\_namespace) | The namespace for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_power_tools_service_name"></a> [power\_tools\_service\_name](#input\_power\_tools\_service\_name) | The service name for the PowerTools metrics | `string` | n/a | yes |
+| <a name="input_sse_bucket"></a> [sse\_bucket](#input\_sse\_bucket) | The S3 bucket name for SSE log | `string` | n/a | no |
+| <a name="input_sse_container_log_name"></a> [sse\_container\_log\_name](#input\_sse\_container\_log\_name) | The log filename of SSE container | `string` | n/a | no |
+| <a name="input_sse_user_program_name"></a> [sse\_user\_program\_name](#input\_sse\_user\_program\_name) | The filename of python program in SSE contaner | `string` | n/a | no |
+| <a name="input_sse_zip_file_name"></a> [sse\_zip\_file\_name](#input\_sse\_zip\_file\_name) | The filename of the default zip file to download | `string` | n/a | no |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
 | <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |

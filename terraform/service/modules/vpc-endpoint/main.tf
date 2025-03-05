@@ -31,7 +31,7 @@ resource "aws_vpc_endpoint" "secret_manager" {
 
   private_dns_enabled = "true"
   security_group_ids  = var.secret_manager_security_group_ids
-  service_name        = "com.amazonaws.ap-northeast-1.secretsmanager"
+  service_name        = "com.amazonaws.${var.region}.secretsmanager"
   subnet_ids          = var.lambda_subnet_ids
 
   tags = {
@@ -70,7 +70,7 @@ data "aws_route_tables" "private" {
 
 resource "aws_vpc_endpoint" "s3" {
   vpc_id       = var.vpc_id
-  service_name = "com.amazonaws.ap-northeast-1.s3"
+  service_name = "com.amazonaws.${var.region}.s3"
   # attach the VPC endpoint to the private route tables
   route_table_ids = data.aws_route_tables.private.ids
 
