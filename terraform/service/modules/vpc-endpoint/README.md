@@ -52,4 +52,6 @@ module "vpc_endpoint" {
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_secret_manager_security_group_ids"></a> [secret\_manager\_security\_group\_ids](#input\_secret\_manager\_security\_group\_ids) | The security group IDs for the Secret Manager | `list(string)` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | The ID of the VPC | `string` | n/a | yes |
+| <a name="input_s3_bucket_name"></a> [s3\_bucket\_name](#input\_s3\_bucket\_name) | The name of S3 bucket | `string` | n/a | no |
+| <a name="input_s3_lambda_iam_role_arns"></a> [s3\_lambda\_iam\_role\_arns](#input\_s3\_lambda\_iam\_role\_arns) | The ARNs of the Lambda IAM role accessing the S3 bucket | `list(string)` | n/a | no |
 <!-- END_TF_DOCS -->

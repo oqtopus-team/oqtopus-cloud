@@ -20,9 +20,9 @@
 */
 
 resource "aws_s3_bucket" "this" {
-  bucket        = "${var.product}-${var.org}-${var.env}-sselog"
+  bucket        = "${var.product}-${var.org}-${var.env}"
   force_destroy = true
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-sselog"
+    Name = "${var.product}-${var.org}-${var.env}"
   }
 }

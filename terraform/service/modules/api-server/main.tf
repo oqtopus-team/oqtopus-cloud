@@ -131,21 +131,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-resource "aws_iam_role_policy" "lambda_s3_policy" {
-  name = "lambda_s3_access"
-  role = aws_iam_role.lambda.name
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Action" : "s3:*",
-        "Resource" : "arn:aws:s3:::${var.product}-${var.org}-${var.env}-sselog/*"
-      }
-    ]
-  })
-}
-
 resource "aws_iam_role_policy_attachment" "lambda_execution" {
   role       = aws_iam_role.lambda.name
   policy_arn = aws_iam_policy.lambda_execution.arn
@@ -168,6 +153,13 @@ resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser" # TODO: restrict this policy
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
+  count = var.sse_bucket != "" ? 1 : 0
+
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.s3_access[0].arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -181,6 +173,12 @@ resource "aws_iam_policy" "vpc_access_execution" {
 resource "aws_iam_policy" "secret_manager" {
   name   = "${var.product}-${var.org}-${var.env}-secret-manager-${var.identifier}"
   policy = data.aws_iam_policy_document.secret_manager.json
+}
+
+resource "aws_iam_policy" "s3_access" {
+  count  = var.sse_bucket != "" ? 1 : 0
+  name   = "${var.product}-${var.org}-${var.env}-s3-access-${var.identifier}"
+  policy = data.aws_iam_policy_document.s3_access.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -215,6 +213,21 @@ data "aws_iam_policy_document" "secret_manager" {
     actions   = ["secretsmanager:GetSecretValue"]
     effect    = "Allow"
     resources = [var.db_secret_arn]
+  }
+}
+
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.sse_bucket}",
+      "arn:aws:s3:::${var.sse_bucket}/*"
+    ]
   }
 }
 

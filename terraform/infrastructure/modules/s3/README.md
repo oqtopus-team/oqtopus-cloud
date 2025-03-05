@@ -45,6 +45,8 @@ module "s3" {
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 
 ## Outputs
-None
+| Name | Description |
+|------|-------------|
+| <a name="output_s3_bucket_name"></a> [s3\_bucket\_name](#output\_s3\_bucket\_name) | The name of the S3 bucket |
 
 <!-- END_TF_DOCS -->
