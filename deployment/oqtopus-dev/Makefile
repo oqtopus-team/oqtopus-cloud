@@ -153,7 +153,7 @@ deploy-via-actions: ## Deploy Lambda Package via Github Actions
 tag-version:
 	@echo "Tagging version ${GITHUB_SHA}"
 	@aws lambda tag-resource \
-    --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+    --resource arn:aws:lambda:${REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
     --tags github-sha=${GITHUB_SHA}
 
 create-user-admin: ## Create Admin User
