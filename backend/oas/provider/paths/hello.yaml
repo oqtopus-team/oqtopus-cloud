@@ -4,8 +4,7 @@ hello:
       - hello
     summary: Hello World
     description: Hello World
-    operationId: getHello
-    security: []
+    operationId: get_hello
     responses:
       '200':
         description: サーバーの状態のレスポンス
@@ -30,8 +29,7 @@ hello.name:
       - hello
     summary: display hello name
     description: display hello name
-    operationId: getHelloName
-    security: []
+    operationId: get_hello_name
     parameters:
       - in: path
         name: name

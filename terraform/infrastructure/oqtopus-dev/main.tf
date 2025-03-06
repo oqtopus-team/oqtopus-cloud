@@ -22,6 +22,11 @@ module "network" {
       az   = "ap-northeast-1d"
     },
   }
+  public_subnet = {
+    name = "public-a"
+    cidr = "10.2.176.0/20"
+    az   = "ap-northeast-1a"
+  }
 }
 
 module "security_group" {
@@ -76,4 +81,13 @@ module "provider_cognito" {
   org        = var.org
   env        = var.env
   identifier = "provider"
+}
+
+module "admin_cognito" {
+  source = "../modules/cognito"
+
+  product    = var.product
+  org        = var.org
+  env        = var.env
+  identifier = "admin"
 }

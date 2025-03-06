@@ -1,0 +1,403 @@
+from datetime import datetime, timedelta
+
+import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
+import pytest
+from oqtopus_cloud.common.models.user import User, UserStatus
+from oqtopus_cloud.lambda_auth.lambda_function import (
+    AuthError,
+    _generate_policy_allow,
+    _generate_policy_deny,
+    _verify_api_token,
+    _verify_id_token,
+    lambda_handler,
+)
+
+
+def fake_get_db_client(test_session):
+    yield test_session
+
+
+def fake__verify_api_token(api_token=""):
+    return "fake_username"
+
+
+def fake__verify_id_token(id_token=""):
+    return "fake_username"
+
+
+def fake__verify_id_token_none_owner():
+    return ""
+
+
+def fake__generate_policy_allow(principal_id="", resource="", owner=""):
+    const = {
+        "principalId": "fake_username",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Allow",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username"},
+    }
+
+    return const
+
+
+def fake__generate_policy_deny(principal_id="", resource="", owner=""):
+    const = {
+        "principalId": "fake_username",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Deny",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username"},
+    }
+
+
+def fake__generate_policy_none(principal_id="", resource="", owner=""):
+    const = {
+        "principalId": "",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Deny",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": ""},
+    }
+
+    return const
+
+
+def _get_model(n: int, expiration_day=90) -> User:
+    model_dict = {
+        "id": n,
+        "cognito_id": f"cognito_id_{n}",
+        "email": f"email{n}@example.com",
+        "username": f"username_{n}",
+        "userstatus": UserStatus.approved,
+        "api_token_secret": f"api_token_secret_{n}",
+        "organization": f"organization_{n}",
+        "group_id": f"group_id_{n}",
+        "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
+        + timedelta(days=expiration_day),
+    }
+    return User(**model_dict)
+
+
+def test__verify_id_token():
+    actual = _verify_id_token("id_token")
+    expect = "fake_username"
+    assert actual == expect
+
+
+def test__verify_id_token_no_token(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_id_token(None)
+
+    assert "ID token is not found" in str(excinfo.value)
+
+
+def test__verify_id_token_no_env_variable(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    monkeypatch.delenv("USER_POOL_WEB_CLIENT_ID", raising=False)
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_id_token("id_token")
+
+    assert "Environment variable is not set 'USER_POOL_WEB_CLIENT_ID" in str(
+        excinfo.value
+    )
+
+
+@pytest.mark.usefixtures("override_PyJWKClientFailure")
+def test__verify_id_token_jwt_signing_key_failure():
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+
+@pytest.mark.usefixtures("override_jwt_decode_failure")
+def test__verify_id_token_jwt_decode_failure():
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+
+def test__verify_api_token(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    ret = _verify_api_token("api_token_secret_1")
+
+    assert ret == "fake_username"
+
+
+def test__verify_api_token_expired(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    try:
+        _ = _verify_api_token("api_token_secret_1")
+    except AuthError as e:
+        assert str(e) == "Database error API token is expired"
+    else:
+        assert False
+
+
+def test__verify_api_token_api_no_token(test_session, monkeypatch):
+    user = _get_model(1, -1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token(None)
+
+    assert "API token is None" in str(excinfo.value)
+
+
+def test__verify_api_token_no_env_variable(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+    assert "Environment variable is not set 'AUTH_USER_POOL_ID'" in str(excinfo.value)
+
+
+@pytest.mark.usefixtures("override_boto3_client_zero_user")
+def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+    assert "Failed to list users from Cognito Cognito user is not found" in str(
+        excinfo.value
+    )
+
+
+@pytest.mark.usefixtures("override_boto3_client_multiple_users")
+def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
+    user = _get_model(1)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+    assert "Failed to list users from Cognito Cognito user is duplicated" in str(
+        excinfo.value
+    )
+
+
+def test__generate_policy_allow():
+    actual = _generate_policy_allow(
+        "fake_username1", 'event["methodArn"]1', "fake_username1"
+    )
+    expect = {
+        "principalId": "fake_username1",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Allow",
+                    "Resource": 'event["methodArn"]1',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username1"},
+    }
+
+    assert actual == expect
+
+
+def test__generate_policy_deny():
+    actual = _generate_policy_deny(
+        "fake_username2", 'event["methodArn"]2', "fake_username2"
+    )
+    expect = {
+        "principalId": "fake_username2",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Deny",
+                    "Resource": 'event["methodArn"]2',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username2"},
+    }
+
+    assert actual == expect
+
+
+def test_lambda_handler_api_token(monkeypatch):
+    def fake__verify_api_token(id_token=""):
+        return "fake_username"
+
+    input = {"headers": {"q-api-token": "api_token_secret"}, "methodArn": "methodArn"}
+
+    const = {
+        "principalId": "fake_username",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Allow",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username"},
+    }
+    monkeypatch.setattr(lambda_function, "_verify_api_token", fake__verify_api_token)
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_allow", fake__generate_policy_allow
+    )
+
+    actual = lambda_handler(input, None)
+    event = const
+
+    assert actual == event
+
+
+def test_lambda_handler_no_api_token(monkeypatch):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+        return "fake_username"
+
+    input = {"headers": {"q-api-token": None}, "methodArn": "methodArn"}
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_deny", fake__verify_api_token_deny
+    )
+    actual = lambda_handler(input, None)
+    assert actual == "fake_username"
+
+
+def test_lambda_handler_id_token(monkeypatch):
+    input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
+
+    const = {
+        "principalId": "fake_username",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Allow",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": "fake_username"},
+    }
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
+        fake__verify_id_token,
+    )
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_allow",
+        fake__generate_policy_allow,
+    )
+
+    actual = lambda_handler(input, None)
+    event = const
+
+    assert actual == event
+
+
+def test_lambda_handler_none_owner(monkeypatch):
+    input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
+
+    ans = {
+        "principalId": "",
+        "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Deny",
+                    "Resource": 'event["methodArn"]',
+                }
+            ],
+        },
+        "context": {"owner": ""},
+    }
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
+        fake__verify_id_token_none_owner,
+    )
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_deny",
+        fake__generate_policy_none,
+    )
+
+    actual = lambda_handler(input, None)
+    event = ans
+
+    assert actual == event
+
+
+def test_lambda_handler_unexpected_header(monkeypatch):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+        return "fake_username"
+
+    input = {"headers": {"q-api-token-unexpected": None}, "methodArn": "methodArn"}
+    monkeypatch.setattr(
+        lambda_function, "_generate_policy_deny", fake__verify_api_token_deny
+    )
+    actual = lambda_handler(input, None)
+    assert actual == "fake_username"

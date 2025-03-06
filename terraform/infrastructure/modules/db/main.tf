@@ -176,7 +176,6 @@ resource "aws_iam_policy" "db_proxy" {
 resource "aws_iam_role" "db_proxy" {
   assume_role_policy   = data.aws_iam_policy_document.db_proxy_assume_role.json
   description          = "Allows db Proxy access to database connection credentials"
-  managed_policy_arns  = [aws_iam_policy.db_proxy.arn]
   max_session_duration = "3600"
   name                 = "${var.product}-${var.org}-${var.env}-db-proxy"
   path                 = "/service-role/"
@@ -187,3 +186,4 @@ resource "aws_iam_role_policy_attachment" "db_proxy" {
   role       = aws_iam_role.db_proxy.name
   policy_arn = aws_iam_policy.db_proxy.arn
 }
+

@@ -19,7 +19,7 @@ paths:
         - device
       summary: List available devices
       description: List available devices
-      operationId: listDevices
+      operationId: list_devices
       security:
         - BearerAuth: []
       responses:
@@ -51,7 +51,7 @@ paths:
         - device
       summary: Get specified device details
       description: get device
-      operationId: getDevice
+      operationId: get_device
       security:
         - BearerAuth: []
       parameters:
@@ -89,10 +89,10 @@ paths:
       description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
-      operationId: listJobs
+      operationId: list_jobs
       security:
         - BearerAuth: []
       parameters:
@@ -109,17 +109,17 @@ paths:
             type: string
             maxLength: 1024
             example: job_id,status,name
-        - name: startTime
+        - name: start_time
           in: query
-          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
           required: false
           schema:
             type: string
             format: date-time
             example: '2022-10-19T11:45:34+09:00'
-        - name: endTime
+        - name: end_tiime
           in: query
-          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
           required: false
           schema:
             type: string
@@ -185,7 +185,7 @@ paths:
         - job
       summary: Submit a quantum job
       description: Submit a quantum job
-      operationId: submitJob
+      operationId: submit_job
       security:
         - BearerAuth: []
       requestBody:
@@ -209,9 +209,6 @@ paths:
                   simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}'
                   mitigation_info: '{}'
                   shots: 1000
-                  status: submitted
-                  created_at: '2022-10-19T11:45:34'
-                  updated_at: '2022-10-19T11:45:34'
               qpu:
                 description: QPU example
                 value:
@@ -235,9 +232,6 @@ paths:
                   simulator_info: '{}'
                   mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}'
                   shots: 1000
-                  status: submitted
-                  created_at: '2022-10-19T11:45:34'
-                  updated_at: '2022-10-19T11:45:34'
       responses:
         '200':
           description: Job submitted
@@ -269,7 +263,7 @@ paths:
         - job
       summary: Get selected job
       description: Get selected job
-      operationId: getSamplingJob
+      operationId: get_job
       security:
         - BearerAuth: []
       parameters:
@@ -315,7 +309,7 @@ paths:
         - job
       summary: Delete job
       description: 'Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion.'
-      operationId: deleteSamplingJob
+      operationId: delete_job
       security:
         - BearerAuth: []
       parameters:
@@ -364,7 +358,7 @@ paths:
         - job
       summary: Get selected job's status
       description: Get selected job's status
-      operationId: getSamplingJobStatus
+      operationId: get_job_status
       security:
         - BearerAuth: []
       parameters:
@@ -411,7 +405,7 @@ paths:
         - job
       summary: Cancel job
       description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running.'
-      operationId: cancelSamplingJob
+      operationId: cancel_job
       security:
         - BearerAuth: []
       parameters:
@@ -454,6 +448,173 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /jobs/{job_id}/sselog:
+    get:
+      tags:
+        - job
+      summary: Get SSE log file
+      description: Get SSE log file of selected job
+      operationId: get_sselog
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return SSE log file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobs.GetSselogResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                message: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
+  /api-token:
+    get:
+      tags:
+        - api-token
+      summary: get api token
+      description: Get api token
+      operationId: get_api_token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - api-token
+      summary: create api token
+      description: Create api token
+      operationId: create_api_token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Create api token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-token.ApiToken'
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - api-token
+      summary: delete api token
+      description: Delete api token
+      operationId: delete_api_token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Delete api token
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -633,6 +794,8 @@ components:
       enum:
         - estimation
         - sampling
+        - multi_manual
+        - sse
       example: sampling
     jobs.JobStatus:
       type: string
@@ -660,6 +823,35 @@ components:
           maxItems: 2
       required:
         - pauli
+    jobs.SamplingResult:
+      type: object
+      description: '*(Only for sampling jobs)* JSON string representing the sampling result'
+      properties:
+        counts:
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            '10': 454
+            '11': 387
+            '00': 84
+            '01': 75
+        divided_counts:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+          example:
+            '0':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
+            '1':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
     jobs.EstimationResult:
       type: object
       description: |
@@ -681,30 +873,29 @@ components:
     jobs.JobResult:
       type: object
       properties:
-        counts:
-          description: '*(Only for sampling jobs)* JSON string representing the sampling result'
-          type: string
-          example: |-
-            {
-              "10": 84,
-              "11": 387,
-              "10": 454,
-              "01": 75
-            }
+        sampling:
+          $ref: '#/components/schemas/jobs.SamplingResult'
         estimation:
           $ref: '#/components/schemas/jobs.EstimationResult'
-        divided_result:
-          type: object
-          description: Assumed to be used for multiprogramming, but currently not supported yet.
-          properties: {}
-        properties:
-          type: string
-        transpile_result:
-          type: object
-          properties:
-            virtual_physical_mapping:
-              type: string
+      additionalProperties: true
       required: []
+    jobs.TranspileResult:
+      type: object
+      properties:
+        transpiled_program:
+          type: string
+          nullable: true
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: string
+          nullable: true
+        virtual_physical_mapping:
+          type: string
+          nullable: true
+      required:
+        - transpiled_program
+        - stats
+        - virtual_physical_mapping
     jobs.JobInfo:
       type: object
       properties:
@@ -724,47 +915,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/jobs.OperatorItem'
-        transpiled_program:
-          type: string
-          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
         result:
           $ref: '#/components/schemas/jobs.JobResult'
+        transpile_result:
+          $ref: '#/components/schemas/jobs.TranspileResult'
         message:
           type: string
           description: Describing the reason why there is no result
       required:
         - program
-    jobs.TranspilerInfo:
-      type: string
-      example: |-
-        {
-          "qubit_allocation": {
-            "0": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
-    jobs.SimulatorInfo:
-      type: string
-      example: |-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
-        }
-    jobs.MitigationInfo:
-      type: string
-      example: |-
-        {
-          "ro_error_mitigation": "pseudo_inverse"
-        }
     jobs.GetJobsResponse:
       type: object
       properties:
@@ -791,11 +950,34 @@ components:
         job_info:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
-          $ref: '#/components/schemas/jobs.TranspilerInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            qubit_allocation:
+              '0': 12
+              '1': 16
+            skip_transpilation: false
+            seed_transpilation: 873
         simulator_info:
-          $ref: '#/components/schemas/jobs.SimulatorInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            n_qubits: 5
+            n_nodes: 12
+            n_per_node: 2
+            seed_simulation: 39058567
+            simulation_opt:
+              optimization_method: light
+              optimization_block_size: 1
+              optimization_swap_level: 1
         mitigation_info:
-          $ref: '#/components/schemas/jobs.MitigationInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            ro_error_mitigation: pseudo_inverse
         execution_time:
           type: number
           example: '10.123'
@@ -812,14 +994,6 @@ components:
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ended_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
@@ -848,8 +1022,6 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
-        created_at: '2022-10-19T11:45:34+09:00'
-        updated_at: '2022-10-19T11:45:34+09:00'
     jobs.SubmitJobInfo:
       description: All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
       type: object
@@ -885,43 +1057,40 @@ components:
         job_info:
           $ref: '#/components/schemas/jobs.SubmitJobInfo'
         transpiler_info:
-          type: string
-          description: When specified, valid JSON string is required.
-          example: '{}'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            qubit_allocation:
+              '0': 12
+              '1': 16
+            skip_transpilation: false
+            seed_transpilation: 873
         simulator_info:
-          type: string
-          example: |-
-            {
-              "n_qubits": 5,
-              "n_nodes": 12,
-              "n_per_node": 2,
-              "seed_simulation": 39058567,
-              "simulation_opt": {
-                "optimization_method": "light",
-                "optimization_block_size": 1,
-                "optimization_swap_level": 1
-              }
-            }
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            n_qubits: 5
+            n_nodes: 12
+            n_per_node: 2
+            seed_simulation: 39058567
+            simulation_opt:
+              optimization_method: light
+              optimization_block_size: 1
+              optimization_swap_level: 1
         mitigation_info:
-          type: string
-          description: When specified, valid JSON string is required
-          example: '{}'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            ro_error_mitigation: pseudo_inverse
         shots:
           type: integer
+          minimum: 1
+          maximum: 10000000
           example: 1000
-        status:
-          $ref: '#/components/schemas/jobs.JobStatus'
-          example: submitted
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
       required:
-        - name
         - device_id
         - shots
         - job_type
@@ -967,11 +1136,34 @@ components:
         job_info:
           $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
-          $ref: '#/components/schemas/jobs.TranspilerInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            qubit_allocation:
+              '0': 12
+              '1': 16
+            skip_transpilation: false
+            seed_transpilation: 873
         simulator_info:
-          $ref: '#/components/schemas/jobs.SimulatorInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            n_qubits: 5
+            n_nodes: 12
+            n_per_node: 2
+            seed_simulation: 39058567
+            simulation_opt:
+              optimization_method: light
+              optimization_block_size: 1
+              optimization_swap_level: 1
         mitigation_info:
-          $ref: '#/components/schemas/jobs.MitigationInfo'
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            ro_error_mitigation: pseudo_inverse
         execution_time:
           type: number
           example: '10.123'
@@ -988,14 +1180,6 @@ components:
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
         ended_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        created_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        updated_at:
           type: string
           format: date-time
           example: '2022-10-19T11:45:34+09:00'
@@ -1023,9 +1207,23 @@ components:
           transpiled_code: '{}'
           result: '{}'
           reason: ''
-        transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
-        simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
-        mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
+        transpiler_info:
+          qubit_allocation:
+            '0': 12
+            '1': 16
+          skip_transpilation: false
+          seed_transpilation: 873
+        simulator_info:
+          n_qubits: 5
+          n_nodes: 12
+          n_per_node: 2
+          seed_simulation: 39058567
+          simulation_opt:
+            optimization_method: light
+            optimization_block_size: 1
+            optimization_swap_level: 1
+        mitigation_info:
+          ro_error_mitigation: pseudo_inverse
         shots: 1000
         status: submitted
         execution_time: 10.123
@@ -1033,8 +1231,6 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
-        created_at: '2022-10-19T11:45:34+09:00'
-        updated_at: '2022-10-19T11:45:34+09:00'
     success.SuccessResponse:
       type: object
       properties:
@@ -1053,3 +1249,32 @@ components:
       required:
         - job_id
         - status
+    jobs.GetSselogResponse:
+      description: sse log file
+      type: object
+      properties:
+        file:
+          type: string
+          format: byte
+        file_name:
+          type: string
+          example: sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip
+      required: []
+    api-token.ApiToken:
+      type: object
+      properties:
+        api_token_secret:
+          type: string
+          description: The api token secret
+        api_token_expiration:
+          type: string
+          format: date-time
+          example: '2025-01-09T12:34:56'
+          description: The expiration date of the api token
+    error.ForbiddenError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message

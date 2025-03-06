@@ -2,7 +2,7 @@ import datetime
 import enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String, Float
+from sqlalchemy import TIMESTAMP, Enum, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -64,6 +64,7 @@ class Job(Base):
             "sampling",
             "estimation",
             "sse",
+            "multi_manual",
         ),
         nullable=False,
     )
@@ -75,22 +76,14 @@ class Job(Base):
         nullable=False,
         default="submitted",
     )
-    execution_time: Mapped[float]= mapped_column(
+    execution_time: Mapped[float] = mapped_column(
         Float,
         nullable=True,
     )
-    submitted_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=True
-    )
-    ready_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=True
-    )
-    running_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=True
-    )
-    ended_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=True
-    )
+    submitted_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    ready_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    running_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    ended_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
     )

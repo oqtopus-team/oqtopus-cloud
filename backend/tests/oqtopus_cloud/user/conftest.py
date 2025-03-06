@@ -5,6 +5,7 @@ from typing import (
 )
 
 import pytest
+import pytz
 from oqtopus_cloud.common.models.base import (
     Base,
 )
@@ -50,15 +51,15 @@ def insert_initial_data(db: Session):
             id="Kawasaki",
             device_type="QPU",
             status="available",
-            available_at=datetime(2024, 3, 4, 12, 34, 56),
+            available_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             pending_jobs=2,
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
             device_info="{}",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
+            calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
             description="Superconducting quantum computer",
-            created_at=datetime(2024, 3, 4, 12, 34, 56),
+            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
         ),
         # Job(
         #     id="7af020f6-2e38-4d70-8cf0-4349650ea08c",
@@ -194,3 +195,10 @@ def test_db() -> (
     db.rollback()
     close_all_sessions()
     engine.dispose()
+
+@pytest.fixture(autouse=True)
+def fake_os_env(monkeypatch):
+    monkeypatch.setenv("SSE_BUCKET", "oqtopus_test_bucket")
+    monkeypatch.setenv("SSE_USER_PROGRAM_NAME", "oqtopus_test_program.py")
+    monkeypatch.setenv("SSE_CONTAINER_LOG_NAME", "qtopus_test_sse_log.log")
+    monkeypatch.setenv("SSE_ZIP_FILE_NAME", "oqtopus_test_sse_log_{job_id}.zip")

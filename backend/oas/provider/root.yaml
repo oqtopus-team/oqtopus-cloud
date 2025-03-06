@@ -12,14 +12,28 @@ info:
 servers:
   - url: http://localhost:8888
     description: Local server url
+security:
+  - ApiKeyAuth: []
 paths:
-  /devices/{device_id}:
-    $ref: ./paths/devices.yaml#/devices.deviceId
+  /devices/{device_id}/status:
+    $ref: ./paths/devices.yaml#/devices.device_status
+  /devices/{device_id}/device_info:
+    $ref: ./paths/devices.yaml#/devices.device_info
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
-    $ref: ./paths/jobs.yaml#/jobs.jobId
+    $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:
-    $ref: ./paths/jobs.yaml#/jobs.jobStatus
+    $ref: ./paths/jobs.yaml#/jobs.job_status
   /jobs/{job_id}/job_info:
-    $ref: ./paths/jobs.yaml#/jobs.jobInfo
+    $ref: ./paths/jobs.yaml#/jobs.job_info
+  /jobs/{job_id}/ssesrc:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_src
+  /jobs/{job_id}/sselog:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key

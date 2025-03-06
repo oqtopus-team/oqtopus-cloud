@@ -74,6 +74,15 @@ resource "aws_security_group" "secret_manager" {
     Name = "${var.product}-${var.org}-${var.env}-secret-manager"
   }
 }
+# Cognito
+resource "aws_security_group" "cognito" {
+  name        = "${var.product}-${var.org}-${var.env}-cognito"
+  vpc_id      = var.vpc_id
+  description = "Cognito access from VPC"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cognito"
+  }
+}
 
 ## Ingress rule
 
@@ -217,4 +226,16 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_db_proxy" {
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-db-proxy"
   }
+}
+
+# Security group rule using cidr_blocks
+
+resource "aws_security_group_rule" "lambda_to_cognito" {
+  type              = "egress"
+  security_group_id = aws_security_group.cognito.id
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Cognito access from Lambda"
 }
