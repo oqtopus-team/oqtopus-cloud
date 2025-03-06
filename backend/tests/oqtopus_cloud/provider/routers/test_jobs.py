@@ -275,7 +275,7 @@ def test_update_job_info_result(test_db: Session):
         (
             1,
             JobType.sampling,
-            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
             123.45,
             200,
         ),
@@ -296,7 +296,7 @@ def test_update_job_info_result(test_db: Session):
         (
             4,
             JobType.estimation,
-            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
             10,
             400,
         ),
@@ -399,7 +399,7 @@ def test_update_job_info_consist(test_db: Session):
         (
             1,
             JobType.sampling,
-            JobResult(sampling=SamplingResult(counts=json.dumps({"00": 1, "11": 2}))),
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
             JobStatus.failed,
         ),
         (

@@ -49,8 +49,10 @@ jobs.SamplingResult:
   description: "*(Only for sampling jobs)* JSON string representing the sampling result"
   properties:
     counts:
-      type: string
+      type: object
       nullable: false
+      properties: {}
+      additionalProperties: true
       example: >-
         {
           "10": 84,
@@ -228,36 +230,41 @@ jobs.JobDef:
       $ref: "#/jobs.JobInfo"
       nullable: false
     transpiler_info:
-      type: string
+      type: object
       nullable: true
-      example: >-
-        {
-          "qubit_allocation": {
-            "0"": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
+      properties: {}
+      additionalProperties: true
+      example: {
+        qubit_allocation: {
+          "0": 12,
+          "1": 16
+        },
+        skip_transpilation: false,
+        seed_transpilation: 873
+      }
     simulator_info:
-      type: string
+      type: object
+      properties: {}
+      additionalProperties: true
       nullable: true
-      example: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
         }
+      }
     mitigation_info:
-      type: string
-      example: |
-        { "ro_error_mitigation": "pseudo_inverse" }
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        ro_error_mitigation": "pseudo_inverse"
+      }
       nullable: true
     status:
       $ref: "#/jobs.JobStatus"
@@ -316,15 +323,14 @@ jobs.JobDef:
         transpiled_program: null
         result: null
         reason: null
-      transpiler_info: >-
-        {
-          "qubit_allocation": {
-            "0": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
+      transpiler_info: {
+        qubit_allocation: {
+          "0": 12,
+          "1": 16
+        },
+        skip_transpilation: false,
+        seed_transpilation: 873
+      }
       simulator_info: >-
         {
           "n_qubits": 5,
