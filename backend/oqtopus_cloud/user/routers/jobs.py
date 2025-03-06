@@ -1,12 +1,12 @@
-import json
-from datetime import datetime
-import os
 import base64
-import boto3
 import io
+import json
+import os
 import zipfile
+from datetime import datetime
 from typing import Any, Optional
 
+import boto3
 import pytz
 from fastapi import (
     APIRouter,
@@ -36,6 +36,7 @@ from oqtopus_cloud.user.schemas.errors import (
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
     GetJobStatusResponse,
+    GetSselogResponse,
     JobDef,
     JobInfo,
     JobStatus,
@@ -43,7 +44,6 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
-    GetSselogResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -207,9 +207,9 @@ def submit_jobs(
             description=description,
             device_id=request.device_id,
             job_info=json.dumps(request.job_info.model_dump()),
-            transpiler_info=request.transpiler_info,
-            simulator_info=request.simulator_info,
-            mitigation_info=request.mitigation_info,
+            transpiler_info=json.dumps(request.transpiler_info),
+            simulator_info=json.dumps(request.simulator_info),
+            mitigation_info=json.dumps(request.mitigation_info),
             job_type=request.job_type,
             shots=shots,
             submitted_at=datetime.now(),
@@ -554,9 +554,9 @@ def model_to_schema(
             job_type=JobType(model.job_type),
             job_info=job_info,
             status=JobStatus(model.status),
-            transpiler_info=model.transpiler_info,
-            mitigation_info=model.mitigation_info,
-            simulator_info=model.simulator_info,
+            transpiler_info=json.loads(model.transpiler_info),
+            mitigation_info=json.loads(model.mitigation_info),
+            simulator_info=json.loads(model.simulator_info),
             execution_time=model.execution_time,
             submitted_at=localize(model.submitted_at),
             ready_at=localize(model.ready_at),

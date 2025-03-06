@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
@@ -43,7 +43,7 @@ class SamplingResult(BaseModel):
     """
 
     counts: Annotated[
-        str,
+        dict[str, Any],
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ]
     divided_counts: Annotated[
@@ -137,23 +137,38 @@ class JobDef(BaseModel):
     job_type: JobType
     job_info: JobInfo
     transpiler_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "qubit_allocation": {\n    "0"": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+                {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": False,
+                    "seed_transpilation": 873,
+                }
             ]
         ),
     ] = None
     simulator_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+                {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                        "optimization_method": "light",
+                        "optimization_block_size": 1,
+                        "optimization_swap_level": 1,
+                    },
+                }
             ]
         ),
     ] = None
     mitigation_info: Annotated[
-        str | None, Field(examples=['{ "ro_error_mitigation": "pseudo_inverse" }\n'])
+        dict[str, Any] | None,
+        Field(examples=[{'ro_error_mitigation"': "pseudo_inverse"}]),
     ] = None
     status: JobStatus
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
