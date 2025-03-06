@@ -200,6 +200,22 @@ def test_get_jobs_filtering_fields(
     assert actual == expect
 
 
+def test_get_jobs_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    # This is the request sent from oqtopus-frontend
+    response = client.get(
+        "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    assert response.status_code == 200
+    assert len(actual) == 2
+
+
 def test_get_jobs_invalid_fields(
     test_db,
 ):

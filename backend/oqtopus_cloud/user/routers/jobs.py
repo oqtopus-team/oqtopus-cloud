@@ -534,6 +534,16 @@ def model_to_schema(
 
         return False
 
+    def is_object_field(fld: str) -> bool:
+        if fld == "transpiler_info":
+            return True
+        elif fld == "mitigation_info":
+            return True
+        elif fld == "simulator_info":
+            return True
+
+        return False
+
     def localize(dt: datetime | None) -> datetime | None:
         if dt is None:
             return None
@@ -578,6 +588,8 @@ def model_to_schema(
                     dict_schema[k] = job_info
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
+            elif is_object_field(k):
+                dict_schema[k] = json.loads(getattr(model, k))
             elif is_datetime_field(k):
                 dict_schema[k] = localize(getattr(model, k))
             else:
