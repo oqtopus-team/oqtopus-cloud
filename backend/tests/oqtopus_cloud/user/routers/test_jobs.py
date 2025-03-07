@@ -99,11 +99,13 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -119,11 +121,13 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -196,6 +200,22 @@ def test_get_jobs_filtering_fields(
     assert actual == expect
 
 
+def test_get_jobs_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    # This is the request sent from oqtopus-frontend
+    response = client.get(
+        "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    assert response.status_code == 200
+    assert len(actual) == 2
+
+
 def test_get_jobs_invalid_fields(
     test_db,
 ):
@@ -245,11 +265,13 @@ def test_get_jobs_filtering_start_time(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -287,11 +309,13 @@ def test_get_jobs_filtering_end_time(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -329,11 +353,13 @@ def test_get_jobs_filtering_search_string(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -371,11 +397,13 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -391,11 +419,13 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -482,9 +512,9 @@ def test_job_sortedness(test_db):
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["code"]),
-            simulator_info="{}",
-            transpiler_info="{}",
-            mitigation_info="{}",
+            simulator_info={"this_is": "simulator info"},
+            transpiler_info={"this_is": "transpiler info"},
+            mitigation_info={"this_is": "mitigation info"},
             shots=1000,
         )
 
@@ -528,15 +558,9 @@ def test_get_jobs_handler(
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=JobInfo(program=["code"]),
-        transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-        simulator_info=json.dumps({"this_is": "simulator_info"}),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": "value2",
-                "field3": "value3",
-            }
-        ),
+        transpiler_info={"this_is": "transpiler_info"},
+        simulator_info={"this_is": "simulator_info"},
+        mitigation_info={"field1": "value1", "field2": "value2", "field3": "value3"},
         status=JobStatus.submitted,
         shots=1000,
         execution_time=None,
@@ -596,17 +620,15 @@ def test_submit_get(
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -643,17 +665,15 @@ def test_submit_cancel_delete(test_db):
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -696,17 +716,15 @@ def test_submit_job_compat_error(test_db):
         device_id="Kawasaki",
         job_type=JobType.estimation,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -992,11 +1010,10 @@ def test_put_user_program_to_s3(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[program]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -1050,11 +1067,10 @@ def test_put_user_program_to_s3_invalid_program(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[program]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -1085,11 +1101,10 @@ def test_put_user_program_to_s3_no_program(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting

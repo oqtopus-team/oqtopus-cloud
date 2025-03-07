@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "backend"
-version = "0.2.0"
+version = "0.3.0"
 description = "OQTOPUS Cloud is a project that provides the architecture of cloud quantum computers as an open-source software (OSS). By using it in conjunction with various OSS provided by [@oqtopus-team](https://github.com/oqtopus-team), you can build a cloud quantum computer system."
 authors = ["oqtopus-team <oqtopus-team[at]googlegroups.com>"]
 readme = "README.md"
@@ -17,7 +17,7 @@ sqlalchemy = "^2.0.28"
 databases = "^0.9.0"
 uvicorn = "^0.29.0"
 cryptography = "^42.0.5"
-pydantic = {extras = ["email"], version = "^2.10.6"}
+pydantic = {extras = ["email"], version = "0.3.0"}
 fastapi = "^0.110.0"
 aws-xray-sdk = "^2.13.0"
 setuptools = "^75.1.0"
