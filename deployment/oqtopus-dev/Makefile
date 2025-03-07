@@ -106,23 +106,22 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
-deploy:
+deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip \
 	--profile $(PROFILE)
-	@$(MAKE) tag-version
 	@echo "Deploy Completed"
 
-tag-version: ## Tag version
+generate-tag: ## Tag version
 	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
 	@AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text) && \
 	 AWS_REGION=$$(aws configure get region)
 	@aws lambda tag-resource \
-    --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
-    --tags github-sha=${GITHUB_SHA}
+	--resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+  --tags github-sha=${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 
 
@@ -151,20 +150,19 @@ deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
 	BIN=./bin/user_signup
 
-deploy-via-actions: ## Deploy Lambda Package via Github Actions
+deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip
-	@$(MAKE) tag-version-via-actions
 	@echo "Deploy Completed"
 
-tag-version-via-actions: ## Tag version via Github Actions
+generate-tag-via-actions: ## Tag version via Github Actions
 	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
 	@aws lambda tag-resource \
-    --resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
-    --tags github-sha=${GITHUB_SHA}
+	--resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+  --tags github-sha=${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 
 
