@@ -2,6 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+
 .PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
@@ -116,12 +117,14 @@ deploy: generate-tag
 	@echo "Deploy Completed"
 
 generate-tag: ## Tag version
-	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
-	@AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text --profile $(PROFILE)) && \
-	 AWS_REGION=$$(aws configure get region --profile $(PROFILE))
-	@aws lambda tag-resource \
-	--resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
-  --tags github-sha=${GITHUB_SHA}
+	@GITHUB_SHA=$$(git rev-parse HEAD) && \
+	AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text --profile $(PROFILE)) && \
+	AWS_REGION=$$(aws configure get region --profile $(PROFILE)) && \
+	echo "$(PROFILE)" && \
+	echo "🏷️ Tagging version: $${GITHUB_SHA}" && \
+	aws lambda tag-resource \
+	--resource arn:aws:lambda:$${AWS_REGION}:$${AWS_ACCOUNT_ID}:function:$${FUNCTION_NAME} \
+  --tags github-sha=$${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 
 
