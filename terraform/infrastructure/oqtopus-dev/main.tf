@@ -95,7 +95,7 @@ module "admin_cognito" {
   env                      = var.env
   identifier               = "admin"
   username_attributes      = ["email"]
-  enable_delete_protection = true
+  enable_delete_protection = false
   enable_mfa               = false
   password_minimum_length  = 12
 }

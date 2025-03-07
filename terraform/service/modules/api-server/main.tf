@@ -104,7 +104,6 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start is not supported in python3.12
   snap_start {
     apply_on = "PublishedVersions"
   }
