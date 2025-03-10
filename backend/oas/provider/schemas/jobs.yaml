@@ -577,3 +577,17 @@ jobs.UploadSselogResponse:
       type: string
   required:
     - message
+
+jobs.UpdateJobTranspilerInfoRequest:
+  type: object
+  properties: {}
+  additionalProperties: true
+
+jobs.UpdateJobTranspilerInfoResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      nullable: false
+  required:
+    - message

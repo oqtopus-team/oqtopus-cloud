@@ -29,6 +29,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
+    UpdateJobTranspilerInfoRequest,
+    UpdateJobTranspilerInfoResponse,
     UploadSselogResponse,
 )
 from sqlalchemy import select
@@ -280,6 +282,43 @@ def update_job_info(
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.patch(
+    "/jobs/{job_id}/transpiler_info",
+    response_model=UpdateJobTranspilerInfoResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def update_job_transpiler_info(
+    job_id: JobId,
+    request: UpdateJobTranspilerInfoRequest,
+    db: Session = Depends(get_db),
+) -> UpdateJobTranspilerInfoResponse | ErrorResponse:
+    logger.info("invoked: update_job_transpiler_info")
+    logger.info(
+        f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
+    )
+
+    try:
+        stmt = select(Job).where(Job.id == job_id)
+        model = db.execute(stmt).scalar_one_or_none()
+        if model is None:
+            return NotFoundErrorResponse("Job not found")
+
+        model.transpiler_info = request.model_dump_json()
+        db.commit()
+        return UpdateJobTranspilerInfoResponse(
+            message="The job's transpiler_info has been updated."
+        )
+
+    except Exception as e:
+        logger.error(e)
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
