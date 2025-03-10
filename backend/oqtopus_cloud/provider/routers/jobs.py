@@ -285,7 +285,7 @@ def update_job_info(
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
-@router.patch(
+@router.put(
     "/jobs/{job_id}/transpiler_info",
     response_model=UpdateJobTranspilerInfoResponse,
     responses={

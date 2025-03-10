@@ -597,9 +597,7 @@ def test_update_job_transpiler_info(test_db: Session):
         "updated_field3": {"x": {}, "y": None},
     }
     body = UpdateJobTranspilerInfoRequest(**transpilerInfo)
-    resp = client.patch(
-        f"/jobs/{job_id}/transpiler_info", content=body.model_dump_json()
-    )
+    resp = client.put(f"/jobs/{job_id}/transpiler_info", content=body.model_dump_json())
     assert resp.status_code == 200
 
     get_resp = client.get(f"/jobs/{job_id}")
