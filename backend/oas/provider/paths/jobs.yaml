@@ -190,7 +190,7 @@ jobs.job_id.transpiler_info:
     summary: "Overwrite selected quantum job's traspiler_info"
     description: |
       Overwrite selected quantum job's transpiler_info.
-    operationId: upate_job_transpiler_info
+    operationId: update_job_transpiler_info
     tags:
       - jobs
     parameters:
