@@ -864,16 +864,10 @@ components:
         of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
       properties:
         exp_value:
-          description: |
-            This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-            The first element corresponds to the real part, and the second corresponds to the imaginary part.
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 2
+          description: The estimated expectation value
+          type: number
         stds:
-          description: (Only for estimation jobs) The standard deviation value
+          description: The standard deviation value
           type: number
     jobs.JobResult:
       type: object

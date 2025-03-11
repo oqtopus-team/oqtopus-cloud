@@ -283,14 +283,14 @@ def test_update_job_info_result(test_db: Session):
         (
             2,
             JobType.estimation,
-            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
             45.6,
             200,
         ),
         (
             3,
             JobType.sampling,
-            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.5], stds=0.0)),
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
             7.89,
             400,
         ),
@@ -406,7 +406,7 @@ def test_update_job_info_consist(test_db: Session):
         (
             2,
             JobType.estimation,
-            JobResult(estimation=EstimationResult(exp_value=[1.0, 0.0], stds=0.1)),
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.1)),
             JobStatus.failed,
         ),
         (4, JobType.sampling, None, JobStatus.submitted),
