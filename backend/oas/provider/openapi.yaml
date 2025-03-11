@@ -551,8 +551,10 @@ components:
               "01": 75
             }
         divided_counts:
-          type: string
+          type: object
           nullable: true
+          properties: {}
+          additionalProperties: true
           example: |-
             {
               "0": {
