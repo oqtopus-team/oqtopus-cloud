@@ -292,6 +292,14 @@ def delete_job(
 
         db.delete(job)
         db.commit()
+
+        # delete the user program and logs from S3 when SSE
+        is_success_delete_s3 = delete_s3_folder(job)
+        if not is_success_delete_s3:
+            return InternalServerErrorResponse(
+                message="job deleted successfully, but failed to delete SSE related resources."
+            )
+
         return SuccessResponse(message="job deleted")
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -475,6 +483,28 @@ def put_user_program_to_s3(job: Job) -> bool:
         return True
     except Exception as e:
         logger.exception(f"Failed to upload the user program to S3: {str(e)}")
+        return False
+
+
+def delete_s3_folder(job: Job) -> bool:
+    if job.job_type != JobType.sse:
+        return True
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    try:
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(bucket_name)
+        deleted_list = bucket.objects.filter(Prefix=f"{job.id}/").delete()
+        for deleted in deleted_list:
+            if deleted.get("Errors") and len(deleted.get("Errors")) > 0:
+                for error in deleted.get("Errors"):
+                    logger.error(
+                        f"Failed to delete the file from S3: {error.get("Message")}"
+                    )
+                return False
+        return True
+    except Exception as e:
+        logger.exception(f"Failed to delete the folder from S3: {str(e)}")
         return False
 
 
