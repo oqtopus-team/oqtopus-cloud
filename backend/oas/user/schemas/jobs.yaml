@@ -31,12 +31,7 @@ jobs.OperatorItem:
       description: The Pauli string.
       example: "X 0 X 1"
     coeff:
-      description: "Complex coefficient number in the Pauli string representation."
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      description: "Coefficient number in the Pauli string representation."
   required:
     - pauli
 
@@ -283,7 +278,7 @@ jobs.JobDef:
           - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
         operator:
           - pauli: "X 0 Y 1 Z 5 I 2"
-            coeffs: [ 1.0 ]
+            coeffs: 1.0
         transpiled_code: "{}"
         result: "{}"
         reason: ""

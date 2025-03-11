@@ -31,9 +31,9 @@ class OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    coeff: Any | None = None
     """
-    Complex coefficient number in the Pauli string representation.
+    Coefficient number in the Pauli string representation.
     """
 
 
