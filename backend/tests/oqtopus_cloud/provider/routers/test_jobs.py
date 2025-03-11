@@ -84,7 +84,7 @@ def _get_device_model():
 def _get_job_info(jt: JobType) -> JobInfo:
     return JobInfo(
         program=["code"],
-        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=[0.5, -2e-8])]
+        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=0.5)]
         if jt == JobType.estimation
         else None,
     )
