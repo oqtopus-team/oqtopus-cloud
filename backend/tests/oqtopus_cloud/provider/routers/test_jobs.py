@@ -35,6 +35,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     TranspileResult,
     UpdateJobInfo,
     UpdateJobInfoRequest,
+    UpdateJobTranspilerInfoRequest,
     UploadSselogResponse,
 )
 from pydantic.type_adapter import TypeAdapter
@@ -83,7 +84,7 @@ def _get_device_model():
 def _get_job_info(jt: JobType) -> JobInfo:
     return JobInfo(
         program=["code"],
-        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=[0.5, -2e-8])]
+        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=0.5)]
         if jt == JobType.estimation
         else None,
     )
@@ -581,3 +582,26 @@ def test_upload_sselog_invalid_jobtype(test_db: Session):
     resp = client.patch(f"/jobs/{job_id}/sselog", files=form_data)
 
     assert resp.status_code == 400
+
+
+@mock_aws
+def test_update_job_transpiler_info(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(job_model)
+    test_db.commit()
+    job_id = job_model.id
+
+    transpilerInfo = {
+        "updated_field1": "updated_value1",
+        "updated_field2": [42, True, "updated_value2"],
+        "updated_field3": {"x": {}, "y": None},
+    }
+    body = UpdateJobTranspilerInfoRequest(**transpilerInfo)
+    resp = client.put(f"/jobs/{job_id}/transpiler_info", content=body.model_dump_json())
+    assert resp.status_code == 200
+
+    get_resp = client.get(f"/jobs/{job_id}")
+    adapter = TypeAdapter(JobDef)
+    aft_job = adapter.validate_python(get_resp.json())
+    assert get_resp.status_code == 200
+    assert aft_job.transpiler_info == transpilerInfo

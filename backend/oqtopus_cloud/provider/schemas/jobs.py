@@ -31,9 +31,9 @@ class OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    coeff: float | None = None
     """
-    Complex coefficient number in the Pauli string representation.
+    Coefficient number in the Pauli string representation.
     """
 
 
@@ -47,7 +47,7 @@ class SamplingResult(BaseModel):
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ]
     divided_counts: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
                 '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
@@ -214,6 +214,17 @@ class UpdateJobInfoRequest(BaseModel):
 
 
 class UpdateJobInfoResponse(BaseModel):
+    message: str
+
+
+class UpdateJobTranspilerInfoRequest(BaseModel):
+    pass
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
+
+class UpdateJobTranspilerInfoResponse(BaseModel):
     message: str
 
 
