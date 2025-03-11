@@ -63,15 +63,13 @@ class EstimationResult(BaseModel):
 
     """
 
-    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
+    exp_value: float
     """
-    This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-    The first element corresponds to the real part, and the second corresponds to the imaginary part.
-
+    The estimated expection value.
     """
     stds: float
     """
-    (Only for estimation jobs) The standard deviation value
+    The standard deviation value
     """
 
 
