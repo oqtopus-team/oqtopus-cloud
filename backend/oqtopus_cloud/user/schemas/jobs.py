@@ -31,7 +31,7 @@ class OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Any | None = None
+    coeff: Annotated[float | None, Field(examples=[1])] = None
     """
     Coefficient number in the Pauli string representation.
     """
