@@ -217,6 +217,17 @@ class UpdateJobInfoResponse(BaseModel):
     message: str
 
 
+class UpdateJobTranspilerInfoRequest(BaseModel):
+    pass
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
+
+class UpdateJobTranspilerInfoResponse(BaseModel):
+    message: str
+
+
 class UploadSselogRequest(BaseModel):
     file: bytes
 
