@@ -205,9 +205,17 @@ paths:
                   job_info:
                     program:
                       - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-                  transpiler_info: '{}'
-                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}'
-                  mitigation_info: '{}'
+                  transpiler_info: {}
+                  simulator_info:
+                    n_qubits: 5
+                    n_nodes: 12
+                    n_per_node: 2
+                    seed_simulation: 39058567
+                    simulation_opt:
+                      optimization_method: light
+                      optimization_block_size: 1
+                      optimization_swap_level: 1
+                  mitigation_info: {}
                   shots: 1000
               qpu:
                 description: QPU example
@@ -221,16 +229,18 @@ paths:
                       - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
                     operator:
                       - pauli: X 0 X 1
-                        coeff:
-                          - 1.5
-                          - 2.8
+                        coeff: 1.5
                       - pauli: Y 0 Z 1
-                        coeff:
-                          - 1.2
-                          - -2.e-8
-                  transpiler_info: '{"qubit_allocation": {"0": 12, "1": 16}, "skip_transpilation": false, "seed_transpilation": 873}'
-                  simulator_info: '{}'
-                  mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}'
+                        coeff: 1.2
+                  transpiler_info:
+                    qubit_allocation:
+                      '0': 12
+                      '1': 16
+                    skip_transpilation: false
+                    seed_transpilation: 873
+                  simulator_info: {}
+                  mitigation_info:
+                    ro_error_mitigation: pseudo_inverse
                   shots: 1000
       responses:
         '200':
@@ -815,12 +825,9 @@ components:
           description: The Pauli string.
           example: X 0 X 1
         coeff:
-          description: Complex coefficient number in the Pauli string representation.
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 2
+          type: number
+          description: Coefficient number in the Pauli string representation.
+          example: 1
       required:
         - pauli
     jobs.SamplingResult:
@@ -859,16 +866,10 @@ components:
         of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
       properties:
         exp_value:
-          description: |
-            This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-            The first element corresponds to the real part, and the second corresponds to the imaginary part.
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 2
+          description: The estimated expectation value
+          type: number
         stds:
-          description: (Only for estimation jobs) The standard deviation value
+          description: The standard deviation value
           type: number
     jobs.JobResult:
       type: object
@@ -1202,8 +1203,7 @@ components:
             - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
           operator:
             - pauli: X 0 Y 1 Z 5 I 2
-              coeffs:
-                - 1
+              coeff: 1
           transpiled_code: '{}'
           result: '{}'
           reason: ''
