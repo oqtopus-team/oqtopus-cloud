@@ -25,3 +25,8 @@ output "admin_cognito" {
   value       = module.admin_cognito
   description = "The admin cognito information"
 }
+
+output "s3" {
+  value       = module.s3
+  description = "The s3 information"
+}

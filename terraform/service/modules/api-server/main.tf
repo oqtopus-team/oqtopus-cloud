@@ -73,7 +73,10 @@ resource "aws_lambda_function" "this" {
         AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
       } : {},
       var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
-      var.lambda_additional_env
+      var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
+      var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
+      var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
+      var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
     )
   }
 
@@ -101,7 +104,6 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start is not supported in python3.12
   snap_start {
     apply_on = "PublishedVersions"
   }
@@ -128,7 +130,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-
 resource "aws_iam_role_policy_attachment" "lambda_execution" {
   role       = aws_iam_role.lambda.name
   policy_arn = aws_iam_policy.lambda_execution.arn
@@ -151,6 +152,13 @@ resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser" # TODO: restrict this policy
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
+  count = var.sse_bucket != "" ? 1 : 0
+
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.s3_access[0].arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -164,6 +172,12 @@ resource "aws_iam_policy" "vpc_access_execution" {
 resource "aws_iam_policy" "secret_manager" {
   name   = "${var.product}-${var.org}-${var.env}-secret-manager-${var.identifier}"
   policy = data.aws_iam_policy_document.secret_manager.json
+}
+
+resource "aws_iam_policy" "s3_access" {
+  count  = var.sse_bucket != "" ? 1 : 0
+  name   = "${var.product}-${var.org}-${var.env}-s3-access-${var.identifier}"
+  policy = data.aws_iam_policy_document.s3_access.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -198,6 +212,22 @@ data "aws_iam_policy_document" "secret_manager" {
     actions   = ["secretsmanager:GetSecretValue"]
     effect    = "Allow"
     resources = [var.db_secret_arn]
+  }
+}
+
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.sse_bucket}",
+      "arn:aws:s3:::${var.sse_bucket}/*"
+    ]
   }
 }
 
@@ -241,7 +271,7 @@ resource "aws_kms_key" "api_gateway_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-1.amazonaws.com"
+          "Service" : "logs.${var.region}.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"

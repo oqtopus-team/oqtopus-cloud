@@ -127,6 +127,30 @@ variable "lambda_authorizer_arn" {
   description = "ARN of the Lambda function used for authorizer"
 }
 
+variable "sse_bucket" {
+  type        = string
+  default     = ""
+  description = "SSE bucket name"
+}
+
+variable "sse_container_log_name" {
+  type        = string
+  default     = ""
+  description = "SSE container log name"
+}
+
+variable "sse_user_program_name" {
+  type        = string
+  default     = ""
+  description = "SSE user program name"
+}
+
+variable "sse_zip_file_name" {
+  type        = string
+  default     = ""
+  description = "SSE zip file name"
+}
+
 variable "lambda_timeout" {
   type        = number
   default     = 15
