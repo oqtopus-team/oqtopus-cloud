@@ -183,7 +183,8 @@ module "vpc_endpoint" {
     module.provider_api.iam_role_arn,
     module.admin_api.iam_role_arn,
     module.user_signup_api.iam_role_arn,
-    module.pending_jobs_updater.iam_role_arn
+    module.pending_jobs_updater.iam_role_arn,
+    module.lambda_auth.iam_role_arn,
   ]
 
   s3_lambda_iam_role_arns = [
