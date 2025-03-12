@@ -13,6 +13,12 @@ variable "env" {
   description = "environment name"
   type        = string
 }
+
+variable "region" {
+  description = "region name"
+  type        = string
+}
+
 variable "vpc_cidr" {
   description = "The CIDR block for the VPC"
   type        = string

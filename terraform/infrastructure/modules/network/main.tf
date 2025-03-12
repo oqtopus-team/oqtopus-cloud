@@ -80,7 +80,7 @@ resource "aws_kms_key" "vpc_flow_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-1.amazonaws.com"
+          "Service" : "logs.${var.region}.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"
@@ -195,6 +195,7 @@ resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-public-rt"
+    Type = "public"
   }
 }
 resource "aws_route" "public_default_route" {
@@ -215,6 +216,7 @@ resource "aws_route_table" "private" {
 
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+    Type = "private"
   }
 }
 
