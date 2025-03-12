@@ -1,0 +1,50 @@
+name: Slack Test Workflow
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  send-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to Slack
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          curl -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data '{
+            "channel": "#z_yugo_github_test",
+            "attachments": [
+              {
+                "color": "#00dd00",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Success*"
+                    }
+                  }
+                ]
+              },
+              {
+                "color": "#dd0000",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Fail*"
+                    }
+                  }
+                ]
+              }
+            ]
+            "blocks": [
+
+            ]
+          }'
