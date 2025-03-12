@@ -24,7 +24,7 @@ jobs:
 
       - name: Update version in pyproject.toml
         run: |
-          sed -i 's/version = "[^"]*"/version = "${{ steps.extract_version.outputs.version }}"/' pyproject.toml
+          poetry version ${{ steps.extract_version.outputs.version }}
 
       - name: Display pyproject.toml after modification
         run: cat pyproject.toml
