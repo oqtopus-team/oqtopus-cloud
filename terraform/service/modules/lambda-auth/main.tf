@@ -67,7 +67,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "5"
+  timeout                        = var.lambda_timeout
 
   tracing_config {
     mode = "Active"
@@ -153,6 +153,11 @@ data "aws_iam_policy_document" "lambda_execution" {
     effect    = "Allow"
     resources = ["*"]
 
+  }
+  statement {
+    actions   = ["cognito-idp:ListUsers"]
+    effect    = "Allow"
+    resources = [var.client_cognito_user_pool_arn]
   }
 }
 

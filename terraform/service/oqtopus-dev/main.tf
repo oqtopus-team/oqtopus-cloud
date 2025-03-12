@@ -21,6 +21,7 @@ module "lambda_auth" {
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
   lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  client_cognito_user_pool_arn           = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
   power_tools_metrics_namespace          = "lambda_auth"
@@ -30,6 +31,7 @@ module "lambda_auth" {
   allow_methods                          = "*"
   allow_headers                          = "*"
   log_level                              = "INFO"
+  lambda_timeout                         = 15
 }
 
 module "user_api" {
@@ -55,6 +57,13 @@ module "user_api" {
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
+
+  lambda_additional_env = {
+    SSE_BUCKET             = "oqtopus-oqtopus-dev"
+    SSE_CONTAINER_LOG_NAME = "ssecontainer.log"
+    SSE_USER_PROGRAM_NAME  = "userprogram.py"
+    SSE_ZIP_FILE_NAME      = "sselog_{job_id}.zip"
+  }
 }
 
 module "provider_api" {
@@ -75,11 +84,16 @@ module "provider_api" {
   cognito_user_pool_arns        = []
   power_tools_metrics_namespace = "provider-api"
   power_tools_service_name      = "provider-api"
-  allow_origins                 = "*"
-  allow_credentials             = "true"
-  allow_methods                 = "*"
-  allow_headers                 = "*"
+  enable_cors                   = false
   log_level                     = "INFO"
+
+  # #TODO #FIXME Remove magic numbers and replace with appropriate output references.
+  lambda_additional_env = {
+    SSE_BUCKET             = "oqtopus-oqtopus-dev"
+    SSE_CONTAINER_LOG_NAME = "ssecontainer.log"
+    SSE_USER_PROGRAM_NAME  = "userprogram.py"
+    SSE_ZIP_FILE_NAME      = "sselog_{job_id}.zip"
+  }
 }
 
 module "admin_api" {
@@ -105,8 +119,9 @@ module "admin_api" {
   allow_origins                          = "*"
   allow_credentials                      = "true"
   allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
-  allow_headers                          = "Content-type,Accept,Authorization"
+  allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
+  lambda_timeout                         = 30
 }
 
 module "user_signup_api" {

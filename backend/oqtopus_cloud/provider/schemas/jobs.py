@@ -31,9 +31,9 @@ class OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    coeff: float | None = None
     """
-    Complex coefficient number in the Pauli string representation.
+    Coefficient number in the Pauli string representation.
     """
 
 
@@ -47,7 +47,7 @@ class SamplingResult(BaseModel):
         Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
     ]
     divided_counts: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
                 '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
@@ -63,15 +63,13 @@ class EstimationResult(BaseModel):
 
     """
 
-    exp_value: Annotated[list[float], Field(max_length=2, min_length=1)]
+    exp_value: float
     """
-    This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-    The first element corresponds to the real part, and the second corresponds to the imaginary part.
-
+    The estimated expection value.
     """
     stds: float
     """
-    (Only for estimation jobs) The standard deviation value
+    The standard deviation value
     """
 
 
@@ -214,6 +212,17 @@ class UpdateJobInfoRequest(BaseModel):
 
 
 class UpdateJobInfoResponse(BaseModel):
+    message: str
+
+
+class UpdateJobTranspilerInfoRequest(BaseModel):
+    pass
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
+
+class UpdateJobTranspilerInfoResponse(BaseModel):
     message: str
 
 

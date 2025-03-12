@@ -33,13 +33,8 @@ jobs.OperatorItem:
       nullable: false
       example: "X 0 X 1"
     coeff:
-      description: "Complex coefficient number in the Pauli string representation."
-      type: array
-      nullable: true
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      description: "Coefficient number in the Pauli string representation."
+      type: number
   required:
     - pauli
 
@@ -61,8 +56,10 @@ jobs.SamplingResult:
           "01": 75
         }
     divided_counts:
-      type: string
+      type: object
       nullable: true
+      properties: {}
+      additionalProperties: true
       example: >-
         {
           "0": {
@@ -88,17 +85,11 @@ jobs.EstimationResult:
       of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
   properties:
     exp_value:
-      description: |
-        This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-        The first element corresponds to the real part, and the second corresponds to the imaginary part.
-      type: array
+      description: "The estimated expection value."
       nullable: false
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      type: number
     stds:
-      description: "(Only for estimation jobs) The standard deviation value"
+      description: "The standard deviation value"
       nullable: false
       type: number
   required:
@@ -575,5 +566,19 @@ jobs.UploadSselogResponse:
   properties:
     message:
       type: string
+  required:
+    - message
+
+jobs.UpdateJobTranspilerInfoRequest:
+  type: object
+  properties: {}
+  additionalProperties: true
+
+jobs.UpdateJobTranspilerInfoResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      nullable: false
   required:
     - message

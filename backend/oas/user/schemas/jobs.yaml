@@ -31,12 +31,9 @@ jobs.OperatorItem:
       description: The Pauli string.
       example: "X 0 X 1"
     coeff:
-      description: "Complex coefficient number in the Pauli string representation."
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      type: number
+      description: "Coefficient number in the Pauli string representation."
+      example: 1.0
   required:
     - pauli
 
@@ -81,16 +78,10 @@ jobs.EstimationResult:
       of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
   properties:
     exp_value:
-      description: |
-        This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-        The first element corresponds to the real part, and the second corresponds to the imaginary part.
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      description: The estimated expectation value
+      type: number
     stds:
-      description: "(Only for estimation jobs) The standard deviation value"
+      description: "The standard deviation value"
       type: number
 
 jobs.TranspileResult:
@@ -283,7 +274,7 @@ jobs.JobDef:
           - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
         operator:
           - pauli: "X 0 Y 1 Z 5 I 2"
-            coeffs: [ 1.0 ]
+            coeff: 1.0
         transpiled_code: "{}"
         result: "{}"
         reason: ""
