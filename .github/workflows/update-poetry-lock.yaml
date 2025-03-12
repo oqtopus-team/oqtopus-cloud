@@ -1,0 +1,47 @@
+name: Update poetry.lock
+
+on:
+  push:
+    paths:
+      - 'pyproject.toml'
+
+jobs:
+  update-poetry-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install Poetry
+        run: |
+          pip install poetry poetry-plugin-export
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Update poetry.lock
+        run: |
+          poetry lock
+
+      - name: Display poetry.lock after modification
+        run: cat poetry.lock
+
+      # - name: Auto PR
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+      #   run: |
+      #     if git diff --quiet; then
+      #       echo "No changes to commit."
+      #       exit 0
+      #     fi
+      #     git commit -m "Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" -a
+      #     git push origin $BRANCH_NAME
+      #     gh pr create --title "chore: [CI] Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" \
+      #                   --body "This PR was automatically generated: $TRIGGERED_PUSH_URL" \
+      #                   --base develop \
+      #                   --head $BRANCH_NAME \
+      #                   --label ci
