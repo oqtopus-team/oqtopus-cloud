@@ -29,19 +29,19 @@ jobs:
       - name: Display poetry.lock after modification
         run: cat poetry.lock
 
-      # - name: Auto PR
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-      #   run: |
-      #     if git diff --quiet; then
-      #       echo "No changes to commit."
-      #       exit 0
-      #     fi
-      #     git commit -m "Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" -a
-      #     git push origin $BRANCH_NAME
-      #     gh pr create --title "chore: [CI] Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" \
-      #                   --body "This PR was automatically generated: $TRIGGERED_PUSH_URL" \
-      #                   --base develop \
-      #                   --head $BRANCH_NAME \
-      #                   --label ci
+      - name: Auto PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" -a
+          git push origin $BRANCH_NAME
+          gh pr create --title "chore: [CI] Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" \
+                        --body "This PR was automatically generated: $TRIGGERED_PUSH_URL" \
+                        --base develop \
+                        --head $BRANCH_NAME \
+                        --label ci
