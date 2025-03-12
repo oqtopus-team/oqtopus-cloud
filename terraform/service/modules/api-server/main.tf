@@ -407,7 +407,6 @@ resource "aws_api_gateway_authorizer" "lambda" {
   type                             = "REQUEST"
   authorizer_result_ttl_in_seconds = 0
   authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
-  identity_source                  = ""
 }
 
 resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
