@@ -8,16 +8,27 @@ on:
 jobs:
   send-message:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        channel: ['z_yugo_github_test']
     steps:
-      - name: Send notification to Slack
+      - name: Dummy deploy
+        run: |
+          my_invalid_command 2> error.log
+
+      - name: On Success
+        if: ${{ success() }}
         env:
           SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
         run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           curl -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
-          --data '{
-            "channel": "#z_yugo_github_test",
+          --data @- <<EOF
+          {
+            "channel": "${{ matrix.channel }}",
+            "text": "✅ Deploy successful\n",
             "attachments": [
               {
                 "color": "#00dd00",
@@ -26,11 +37,33 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "*Success*"
+                      "text": "[${TIMESTAMP}] Deployed successfully!"
                     }
+                  },
+                  {
+                    "type": "divider"
                   }
                 ]
-              },
+              }
+            ]
+          }
+          EOF
+
+      - name: On Failure
+        if: ${{ failure() }}
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          MESSAGE=$(cat error.log)
+          curl -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data @- <<EOF
+          {
+            "channel": "${{ matrix.channel }}",
+            "text": "❌ Deploy failed!\n",
+            "attachments": [
               {
                 "color": "#dd0000",
                 "blocks": [
@@ -38,13 +71,11 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "*Fail*"
+                      "text": "[${TIMESTAMP}] ${MESSAGE}"
                     }
                   }
                 ]
               }
-            ],
-            "blocks": [
-
             ]
-          }'
+          }
+          EOF
