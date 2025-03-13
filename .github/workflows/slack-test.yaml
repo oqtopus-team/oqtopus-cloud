@@ -22,13 +22,14 @@ jobs:
           SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           curl -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
           --data @- <<EOF
           {
             "channel": "${{ matrix.channel }}",
-            "text": "✅ Deploy successful\n",
+            "text": "✅ Deploy successful",
             "attachments": [
               {
                 "color": "#00dd00",
@@ -37,7 +38,31 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
                       "text": "[${TIMESTAMP}] Deployed successfully!"
+                    }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
                     }
                   },
                   {
@@ -55,6 +80,7 @@ jobs:
           SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE=$(cat error.log)
           curl -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
@@ -62,7 +88,7 @@ jobs:
           --data @- <<EOF
           {
             "channel": "${{ matrix.channel }}",
-            "text": "❌ Deploy failed!\n",
+            "text": "❌ Deploy failed",
             "attachments": [
               {
                 "color": "#dd0000",
@@ -71,8 +97,35 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
                       "text": "[${TIMESTAMP}] ${MESSAGE}"
                     }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
+                    }
+                  },
+                  {
+                    "type": "divider"
                   }
                 ]
               }
