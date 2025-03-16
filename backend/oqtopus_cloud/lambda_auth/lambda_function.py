@@ -21,6 +21,40 @@ class AuthError(Exception):
     pass
 
 
+def _validate_user_status(
+    username: str | None = None, cognito_id: str | None = None
+) -> bool:
+    try:
+        # Get a database session
+        dbs = get_db()
+        db = next(dbs)
+
+        user = None
+        # Get the user status from the database
+        if username:
+            stmt = select(User).where(
+                User.username == username, User.userstatus == "approved"
+            )
+            user = db.execute(stmt).scalar()
+            db.close()
+        elif cognito_id:
+            stmt = select(User).where(
+                User.cognito_id == cognito_id, User.userstatus == "approved"
+            )
+            user = db.execute(stmt).scalar()
+            db.close()
+        else:
+            raise AuthError("Username or cognito_id is not given")
+
+        if user is None:
+            logger.info(f"User {username} is not approved")
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Failed to get user status: {e}")
+        raise AuthError("Failed to get user status")
+
+
 def _verify_id_token(id_token: Optional[str]) -> str:
     if id_token is None:
         raise AuthError("ID token is not found")
@@ -66,6 +100,10 @@ def _verify_id_token(id_token: Optional[str]) -> str:
         if token["token_use"] != "id":
             raise AuthError("Invalid token_use")
 
+        # verify the user status
+        if not _validate_user_status(username=token["cognito:username"]):
+            raise AuthError("User is not approved")
+
         return token["cognito:username"]
     except Exception:
         raise AuthError("ID token is invalid")
@@ -109,6 +147,10 @@ def _verify_api_token(api_token: Optional[str]) -> str:
 
     if cognito_id is None:
         raise AuthError("Cognito id is not found")
+
+    # verify the user status
+    if not _validate_user_status(cognito_id=cognito_id):
+        raise AuthError("User is not approved")
 
     try:
         # Initialize the Cognito client
