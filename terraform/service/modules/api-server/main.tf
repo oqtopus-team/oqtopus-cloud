@@ -159,6 +159,11 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
   policy_arn = aws_iam_policy.s3_access[0].arn
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_tag_resource" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.lambda_tag_resource.arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
