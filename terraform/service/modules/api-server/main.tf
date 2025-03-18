@@ -73,6 +73,10 @@ resource "aws_lambda_function" "this" {
         AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
       } : {},
       var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+      var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
+      var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
+      var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
+      var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
     )
   }
 
@@ -88,7 +92,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "15"
+  timeout                        = var.lambda_timeout
 
   tracing_config {
     mode = "Active"
@@ -100,10 +104,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start is not supported in python3.12
-  # snap_start {
-  #   apply_on = "PublishedVersions"
-  # }
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -127,7 +130,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-
 resource "aws_iam_role_policy_attachment" "lambda_execution" {
   role       = aws_iam_role.lambda.name
   policy_arn = aws_iam_policy.lambda_execution.arn
@@ -150,9 +152,11 @@ resource "aws_iam_role_policy_attachment" "cognito_poweruser_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser" # TODO: restrict this policy
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_tag_resource" {
+resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
+  count = var.sse_bucket != "" ? 1 : 0
+
   role       = aws_iam_role.lambda.name
-  policy_arn = aws_iam_policy.lambda_tag_resource.arn
+  policy_arn = aws_iam_policy.s3_access[0].arn
 }
 
 resource "aws_iam_policy" "lambda_execution" {
@@ -170,9 +174,10 @@ resource "aws_iam_policy" "secret_manager" {
   policy = data.aws_iam_policy_document.secret_manager.json
 }
 
-resource "aws_iam_policy" "lambda_tag_resource" {
-  name   = "${var.product}-${var.org}-${var.env}-lambda-tag-resource-${var.identifier}"
-  policy = data.aws_iam_policy_document.lambda_tag_resource.json
+resource "aws_iam_policy" "s3_access" {
+  count  = var.sse_bucket != "" ? 1 : 0
+  name   = "${var.product}-${var.org}-${var.env}-s3-access-${var.identifier}"
+  policy = data.aws_iam_policy_document.s3_access.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -210,11 +215,19 @@ data "aws_iam_policy_document" "secret_manager" {
   }
 }
 
-data "aws_iam_policy_document" "lambda_tag_resource" {
+data "aws_iam_policy_document" "s3_access" {
   statement {
-    actions   = ["lambda:TagResource"]
-    effect    = "Allow"
-    resources = ["*"]
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.sse_bucket}",
+      "arn:aws:s3:::${var.sse_bucket}/*"
+    ]
   }
 }
 
@@ -258,7 +271,7 @@ resource "aws_kms_key" "api_gateway_log" {
         "Effect" : "Allow",
         "Principal" : {
           "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-          "Service" : "logs.ap-northeast-1.amazonaws.com"
+          "Service" : "logs.${var.region}.amazonaws.com"
         },
         "Action" : "kms:*",
         "Resource" : "*"
@@ -406,6 +419,8 @@ resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
 }
 
 resource "aws_api_gateway_method" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id   = aws_api_gateway_rest_api.this.id
   resource_id   = aws_api_gateway_resource.this.id
   http_method   = "OPTIONS"
@@ -413,30 +428,43 @@ resource "aws_api_gateway_method" "options" {
 }
 
 resource "aws_api_gateway_integration" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 resource "aws_api_gateway_method_response" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  # The boolean flag indicates that the response header is required/can be omitted, respectively.
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Credentials" = true
+    "method.response.header.Access-Control-Allow-Headers"     = true
+    "method.response.header.Access-Control-Allow-Methods"     = true
+    "method.response.header.Access-Control-Allow-Origin"      = true
   }
 }
 
 resource "aws_api_gateway_integration_response" "options" {
+  count = var.enable_cors ? 1 : 0
+
   rest_api_id = aws_api_gateway_rest_api.this.id
   resource_id = aws_api_gateway_resource.this.id
-  http_method = aws_api_gateway_method.options.http_method
+  http_method = aws_api_gateway_method.options[0].http_method
   status_code = "200"
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'${var.allow_origins}'"

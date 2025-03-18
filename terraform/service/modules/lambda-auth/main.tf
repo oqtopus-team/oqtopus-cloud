@@ -67,7 +67,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "5"
+  timeout                        = var.lambda_timeout
 
   tracing_config {
     mode = "Active"
@@ -79,10 +79,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start is not supported in python3.12
-  # snap_start {
-  #   apply_on = "PublishedVersions"
-  # }
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -153,6 +152,11 @@ data "aws_iam_policy_document" "lambda_execution" {
     effect    = "Allow"
     resources = ["*"]
 
+  }
+  statement {
+    actions   = ["cognito-idp:ListUsers"]
+    effect    = "Allow"
+    resources = [var.client_cognito_user_pool_arn]
   }
 }
 

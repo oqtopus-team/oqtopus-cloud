@@ -12,20 +12,38 @@ variable "env" {
   description = "environment name"
   type        = string
 }
+
+variable "region" {
+  description = "region name"
+  type        = string
+}
+
+variable "s3_bucket_name" {
+  description = "The name of S3 bucket"
+  type        = string
+}
+
 variable "vpc_id" {
   description = "The ID of the VPC"
   type        = string
 }
+
 variable "lambda_subnet_ids" {
   description = "The subnet IDs for the Lambda function"
   type        = list(string)
 }
+
 variable "secret_manager_security_group_ids" {
   description = "The security group IDs for the Secret Manager"
   type        = list(string)
 }
+
 variable "identifiers" {
   description = "identifiers"
   type        = list(string)
 }
 
+variable "s3_lambda_iam_role_arns" {
+  description = "The ARNs of the IAM roles for the Lambda functions connected to the S3 VPC endpoint"
+  type        = list(string)
+}
