@@ -185,6 +185,11 @@ resource "aws_iam_policy" "s3_access" {
   policy = data.aws_iam_policy_document.s3_access.json
 }
 
+resource "aws_iam_policy" "lambda_tag_resource" {
+  name   = "${var.product}-${var.org}-${var.env}-lambda-tag-resource-${var.identifier}"
+  policy = data.aws_iam_policy_document.lambda_tag_resource.json
+}
+
 data "aws_iam_policy_document" "lambda_execution" {
   statement {
     actions   = ["logs:CreateLogGroup"]
@@ -217,6 +222,14 @@ data "aws_iam_policy_document" "secret_manager" {
     actions   = ["secretsmanager:GetSecretValue"]
     effect    = "Allow"
     resources = [var.db_secret_arn]
+  }
+}
+
+data "aws_iam_policy_document" "lambda_tag_resource" {
+  statement {
+    actions   = ["lambda:TagResource"]
+    effect    = "Allow"
+    resources = ["*"]
   }
 }
 
