@@ -47,7 +47,7 @@ def _validate_user_status(
             raise AuthError("Username or cognito_id is not given")
 
         if user is None:
-            logger.info(f"User {username} is not approved")
+            logger.info(f"User {username} or {cognito_id} is not approved")
             return False
         return True
     except Exception as e:
