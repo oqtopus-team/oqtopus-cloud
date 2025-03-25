@@ -2,9 +2,9 @@ news:
   get:
     tags:
       - News
-    summary: "Get news from backend"
-    description: "Get news from backend"
-    operationId: get_news
+    summary: "Get news list from backend"
+    description: "Get news list from backend"
+    operationId: get_news_list
     security:
       - BearerAuth: []
     parameters:
@@ -72,6 +72,57 @@ news:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
 news.news_id:
+  get:
+    tags:
+    - News
+    summary: "Get selected news"
+    description: "Get selected news"
+    operationId: get_news
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: news_id
+        description: "news ID"
+        required: true
+        schema:
+          type: integer
+          example: 0
+    responses:
+      "200":
+        description: "Return selected news"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/news.yaml#/news.GetNewsResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: News not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error
   patch:
     tags:
     - News

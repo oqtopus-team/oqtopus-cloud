@@ -29,6 +29,10 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
   /api-token:
     $ref: ./paths/api-token.yaml#/api-token
+  /news:
+    $ref: ./paths/news.yaml#/news
+  /news/{news_id}:
+    $ref: ./paths/news.yaml#/news.news_id
 components:
   securitySchemes:
     BearerAuth:
