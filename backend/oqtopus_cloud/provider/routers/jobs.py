@@ -29,6 +29,8 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
+    UpdateJobTranspilerInfoRequest,
+    UpdateJobTranspilerInfoResponse,
     UploadSselogResponse,
 )
 from sqlalchemy import select
@@ -283,6 +285,43 @@ def update_job_info(
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
+@router.put(
+    "/jobs/{job_id}/transpiler_info",
+    response_model=UpdateJobTranspilerInfoResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def update_job_transpiler_info(
+    job_id: JobId,
+    request: UpdateJobTranspilerInfoRequest,
+    db: Session = Depends(get_db),
+) -> UpdateJobTranspilerInfoResponse | ErrorResponse:
+    logger.info("invoked: update_job_transpiler_info")
+    logger.info(
+        f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
+    )
+
+    try:
+        stmt = select(Job).where(Job.id == job_id)
+        model = db.execute(stmt).scalar_one_or_none()
+        if model is None:
+            return NotFoundErrorResponse("Job not found")
+
+        model.transpiler_info = request.model_dump_json()
+        db.commit()
+        return UpdateJobTranspilerInfoResponse(
+            message="The job's transpiler_info has been updated."
+        )
+
+    except Exception as e:
+        logger.error(e)
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
 @router.get(
     "/jobs/{job_id}/ssesrc",
     response_model=None,
@@ -492,9 +531,9 @@ def model_to_schema(
         job_type=job_type,
         job_info=job_info,
         status=status,
-        transpiler_info=model.transpiler_info,
-        mitigation_info=model.mitigation_info,
-        simulator_info=model.simulator_info,
+        transpiler_info=json.loads(model.transpiler_info),
+        mitigation_info=json.loads(model.mitigation_info),
+        simulator_info=json.loads(model.simulator_info),
         execution_time=model.execution_time,
         submitted_at=localize(model.submitted_at),
         ready_at=localize(model.ready_at),

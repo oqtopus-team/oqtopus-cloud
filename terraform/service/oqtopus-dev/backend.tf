@@ -5,7 +5,7 @@ terraform {
       version = "~> 5.57.0"
     }
   }
-  required_version = "~> 1.9.0"
+  required_version = ">= 1.9.0, < 2.0.0"
   backend "s3" {
   }
 }

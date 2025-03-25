@@ -11,7 +11,7 @@ Before starting development, you need to install the following tools:
 |------------------------------------------------|--------------------------|---------------------------------------|
 | [Docker](https://docs.docker.com/get-docker/)  | -                        | Container virtualization platform     |
 | [Docker Compose](https://docs.docker.com/compose/install/) | -            | Management of multiple Docker containers |
-| [Python](https://www.python.org/downloads/)    | 3.12.4                   | Python programming language           |
+| [Python](https://www.python.org/downloads/)    | 3.12.3                   | Python programming language           |
 | [Pyenv](https://github.com/pyenv/pyenv) (Optional) | -              | Python version management tool        |
 | [Poetry](https://python-poetry.org/)           | -                        | Python dependency management tool     |
 

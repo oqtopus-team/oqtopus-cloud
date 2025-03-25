@@ -99,11 +99,13 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -119,11 +121,13 @@ def test_get_jobs_simple(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -196,6 +200,22 @@ def test_get_jobs_filtering_fields(
     assert actual == expect
 
 
+def test_get_jobs_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    # This is the request sent from oqtopus-frontend
+    response = client.get(
+        "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+    assert response.status_code == 200
+    assert len(actual) == 2
+
+
 def test_get_jobs_invalid_fields(
     test_db,
 ):
@@ -245,11 +265,13 @@ def test_get_jobs_filtering_start_time(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -287,11 +309,13 @@ def test_get_jobs_filtering_end_time(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -329,11 +353,13 @@ def test_get_jobs_filtering_search_string(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -371,11 +397,13 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -391,11 +419,13 @@ def test_get_jobs_desc_order(
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=JobInfo(program=["code"]),
-            transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-            simulator_info=json.dumps({"this_is": "simulator_info"}),
-            mitigation_info=json.dumps(
-                {"field1": "value1", "field2": "value2", "field3": "value3"}
-            ),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
@@ -482,9 +512,9 @@ def test_job_sortedness(test_db):
             device_id="Kawasaki",
             job_type=JobType.sampling,
             job_info=SubmitJobInfo(program=["code"]),
-            simulator_info="{}",
-            transpiler_info="{}",
-            mitigation_info="{}",
+            simulator_info={"this_is": "simulator info"},
+            transpiler_info={"this_is": "transpiler info"},
+            mitigation_info={"this_is": "mitigation info"},
             shots=1000,
         )
 
@@ -528,15 +558,9 @@ def test_get_jobs_handler(
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=JobInfo(program=["code"]),
-        transpiler_info=json.dumps({"this_is": "transpiler_info"}),
-        simulator_info=json.dumps({"this_is": "simulator_info"}),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": "value2",
-                "field3": "value3",
-            }
-        ),
+        transpiler_info={"this_is": "transpiler_info"},
+        simulator_info={"this_is": "simulator_info"},
+        mitigation_info={"field1": "value1", "field2": "value2", "field3": "value3"},
         status=JobStatus.submitted,
         shots=1000,
         execution_time=None,
@@ -596,17 +620,15 @@ def test_submit_get(
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -643,17 +665,15 @@ def test_submit_cancel_delete(test_db):
         device_id="Kawasaki",
         job_type=JobType.sampling,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -696,17 +716,15 @@ def test_submit_job_compat_error(test_db):
         device_id="Kawasaki",
         job_type=JobType.estimation,
         job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info=json.dumps(
-            {
-                "field1": "value1",
-                "field2": {
-                    "subfield1": "value2",
-                    "subfield2": ["value3", 42, True],
-                },
-            }
-        ),
-        simulator_info='"This is simulator info"',
-        transpiler_info="{}",
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
         shots=1024,
     )
 
@@ -992,11 +1010,10 @@ def test_put_user_program_to_s3(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[program]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -1050,11 +1067,10 @@ def test_put_user_program_to_s3_invalid_program(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[program]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting
@@ -1085,13 +1101,216 @@ def test_put_user_program_to_s3_no_program(
         device_id="Kawasaki",
         job_type=JobType.sse,
         job_info=SubmitJobInfo(program=[]),
-        transpiler_info="",
-        mitigation_info="",
-        simulator_info="",
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        mitigation_info={"this_is": "mitigation info"},
         shots=1,
-        status=JobStatus.submitted,
     )
 
     # Submitting
     submit_resp = client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 500
+
+
+@mock_aws
+def test_delete_s3_folder(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_program.py", Body="program1")
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_log.log", Body="log1")
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_program.py", Body="program2")
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_log.log", Body="log2")
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 200
+
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
+    assert "Contents" not in objects
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob2id")
+    assert "Contents" in objects
+    assert len(objects["Contents"]) == 2
+    assert objects["Contents"][0]["Key"] in ["testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
+    assert objects["Contents"][1]["Key"] in ["testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
+    job = test_db.get(Job, "testjob1id")
+    assert job is None
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_program.py")
+    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_log.log")
+    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/")
+    s3client.delete_bucket(Bucket=bucket_name)
+
+
+@mock_aws
+def test_delete_s3_folder_no_folder(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 200
+
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
+    assert "Contents" not in objects
+    job = test_db.get(Job, "testjob1id")
+    assert job is None
+
+    # clean up
+    s3client.delete_bucket(Bucket=bucket_name)
+
+
+@mock_aws
+def test_delete_s3_folder_no_file(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/", Body="program1")
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 200
+
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
+    assert "Contents" not in objects
+    job = test_db.get(Job, "testjob1id")
+    assert job is None
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key="testjob1id/")
+    s3client.delete_bucket(Bucket=bucket_name)
+
+
+@mock_aws
+def test_delete_s3_folder_folder_only(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/", Body="program1")
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 200
+
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
+    assert "Contents" not in objects
+    job = test_db.get(Job, "testjob1id")
+    assert job is None
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key="testjob1id/")
+    s3client.delete_bucket(Bucket=bucket_name)
+
+
+@mock_aws
+def test_delete_s3_not_sse_job(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sampling"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 200
+
+    job = test_db.get(Job, "testjob1id")
+    assert job is None
+
+
+@mock_aws
+def test_delete_s3_folder_exception(
+    test_db,
+):
+    """_summary_
+    Test for delete s3 folder from S3 when SSE
+    """
+
+    test_db.flush()
+    job_model = _get_model(1)
+    job_model.job_type = "sse"
+    job_model.status = "succeeded"
+    test_db.add(job_model)
+    test_db.commit()
+
+    # do not create bucket to raise exception
+
+    # Request
+    delete_resp = client.delete("/jobs/testjob1id")
+    assert delete_resp.status_code == 500
+
+    job = test_db.get(Job, "testjob1id")
+    assert job is None

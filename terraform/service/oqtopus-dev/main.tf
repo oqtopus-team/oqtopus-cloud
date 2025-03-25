@@ -21,6 +21,7 @@ module "lambda_auth" {
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
   lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  client_cognito_user_pool_arn           = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
   power_tools_metrics_namespace          = "lambda_auth"
@@ -30,6 +31,7 @@ module "lambda_auth" {
   allow_methods                          = "*"
   allow_headers                          = "*"
   log_level                              = "INFO"
+  lambda_timeout                         = 15
 }
 
 module "user_api" {
@@ -50,11 +52,15 @@ module "user_api" {
   cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   power_tools_metrics_namespace = "user-api"
   power_tools_service_name      = "user-api"
-  allow_origins                 = "*"
+  allow_origins                 = "*" # restrict this depending on the client
   allow_credentials             = "true"
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
+  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name        = "ssecontainer.log"
+  sse_user_program_name         = "userprogram.py"
+  sse_zip_file_name             = "sselog_{job_id}.zip"
 }
 
 module "provider_api" {
@@ -75,11 +81,12 @@ module "provider_api" {
   cognito_user_pool_arns        = []
   power_tools_metrics_namespace = "provider-api"
   power_tools_service_name      = "provider-api"
-  allow_origins                 = "*"
-  allow_credentials             = "true"
-  allow_methods                 = "*"
-  allow_headers                 = "*"
+  enable_cors                   = false
   log_level                     = "INFO"
+  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name        = "ssecontainer.log"
+  sse_user_program_name         = "userprogram.py"
+  sse_zip_file_name             = "sselog_{job_id}.zip"
 }
 
 module "admin_api" {
@@ -102,11 +109,12 @@ module "admin_api" {
   manage_cognito_user_pool               = true
   power_tools_metrics_namespace          = "admin-api"
   power_tools_service_name               = "admin-api"
-  allow_origins                          = "*"
+  allow_origins                          = "*" # restrict this depending on the client
   allow_credentials                      = "true"
   allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
-  allow_headers                          = "Content-type,Accept,Authorization"
+  allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
+  lambda_timeout                         = 30
 }
 
 module "user_signup_api" {
@@ -129,7 +137,7 @@ module "user_signup_api" {
   manage_cognito_user_pool               = true
   power_tools_metrics_namespace          = "user_signup-api"
   power_tools_service_name               = "user_signup-api"
-  allow_origins                          = "*"
+  allow_origins                          = "*" # restrict this depending on the client
   allow_credentials                      = "true"
   allow_methods                          = "POST,PUT"
   allow_headers                          = "Content-type,Accept"
@@ -164,16 +172,24 @@ module "vpc_endpoint" {
   product                           = var.product
   org                               = var.org
   env                               = var.env
+  region                            = var.region
   vpc_id                            = data.terraform_remote_state.infrastructure.outputs.network.vpc_id
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
+  s3_bucket_name                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
 
   identifiers = [
     module.user_api.iam_role_arn,
     module.provider_api.iam_role_arn,
     module.admin_api.iam_role_arn,
     module.user_signup_api.iam_role_arn,
-    module.pending_jobs_updater.iam_role_arn
+    module.pending_jobs_updater.iam_role_arn,
+    module.lambda_auth.iam_role_arn,
+  ]
+
+  s3_lambda_iam_role_arns = [
+    module.user_api.iam_role_arn,
+    module.provider_api.iam_role_arn,
   ]
 
   depends_on = [
