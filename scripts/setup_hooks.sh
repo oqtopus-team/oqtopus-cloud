@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p .git/hooks
+
 pre_commit=$(cat <<EOF
 #!/bin/bash
 
