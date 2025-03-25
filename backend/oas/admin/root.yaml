@@ -23,7 +23,10 @@ paths:
     $ref: ./paths/devices.yaml#/devices
   /devices/{device_id}:
     $ref: ./paths/devices.yaml#/devices.device_id
-
+  /news:
+    $ref: ./paths/news.yaml#/news
+  /news/{news_id}:
+    $ref: ./paths/news.yaml#/news.news_id
 components:
   securitySchemes:
     BearerAuth:

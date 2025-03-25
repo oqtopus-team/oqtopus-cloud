@@ -1,0 +1,184 @@
+news:
+  get:
+    tags:
+      - News
+    summary: "Get news from backend"
+    description: "Get news from backend"
+    operationId: get_news
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: offset
+        in: query
+        description: "offset information"
+        required: false
+        schema: {type: string}
+      - name: limit
+        in: query
+        description: "Limit information"
+        required: false
+        schema: {type: string}
+    responses:
+      "200":
+        description: "Return news"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/news.yaml#/news.GetNewsListResponse"
+      "401":
+        description: Unauthorized
+      "403":
+        description: "Not authorized : user is not admin"
+      "500":
+        description: "Internal Server Error"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+  post:
+    tags:
+      - News
+    summary: "Register news to backend"
+    description: "Register news to backend"
+    operationId: register_news
+    security:
+      - BearerAuth: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/news.yaml#/news.RegisterNewsRequest"
+    responses:
+      "200":
+        description: "Success register news"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+      "401":
+        description: Unauthorized
+      "403":
+        description: "Not authorized : user is not admin"
+      "500":
+        description: "Internal Server Error"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+news.news_id:
+  patch:
+    tags:
+    - News
+    summary: "Update data of selected news"
+    description: "Update the properties of selected news."
+    operationId: update_news
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: news_id
+        description: "news ID"
+        required: true
+        schema:
+          type: integer
+          example: 0
+    requestBody:
+      description: "New news data"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/news.yaml#/news.UpdateNewsRequest"
+    responses:
+      "200":
+        description: News data updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: News data updated
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: News not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error
+  delete:
+    tags:
+      - News
+    summary: "Delete news"
+    description: "Delete news"
+    operationId: delete_news
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: news_id
+        description: "News ID"
+        required: true
+        schema:
+          type: integer
+          example: 0
+    responses:
+      "204":
+        description: News deleted
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: News deleted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequestError"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: News not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"

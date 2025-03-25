@@ -497,6 +497,192 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+  /news:
+    get:
+      tags:
+        - News
+      summary: Get news from backend
+      description: Get news from backend
+      operationId: get_news
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          description: offset information
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limit information
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return news
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/news.GetNewsListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    post:
+      tags:
+        - News
+      summary: Register news to backend
+      description: Register news to backend
+      operationId: register_news
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/news.RegisterNewsRequest'
+      responses:
+        '200':
+          description: Success register news
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /news/{news_id}:
+    patch:
+      tags:
+        - News
+      summary: Update data of selected news
+      description: Update the properties of selected news.
+      operationId: update_news
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: news_id
+          description: news ID
+          required: true
+          schema:
+            type: integer
+            example: 0
+      requestBody:
+        description: New news data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/news.UpdateNewsRequest'
+      responses:
+        '200':
+          description: News data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: News data updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: News not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
+    delete:
+      tags:
+        - News
+      summary: Delete news
+      description: Delete news
+      operationId: delete_news
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: news_id
+          description: News ID
+          required: true
+          schema:
+            type: integer
+            example: 0
+      responses:
+        '204':
+          description: News deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/success.SuccessResponse'
+              example:
+                message: News deleted
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: News not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -836,3 +1022,84 @@ components:
         description:
           type: string
           example: Superconducting quantum computer
+    news.GetNewsResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        title:
+          type: string
+          example: Example Title
+        content:
+          type: string
+          example: Example Content
+        start_time:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        end_time:
+          type: string
+          format: date-time
+          example: '2022-12-19T11:45:34+09:00'
+        publishable:
+          type: boolean
+          example: true
+      required:
+        - id
+        - title
+        - content
+        - start_time
+        - end_time
+        - publishable
+      example:
+        id: 0
+        title: Example Title
+        content: Example Content
+        start_time: '2022-10-19T11:45:34+09:00'
+        end_time: '2022-12-19T11:45:34+09:00'
+        publishable: true
+    news.GetNewsListResponse:
+      properties:
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/news.GetNewsResponse'
+    news.RegisterNewsRequest:
+      description: register news to backend
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        publishable:
+          type: boolean
+      required:
+        - title
+        - content
+        - start_time
+        - end_time
+        - publishable
+    news.UpdateNewsRequest:
+      description: register news to backend
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        publishable:
+          type: boolean
