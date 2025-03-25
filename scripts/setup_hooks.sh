@@ -9,3 +9,4 @@ aqua exec -- lefthook run pre-commit --no-auto-install
 EOF
 )
 echo -e "$pre_commit" > .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
