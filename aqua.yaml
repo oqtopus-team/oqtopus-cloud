@@ -17,3 +17,5 @@ packages:
 - name: k1LoW/runn@v0.114.0
 - name: k1LoW/tbls@v1.76.1
 - name: aws/aws-cli@2.17.6
+- name: evilmartians/lefthook@v1.11.2
+- name: trufflesecurity/trufflehog@v3.88.13
