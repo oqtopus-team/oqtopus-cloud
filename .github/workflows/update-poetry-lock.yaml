@@ -29,6 +29,11 @@ jobs:
       - name: Display poetry.lock after modification
         run: cat poetry.lock
 
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Auto PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
