@@ -93,8 +93,8 @@ class TranspileResult(BaseModel):
             ]
         ),
     ] = None
-    stats: Annotated[str | None, Field(...)] = None
-    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
+    stats: Annotated[dict[str, Any] | None, Field(...)]
+    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
 
 
 class JobInfo(BaseModel):
