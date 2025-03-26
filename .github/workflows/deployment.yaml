@@ -67,7 +67,7 @@ jobs:
           --data @- <<EOF
           {
             "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "✅ Deploy successful",
+            "text": "✅ Deploy successful (${{ matrix.deploy-target }})",
             "attachments": [
               {
                 "color": "#00dd00",
@@ -102,9 +102,6 @@ jobs:
                       "type": "mrkdwn",
                       "text": "${RUN_URL}"
                     }
-                  },
-                  {
-                    "type": "divider"
                   }
                 ]
               }
@@ -126,7 +123,7 @@ jobs:
           --data @- <<EOF
           {
             "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "❌ Deploy failed",
+            "text": "❌ Deploy failed (${{ matrix.deploy-target }})",
             "attachments": [
               {
                 "color": "#dd0000",
@@ -161,9 +158,6 @@ jobs:
                       "type": "mrkdwn",
                       "text": "${RUN_URL}"
                     }
-                  },
-                  {
-                    "type": "divider"
                   }
                 ]
               }
