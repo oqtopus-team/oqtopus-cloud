@@ -1,0 +1,35 @@
+name: Code review
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out
+        uses: actions/checkout@v4
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Install editorconfig-checker
+        run: |
+          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download/ec-linux-amd64 -o /usr/local/bin/editorconfig-checker
+          chmod +x /usr/local/bin/editorconfig-checker
+
+      - name: Run editorconfig-checker with reviewdog
+        run: |
+          editorconfig-checker | reviewdog -efm="%f:%l:%c: %m" \
+            -name="editorconfig-checker" -reporter=github-pr-review -level=warning
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
