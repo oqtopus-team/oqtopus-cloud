@@ -38,7 +38,7 @@ module "network" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.9.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9.0, < 2.0.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.57.0 |
 
 ## Providers
@@ -82,6 +82,7 @@ module "network" {
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | The CIDR blocks for the private subnets | `map(any)` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_public_subnet"></a> [public\_subnet](#input\_public\_subnet) | n/a | <pre>object({<br>    cidr = string<br>    az   = string<br>    name = string<br>  })</pre> | n/a | yes |
+| <a name="input_region"></a> [region](#input\_region) | region name | `string` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | The CIDR block for the VPC | `string` | n/a | yes |
 
 ## Outputs

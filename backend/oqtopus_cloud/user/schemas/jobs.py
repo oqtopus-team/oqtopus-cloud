@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
 class JobType(str, Enum):
@@ -31,9 +31,9 @@ class OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    coeff: Annotated[float | None, Field(examples=[1])] = None
     """
-    Complex coefficient number in the Pauli string representation.
+    Coefficient number in the Pauli string representation.
     """
 
 
@@ -43,14 +43,17 @@ class SamplingResult(BaseModel):
     """
 
     counts: Annotated[
-        str | None,
-        Field(examples=['{\n  "10": 84,\n  "11": 387,\n  "10": 454,\n  "01": 75\n}']),
+        dict[str, Any] | None,
+        Field(examples=[{"10": 454, "11": 387, "00": 84, "01": 75}]),
     ] = None
     divided_counts: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "0": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  },\n  "1": {\n    "10": 84,\n    "11": 387,\n    "10": 454,\n    "01": 75\n  }'
+                {
+                    "0": {"10": 454, "11": 387, "00": 84, "01": 75},
+                    "1": {"10": 454, "11": 387, "00": 84, "01": 75},
+                }
             ]
         ),
     ] = None
@@ -63,15 +66,13 @@ class EstimationResult(BaseModel):
 
     """
 
-    exp_value: Annotated[list[float] | None, Field(max_length=2, min_length=1)] = None
+    exp_value: float | None = None
     """
-    This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-    The first element corresponds to the real part, and the second corresponds to the imaginary part.
-
+    The estimated expectation value
     """
     stds: float | None = None
     """
-    (Only for estimation jobs) The standard deviation value
+    The standard deviation value
     """
 
 
@@ -92,8 +93,8 @@ class TranspileResult(BaseModel):
             ]
         ),
     ] = None
-    stats: Annotated[str | None, Field(...)] = None
-    virtual_physical_mapping: Annotated[str | None, Field(...)] = None
+    stats: Annotated[dict[str, Any] | None, Field(...)]
+    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
 
 
 class JobInfo(BaseModel):
@@ -140,23 +141,38 @@ class GetJobsResponse(BaseModel):
     shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
     job_info: JobInfo | None = None
     transpiler_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "qubit_allocation": {\n    "0": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+                {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": False,
+                    "seed_transpilation": 873,
+                }
             ]
         ),
     ] = None
     simulator_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+                {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                        "optimization_method": "light",
+                        "optimization_block_size": 1,
+                        "optimization_swap_level": 1,
+                    },
+                }
             ]
         ),
     ] = None
     mitigation_info: Annotated[
-        str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
+        dict[str, Any] | None,
+        Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
@@ -200,22 +216,40 @@ class SubmitJobRequest(BaseModel):
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
     job_type: JobType
     job_info: SubmitJobInfo
-    transpiler_info: Annotated[str | None, Field(examples=["{}"])] = None
-    """
-    When specified, valid JSON string is required.
-    """
-    simulator_info: Annotated[
-        str | None,
+    transpiler_info: Annotated[
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+                {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": False,
+                    "seed_transpilation": 873,
+                }
             ]
         ),
     ] = None
-    mitigation_info: Annotated[str | None, Field(examples=["{}"])] = None
-    """
-    When specified, valid JSON string is required
-    """
+    simulator_info: Annotated[
+        dict[str, Any] | None,
+        Field(
+            examples=[
+                {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                        "optimization_method": "light",
+                        "optimization_block_size": 1,
+                        "optimization_swap_level": 1,
+                    },
+                }
+            ]
+        ),
+    ] = None
+    mitigation_info: Annotated[
+        dict[str, Any] | None,
+        Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
+    ] = None
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
 
 
@@ -239,23 +273,38 @@ class JobDef(BaseModel):
     shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
     job_info: JobInfo
     transpiler_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "qubit_allocation": {\n    "0": 12,\n    "1": 16\n  },\n  "skip_transpilation": false,\n  "seed_transpilation": 873\n}'
+                {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": False,
+                    "seed_transpilation": 873,
+                }
             ]
         ),
     ] = None
     simulator_info: Annotated[
-        str | None,
+        dict[str, Any] | None,
         Field(
             examples=[
-                '{\n  "n_qubits": 5,\n  "n_nodes": 12,\n  "n_per_node": 2,\n  "seed_simulation": 39058567,\n  "simulation_opt": {\n    "optimization_method": "light",\n    "optimization_block_size": 1,\n    "optimization_swap_level": 1\n  }\n}'
+                {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                        "optimization_method": "light",
+                        "optimization_block_size": 1,
+                        "optimization_swap_level": 1,
+                    },
+                }
             ]
         ),
     ] = None
     mitigation_info: Annotated[
-        str | None, Field(examples=['{\n  "ro_error_mitigation": "pseudo_inverse"\n}'])
+        dict[str, Any] | None,
+        Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[

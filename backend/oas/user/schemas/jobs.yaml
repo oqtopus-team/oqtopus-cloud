@@ -31,12 +31,9 @@ jobs.OperatorItem:
       description: The Pauli string.
       example: "X 0 X 1"
     coeff:
-      description: "Complex coefficient number in the Pauli string representation."
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      type: number
+      description: "Coefficient number in the Pauli string representation."
+      example: 1.0
   required:
     - pauli
 
@@ -45,31 +42,34 @@ jobs.SamplingResult:
   description: "*(Only for sampling jobs)* JSON string representing the sampling result"
   properties:
     counts:
-      type: string
-      example: >-
-        {
-          "10": 84,
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "00": 84,
+        "11": 387,
+        "10": 454,
+        "01": 75
+      }
+    divided_counts:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+      example: {
+        "0": {
+          "00": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        },
+        "1": {
+          "00": 84,
           "11": 387,
           "10": 454,
           "01": 75
         }
-    divided_counts:
-      type: string
-      nullable: true
-      example: >-
-        {
-          "0": {
-            "10": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          },
-          "1": {
-            "10": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          }
+      }
 
 jobs.EstimationResult:
   type: object
@@ -78,16 +78,10 @@ jobs.EstimationResult:
       of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
   properties:
     exp_value:
-      description: |
-        This field must contain an array of numbers with a maximum length of 2, representing a complex number.
-        The first element corresponds to the real part, and the second corresponds to the imaginary part.
-      type: array
-      items:
-        type: number
-      minItems: 1
-      maxItems: 2
+      description: The estimated expectation value
+      type: number
     stds:
-      description: "(Only for estimation jobs) The standard deviation value"
+      description: "The standard deviation value"
       type: number
 
 jobs.TranspileResult:
@@ -104,10 +98,14 @@ jobs.TranspileResult:
         h q[0];
         cx q[0], q[1];
     stats:
-      type: string
+      type: object
+      properties: {}
+      additionalProperties: true
       nullable: true
     virtual_physical_mapping:
-      type: string
+      type: object
+      properties: {}
+      additionalProperties: true
       nullable: true
   required:
     - transpiled_program
@@ -174,40 +172,6 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.TranspilerInfo:
-  type: string
-  example: >-
-    {
-      "qubit_allocation": {
-        "0": 12,
-        "1": 16
-      },
-      "skip_transpilation": false,
-      "seed_transpilation": 873
-    }
-
-jobs.SimulatorInfo:
-  type: string
-  example: >-
-    {
-      "n_qubits": 5,
-      "n_nodes": 12,
-      "n_per_node": 2,
-      "seed_simulation": 39058567,
-      "simulation_opt": {
-        "optimization_method": "light",
-        "optimization_block_size": 1,
-        "optimization_swap_level": 1
-      }
-    }
-
-jobs.MitigationInfo:
-  type: string
-  example: >-
-    {
-      "ro_error_mitigation": "pseudo_inverse"
-    }
-
 jobs.JobType:
   type: string
   enum:
@@ -243,11 +207,39 @@ jobs.JobDef:
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
-      $ref: "#/jobs.TranspilerInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      $ref: "#/jobs.SimulatorInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
     mitigation_info:
-      $ref: "#/jobs.MitigationInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
     execution_time:
       type: number
       example: "10.123"
@@ -286,16 +278,32 @@ jobs.JobDef:
           - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
         operator:
           - pauli: "X 0 Y 1 Z 5 I 2"
-            coeffs: [ 1.0 ]
+            coeff: 1.0
         transpiled_code: "{}"
         result: "{}"
         reason: ""
-      transpiler_info: >-
-        { "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },
-      simulator_info: >-
-        { "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }
-      mitigation_info: >-
-        { "ro_error_mitigation": "pseudo_inverse" }
+      transpiler_info: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
+      simulator_info: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
+      mitigation_info: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
       shots: 1000
       status: submitted
       execution_time: 10.123
@@ -344,27 +352,39 @@ jobs.SubmitJobRequest:
     job_info:
       $ref: "#/jobs.SubmitJobInfo"
     transpiler_info:
-      type: string
-      description: When specified, valid JSON string is required.
-      example: "{}"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      type: string
-      example: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
         }
+      }
     mitigation_info:
-      type: string
-      description: "When specified, valid JSON string is required"
-      example: "{}"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
     shots:
       type: integer
       minimum: 1
@@ -402,11 +422,39 @@ jobs.GetJobsResponse:
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
-      $ref: "#/jobs.TranspilerInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      $ref: "#/jobs.SimulatorInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
     mitigation_info:
-      $ref: "#/jobs.MitigationInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
     execution_time:
       type: number
       example: "10.123"

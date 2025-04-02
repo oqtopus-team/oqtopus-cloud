@@ -185,6 +185,53 @@ jobs.job_info:
             example:
               message: Job not found
 
+jobs.job_id.transpiler_info:
+  put:
+    summary: "Overwrite selected quantum job's traspiler_info"
+    description: |
+      Overwrite selected quantum job's transpiler_info.
+    operationId: update_job_transpiler_info
+    tags:
+      - jobs
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        description: "Job identifier"
+        schema: { type: string, nullable: false }
+    requestBody:
+      description: "Modifications applied to transpiler info"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.UpdateJobTranspilerInfoRequest"
+    responses:
+      "200":
+        description: job info updated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.UpdateJobTranspilerInfoResponse"
+            example:
+              message: Job info updated.
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: Job not found
+
+
 jobs.job_id.sse_src:
   get:
     tags:

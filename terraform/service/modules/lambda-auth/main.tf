@@ -67,7 +67,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "5"
+  timeout                        = var.lambda_timeout
 
   tracing_config {
     mode = "Active"
@@ -79,10 +79,9 @@ resource "aws_lambda_function" "this" {
     subnet_ids                  = var.lambda_subnet_ids
   }
 
-  # snap_start is not supported in python3.12
-  # snap_start {
-  #   apply_on = "PublishedVersions"
-  # }
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 }
 
 resource "aws_iam_role" "lambda" {
@@ -122,6 +121,11 @@ resource "aws_iam_role_policy_attachment" "secret_manager" {
   policy_arn = aws_iam_policy.secret_manager.arn
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_tag_resource" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.lambda_tag_resource.arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -135,6 +139,11 @@ resource "aws_iam_policy" "vpc_access_execution" {
 resource "aws_iam_policy" "secret_manager" {
   name   = "${var.product}-${var.org}-${var.env}-secret-manager-${var.identifier}"
   policy = data.aws_iam_policy_document.secret_manager.json
+}
+
+resource "aws_iam_policy" "lambda_tag_resource" {
+  name   = "${var.product}-${var.org}-${var.env}-lambda-tag-resource-${var.identifier}"
+  policy = data.aws_iam_policy_document.lambda_tag_resource.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -154,6 +163,11 @@ data "aws_iam_policy_document" "lambda_execution" {
     resources = ["*"]
 
   }
+  statement {
+    actions   = ["cognito-idp:ListUsers"]
+    effect    = "Allow"
+    resources = [var.client_cognito_user_pool_arn]
+  }
 }
 
 data "aws_iam_policy_document" "vpc_access_execution" {
@@ -169,5 +183,13 @@ data "aws_iam_policy_document" "secret_manager" {
     actions   = ["secretsmanager:GetSecretValue"]
     effect    = "Allow"
     resources = [var.db_secret_arn]
+  }
+}
+
+data "aws_iam_policy_document" "lambda_tag_resource" {
+  statement {
+    actions   = ["lambda:TagResource"]
+    effect    = "Allow"
+    resources = ["*"]
   }
 }

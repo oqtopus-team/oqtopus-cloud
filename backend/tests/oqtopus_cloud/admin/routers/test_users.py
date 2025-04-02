@@ -23,9 +23,7 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
         "userstatus": status,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
-        "purpose": f"purpose_{n}",
         "group_id": f"group_id_{n}",
-        "require_mfa_reset": True,
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -55,7 +53,6 @@ def test_get_users_simple(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             ),
             GetOneUserResponse(
                 id="2",
@@ -64,7 +61,6 @@ def test_get_users_simple(
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
-                require_mfa_reset=True,
             ),
         ],
     )
@@ -96,7 +92,6 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
-                require_mfa_reset=True,
             ),
             GetOneUserResponse(
                 id="3",
@@ -105,7 +100,6 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
-                require_mfa_reset=True,
             ),
         ],
     )
@@ -137,7 +131,6 @@ def test_get_user_by_email(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )
@@ -170,7 +163,6 @@ def test_get_user_by_name_organization_groupid_status(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )
@@ -202,7 +194,6 @@ def test_patch_job_status_to_suspended(
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
-        require_mfa_reset=True,
     )
     assert response.status_code == 200
     assert actual == expect
@@ -225,7 +216,6 @@ def test_patch_job_status_to_unapproved(
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
-        require_mfa_reset=True,
     )
     assert response.status_code == 200
     assert actual == expect
@@ -275,7 +265,6 @@ def test_delete_user(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                require_mfa_reset=True,
             )
         ],
     )

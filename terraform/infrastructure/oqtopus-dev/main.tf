@@ -4,6 +4,7 @@ module "network" {
   product  = var.product
   org      = var.org
   env      = var.env
+  region   = var.region
   vpc_cidr = "10.2.0.0/16"
   private_subnets = {
     private-a = {
@@ -35,6 +36,7 @@ module "security_group" {
   org     = var.org
   env     = var.env
   vpc_id  = module.network.vpc_id
+  region  = var.region
 }
 
 module "db" {
@@ -77,17 +79,31 @@ module "user_cognito" {
 module "provider_cognito" {
   source = "../modules/cognito"
 
-  product    = var.product
-  org        = var.org
-  env        = var.env
-  identifier = "provider"
+  product                           = var.product
+  org                               = var.org
+  env                               = var.env
+  identifier                        = "provider"
+  enable_mfa                        = false
+  userpool_auto_verified_attributes = []
 }
 
 module "admin_cognito" {
   source = "../modules/cognito"
 
-  product    = var.product
-  org        = var.org
-  env        = var.env
-  identifier = "admin"
+  product                  = var.product
+  org                      = var.org
+  env                      = var.env
+  identifier               = "admin"
+  username_attributes      = ["email"]
+  enable_delete_protection = true
+  enable_mfa               = false
+  password_minimum_length  = 12
+}
+
+module "s3" {
+  source = "../modules/s3"
+
+  product = var.product
+  org     = var.org
+  env     = var.env
 }

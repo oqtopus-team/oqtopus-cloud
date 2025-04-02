@@ -11,7 +11,7 @@ Before starting development, you need to install the following tools:
 |------------------------------------------------|--------------------------|---------------------------------------|
 | [Docker](https://docs.docker.com/get-docker/)  | -                        | Container virtualization platform     |
 | [Docker Compose](https://docs.docker.com/compose/install/) | -            | Management of multiple Docker containers |
-| [Python](https://www.python.org/downloads/)    | 3.12.4                   | Python programming language           |
+| [Python](https://www.python.org/downloads/)    | 3.12.3                   | Python programming language           |
 | [Pyenv](https://github.com/pyenv/pyenv) (Optional) | -              | Python version management tool        |
 | [Poetry](https://python-poetry.org/)           | -                        | Python dependency management tool     |
 
@@ -50,6 +50,18 @@ Poetry version: Poetry (version 1.8.3)
 Docker version: Docker version 26.1.4, build 5650f9b
 
 ```
+
+## Generating Git Hooks File
+
+This repository uses the Git hook `pre-commit` to scan for credentials.
+
+To generate the script, run the following command:
+
+```bash
+make setup_hooks
+```
+
+The script will be generated in `.git/hooks/pre-commit`.
 
 ## Setting Up the Python Environment
 
