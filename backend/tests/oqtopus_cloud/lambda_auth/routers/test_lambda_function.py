@@ -84,13 +84,15 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
     return const
 
 
-def _get_model(n: int, expiration_day=90) -> User:
+def _get_model(n: int, expiration_day=90, username=None, status=UserStatus.approved) -> User:
+    if username is None:
+        username = f"username_{n}"
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
         "email": f"email{n}@example.com",
-        "username": f"username_{n}",
-        "userstatus": UserStatus.approved,
+        "username": username,
+        "userstatus": status,
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -100,7 +102,15 @@ def _get_model(n: int, expiration_day=90) -> User:
     return User(**model_dict)
 
 
-def test__verify_id_token():
+def test__verify_id_token(test_session, monkeypatch):
+    user = _get_model(1, username="fake_username")
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
     actual = _verify_id_token("id_token")
     expect = "fake_username"
     assert actual == expect
@@ -144,6 +154,29 @@ def test__verify_id_token_jwt_signing_key_failure():
 
 @pytest.mark.usefixtures("override_jwt_decode_failure")
 def test__verify_id_token_jwt_decode_failure():
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+
+def test__verify_suspended(test_session, monkeypatch):
+    user = _get_model(1, username="fake_username", status=UserStatus.suspended)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+def test__verify_unapproved(test_session, monkeypatch):
+    user = _get_model(1, username="fake_username", status=UserStatus.unapproved)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
     pytest.raises(AuthError, _verify_id_token, "id_token")
 
 
@@ -238,6 +271,30 @@ def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
     assert "Failed to list users from Cognito Cognito user is duplicated" in str(
         excinfo.value
     )
+
+
+def test__verify_api_token_suspended(test_session, monkeypatch):
+    user = _get_model(1, status=UserStatus.suspended)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
+
+
+def test__verify_api_token_unapproved(test_session, monkeypatch):
+    user = _get_model(1, status=UserStatus.unapproved)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_1")
 
 
 def test__generate_policy_allow():

@@ -1,12 +1,12 @@
-import json
-from datetime import datetime
-import os
 import base64
-import boto3
 import io
+import json
+import os
 import zipfile
+from datetime import datetime
 from typing import Any, Optional
 
+import boto3
 import pytz
 from fastapi import (
     APIRouter,
@@ -36,6 +36,7 @@ from oqtopus_cloud.user.schemas.errors import (
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
     GetJobStatusResponse,
+    GetSselogResponse,
     JobDef,
     JobInfo,
     JobStatus,
@@ -43,7 +44,6 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobInfo,
     SubmitJobRequest,
     SubmitJobResponse,
-    GetSselogResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -207,9 +207,9 @@ def submit_jobs(
             description=description,
             device_id=request.device_id,
             job_info=json.dumps(request.job_info.model_dump()),
-            transpiler_info=request.transpiler_info,
-            simulator_info=request.simulator_info,
-            mitigation_info=request.mitigation_info,
+            transpiler_info=json.dumps(request.transpiler_info),
+            simulator_info=json.dumps(request.simulator_info),
+            mitigation_info=json.dumps(request.mitigation_info),
             job_type=request.job_type,
             shots=shots,
             submitted_at=datetime.now(),
@@ -292,6 +292,14 @@ def delete_job(
 
         db.delete(job)
         db.commit()
+
+        # delete the user program and logs from S3 when SSE
+        is_success_delete_s3 = delete_s3_folder(job)
+        if not is_success_delete_s3:
+            return InternalServerErrorResponse(
+                message="job deleted successfully, but failed to delete SSE related resources."
+            )
+
         return SuccessResponse(message="job deleted")
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -478,6 +486,28 @@ def put_user_program_to_s3(job: Job) -> bool:
         return False
 
 
+def delete_s3_folder(job: Job) -> bool:
+    if job.job_type != JobType.sse:
+        return True
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    try:
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(bucket_name)
+        deleted_list = bucket.objects.filter(Prefix=f"{job.id}/").delete()
+        for deleted in deleted_list:
+            if deleted.get("Errors") and len(deleted.get("Errors")) > 0:
+                for error in deleted.get("Errors"):
+                    logger.error(
+                        f"Failed to delete the file from S3: {error.get("Message")}"
+                    )
+                return False
+        return True
+    except Exception as e:
+        logger.exception(f"Failed to delete the folder from S3: {str(e)}")
+        return False
+
+
 def set_job_failure(job: Job) -> None:
     job.status = JobStatus.failed
     job.ended_at = datetime.now()
@@ -534,6 +564,16 @@ def model_to_schema(
 
         return False
 
+    def is_object_field(fld: str) -> bool:
+        if fld == "transpiler_info":
+            return True
+        elif fld == "mitigation_info":
+            return True
+        elif fld == "simulator_info":
+            return True
+
+        return False
+
     def localize(dt: datetime | None) -> datetime | None:
         if dt is None:
             return None
@@ -554,9 +594,9 @@ def model_to_schema(
             job_type=JobType(model.job_type),
             job_info=job_info,
             status=JobStatus(model.status),
-            transpiler_info=model.transpiler_info,
-            mitigation_info=model.mitigation_info,
-            simulator_info=model.simulator_info,
+            transpiler_info=json.loads(model.transpiler_info),
+            mitigation_info=json.loads(model.mitigation_info),
+            simulator_info=json.loads(model.simulator_info),
             execution_time=model.execution_time,
             submitted_at=localize(model.submitted_at),
             ready_at=localize(model.ready_at),
@@ -578,6 +618,8 @@ def model_to_schema(
                     dict_schema[k] = job_info
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
+            elif is_object_field(k):
+                dict_schema[k] = json.loads(getattr(model, k))
             elif is_datetime_field(k):
                 dict_schema[k] = localize(getattr(model, k))
             else:

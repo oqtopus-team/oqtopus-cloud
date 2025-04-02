@@ -1,4 +1,4 @@
-name: Deploy user
+name: Deploy all
 on:
   push:
     branches:
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12.4
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -51,4 +51,116 @@ jobs:
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
         run: |
-          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> error.log
+
+
+      - name: On Success
+        if: ${{ success() }}
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data @- <<EOF
+          {
+            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
+            "text": "✅ Deploy successful (${{ matrix.deploy-target }})",
+            "attachments": [
+              {
+                "color": "#00dd00",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "[${TIMESTAMP}] Deployed successfully!"
+                    }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: On Failure
+        if: ${{ failure() }}
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE=$(cat error.log)
+          curl -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data @- <<EOF
+          {
+            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
+            "text": "❌ Deploy failed (${{ matrix.deploy-target }})",
+            "attachments": [
+              {
+                "color": "#dd0000",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "[${TIMESTAMP}] ${MESSAGE}"
+                    }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
