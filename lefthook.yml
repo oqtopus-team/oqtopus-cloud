@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    credential-scan:
+      run: |
+        aqua exec -- trufflehog git file://. --fail
+        exit $?

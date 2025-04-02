@@ -650,10 +650,14 @@ components:
           nullable: true
           example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
         stats:
-          type: string
+          type: object
+          properties: {}
+          additionalProperties: true
           nullable: true
         virtual_physical_mapping:
-          type: string
+          type: object
+          properties: {}
+          additionalProperties: true
           nullable: true
       required:
         - transpiled_program

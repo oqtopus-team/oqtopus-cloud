@@ -346,8 +346,8 @@ def test_update_job_info_transpile_result(test_db: Session):
     # Submitting
     transpile_result = TranspileResult(
         transpiled_program="transpiled_program",
-        stats="stats",
-        virtual_physical_mapping="vpm",
+        stats={"field": "value"},
+        virtual_physical_mapping={"field": "value"},
     )
     body = UpdateJobInfoRequest(
         overwrite_status=JobStatus.ready,

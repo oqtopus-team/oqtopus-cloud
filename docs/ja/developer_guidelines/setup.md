@@ -50,6 +50,18 @@ Docker version: Docker version 26.1.4, build 5650f9b
 
 ```
 
+## Gitフックファイルの生成
+
+このリポジトリでは、クレデンシャルをスキャンするためにGitフック `pre-commit` を使用します。
+
+スクリプトを生成するには、以下のコマンドを実行してください：
+
+```bash
+make setup-hooks
+```
+
+スクリプトは `.git/hooks/pre-commit`に生成されます。
+
 ## Python環境のセットアップ
 
 ### Pyenv(推奨)
