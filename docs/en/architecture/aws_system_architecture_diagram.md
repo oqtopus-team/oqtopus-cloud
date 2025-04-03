@@ -42,7 +42,7 @@
 
 | Type     | Resource        | From Port | To Port | Protocol | Description           |
 |----------|-----------------|-----------|---------|----------|-----------------------|
-| Outbound | Secret Manager  | 443       | 443     | tcp      | Secret Manager access |
+| Outbound | * | 443       | 443     | tcp      | Access to Secret Manager and Cognito |
 | Outbound | DB Proxy        | 3306      | 3306    | tcp      | DB access             |
 
 ## 6. Secret Manager Security Group

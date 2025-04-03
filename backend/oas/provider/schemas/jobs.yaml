@@ -111,10 +111,14 @@ jobs.TranspileResult:
         h q[0];
         cx q[0], q[1];
     stats:
-      type: string
+      type: object
+      properties: {}
+      additionalProperties: true
       nullable: true
     virtual_physical_mapping:
-      type: string
+      type: object
+      properties: {}
+      additionalProperties: true
       nullable: true
   required:
     - transpiled_program
