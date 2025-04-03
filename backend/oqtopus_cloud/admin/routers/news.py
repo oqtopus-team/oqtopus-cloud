@@ -14,6 +14,7 @@ from oqtopus_cloud.admin.schemas.news import (
     UpdateNewsRequest,
 )
 from oqtopus_cloud.admin.schemas.errors import (
+    BadRequestErrorResponse,
     ErrorResponse,
     InternalServerErrorResponse,
     Message,
@@ -107,6 +108,10 @@ def register_news(
         db.commit()
 
         return SuccessResponse(message="News registered successfully")
+
+    except ValueError as e:
+        logger.error(str(e))
+        return BadRequestErrorResponse(message=str(e))
 
     except Exception as e:
         logger.exception(f"error: {str(e)}")
