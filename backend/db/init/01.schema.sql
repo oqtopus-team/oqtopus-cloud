@@ -68,11 +68,11 @@ CREATE TABLE IF NOT EXISTS whitelist_users (
 drop table if exists main.news;
 CREATE TABLE IF NOT EXISTS news (
     id serial PRIMARY KEY,
-    title VARCHAR(255),
-    content TEXT,
-    start_time DATETIME,
-    end_time DATETIME,
-    publishable BOOLEAN,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    publishable BOOLEAN  NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   );
