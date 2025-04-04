@@ -1,3 +1,5 @@
+import pytest
+
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
@@ -105,7 +107,6 @@ def test_get_all_news_500():
     """_summary_
     GET /news tests 500 error
     """
-
     response = client.get("/news")
     assert response.status_code == 500
 
@@ -160,8 +161,93 @@ def test_get_device_500():
     response = client.get("/news/1")
     assert response.status_code == 500
 
+@pytest.fixture
+def news_body():
+    return {
+        "title": "Test title",
+        "content": "Test content",
+        "start_time": "2025-04-08 13:05:47+00:00",
+        "end_time": "2025-04-09 13:05:47+00:00",
+        "publishable": True
+    }
 
-def test_delete_news(test_db):
+def test_register_news(
+    test_db,
+    news_body
+):
+    """_summary_
+    POST /news tests
+    """
+
+    response = client.post(
+        "/news",
+        json=news_body,
+    )
+    assert response.status_code == 200
+    assert response.json() == {"message": "News registered successfully"}
+
+    news = test_db.query(News).filter(News.id == "1").first()
+
+    assert news.title == "Test title"
+    assert news.content == "Test content"
+    assert news.start_time == datetime(2025, 4, 8, 13, 5, 47)
+    assert news.end_time == datetime(2025, 4, 9, 13, 5, 47)
+    assert news.publishable == True
+
+
+def test_register_news_missing_parameters(
+    news_body,
+):
+    """_summary_
+    POST /news tests with missing mandatory parameter
+    """
+
+    for param in news_body.keys():
+        malformed_body = news_body.copy()
+        del malformed_body[param]
+
+        response = client.post(
+            "/news",
+            json=malformed_body,
+        )
+        assert response.status_code == 422
+
+
+def test_register_news_no_utc(
+    news_body,
+):
+    """_summary_
+    POST /news tests with invalid timezones for start_time and end_time
+    """
+
+    for param in ["start_time", "end_time"]:
+        malformed_body = news_body.copy()
+        malformed_body[param] = "2025-04-08 13:05:47+06:00"
+
+        response = client.post(
+            "/news",
+            json=malformed_body,
+        )
+        assert response.status_code == 400
+        assert response.json() == {"message": "Datetime is not in UTC."}
+
+
+def test_register_news_500(
+    news_body
+):
+    """_summary_
+    POST /news tests
+    """
+    response = client.post(
+        "/news",
+        json=news_body,
+    )
+    assert response.status_code == 500
+
+
+def test_delete_news(
+    test_db,
+):
     """_summary_
     DELETE /news tests
     """
@@ -173,16 +259,8 @@ def test_delete_news(test_db):
     response = client.delete("/news/1")
     assert response.status_code == 204
 
-    response = client.get("/news")
-
-    adapter = TypeAdapter(GetNewsListResponse)
-    actual = adapter.validate_python(response.json())
-    expect = GetNewsListResponse(
-        news=[]
-    )
-
-    assert response.status_code == 200
-    assert actual == expect
+    news = test_db.query(News).filter(News.id == 1).first()
+    assert news is None
 
 
 def test_delete_news_404(
@@ -191,7 +269,6 @@ def test_delete_news_404(
     """_summary_
     DELETE /news/{news_id} tests with news not found
     """
-
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
