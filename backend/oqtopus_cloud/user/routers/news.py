@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from oqtopus_cloud.user.schemas.news import GetNewsResponse
 from oqtopus_cloud.common.models.news import News
@@ -32,11 +33,13 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 )
 @tracer.capture_method
 def get_news_list(
+    offset: Optional[int] = 0,
+    limit: Optional[int] = 10,
     db: Session = Depends(get_db),
 ) -> GetNewsListResponse | ErrorResponse:
     try:
-        logger.info("invoked list_news")
-        news_list = db.scalars(select(News)).all()
+        logger.info("invoked get_news_list")
+        news_list = db.scalars(select(News).offset(offset).limit(limit)).all()
         return GetNewsListResponse(news=[model_to_schema(news) for news in news_list])
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
@@ -54,8 +57,8 @@ def get_news(
     db: Session = Depends(get_db),
 ) -> GetNewsResponse | ErrorResponse:
     try:
-        news = db.scalars(select(News).where(News.id == news_id)).first()
         logger.info("invoked get_news")
+        news = db.scalars(select(News).where(News.id == news_id)).first()
         if news:
             return model_to_schema(news)
         else:
