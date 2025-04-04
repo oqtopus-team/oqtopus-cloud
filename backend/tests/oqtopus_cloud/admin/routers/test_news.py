@@ -152,6 +152,7 @@ def test_get_news_404(
 
     response = client.get("/news/2")
     assert response.status_code == 404
+    assert response.json() == {"message": "news_id=2 is not found."}
 
 
 def test_get_device_500():
@@ -236,10 +237,121 @@ def test_register_news_500(
     news_body
 ):
     """_summary_
-    POST /news tests
+    POST /news tests 500 error
     """
     response = client.post(
         "/news",
+        json=news_body,
+    )
+    assert response.status_code == 500
+
+
+def test_update_news_full_update(
+    test_db,
+    news_body
+):
+    """_summary_
+    PATCH /news tests update all parameters
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = client.patch(
+        "/news/1",
+        json=news_body,
+    )
+    assert response.status_code == 200
+    assert response.json() == {"message": "News updated successfully"}
+
+    news = test_db.query(News).filter(News.id == "1").first()
+
+    assert news.title == "Test title"
+    assert news.content == "Test content"
+    assert news.start_time == datetime(2025, 4, 8, 13, 5, 47)
+    assert news.end_time == datetime(2025, 4, 9, 13, 5, 47)
+    assert news.publishable == True
+
+
+def test_update_news_partial_update(
+    test_db,
+):
+    """_summary_
+    PATCH /news tests update selected parameters
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = client.patch(
+        "/news/1",
+        json={
+            "title": "Test title",
+            "content": "Test content",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == {"message": "News updated successfully"}
+
+    news = test_db.query(News).filter(News.id == "1").first()
+
+    assert news.title == "Test title"
+    assert news.content == "Test content"
+    assert news.start_time == datetime(2024, 3, 4, 14, 0, 0)
+    assert news.end_time == datetime(2024, 3, 5, 14, 0, 0)
+    assert news.publishable == True
+
+
+def test_update_news_no_utc(
+    test_db,
+):
+    """_summary_
+    PATCH /news tests update with invalid timezones for start_time and end_time
+    """
+
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = client.patch(
+        "/news/1",
+        json={
+            "start_time": "2025-04-08 13:05:47+06:00"
+        },
+    )
+    assert response.status_code == 400
+    assert response.json() == {"message": "Datetime is not in UTC."}
+
+
+def test_update_news_404(
+    test_db,
+    news_body
+):
+    """_summary_
+    PATCH /news tests with news not found
+    """
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    response = client.patch(
+        "/news/2",
+        json=news_body,
+    )
+    assert response.status_code == 404
+    assert response.json() == {"message": "news_id=2 is not found."}
+
+
+def test_update_news_500(
+    news_body
+):
+    """_summary_
+    PATCH /news tests 500 error
+    """
+    response = client.patch(
+        "/news/1",
         json=news_body,
     )
     assert response.status_code == 500
@@ -275,6 +387,7 @@ def test_delete_news_404(
 
     response = client.delete("/news/2")
     assert response.status_code == 404
+    assert response.json() == {"message": "news_id=2 is not found."}
 
 
 def test_get_device_500():
