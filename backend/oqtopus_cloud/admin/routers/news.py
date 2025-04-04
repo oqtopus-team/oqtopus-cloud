@@ -143,11 +143,18 @@ def update_news_data(
             return NotFoundErrorResponse(message=message)
 
         update_fields = news_update.model_dump(exclude_none=True)
+
         for field, value in update_fields.items():
+            if field == "start_time" or field == "end_time":
+                value = ensure_timezone(value)
             setattr(query_result, field, value)
         db.commit()
 
         return SuccessResponse(message="News updated successfully")
+
+    except ValueError as e:
+        logger.error(str(e))
+        return BadRequestErrorResponse(message=str(e))
 
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
@@ -176,7 +183,7 @@ def delete_news(
             db.execute(select(News).where(News.id == news_id)).scalars().first()
         )
         if not query_result:
-            message = f"news_id={news_id} is not found"
+            message = f"news_id={news_id} is not found."
             logger.error(message)
             return NotFoundErrorResponse(message=message)
 
