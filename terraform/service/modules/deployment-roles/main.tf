@@ -44,7 +44,7 @@ data "http" "github_actions_openid_configuration" {
 
 # Lambda Deployment Role
 resource "aws_iam_role" "github_actions_role" {
-  name = "${var.product}-${var.org}-deploy-lambda"
+  name = "${var.product}-${var.org}-${var.env}-deploy-lambda"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
