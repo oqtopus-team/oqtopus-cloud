@@ -13,6 +13,8 @@ from oqtopus_cloud.provider.schemas.devices import (
     DeviceDataUpdateResponse,
     DeviceInfoUpdate,
     DeviceStatusUpdate,
+    UpdateDeviceRequest,
+    UpdateDeviceResponse,
 )
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
@@ -37,6 +39,47 @@ class DeviceType(Enum):
 
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+@router.patch(
+    "/devices/{device_id}",
+    response_model=UpdateDeviceResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def update_device(
+    device_id: str, request: UpdateDeviceRequest, db: Session = Depends(get_db)
+) -> UpdateDeviceResponse | ErrorResponse:
+    """
+    Update a part of properties of the specified device.
+
+    Args:
+        device_id (Device): The deviceId.
+        request (UpdateDeviceRequest): The request containing the changes to the device.
+        db (Session): The database session.
+
+    Returns:
+        UpdateDeviceResponse: The response containing the update message.
+    """
+    logger.info("invoked update_device")
+    try:
+        device = db.get(Device, device_id)
+        if device is None:
+            return NotFoundErrorResponse(f"device_id={device_id} is not found.")
+        if request.n_qubits is not None:
+            device.n_qubits = request.n_qubits
+
+        db.commit
+        return UpdateDeviceResponse()
+    except Exception as e:
+        logger.error(
+            f"An error occurred during updating device(device_id={device_id}):\n {e}"
+        )
+        return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
 @router.patch(
