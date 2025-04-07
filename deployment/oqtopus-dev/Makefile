@@ -2,6 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+
 .PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
@@ -106,7 +107,7 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
-deploy:
+deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
@@ -114,6 +115,17 @@ deploy:
 	--zip-file fileb://${BIN}/lambda.zip \
 	--profile $(PROFILE)
 	@echo "Deploy Completed"
+
+generate-tag: ## Tag version
+	@GITHUB_SHA=$$(git rev-parse HEAD) && \
+	AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text --profile $(PROFILE)) && \
+	AWS_REGION=$$(aws configure get region --profile $(PROFILE)) && \
+	echo "$(PROFILE)" && \
+	echo "🏷️ Tagging version: $${GITHUB_SHA}" && \
+	aws lambda tag-resource \
+	--resource arn:aws:lambda:$${AWS_REGION}:$${AWS_ACCOUNT_ID}:function:$${FUNCTION_NAME} \
+  --tags github-sha=$${GITHUB_SHA}
+	@echo "🏷️ Tagging Completed"
 
 
 deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
@@ -141,13 +153,20 @@ deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
 	BIN=./bin/user_signup
 
-deploy-via-actions: ## Deploy Lambda Package via Github Actions
+deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
 	--function-name ${FUNCTION_NAME} \
 	--zip-file fileb://${BIN}/lambda.zip
 	@echo "Deploy Completed"
+
+generate-tag-via-actions: ## Tag version via Github Actions
+	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
+	@aws lambda tag-resource \
+	--resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+  --tags github-sha=${GITHUB_SHA}
+	@echo "🏷️ Tagging Completed"
 
 
 create-user-admin: ## Create Admin User
