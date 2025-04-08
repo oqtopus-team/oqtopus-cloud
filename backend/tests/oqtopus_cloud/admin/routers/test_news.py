@@ -155,7 +155,7 @@ def test_get_news_404(
     assert response.json() == {"message": "news_id=2 is not found."}
 
 
-def test_get_device_500():
+def test_get_news_500():
     """_summary_
     GET /news/{news_id} tests 500 error
     """
@@ -390,7 +390,7 @@ def test_delete_news_404(
     assert response.json() == {"message": "news_id=2 is not found."}
 
 
-def test_get_device_500():
+def test_delete_news_500():
     """_summary_
     DELETE /news/{news_id} tests 500 error
     """
