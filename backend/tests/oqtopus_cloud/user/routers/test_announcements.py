@@ -1,6 +1,6 @@
 from datetime import datetime
-from oqtopus_cloud.common.models.news import News
-from oqtopus_cloud.user.schemas.news import GetNewsListResponse, GetNewsResponse
+from oqtopus_cloud.common.models.announcements import Announcement
+from oqtopus_cloud.user.schemas.announcements import GetAnnouncementsListResponse, GetAnnouncementResponse
 from oqtopus_cloud.user.lambda_function import app
 
 from fastapi.testclient import TestClient
@@ -11,7 +11,7 @@ client = TestClient(app)
 
 utc = ZoneInfo("UTC")
 
-def _get_model(id=1, title="news title", content="news content", publishable=False):
+def _get_model(id=1, title="announcement title", content="announcement content", publishable=False):
     mode_dict = {
         "id": id,
         "title": title,
@@ -22,41 +22,41 @@ def _get_model(id=1, title="news title", content="news content", publishable=Fal
         "created_at": datetime(2023, 1, 1, 10, 30, 40, tzinfo=utc),
         "updated_at": datetime(2023, 1, 4, 11, 11, 20, tzinfo=utc),
     }
-    return News(**mode_dict)
+    return Announcement(**mode_dict)
 
 
-def test_get_news_list(test_db):
+def test_get_announcements_list(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, title="title101", content="content101", publishable=True))
     test_db.add(_get_model(id=512, title="title512", content="content512", publishable=True))
     test_db.add(_get_model(id=4124, title="title4124", content="content4124", publishable=False))
     test_db.commit()
 
-    response = client.get("/news")
-    adapter = TypeAdapter(GetNewsListResponse)
+    response = client.get("/announcements")
+    adapter = TypeAdapter(GetAnnouncementsListResponse)
     actual = adapter.validate_python(response.json())
 
-    expected = GetNewsListResponse(news=[
-        GetNewsResponse(
+    expected = GetAnnouncementsListResponse(announcements=[
+        GetAnnouncementResponse(
             id=101,
-            title="title101", 
-            content="content101", 
+            title="title101",
+            content="content101",
             publishable=True,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         ),
-        GetNewsResponse(
+        GetAnnouncementResponse(
             id=512,
-            title="title512", 
-            content="content512", 
+            title="title512",
+            content="content512",
             publishable=True,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         ),
-        GetNewsResponse(
+        GetAnnouncementResponse(
             id=4124,
-            title="title4124", 
-            content="content4124", 
+            title="title4124",
+            content="content4124",
             publishable=False,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -66,22 +66,22 @@ def test_get_news_list(test_db):
     assert response.status_code == 200
     assert actual == expected
 
-def test_get_news_list_with_offset(test_db):
+def test_get_announcements_list_with_offset(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, title="title101", content="content101", publishable=True))
     test_db.add(_get_model(id=512, title="title512", content="content512", publishable=True))
     test_db.add(_get_model(id=4124, title="title4124", content="content4124", publishable=False))
     test_db.commit()
 
-    response = client.get("/news?offset=2")
-    adapter = TypeAdapter(GetNewsListResponse)
+    response = client.get("/announcements?offset=2")
+    adapter = TypeAdapter(GetAnnouncementsListResponse)
     actual = adapter.validate_python(response.json())
 
-    expected = GetNewsListResponse(news=[
-        GetNewsResponse(
+    expected = GetAnnouncementsListResponse(announcements=[
+        GetAnnouncementResponse(
             id=4124,
-            title="title4124", 
-            content="content4124", 
+            title="title4124",
+            content="content4124",
             publishable=False,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -92,30 +92,30 @@ def test_get_news_list_with_offset(test_db):
     assert actual == expected
 
 
-def test_get_news_list_with_limit(test_db):
+def test_get_announcements_list_with_limit(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, title="title101", content="content101", publishable=True))
     test_db.add(_get_model(id=512, title="title512", content="content512", publishable=True))
     test_db.add(_get_model(id=4124, title="title4124", content="content4124", publishable=False))
     test_db.commit()
 
-    response = client.get("/news?limit=2")
-    adapter = TypeAdapter(GetNewsListResponse)
+    response = client.get("/announcements?limit=2")
+    adapter = TypeAdapter(GetAnnouncementsListResponse)
     actual = adapter.validate_python(response.json())
 
-    expected = GetNewsListResponse(news=[
-        GetNewsResponse(
+    expected = GetAnnouncementsListResponse(announcements=[
+        GetAnnouncementResponse(
             id=101,
-            title="title101", 
-            content="content101", 
+            title="title101",
+            content="content101",
             publishable=True,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         ),
-        GetNewsResponse(
+        GetAnnouncementResponse(
             id=512,
-            title="title512", 
-            content="content512", 
+            title="title512",
+            content="content512",
             publishable=True,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -126,30 +126,30 @@ def test_get_news_list_with_limit(test_db):
     assert actual == expected
 
 
-def test_get_news_list_with_limit_and_offset(test_db):
+def test_get_announcements_list_with_limit_and_offset(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, title="title101", content="content101", publishable=True))
     test_db.add(_get_model(id=512, title="title512", content="content512", publishable=True))
     test_db.add(_get_model(id=4124, title="title4124", content="content4124", publishable=False))
     test_db.commit()
 
-    response = client.get("/news?limit=2&offset=1")
-    adapter = TypeAdapter(GetNewsListResponse)
+    response = client.get("/announcements?limit=2&offset=1")
+    adapter = TypeAdapter(GetAnnouncementsListResponse)
     actual = adapter.validate_python(response.json())
 
-    expected = GetNewsListResponse(news=[
-        GetNewsResponse(
+    expected = GetAnnouncementsListResponse(announcements=[
+        GetAnnouncementResponse(
             id=512,
-            title="title512", 
-            content="content512", 
+            title="title512",
+            content="content512",
             publishable=True,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         ),
-        GetNewsResponse(
+        GetAnnouncementResponse(
             id=4124,
-            title="title4124", 
-            content="content4124", 
+            title="title4124",
+            content="content4124",
             publishable=False,
             start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
             end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -160,24 +160,24 @@ def test_get_news_list_with_limit_and_offset(test_db):
     assert actual == expected
 
 
-def test_get_news_list_500():
-    response = client.get("/news")
+def test_get_announcements_list_500():
+    response = client.get("/announcements")
     assert response.status_code == 500
 
 
-def test_get_news(test_db):
+def test_get_announcement(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, publishable=True))
     test_db.commit()
 
-    response = client.get("/news/101")
-    adapter = TypeAdapter(GetNewsResponse)
+    response = client.get("/announcements/101")
+    adapter = TypeAdapter(GetAnnouncementResponse)
     actual = adapter.validate_python(response.json())
 
-    expected = GetNewsResponse(
+    expected = GetAnnouncementResponse(
         id=101,
-        title="news title",
-        content="news content",
+        title="announcement title",
+        content="announcement content",
         start_time=datetime(2023, 1, 2, 12, 34, 56, tzinfo=utc),
         end_time=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         publishable= True
@@ -187,16 +187,16 @@ def test_get_news(test_db):
     assert actual == expected
 
 
-def test_get_news_500():
-    response = client.get("/news/101")
+def test_get_announcement_500():
+    response = client.get("/announcements/101")
     assert response.status_code == 500
-    
 
-def test_get_news_404(test_db):
+
+def test_get_announcement_404(test_db):
     test_db.flush()
     test_db.add(_get_model(id=101, publishable=True))
     test_db.commit()
 
-    response = client.get("/news/202")
+    response = client.get("/announcements/202")
 
     assert response.status_code == 404
