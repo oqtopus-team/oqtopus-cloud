@@ -9,7 +9,7 @@ from typing import Annotated
 from pydantic import AwareDatetime, BaseModel, Field
 
 
-class GetNewsResponse(BaseModel):
+class GetAnnouncementResponse(BaseModel):
     id: Annotated[int, Field(examples=[0])]
     title: Annotated[str, Field(examples=["Example Title"])]
     content: Annotated[str, Field(examples=["Example Content"])]
@@ -18,13 +18,13 @@ class GetNewsResponse(BaseModel):
     publishable: Annotated[bool, Field(examples=[True])]
 
 
-class GetNewsListResponse(BaseModel):
-    news: list[GetNewsResponse] | None = None
+class GetAnnouncementsListResponse(BaseModel):
+    announcements: list[GetAnnouncementResponse] | None = None
 
 
-class RegisterNewsRequest(BaseModel):
+class RegisterAnnouncementRequest(BaseModel):
     """
-    register news to backend
+    register announcement to backend
     """
 
     title: str
@@ -34,9 +34,9 @@ class RegisterNewsRequest(BaseModel):
     publishable: bool
 
 
-class UpdateNewsRequest(BaseModel):
+class UpdateAnnouncementRequest(BaseModel):
     """
-    register news to backend
+    update announcement
     """
 
     title: str | None = None

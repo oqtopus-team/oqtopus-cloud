@@ -23,7 +23,7 @@ from oqtopus_cloud.user.routers import (
 )
 from oqtopus_cloud.user.routers import (
     jobs as job_router,
-    news as news_router,
+    announcements as announcements_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -58,8 +58,8 @@ app.include_router(
     tags=["api-token"],
 )
 app.include_router(
-    news_router.router,
-    tags=["news"],
+    announcements_router.router,
+    tags=["announcements"],
 )
 
 handler: Mangum = Mangum(

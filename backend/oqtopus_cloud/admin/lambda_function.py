@@ -25,7 +25,7 @@ from oqtopus_cloud.admin.routers import (
     whitelist_users as whitelist_router,
 )
 from oqtopus_cloud.admin.routers import (
-    news as news_router,
+    announcements as announcements_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -63,8 +63,8 @@ app.include_router(
 )
 
 app.include_router(
-    news_router.router,
-    tags=["news"],
+    announcements_router.router,
+    tags=["announcements"],
 )
 
 handler: Mangum = Mangum(

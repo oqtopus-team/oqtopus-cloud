@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.admin.conf import logger, tracer
-from oqtopus_cloud.admin.schemas.news import (
-    GetNewsListResponse,
-    GetNewsResponse,
-    RegisterNewsRequest,
-    UpdateNewsRequest,
+from oqtopus_cloud.admin.schemas.announcements import (
+    GetAnnouncementsListResponse,
+    GetAnnouncementResponse,
+    RegisterAnnouncementRequest,
+    UpdateAnnouncementRequest,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
@@ -21,7 +21,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.success import SuccessResponse
-from oqtopus_cloud.common.models.news import News
+from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -33,21 +33,26 @@ utc = ZoneInfo("UTC")
 
 
 @router.get(
-    "/news",
-    response_model=GetNewsListResponse,
+    "/announcements",
+    response_model=GetAnnouncementsListResponse,
     responses={
         500: {"model": Message},
     },
 )
 @tracer.capture_method
-def get_news_list(
+def get_announcements_list(
     offset: Optional[int] = 0, limit: Optional[int] = 10, db: Session = Depends(get_db)
-) -> GetNewsListResponse | ErrorResponse:
+) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
-        logger.info("invoked get_news")
-        query_result = db.scalars(select(News).offset(offset).limit(limit)).all()
-        news_list = [model_to_schema(news) for news in query_result]
-        return GetNewsListResponse(news=news_list)
+        logger.info("invoked get_announcements")
+
+        query_result = db.scalars(
+            select(Announcement).offset(offset).limit(limit)
+        ).all()
+        announcements_list = [
+            model_to_schema(announcement) for announcement in query_result
+        ]
+        return GetAnnouncementsListResponse(announcements=announcements_list)
 
     except Exception as e:
         logger.exception(f"error: {str(e)}")
@@ -55,27 +60,29 @@ def get_news_list(
 
 
 @router.get(
-    "/news/{news_id}",
-    response_model=GetNewsResponse,
+    "/announcements/{announcement_id}",
+    response_model=GetAnnouncementResponse,
     responses={
         404: {"model": Message},
         500: {"model": Message},
     },
 )
 @tracer.capture_method
-def get_news(
-    news_id: str,
+def get_announcement(
+    announcement_id: str,
     db: Session = Depends(get_db),
-) -> GetNewsResponse | ErrorResponse:
+) -> GetAnnouncementResponse | ErrorResponse:
     try:
-        logger.info("invoked get_news")
+        logger.info("invoked get_announcement")
 
-        query_result = db.scalars(select(News).where(News.id == news_id)).first()
+        query_result = db.scalars(
+            select(Announcement).where(Announcement.id == announcement_id)
+        ).first()
         if query_result:
-            news = model_to_schema(query_result)
-            return news
+            announcement = model_to_schema(query_result)
+            return announcement
         else:
-            message = f"news_id={news_id} is not found."
+            message = f"announcement_id={announcement_id} is not found."
             logger.info(message)
             return NotFoundErrorResponse(message=message)
 
@@ -85,29 +92,29 @@ def get_news(
 
 
 @router.post(
-    "/news",
+    "/announcements",
     response_model=SuccessResponse,
     responses={400: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
-def register_news(
-    news_def: RegisterNewsRequest,
+def register_announcements(
+    announcement_def: RegisterAnnouncementRequest,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        logger.info("invoked register_news")
+        logger.info("invoked register_announcement")
 
-        news = News(
-            title=news_def.title,
-            content=news_def.content,
-            start_time=ensure_timezone(news_def.start_time),
-            end_time=ensure_timezone(news_def.end_time),
-            publishable=news_def.publishable,
+        announcement = Announcement(
+            title=announcement_def.title,
+            content=announcement_def.content,
+            start_time=ensure_timezone(announcement_def.start_time),
+            end_time=ensure_timezone(announcement_def.end_time),
+            publishable=announcement_def.publishable,
         )
-        db.add(news)
+        db.add(announcement)
         db.commit()
 
-        return SuccessResponse(message="News registered successfully")
+        return SuccessResponse(message="Announcement registered successfully")
 
     except ValueError as e:
         logger.error(str(e))
@@ -119,7 +126,7 @@ def register_news(
 
 
 @router.patch(
-    "/news/{news_id}",
+    "/announcements/{announcement_id}",
     response_model=SuccessResponse,
     responses={
         404: {"model": Message},
@@ -127,22 +134,22 @@ def register_news(
     },
 )
 @tracer.capture_method
-def update_news_data(
-    news_id: str,
-    news_update: UpdateNewsRequest,
+def update_announcements_data(
+    announcement_id: str,
+    announcement_update: UpdateAnnouncementRequest,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        logger.info("invoked update news data")
+        logger.info("invoked update announcement data")
 
-        stmt = select(News).where(News.id == news_id)
+        stmt = select(Announcement).where(Announcement.id == announcement_id)
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
-            message = f"news_id={news_id} is not found."
+            message = f"announcement_id={announcement_id} is not found."
             logger.error(message)
             return NotFoundErrorResponse(message=message)
 
-        update_fields = news_update.model_dump(exclude_none=True)
+        update_fields = announcement_update.model_dump(exclude_none=True)
 
         for field, value in update_fields.items():
             if field == "start_time" or field == "end_time":
@@ -150,7 +157,7 @@ def update_news_data(
             setattr(query_result, field, value)
         db.commit()
 
-        return SuccessResponse(message="News updated successfully")
+        return SuccessResponse(message="Announcement updated successfully")
 
     except ValueError as e:
         logger.error(str(e))
@@ -163,7 +170,7 @@ def update_news_data(
 
 
 @router.delete(
-    "/news/{news_id}",
+    "/announcements/{announcement_id}",
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
@@ -172,25 +179,27 @@ def update_news_data(
     },
 )
 @tracer.capture_method
-def delete_news(
-    news_id: str,
+def delete_announcement(
+    announcement_id: str,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        logger.info("invoked delete news")
+        logger.info("invoked delete announcement")
 
         query_result = (
-            db.execute(select(News).where(News.id == news_id)).scalars().first()
+            db.execute(select(Announcement).where(Announcement.id == announcement_id))
+            .scalars()
+            .first()
         )
         if not query_result:
-            message = f"news_id={news_id} is not found."
+            message = f"announcement_id={announcement_id} is not found."
             logger.error(message)
             return NotFoundErrorResponse(message=message)
 
         db.delete(query_result)
         db.commit()
 
-        return SuccessResponse(message="News deleted successfully")
+        return SuccessResponse(message="Announcement deleted successfully")
 
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
@@ -198,7 +207,7 @@ def delete_news(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-# TODO: make it common function (news and devices)
+# TODO: make it common function (announcement and devices)
 def ensure_timezone(dt):
     if dt is None:
         return None
@@ -209,7 +218,7 @@ def ensure_timezone(dt):
     return dt
 
 
-def model_to_schema(model: News) -> GetNewsResponse:
+def model_to_schema(model: Announcement) -> GetAnnouncementResponse:
     dict = {
         "id": model.id,
         "title": model.title,
@@ -218,4 +227,4 @@ def model_to_schema(model: News) -> GetNewsResponse:
         "end_time": ensure_timezone(model.end_time),
         "publishable": model.publishable,
     }
-    return GetNewsResponse.model_validate(dict)
+    return GetAnnouncementResponse.model_validate(dict)

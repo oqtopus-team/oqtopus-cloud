@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS whitelist_users (
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   );
 
-drop table if exists main.news;
-CREATE TABLE IF NOT EXISTS news (
+drop table if exists main.announcements;
+CREATE TABLE IF NOT EXISTS announcements (
     id serial PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,

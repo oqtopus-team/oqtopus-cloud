@@ -8,24 +8,24 @@ from oqtopus_cloud.common.models.base import (
 )
 
 
-class News(Base):
+class Announcement(Base):
     """
-    Represents a device in the system.
+    Represents an announcement in the system.
 
     See https://github.com/sqlalchemy/sqlalchemy/issues/5613 for the reason why we need to use nullable=True for some columns.
 
     Attributes:
-        id (str): The unique identifier of news.
-        title (str): The title of the news.
-        content (str): The content of of the news.
-        start_time (datetime): News publishing start time.
-        end_time (datetime): News publishing end time.
-        publishable (bool): Flag indicating if news can be published.
-        created_at (datetime): The timestamp when the news was created.
-        updated_at (datetime): The timestamp when the news was last updated.
+        id (str): The unique identifier of announcement.
+        title (str): The title of the announcement.
+        content (str): The content of of the announcement.
+        start_time (datetime): Announcement's publishing start time.
+        end_time (datetime): Announcement's publishing end time.
+        publishable (bool): Flag indicating if announcement can be published.
+        created_at (datetime): The timestamp when the announcement was created.
+        updated_at (datetime): The timestamp when the announcement was last updated.
     """
 
-    __tablename__ = "news"
+    __tablename__ = "announcements"
 
     id: Mapped[int] = mapped_column(
         Integer,

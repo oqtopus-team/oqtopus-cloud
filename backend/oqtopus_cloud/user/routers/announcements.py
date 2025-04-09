@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from oqtopus_cloud.user.schemas.news import GetNewsResponse
-from oqtopus_cloud.common.models.news import News
-from oqtopus_cloud.user.schemas.news import GetNewsListResponse
+from oqtopus_cloud.user.schemas.announcements import GetAnnouncementResponse
+from oqtopus_cloud.common.models.announcements import Announcement
+from oqtopus_cloud.user.schemas.announcements import GetAnnouncementsListResponse
 import pytz
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -29,40 +29,50 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
 @router.get(
-    "/news", response_model=GetNewsListResponse, responses={500: {"model": Message}}
+    "/announcements",
+    response_model=GetAnnouncementsListResponse,
+    responses={500: {"model": Message}},
 )
 @tracer.capture_method
-def get_news_list(
+def get_announcements_list(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
     db: Session = Depends(get_db),
-) -> GetNewsListResponse | ErrorResponse:
+) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
-        logger.info("invoked get_news_list")
-        news_list = db.scalars(select(News).offset(offset).limit(limit)).all()
-        return GetNewsListResponse(news=[model_to_schema(news) for news in news_list])
+        logger.info("invoked get_announcements_list")
+        announcements_list = db.scalars(
+            select(Announcement).offset(offset).limit(limit)
+        ).all()
+        return GetAnnouncementsListResponse(
+            announcements=[
+                model_to_schema(announcement) for announcement in announcements_list
+            ]
+        )
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
         return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
-    "/news/{news_id}",
-    response_model=GetNewsResponse,
+    "/announcements/{announcement_id}",
+    response_model=GetAnnouncementResponse,
     responses={404: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
-def get_news(
-    news_id: int,
+def get_announcement(
+    announcement_id: int,
     db: Session = Depends(get_db),
-) -> GetNewsResponse | ErrorResponse:
+) -> GetAnnouncementResponse | ErrorResponse:
     try:
-        logger.info("invoked get_news")
-        news = db.scalars(select(News).where(News.id == news_id)).first()
-        if news:
-            return model_to_schema(news)
+        logger.info("invoked get_announcement")
+        announcement = db.scalars(
+            select(Announcement).where(Announcement.id == announcement_id)
+        ).first()
+        if announcement:
+            return model_to_schema(announcement)
         else:
-            message = f"news_id={news_id} is not found."
+            message = f"announcement_id={announcement_id} is not found."
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
@@ -76,7 +86,7 @@ def localize(dt: datetime | None) -> datetime | None:
     return pytz.utc.localize(dt)
 
 
-def model_to_schema(model: News) -> GetNewsResponse:
+def model_to_schema(model: Announcement) -> GetAnnouncementResponse:
     dict = {
         "id": getattr(model, "id", None),
         "title": getattr(model, "title", None),
@@ -85,4 +95,4 @@ def model_to_schema(model: News) -> GetNewsResponse:
         "end_time": localize(getattr(model, "end_time", None)),
         "publishable": getattr(model, "publishable", None),
     }
-    return GetNewsResponse.model_validate(dict)
+    return GetAnnouncementResponse.model_validate(dict)
