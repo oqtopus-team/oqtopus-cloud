@@ -1,5 +1,5 @@
-news.RegisterNewsRequest:
-  description: "register news to backend"
+announcements.RegisterAnnouncementRequest:
+  description: "register announcement to backend"
   type: object
   properties:
     title:
@@ -21,8 +21,8 @@ news.RegisterNewsRequest:
     - end_time
     - publishable
 
-news.UpdateNewsRequest:
-  description: "register news to backend"
+announcements.UpdateAnnouncementRequest:
+  description: "update announcement"
   type: object
   properties:
     title:
@@ -38,7 +38,7 @@ news.UpdateNewsRequest:
     publishable:
       type: boolean
 
-news.GetNewsResponse:
+announcements.GetAnnouncementResponse:
   type: object
   properties:
     id:
@@ -74,12 +74,12 @@ news.GetNewsResponse:
     title: Example Title
     content: Example Content
     start_time: "2022-10-19T11:45:34+09:00"
-    end_time: "2022-12-19T11:45:34+09:00"    
+    end_time: "2022-12-19T11:45:34+09:00"
     publishable: true
 
-news.GetNewsListResponse:
+announcements.GetAnnouncementsListResponse:
   properties:
-    news:
+    announcements:
       type: array
       items:
-        $ref: "#/news.GetNewsResponse"
+        $ref: "#/announcements.GetAnnouncementResponse"

@@ -1,4 +1,4 @@
-news.GetNewsResponse:
+announcements.GetAnnouncementResponse:
   type: object
   properties:
     id:
@@ -34,12 +34,12 @@ news.GetNewsResponse:
     title: Example Title
     content: Example Content
     start_time: "2022-10-19T11:45:34+09:00"
-    end_time: "2022-12-19T11:45:34+09:00"    
+    end_time: "2022-12-19T11:45:34+09:00"
     publishable: true
 
-news.GetNewsListResponse:
+announcements.GetAnnouncementsListResponse:
   properties:
-    news:
+    announcements:
       type: array
       items:
-        $ref: "#/news.GetNewsResponse"
+        $ref: "#/announcements.GetAnnouncementResponse"

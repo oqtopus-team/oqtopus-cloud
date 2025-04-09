@@ -625,13 +625,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /news:
+  /announcements:
     get:
       tags:
-        - News
-      summary: Get news list from backend
-      description: Get news list from backend
-      operationId: get_news_list
+        - Announcements
+      summary: Get announcements list from backend
+      description: Get announcements list from backend
+      operationId: get_announcements_list
       security:
         - BearerAuth: []
       parameters:
@@ -649,11 +649,11 @@ paths:
             type: string
       responses:
         '200':
-          description: Return news
+          description: Return announcements
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/news.GetNewsListResponse'
+                $ref: '#/components/schemas/announcements.GetAnnouncementsListResponse'
         '401':
           description: Unauthorized
         '403':
@@ -664,30 +664,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /news/{news_id}:
+  /announcements/{announcement_id}:
     get:
       tags:
-        - News
-      summary: Get selected news
-      description: Get selected news
-      operationId: get_news
+        - Announcements
+      summary: Get selected announcement
+      description: Get selected announcement
+      operationId: get_announcement
       security:
         - BearerAuth: []
       parameters:
         - in: path
-          name: news_id
-          description: news ID
+          name: announcement_id
+          description: announcement ID
           required: true
           schema:
             type: integer
             example: 0
       responses:
         '200':
-          description: Return selected news
+          description: Return selected announcement
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/news.GetNewsResponse'
+                $ref: '#/components/schemas/announcements.GetAnnouncementResponse'
         '400':
           description: Bad Request
           content:
@@ -707,7 +707,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
-                message: News not found
+                message: Announcement not found
         '500':
           description: Internal Server Error
           content:
@@ -1369,7 +1369,7 @@ components:
           type: string
       required:
         - message
-    news.GetNewsResponse:
+    announcements.GetAnnouncementResponse:
       type: object
       properties:
         id:
@@ -1406,9 +1406,9 @@ components:
         start_time: '2022-10-19T11:45:34+09:00'
         end_time: '2022-12-19T11:45:34+09:00'
         publishable: true
-    news.GetNewsListResponse:
+    announcements.GetAnnouncementsListResponse:
       properties:
-        news:
+        announcements:
           type: array
           items:
-            $ref: '#/components/schemas/news.GetNewsResponse'
+            $ref: '#/components/schemas/announcements.GetAnnouncementResponse'

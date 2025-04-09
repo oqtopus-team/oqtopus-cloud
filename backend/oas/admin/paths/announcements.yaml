@@ -1,10 +1,10 @@
-news:
+announcements:
   get:
     tags:
-      - News
-    summary: "Get news list from backend"
-    description: "Get news list from backend"
-    operationId: get_news_list
+      - Announcements
+    summary: "Get announcements list from backend"
+    description: "Get announcements list from backend"
+    operationId: get_announcements_list
     security:
       - BearerAuth: []
     parameters:
@@ -20,11 +20,11 @@ news:
         schema: {type: string}
     responses:
       "200":
-        description: "Return news"
+        description: "Return announcements"
         content:
           application/json:
             schema:
-              $ref: "../schemas/news.yaml#/news.GetNewsListResponse"
+              $ref: "../schemas/announcements.yaml#/announcements.GetAnnouncementsListResponse"
       "401":
         description: Unauthorized
       "403":
@@ -37,20 +37,20 @@ news:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
   post:
     tags:
-      - News
-    summary: "Register news to backend"
-    description: "Register news to backend"
-    operationId: register_news
+      - Announcements
+    summary: "Register announcement to backend"
+    description: "Register announcement to backend"
+    operationId: announcement
     security:
       - BearerAuth: []
     requestBody:
       content:
         application/json:
           schema:
-            $ref: "../schemas/news.yaml#/news.RegisterNewsRequest"
+            $ref: "../schemas/announcements.yaml#/announcements.RegisterAnnouncementRequest"
     responses:
       "200":
-        description: "Success register news"
+        description: "Success register announcement"
         content:
           application/json:
             schema:
@@ -71,30 +71,30 @@ news:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-news.news_id:
+announcements.announcement_id:
   get:
     tags:
-    - News
-    summary: "Get selected news"
-    description: "Get selected news"
-    operationId: get_news
+    - Announcements
+    summary: "Get selected announcement"
+    description: "Get selected announcement"
+    operationId: get_announcement
     security:
       - BearerAuth: []
     parameters:
       - in: path
-        name: news_id
-        description: "news ID"
+        name: announcement_id
+        description: "announcement ID"
         required: true
         schema:
           type: integer
           example: 0
     responses:
       "200":
-        description: "Return selected news"
+        description: "Return selected announcement"
         content:
           application/json:
             schema:
-              $ref: "../schemas/news.yaml#/news.GetNewsResponse"
+              $ref: "../schemas/announcements.yaml#/announcements.GetAnnouncementResponse"
       "400":
         description: Bad Request
         content:
@@ -114,7 +114,7 @@ news.news_id:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: News not found
+              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
@@ -125,35 +125,35 @@ news.news_id:
               message: Internal server error
   patch:
     tags:
-    - News
-    summary: "Update data of selected news"
-    description: "Update the properties of selected news."
-    operationId: update_news
+    - Announcements
+    summary: "Update data of selected announcement"
+    description: "Update the properties of selected announcement."
+    operationId: update_announcement
     security:
       - BearerAuth: []
     parameters:
       - in: path
-        name: news_id
-        description: "news ID"
+        name: announcement_id
+        description: "announcement ID"
         required: true
         schema:
           type: integer
           example: 0
     requestBody:
-      description: "New news data"
+      description: "New announcement data"
       content:
         application/json:
           schema:
-            $ref: "../schemas/news.yaml#/news.UpdateNewsRequest"
+            $ref: "../schemas/announcements.yaml#/announcements.UpdateAnnouncementRequest"
     responses:
       "200":
-        description: News data updated
+        description: Announcement data updated
         content:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
             example:
-              message: News data updated
+              message: Announcement data updated
       "400":
         description: Bad Request
         content:
@@ -173,7 +173,7 @@ news.news_id:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: News not found
+              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
@@ -184,29 +184,29 @@ news.news_id:
               message: Internal server error
   delete:
     tags:
-      - News
-    summary: "Delete news"
-    description: "Delete news"
-    operationId: delete_news
+      - Announcements
+    summary: "Delete announcement"
+    description: "Delete announcement"
+    operationId: delete_announcement
     security:
       - BearerAuth: []
     parameters:
       - in: path
-        name: news_id
-        description: "News ID"
+        name: announcement_id
+        description: "announcement ID"
         required: true
         schema:
           type: integer
           example: 0
     responses:
       "204":
-        description: News deleted
+        description: Announcement deleted
         content:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
             example:
-              message: News deleted
+              message: Announcement deleted
       "400":
         description: Bad Request
         content:
@@ -226,7 +226,7 @@ news.news_id:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              message: News not found
+              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
