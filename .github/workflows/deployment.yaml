@@ -51,6 +51,7 @@ jobs:
         working-directory: ./deployment/oqtopus-dev
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: $(aws configure get region)
         run: |
           sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
@@ -118,7 +119,6 @@ jobs:
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE=$(cat error.log | jq -Rs .)
-          MESSAGE=$(echo $MESSAGE | jq -Rs .)
 
           curl -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
