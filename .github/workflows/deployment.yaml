@@ -51,7 +51,7 @@ jobs:
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
         run: |
-          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> error.log
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
 
       - name: On Success
@@ -116,7 +116,7 @@ jobs:
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          MESSAGE=$(cat ./deployment/oqtopus-dev/error.log)
+          MESSAGE=$(cat error.log)
           echo ${MESSAGE}
 
           curl -X POST https://slack.com/api/chat.postMessage \
