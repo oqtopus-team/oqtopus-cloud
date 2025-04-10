@@ -36,16 +36,19 @@ sequenceDiagram
     participant L as Lambda
 
     U->>AG: Job-related request
-    AG->>LA: Transfer authentication information
+    AG->>LA: Forward authentication information
     alt Request from Oqtopus-frontend
       LA->>C: Verify user's authentication token
+      LA->>DB: Check the user's account status
       C-->>LA: Success response
     else Request from QURI Parts Oqtopus
       LA->>DB: Verify the user's API token
-      DB-->>LA: Record found
+      LA->>C: Check if the user is registered in Cognito
+      LA->>DB: Check the user's account status
+      DB-->>LA: Record exists
     end
     LA->>AG: Success response
     AG->>L: Transfer request
-    L->>L: Process the request
+    L->>L: Handle the request
     L-->>U: Response to the request
 ```
