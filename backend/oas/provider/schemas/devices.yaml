@@ -1,3 +1,22 @@
+devices.UpdateDeviceRequest:
+  type: object
+  properties:
+    n_qubits:
+      type: integer
+      nullable: true
+
+devices.UpdateDeviceResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      nullable: false
+      default: Device is successfully updated.
+      example: Device is successfully updated.
+  required:
+    - message
+
+
 devices.DeviceDataUpdateResponse:
   type: object
   properties:
