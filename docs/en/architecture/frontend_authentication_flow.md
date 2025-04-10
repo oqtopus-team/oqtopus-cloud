@@ -39,16 +39,19 @@ sequenceDiagram
     AG->>LA: Forward authentication information
     alt Request from Oqtopus-frontend
       LA->>C: Verify user's authentication token
-      LA->>DB: Check the user's account status
       C-->>LA: Success response
+      LA->>DB: Verify user's account status
+      DB-->>LA: Status not "suspended"
     else Request from QURI Parts Oqtopus
-      LA->>DB: Verify the user's API token
+      LA->>DB: Verify user's API token
+      DB-->>LA: Token is valid
       LA->>C: Check if the user is registered in Cognito
+      C-->>LA: Success response
       LA->>DB: Check the user's account status
-      DB-->>LA: Record exists
+      DB-->>LA: Status not "suspended"
     end
     LA->>AG: Success response
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>L: Handle the request
     L-->>U: Response to the request
 ```
