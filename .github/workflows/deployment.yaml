@@ -118,7 +118,6 @@ jobs:
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE=$(cat error.log)
-
           curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
