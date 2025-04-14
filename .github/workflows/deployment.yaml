@@ -117,7 +117,7 @@ jobs:
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          MESSAGE=$(cat error.log | jq -Rs .)
+          MESSAGE=$(cat error.log)
 
           curl -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
