@@ -73,7 +73,7 @@ def update_device(
         if request.n_qubits is not None:
             device.n_qubits = request.n_qubits
 
-        db.commit
+        db.commit()
         return UpdateDeviceResponse()
     except Exception as e:
         logger.error(
