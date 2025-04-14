@@ -50,8 +50,7 @@ jobs:
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
         env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_REGION: $(aws configure get region)
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
