@@ -16,14 +16,14 @@ sequenceDiagram
     participant DB as RDS
 
     U->>AG: Signup request
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>DB: Check the Email listed in whitelist
     DB-->>L: Record
     L->>C: Email confirmation request
     L->>DB: Register new user
     C-->>U: Email confirmation code (Email sent)
     U->>AG: Email confirmation request (code input)
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>C: Validate confirmation code
     C-->>L: Success response
     L->>C: MFA code publish request (AssociateSoftwareToken)
@@ -46,7 +46,7 @@ sequenceDiagram
     participant DB as RDS
 
     U->>AG: Signup request
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>DB: Check the Email listed in whitelist
     DB-->>L: No Record
     L-->>U: Error response
@@ -66,14 +66,14 @@ sequenceDiagram
     participant DB as RDS
 
     U->>AG: Signup request
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>DB: Check the Email listed in whitelist
     DB-->>L: Record
     L->>C: Email confirmation request
     L->>DB: Register new user
     C-->>U: Email confirmation code (Email sent)
     U->>AG: Email confirmation request (code input)
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>C: Validate confirmation code
     C-->>L: Error response
     L->>C: Rollback user registration (delete the Cognito user)
@@ -108,7 +108,7 @@ sequenceDiagram
     participant C as Cognito
 
     U->>AG: MFA reset request (Email and password)
-    AG->>L: Transfer request
+    AG->>L: Forward request
     L->>C: Check User registration
     C-->>L: Success response
     L->>C: MFA reset
