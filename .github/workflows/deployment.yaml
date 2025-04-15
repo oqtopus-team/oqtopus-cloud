@@ -31,7 +31,6 @@ jobs:
           ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
           echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
 
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -50,8 +49,10 @@ jobs:
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         run: |
-          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> error.log
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
 
       - name: On Success
@@ -61,7 +62,7 @@ jobs:
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          curl -X POST https://slack.com/api/chat.postMessage \
+          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
           --data @- <<EOF
@@ -117,7 +118,7 @@ jobs:
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE=$(cat error.log)
-          curl -X POST https://slack.com/api/chat.postMessage \
+          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
           --data @- <<EOF
@@ -139,7 +140,7 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "[${TIMESTAMP}] ${MESSAGE}"
+                      "text": "[${TIMESTAMP}] Deploy failed!"
                     }
                   },
                   {
