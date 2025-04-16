@@ -10,6 +10,16 @@ from typing import Annotated
 from pydantic import AwareDatetime, BaseModel, Field
 
 
+class UpdateDeviceRequest(BaseModel):
+    n_qubits: int | None = None
+
+
+class UpdateDeviceResponse(BaseModel):
+    message: Annotated[str, Field(examples=["Device is successfully updated."])] = (
+        "Device is successfully updated."
+    )
+
+
 class Status(str, Enum):
     available = "available"
     unavailable = "unavailable"

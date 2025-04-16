@@ -164,7 +164,7 @@ deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github
 generate-tag-via-actions: ## Tag version via Github Actions
 	@echo "🏷️ Tagging version: ${GITHUB_SHA}"
 	@aws lambda tag-resource \
-	--resource arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
+	--resource arn:aws:lambda:${AWS_DEFAULT_REGION}:${AWS_ACCOUNT_ID}:function:${FUNCTION_NAME} \
   --tags github-sha=${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 

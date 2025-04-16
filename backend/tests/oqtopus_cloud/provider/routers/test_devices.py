@@ -7,6 +7,7 @@ from oqtopus_cloud.common.models.device import (
     Device,
 )
 from oqtopus_cloud.provider.routers.devices import (
+    update_device,
     update_device_calibration,
     update_device_status,
 )
@@ -14,6 +15,8 @@ from oqtopus_cloud.provider.schemas.devices import (
     DeviceDataUpdateResponse,
     DeviceInfoUpdate,
     DeviceStatusUpdate,
+    UpdateDeviceRequest,
+    UpdateDeviceResponse,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
 from zoneinfo import ZoneInfo
@@ -70,6 +73,29 @@ def _get_model_qpu():
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
     return Device(**mode_dict)
+
+
+def test_update_device_n_qubits(test_db):
+    test_db.add(_get_model_sim())
+    test_db.commit()
+
+    device_bef = test_db.get(Device, "SC2")
+    n_qubits_bef = device_bef.n_qubits
+    request = UpdateDeviceRequest(n_qubits=device_bef.n_qubits + 10)
+    resp = update_device(device_id="SC2", request=request, db=test_db)
+    assert isinstance(resp, UpdateDeviceResponse)
+    device_aft = test_db.get(Device, "SC2")
+    assert device_aft.n_qubits == n_qubits_bef + 10
+    # Properties other than n_qubits should remain same.
+    assert device_aft.description == device_bef.description
+    assert device_aft.device_type == device_bef.device_type
+    assert device_aft.status == device_bef.status
+    assert device_aft.calibrated_at == device_bef.calibrated_at
+    assert device_aft.available_at == device_bef.available_at
+    assert device_aft.device_info == device_bef.device_info
+    assert device_aft.basis_gates == device_bef.basis_gates
+    assert device_aft.instructions == device_bef.instructions
+    assert device_aft.pending_jobs == device_bef.pending_jobs
 
 
 def test_update_device_status_available(test_db):
