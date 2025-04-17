@@ -31,6 +31,8 @@ To install Aqua, run the following command:
 make setup-aqua
 ```
 
+The message at the end of the command will instruct to add aqua to the PATH, so be sure to follow the instructions.
+
 ## Verifying the Environment
 
 To verify the environment, run the following command:
@@ -58,7 +60,7 @@ This repository uses the Git hook `pre-commit` to scan for credentials.
 To generate the script, run the following command:
 
 ```bash
-make setup_hooks
+make setup-hooks
 ```
 
 The script will be generated in `.git/hooks/pre-commit`.

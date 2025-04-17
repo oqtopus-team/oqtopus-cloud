@@ -1,3 +1,60 @@
+devices.device:
+    patch:
+      tags:
+        - devices
+      summary: "Update a part of selected device's properties."
+      description: "Update a part of selected device's properties."
+      operationId: patchDevice
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: device_id
+          description: "Device ID"
+          required: true
+          schema:
+            type: string
+            example: "Kawasaki"
+      requestBody:
+        description: "Chagens to the specified device."
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.UpdateDeviceRequest"
+      responses:
+        '200':
+          description: Device is updated
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/devices.yaml#/devices.UpdateDeviceResponse'
+              example:
+                message: Device is successfully updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.NotFoundError'
+              example:
+                message: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.InternalServerError'
+              example:
+                message: Internal server error
+
 devices.device_status:
     patch:
       tags:
