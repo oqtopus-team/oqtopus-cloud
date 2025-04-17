@@ -57,27 +57,28 @@ resource "aws_iam_role" "github_actions_role" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_user}/${var.repository}:ref:refs/heads/${var.branch}"
+        },
+        StringLike = {
+          "token.actions.githubusercontent.com:sub" = [
+            "repo:${var.github_user}/${var.repository}:ref:refs/heads/${var.branch}"
+          ]
         }
       }
+      Sid = ""
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "github_actions_attachment" {
-  role       = aws_iam_role.github_actions_role.name
-  policy_arn = aws_iam_policy.github_actions_policy.arn
-}
-
-resource "aws_iam_policy" "github_actions_policy" {
-  name        = "AutoDeploymentPolicy"
-  description = "Policy for GitHub Actions OIDC Role"
+resource "aws_iam_role_policy" "auto_deployment_policy" {
+  name   = "${var.product}-${var.org}-${var.env}-auto-deployment-policy"
+  role   = aws_iam_role.github_actions_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["iam:ListAccountAliases", "lambda:UpdateFunctionCode"]
+      Action   = ["iam:ListAccountAliases", "lambda:UpdateFunctionCode", "lambda:TagResource"]
       Resource = "*"
     }]
   })
+  depends_on = [aws_iam_role.github_actions_role]
 }
