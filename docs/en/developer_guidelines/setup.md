@@ -58,7 +58,7 @@ This repository uses the Git hook `pre-commit` to scan for credentials.
 To generate the script, run the following command:
 
 ```bash
-make setup_hooks
+make setup-hooks
 ```
 
 The script will be generated in `.git/hooks/pre-commit`.
