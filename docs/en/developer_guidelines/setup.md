@@ -31,6 +31,8 @@ To install Aqua, run the following command:
 make setup-aqua
 ```
 
+The message at the end of the command will instruct to add aqua to the PATH, so be sure to follow the instructions.
+
 ## Verifying the Environment
 
 To verify the environment, run the following command:
