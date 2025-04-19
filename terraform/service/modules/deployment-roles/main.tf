@@ -31,7 +31,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = data.tls_certificate.github_actions.certificates[*].sha1_fingerprint
+  thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
 }
 
 data "tls_certificate" "github_actions" {
@@ -60,6 +60,7 @@ resource "aws_iam_role" "github_actions_role" {
         },
         StringLike = {
           "token.actions.githubusercontent.com:sub" = [
+            "repo:oqtopus-team/oqtopus-cloud:ref:refs/heads/*/#*-test-*",
             "repo:${var.github_user}/${var.repository}:ref:refs/heads/${var.branch}"
           ]
         }
