@@ -83,25 +83,11 @@ pyenv local 3.12.3
 
 ### Poetry
 
-To use the Python version installed with Pyenv, run the following command:
+Set up poetry as part of the environment setup
 
-```bash
-poetry env use ~/.pyenv/shims/python
 ```
-
-To set up the Python environment, run the following command:
-
-```bash
-poetry config virtualenvs.in-project true
+make setup-poetry
 ```
-
-Next, install the dependencies:
-
-```bash
-poetry install
-```
-
-This will create a `.venv` in the root directory.
 
 ## Starting the Documentation Server
 
