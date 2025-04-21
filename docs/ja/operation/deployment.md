@@ -107,6 +107,11 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+repository       = "oqtopus-cloud"
+github_user      = "oqtopus-team"
+branch           = "develop"
+aws_account_id   = "ここにAWSアカウントIDを記述"
 ```
 
 `terraform init`で初期化を行います。以下のコマンドを実行します。

@@ -14,41 +14,31 @@ variable "env" {
 }
 
 variable "region" {
-  description = "region of the deployment"
-  type        = string
-}
-
-variable "state_bucket" {
-  description = "state bucket name"
-  type        = string
-}
-
-variable "remote_state_key" {
-  description = "state key name"
+  description = "AWS region"
   type        = string
 }
 
 variable "profile" {
-  description = "aws profile name"
+  description = "AWS profile"
   type        = string
 }
 
 variable "repository" {
-  description = "github repository name"
+  description = "GitHub repository name"
   type        = string
 }
 
 variable "github_user" {
-  description = "github user name"
+  description = "GitHub user name"
   type        = string
 }
 
 variable "branch" {
-  description = "github branch name"
+  description = "GitHub branch"
   type        = string
 }
 
 variable "aws_account_id" {
-  description = "aws account id"
+  description = "AWS account ID"
   type        = string
 }
