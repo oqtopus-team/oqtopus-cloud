@@ -51,7 +51,7 @@ jobs:
       - name: Deploy
         working-directory: ./deployment/oqtopus-prod
         run: |
-          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> error.log
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
 
       - name: On Success
