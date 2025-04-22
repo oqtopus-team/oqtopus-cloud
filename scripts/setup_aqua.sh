@@ -20,7 +20,7 @@ else
 fi
 chmod +x aqua-installer
 
-./aqua-installer
+./aqua-installer -v v2.48.1
 cd -
 
 rm -R "$tempdir"

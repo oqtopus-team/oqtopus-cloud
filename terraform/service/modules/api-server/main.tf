@@ -107,6 +107,10 @@ resource "aws_lambda_function" "this" {
   snap_start {
     apply_on = "PublishedVersions"
   }
+
+  lifecycle {
+    ignore_changes = [tags["github-sha"]]
+  }
 }
 
 resource "aws_iam_role" "lambda" {

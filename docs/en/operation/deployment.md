@@ -104,6 +104,11 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+repository       = "oqtopus-cloud"
+github_user      = "oqtopus-team"
+branch           = "develop"
+aws_account_id   = "Write AWS Account ID here"
 ```
 
 Initialize with `terraform init`. Run the following command:
