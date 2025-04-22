@@ -139,7 +139,7 @@ jobs:
                     "type": "section",
                     "text": {
                       "type": "mrkdwn",
-                      "text": "[${TIMESTAMP}] ${MESSAGE}"
+                      "text": "[${TIMESTAMP}] Deploy failed!"
                     }
                   },
                   {
