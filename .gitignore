@@ -215,5 +215,5 @@ bin/
 *.env
 *lambda.zip
 
-# diffs file on make plan (terraform plan)
+# Differences file on make plan (terraform plan)
 **/diffs.ansi
