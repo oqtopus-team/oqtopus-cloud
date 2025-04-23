@@ -214,3 +214,6 @@ terraform.rc
 bin/
 *.env
 *lambda.zip
+
+# Differences file on make plan (terraform plan)
+**/diffs.ansi
