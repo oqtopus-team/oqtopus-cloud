@@ -44,6 +44,9 @@ profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 EOF
+	@cd infrastructure/oqtopus-dev
+	@terraform init -backend-config=oqtopus-dev.tfbackend
+	@cd ../..
 
 	@cat <<EOF > infrastructure/oqtopus-dev/terraform.tfvars
 # infrastructure/terraform.tfvars
@@ -61,6 +64,9 @@ profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 EOF
+	@cd service/oqtopus-dev
+	@terraform init -backend-config=oqtopus-dev.tfbackend
+	@cd ../..
 
 	@cat <<EOF > service/oqtopus-dev/terraform.tfvars
 # service/terraform.tfvars
