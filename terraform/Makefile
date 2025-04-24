@@ -36,56 +36,14 @@ help: ## Show this help message
 
 generate-env: ## Generate environment configuration
 	@echo "Generating environment configuration..."
-	@cat <<EOF > infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
-# infrastructure/oqtopus-dev.tfbackend
-bucket         = "tfstate.oqtopus-oqtopus-dev"
-key            = "infrastructure.tfstate"
-encrypt        = true
-profile        = "oqtopus-dev"
-region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
-EOF
+	@echo -e '# infrastructure/oqtopus-dev.tfbackend\nbucket         = "tfstate.oqtopus-oqtopus-dev"\nkey            = "infrastructure.tfstate"\nencrypt        = true\nprofile        = "oqtopus-dev"\nregion         = "ap-northeast-1"\ndynamodb_table = "terraform-lock"' > infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 	@echo "[infrastructure] tfbackend configuration generated."
-	@cd infrastructure/oqtopus-dev
-	@terraform init -backend-config=oqtopus-dev.tfbackend
-	@cd ../..
 
-	@cat <<EOF > infrastructure/oqtopus-dev/terraform.tfvars
-# infrastructure/terraform.tfvars
-product="oqtopus"
-org="oqtopus"
-env="dev"
-region = "ap-northeast-1"
-EOF
+	@echo -e '# infrastructure/terraform.tfvars\nproduct="oqtopus"\norg="oqtopus"\nenv="dev"\nregion = "ap-northeast-1"' > infrastructure/oqtopus-dev/terraform.tfvars
 	@echo "[infrastructure] tfvars configuration generated."
 
-	@cat <<EOF > service/oqtopus-dev/oqtopus-dev.tfbackend
-# service/oqtopus-dev.tfbackend
-bucket         = "tfstate.oqtopus-oqtopus-dev"
-key            = "service.tfstate"
-encrypt        = true
-profile        = "oqtopus-dev"
-region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
-EOF
+	@echo -e '# service/oqtopus-dev.tfbackend\nbucket         = "tfstate.oqtopus-oqtopus-dev"\nkey            = "service.tfstate"\nencrypt        = true\nprofile        = "oqtopus-dev"\nregion         = "ap-northeast-1"\ndynamodb_table = "terraform-lock"' > service/oqtopus-dev/oqtopus-dev.tfbackend
 	@echo "[service] tfbackend configuration generated."
-	@cd service/oqtopus-dev
-	@terraform init -backend-config=oqtopus-dev.tfbackend
-	@cd ../..
 
-	@cat <<EOF > service/oqtopus-dev/terraform.tfvars
-# service/terraform.tfvars
-product          = "oqtopus"
-org              = "oqtopus"
-env              = "dev"
-region           = "ap-northeast-1"
-state_bucket     = "tfstate.oqtopus-oqtopus-dev"
-remote_state_key = "infrastructure.tfstate"
-profile          = "oqtopus-dev"
-
-repository       = "oqtopus-cloud"
-github_user      = "oqtopus-team"
-branch           = "develop"
-aws_account_id   = "Write AWS Account ID here"
-EOF
+	@echo -e '# service/terraform.tfvars\nproduct          = "oqtopus"\norg              = "oqtopus"\nenv              = "dev"\nregion           = "ap-northeast-1"\nstate_bucket     = "tfstate.oqtopus-oqtopus-dev"\nremote_state_key = "infrastructure.tfstate"\nprofile          = "oqtopus-dev"\n\nrepository       = "oqtopus-cloud"\ngithub_user      = "oqtopus-team"\nbranch           = "develop"\naws_account_id   = "Write AWS Account ID here"' > service/oqtopus-dev/terraform.tfvars
 	@echo "[service] tfvars configuration generated."
