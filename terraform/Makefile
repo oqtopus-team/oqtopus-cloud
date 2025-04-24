@@ -35,6 +35,7 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 generate-env: ## Generate environment configuration
+	@echo "Generating environment configuration..."
 	@cat <<EOF > infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 # infrastructure/oqtopus-dev.tfbackend
 bucket         = "tfstate.oqtopus-oqtopus-dev"
@@ -44,6 +45,7 @@ profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 EOF
+	@echo "[infrastructure] tfbackend configuration generated."
 	@cd infrastructure/oqtopus-dev
 	@terraform init -backend-config=oqtopus-dev.tfbackend
 	@cd ../..
@@ -54,6 +56,8 @@ product="oqtopus"
 org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
+EOF
+	@echo "[infrastructure] tfvars configuration generated."
 
 	@cat <<EOF > service/oqtopus-dev/oqtopus-dev.tfbackend
 # service/oqtopus-dev.tfbackend
@@ -64,6 +68,7 @@ profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
 dynamodb_table = "terraform-lock"
 EOF
+	@echo "[service] tfbackend configuration generated."
 	@cd service/oqtopus-dev
 	@terraform init -backend-config=oqtopus-dev.tfbackend
 	@cd ../..
@@ -83,3 +88,4 @@ github_user      = "oqtopus-team"
 branch           = "develop"
 aws_account_id   = "Write AWS Account ID here"
 EOF
+	@echo "[service] tfvars configuration generated."
