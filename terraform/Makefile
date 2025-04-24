@@ -34,3 +34,46 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+generate-env: ## Generate environment configuration
+	@cat <<EOF > infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+# infrastructure/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
+key            = "infrastructure.tfstate"
+encrypt        = true
+profile        = "oqtopus-dev"
+region         = "ap-northeast-1"
+dynamodb_table = "terraform-lock"
+EOF
+
+	@cat <<EOF > infrastructure/oqtopus-dev/terraform.tfvars
+# infrastructure/terraform.tfvars
+product="oqtopus"
+org="oqtopus"
+env="dev"
+region = "ap-northeast-1"
+
+	@cat <<EOF > service/oqtopus-dev/oqtopus-dev.tfbackend
+# service/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
+key            = "service.tfstate"
+encrypt        = true
+profile        = "oqtopus-dev"
+region         = "ap-northeast-1"
+dynamodb_table = "terraform-lock"
+EOF
+
+	@cat <<EOF > service/oqtopus-dev/terraform.tfvars
+# service/terraform.tfvars
+product          = "oqtopus"
+org              = "oqtopus"
+env              = "dev"
+region           = "ap-northeast-1"
+state_bucket     = "tfstate.oqtopus-oqtopus-dev"
+remote_state_key = "infrastructure.tfstate"
+profile          = "oqtopus-dev"
+
+repository       = "oqtopus-cloud"
+github_user      = "oqtopus-team"
+branch           = "develop"
+aws_account_id   = "Write AWS Account ID here"
+EOF
