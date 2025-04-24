@@ -83,11 +83,13 @@ pyenv local 3.12.3
 
 ### Poetry
 
-Set up poetry as part of the environment setup
+To set up poetry as part of the environment setup, run the following command:
 
 ```
 make setup-poetry
 ```
+
+This command is required to use the Python version installed with Pyenv, to set up the Python environment, and to install dependencies. This will create a `.venv` in the root directory.
 
 ## Starting the Documentation Server
 
