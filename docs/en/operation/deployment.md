@@ -30,7 +30,7 @@ The `infrastructure` directory contains the code to deploy the infrastructure en
 
 First, let's explain the procedure to deploy the infrastructure environment, such as networks and data stores.
 
-### 環境変数ファイルの生成
+### Generating environment files
 
 To generate environment variable files, use following commands:
 
