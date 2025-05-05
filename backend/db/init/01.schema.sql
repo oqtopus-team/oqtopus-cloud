@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   device_id VARCHAR(64) NOT NULL,
   shots INT DEFAULT 1000 NOT NULL,
   execution_time DECIMAL(65,3),
-  job_info TEXT,
   transpiler_info TEXT,
   simulator_info TEXT,
   mitigation_info TEXT,
