@@ -14,14 +14,17 @@ jobs.GetJobStatusResponse:
     job_id,status
   ]
 
-jobs.SubmitJobResponse:
-  description: submit a job
+jobs.RegisterJobResponse:
+  description: Register new job
   type: object
   properties:
     job_id:
       $ref: '#/jobs.JobId'
+    presigned_url:
+      $ref: '#/jobs.UploadPresignedURL'
   required:
     - job_id
+    - presigned_url
 
 jobs.OperatorItem:
   type: object
@@ -312,29 +315,6 @@ jobs.JobDef:
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
 
-jobs.SubmitJobInfo:
-  description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
-  type: object
-  properties:
-    program:
-      type: array
-      description: >-
-        A list of OPENQASM3 program.
-        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
-        Otherwise, those programs are combined according to the multiprogramming machinery.
-      items:
-        type: string
-      example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
-    operator:
-      type: array
-      x-see-also:
-        - '#/jobs.JonInfo.operator'
-      items:
-        $ref: "#/jobs.OperatorItem"
-  required:
-    - program
-
 jobs.SubmitJobRequest:
   type: object
   properties:
@@ -349,8 +329,6 @@ jobs.SubmitJobRequest:
       example: Kawasaki
     job_type:
       $ref: "#/jobs.JobType"
-    job_info:
-      $ref: "#/jobs.SubmitJobInfo"
     transpiler_info:
       type: object
       properties: {}
@@ -394,7 +372,6 @@ jobs.SubmitJobRequest:
     - device_id
     - shots
     - job_type
-    - job_info
 
 jobs.GetJobsResponse:
   type: object
@@ -514,3 +491,50 @@ jobs.GetSselogResponse:
       type: string
       example: "sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"
   required: []
+
+jobs.UploadPresignedURL:
+  description: presigned URL for upload
+  type: object
+  properties:
+    url:
+      type: string
+      example: https://oqtopus-cloud.s3.amazonaws.com/
+    fields:
+      type: object
+      properties:
+        key:
+          type: string
+          example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip
+        AWSAccessKeyId:
+          type: string
+        x-amz-security-token:
+          type: string
+        policy:
+          type: string
+        signature:
+          type: string
+
+# Definitions of S3 files data:
+
+jobs.SubmitJobInfo:
+  description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+    operator:
+      type: array
+      x-see-also:
+        - '#/jobs.JonInfo.operator'
+      items:
+        $ref: "#/jobs.OperatorItem"
+  required:
+    - program
