@@ -105,7 +105,7 @@ jobs:
     tags:
       - job
     summary: "Register new job"
-    description: "Register new job and generate a presigned URL to upload job information (jobs.SubmitJobInfo) to OQTOPUS cloud."
+    description: "Register new job and generate a presigned URL to upload job information (`jobs.SubmitJobInfo`) to OQTOPUS cloud."
     operationId: register_job_id
     security:
       - BearerAuth: []
@@ -191,7 +191,7 @@ jobs.job_id:
 
       job_id must be created via 'POST /jobs' request.
 
-      Submit job information (jobs.SubmitJobInfo) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
+      Submit job information (`jobs.SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
 
     operationId: submit_job
     security:

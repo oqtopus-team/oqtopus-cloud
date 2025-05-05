@@ -21,7 +21,7 @@ jobs.RegisterJobResponse:
     job_id:
       $ref: '#/jobs.JobId'
     presigned_url:
-      $ref: '#/jobs.UploadPresignedURL'
+      $ref: '#/jobs.JobInfoUploadPresignedURL'
   required:
     - job_id
     - presigned_url
@@ -125,45 +125,6 @@ jobs.JobResult:
   additionalProperties: true
   required: []
 
-jobs.JobInfo:
-  type: object
-  properties:
-    program:
-      type: array
-      description: >-
-        A list of OPENQASM3 program.
-        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
-        Otherwise, those programs are combined according to the multiprogramming machinery.
-      items:
-        type: string
-      example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
-
-    combined_program:
-      type: string
-      description: >-
-        For multiprogramming jobs, this field contains the combined circuit.
-
-    operator:
-      description: |
-        *(Only for estimation jobs)* The operator (or observable) for which the expectation
-        value is to be estimated.
-      type: array
-      items:
-        $ref: "#/jobs.OperatorItem"
-
-    result:
-      $ref: "#/jobs.JobResult"
-
-    transpile_result:
-      $ref: "#/jobs.TranspileResult"
-
-    message:
-      type: string
-      description: Describing the reason why there is no result
-  required:
-    - program
-
 jobs.JobStatus:
   type: string
   enum:
@@ -208,7 +169,7 @@ jobs.JobDef:
       maximum: 1e7
       example: "1000"
     job_info:
-      $ref: "#/jobs.JobInfo"
+      $ref: "#/jobs.JobInfoDownloadPresignedURL"
     transpiler_info:
       type: object
       properties: {}
@@ -276,15 +237,7 @@ jobs.JobDef:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: estimation
-      job_info:
-        program:
-          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-        operator:
-          - pauli: "X 0 Y 1 Z 5 I 2"
-            coeff: 1.0
-        transpiled_code: "{}"
-        result: "{}"
-        reason: ""
+      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
       transpiler_info: {
         "qubit_allocation": {
           "0": 12,
@@ -397,7 +350,7 @@ jobs.GetJobsResponse:
       maximum: 1e7
       example: "1000"
     job_info:
-      $ref: "#/jobs.JobInfo"
+      $ref: "#/jobs.JobInfoDownloadPresignedURL"
     transpiler_info:
       type: object
       properties: {}
@@ -458,14 +411,7 @@ jobs.GetJobsResponse:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: estimation
-      job_info:
-        program:
-          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-        operator:
-          - pauli: "X 0 Y 1 Z 5 I 2"
-        transpiled_code: "{}"
-        result: "{}"
-        reason: ""
+      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
       transpiler_info: >-
         { "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },
       simulator_info: >-
@@ -492,8 +438,13 @@ jobs.GetSselogResponse:
       example: "sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"
   required: []
 
-jobs.UploadPresignedURL:
-  description: presigned URL for upload
+jobs.JobInfoUploadPresignedURL:
+  description: |-
+    Presigned URL for uploading job information to OCTOPUS cloud.
+
+    Job information should be uploaded as a .zip file.
+
+    Content of the file must match `jobs.SubmitJobInfo` schema.
   type: object
   properties:
     url:
@@ -513,6 +464,14 @@ jobs.UploadPresignedURL:
           type: string
         signature:
           type: string
+
+jobs.JobInfoDownloadPresignedURL:
+  description: |-
+    Presigned URL for downloading job information from OCTOPUS cloud.
+
+    Content of the file downloaded .zip will match `jobs.JobInfo` schema.
+  type: string
+  example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
 
 # Definitions of S3 files data:
 
@@ -536,5 +495,44 @@ jobs.SubmitJobInfo:
         - '#/jobs.JonInfo.operator'
       items:
         $ref: "#/jobs.OperatorItem"
+  required:
+    - program
+
+jobs.JobInfo:
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+    combined_program:
+      type: string
+      description: >-
+        For multiprogramming jobs, this field contains the combined circuit.
+
+    operator:
+      description: |
+        *(Only for estimation jobs)* The operator (or observable) for which the expectation
+        value is to be estimated.
+      type: array
+      items:
+        $ref: "#/jobs.OperatorItem"
+
+    result:
+      $ref: "#/jobs.JobResult"
+
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
+
+    message:
+      type: string
+      description: Describing the reason why there is no result
   required:
     - program
