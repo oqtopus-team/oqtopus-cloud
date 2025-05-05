@@ -856,9 +856,9 @@ components:
       description: |-
         Presigned URL for downloading job information from OCTOPUS cloud.
 
-        Content of the file downloaded .zip will match `jobs.JobInfo` schema.
+        Content of the downloaded .zip will match `jobs.JobInfo` schema.
       type: string
-      example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+      example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
     jobs.GetJobsResponse:
       type: object
       properties:
@@ -939,7 +939,7 @@ components:
         description: Bell State Sampling Example
         device_id: Kawasaki
         job_type: estimation
-        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
         simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
@@ -967,7 +967,7 @@ components:
           properties:
             key:
               type: string
-              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip
+              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip
             AWSAccessKeyId:
               type: string
             x-amz-security-token:
@@ -1081,7 +1081,7 @@ components:
         description: Bell State Sampling Example
         device_id: Kawasaki
         job_type: estimation
-        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         transpiler_info:
           qubit_allocation:
             '0': 12

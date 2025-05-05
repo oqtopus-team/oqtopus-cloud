@@ -237,7 +237,7 @@ jobs.JobDef:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: estimation
-      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
       transpiler_info: {
         "qubit_allocation": {
           "0": 12,
@@ -411,7 +411,7 @@ jobs.GetJobsResponse:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: estimation
-      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+      job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
       transpiler_info: >-
         { "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },
       simulator_info: >-
@@ -455,7 +455,7 @@ jobs.JobInfoUploadPresignedURL:
       properties:
         key:
           type: string
-          example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip
+          example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip
         AWSAccessKeyId:
           type: string
         x-amz-security-token:
@@ -469,9 +469,9 @@ jobs.JobInfoDownloadPresignedURL:
   description: |-
     Presigned URL for downloading job information from OCTOPUS cloud.
 
-    Content of the file downloaded .zip will match `jobs.JobInfo` schema.
+    Content of the downloaded .zip will match `jobs.JobInfo` schema.
   type: string
-  example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/data.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+  example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
 
 # Definitions of S3 files data:
 
