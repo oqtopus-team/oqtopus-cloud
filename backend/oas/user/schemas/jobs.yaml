@@ -444,7 +444,7 @@ jobs.JobInfoUploadPresignedURL:
 
     Job information should be uploaded as a .zip file.
 
-    Content of the file must match `jobs.SubmitJobInfo` schema.
+    Content of the file must match `jobs.S3SubmitJobInfo` schema.
   type: object
   properties:
     url:
@@ -469,14 +469,13 @@ jobs.JobInfoDownloadPresignedURL:
   description: |-
     Presigned URL for downloading job information from OCTOPUS cloud.
 
-    Content of the downloaded .zip will match `jobs.JobInfo` schema.
+    Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
   type: string
   example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
 
-# Definitions of S3 files data:
 
-jobs.SubmitJobInfo:
-  description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
+jobs.S3SubmitJobInfo:
+  description: "All fields in this schema also exist in the `jobs.S3JobInfo` schema and have the same meaning as their counterparts in the `jobs.S3JobInfo` schema."
   type: object
   properties:
     program:
@@ -498,7 +497,7 @@ jobs.SubmitJobInfo:
   required:
     - program
 
-jobs.JobInfo:
+jobs.S3JobInfo:
   type: object
   properties:
     program:

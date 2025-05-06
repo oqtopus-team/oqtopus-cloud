@@ -33,3 +33,8 @@ components:
   securitySchemes:
     BearerAuth:
       $ref: './schemas/security.yaml#/BearerAuth'
+  schemas:
+    jobs.S3SubmitJobInfo:
+      $ref: './schemas/jobs.yaml#/jobs.S3SubmitJobInfo'
+    jobs.S3JobInfo:
+      $ref: './schemas/jobs.yaml#/jobs.S3JobInfo'

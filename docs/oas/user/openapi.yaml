@@ -667,6 +667,52 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    jobs.S3SubmitJobInfo:
+      description: All fields in this schema also exist in the `jobs.S3JobInfo` schema and have the same meaning as their counterparts in the `jobs.S3JobInfo` schema.
+      type: object
+      properties:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        operator:
+          type: array
+          x-see-also:
+            - '#/jobs.JonInfo.operator'
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+      required:
+        - program
+    jobs.S3JobInfo:
+      type: object
+      properties:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+        combined_program:
+          type: string
+          description: For multiprogramming jobs, this field contains the combined circuit.
+        operator:
+          description: |
+            *(Only for estimation jobs)* The operator (or observable) for which the expectation
+            value is to be estimated.
+          type: array
+          items:
+            $ref: '#/components/schemas/jobs.OperatorItem'
+        result:
+          $ref: '#/components/schemas/jobs.JobResult'
+        transpile_result:
+          $ref: '#/components/schemas/jobs.TranspileResult'
+        message:
+          type: string
+          description: Describing the reason why there is no result
+      required:
+        - program
     devices.DeviceInfo:
       type: object
       properties:
@@ -856,7 +902,7 @@ components:
       description: |-
         Presigned URL for downloading job information from OCTOPUS cloud.
 
-        Content of the downloaded .zip will match `jobs.JobInfo` schema.
+        Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
       type: string
       example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
     jobs.GetJobsResponse:
@@ -956,7 +1002,7 @@ components:
 
         Job information should be uploaded as a .zip file.
 
-        Content of the file must match `jobs.SubmitJobInfo` schema.
+        Content of the file must match `jobs.S3SubmitJobInfo` schema.
       type: object
       properties:
         url:
@@ -1205,3 +1251,87 @@ components:
           type: string
       required:
         - message
+    jobs.OperatorItem:
+      type: object
+      properties:
+        pauli:
+          type: string
+          description: The Pauli string.
+          example: X 0 X 1
+        coeff:
+          type: number
+          description: Coefficient number in the Pauli string representation.
+          example: 1
+      required:
+        - pauli
+    jobs.SamplingResult:
+      type: object
+      description: '*(Only for sampling jobs)* JSON string representing the sampling result'
+      properties:
+        counts:
+          type: object
+          properties: {}
+          additionalProperties: true
+          example:
+            '10': 454
+            '11': 387
+            '00': 84
+            '01': 75
+        divided_counts:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+          example:
+            '0':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
+            '1':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
+    jobs.EstimationResult:
+      type: object
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+      properties:
+        exp_value:
+          description: The estimated expectation value
+          type: number
+        stds:
+          description: The standard deviation value
+          type: number
+    jobs.JobResult:
+      type: object
+      properties:
+        sampling:
+          $ref: '#/components/schemas/jobs.SamplingResult'
+        estimation:
+          $ref: '#/components/schemas/jobs.EstimationResult'
+      additionalProperties: true
+      required: []
+    jobs.TranspileResult:
+      type: object
+      properties:
+        transpiled_program:
+          type: string
+          nullable: true
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+        virtual_physical_mapping:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+      required:
+        - transpiled_program
+        - stats
+        - virtual_physical_mapping
