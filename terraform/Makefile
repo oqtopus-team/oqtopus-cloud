@@ -36,14 +36,8 @@ help: ## Show this help message
 
 generate-env: ## Generate environment configuration
 	@echo "Generating environment configuration..."
-	@echo -e '# infrastructure/oqtopus-dev.tfbackend\nbucket         = "tfstate.oqtopus-oqtopus-dev"\nkey            = "infrastructure.tfstate"\nencrypt        = true\nprofile        = "oqtopus-dev"\nregion         = "ap-northeast-1"\ndynamodb_table = "terraform-lock"' > infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
-	@echo "[infrastructure] tfbackend configuration generated."
-
-	@echo -e '# infrastructure/terraform.tfvars\nproduct="oqtopus"\norg="oqtopus"\nenv="dev"\nregion = "ap-northeast-1"' > infrastructure/oqtopus-dev/terraform.tfvars
-	@echo "[infrastructure] tfvars configuration generated."
-
-	@echo -e '# service/oqtopus-dev.tfbackend\nbucket         = "tfstate.oqtopus-oqtopus-dev"\nkey            = "service.tfstate"\nencrypt        = true\nprofile        = "oqtopus-dev"\nregion         = "ap-northeast-1"\ndynamodb_table = "terraform-lock"' > service/oqtopus-dev/oqtopus-dev.tfbackend
-	@echo "[service] tfbackend configuration generated."
-
-	@echo -e '# service/terraform.tfvars\nproduct          = "oqtopus"\norg              = "oqtopus"\nenv              = "dev"\nregion           = "ap-northeast-1"\nstate_bucket     = "tfstate.oqtopus-oqtopus-dev"\nremote_state_key = "infrastructure.tfstate"\nprofile          = "oqtopus-dev"\n\nrepository       = "oqtopus-cloud"\ngithub_user      = "oqtopus-team"\nbranch           = "develop"\naws_account_id   = ""' > service/oqtopus-dev/terraform.tfvars
-	@echo "[service] tfvars configuration generated."
+	@cp ./example/example-infrastructure.tfbackend.txt ./infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/example-infrastructure.tfvars.txt ./infrastructure/oqtopus-dev/terraform.tfvars
+	@cp ./example/example-service.tfbackend.txt ./service/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/example-service.tfvars.txt ./service/oqtopus-dev/terraform.tfvars
+	@echo "Environment configuration generated."
