@@ -38,12 +38,9 @@ from oqtopus_cloud.user.schemas.jobs import (
     GetJobStatusResponse,
     GetSselogResponse,
     JobDef,
-    JobInfo,
     JobStatus,
     JobType,
-    SubmitJobInfo,
     SubmitJobRequest,
-    SubmitJobResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -171,16 +168,20 @@ def validate_description(
 
 
 @router.post(
-    "/jobs",
-    response_model=SubmitJobResponse,
-    responses={400: {"model": Message}, 500: {"model": Message}},
+    "/jobs/{job_id}",
+    response_model=SuccessResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def submit_jobs(
     event: Event,
     request: SubmitJobRequest,
     db: Session = Depends(get_db),
-) -> SubmitJobResponse | ErrorResponse:
+) -> SuccessResponse | ErrorResponse:
     try:
         device = db.get(Device, request.device_id)  # type: ignore
         if device is None:
@@ -189,8 +190,8 @@ def submit_jobs(
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
-        if request.job_type not in jobtype_of_jobinfo(request.job_info):
-            return BadRequestResponse("job_info is not compatible with job_type")
+        # if request.job_type not in jobtype_of_jobinfo(request.job_info):
+        #     return BadRequestResponse("job_info is not compatible with job_type")
 
         # NOTE: method and operator is validated by pydantic
         shots = request.shots
@@ -206,7 +207,6 @@ def submit_jobs(
             name=name,
             description=description,
             device_id=request.device_id,
-            job_info=json.dumps(request.job_info.model_dump()),
             transpiler_info=json.dumps(request.transpiler_info),
             simulator_info=json.dumps(request.simulator_info),
             mitigation_info=json.dumps(request.mitigation_info),
@@ -216,16 +216,17 @@ def submit_jobs(
             created_at=datetime.now(),
         )
 
-        # put the user program to S3 when SSE
-        is_success_put_s3 = put_user_program_to_s3(job)
-        if not is_success_put_s3:
-            return InternalServerErrorResponse(
-                message="Failed to upload the user program to S3"
-            )
+        # TODO: check new SSE handling with general S3 upload
+        # # put the user program to S3 when SSE
+        # is_success_put_s3 = put_user_program_to_s3(job)
+        # if not is_success_put_s3:
+        #     return InternalServerErrorResponse(
+        #         message="Failed to upload the user program to S3"
+        #     )
 
         db.add(job)
         db.commit()
-        return SubmitJobResponse(job_id=job.id)
+        return SuccessResponse(message="job submitted")
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
@@ -452,38 +453,38 @@ def get_sselog(
         return InternalServerErrorResponse(message=str(e))
 
 
-def put_user_program_to_s3(job: Job) -> bool:
-    if job.job_type != JobType.sse:
-        return True
+# def put_user_program_to_s3(job: Job) -> bool:
+#     if job.job_type != JobType.sse:
+#         return True
 
-    bucket_name = os.environ["SSE_BUCKET"]
-    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
-    try:
-        job_info = decode_job_info(json.loads(job.job_info))
-        if isinstance(job_info, ValueError):
-            return False
-        if (
-            job_info.program is None
-            or len(job_info.program) == 0
-            or job_info.program[0] == ""
-        ):
-            logger.error("the job has no program")
-            return False
+#     bucket_name = os.environ["SSE_BUCKET"]
+#     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
+#     try:
+#         job_info = decode_job_info(json.loads(job.job_info))
+#         if isinstance(job_info, ValueError):
+#             return False
+#         if (
+#             job_info.program is None
+#             or len(job_info.program) == 0
+#             or job_info.program[0] == ""
+#         ):
+#             logger.error("the job has no program")
+#             return False
 
-        # decode the base64 encoded program
-        decoded_program = base64.b64decode(job_info.program[0])
-        # upload the program to the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=f"{job.id}/{file_name}",
-            Body=decoded_program,
-        )
+#         # decode the base64 encoded program
+#         decoded_program = base64.b64decode(job_info.program[0])
+#         # upload the program to the AWS S3 bucket
+#         s3_client = boto3.client("s3")
+#         s3_client.put_object(
+#             Bucket=bucket_name,
+#             Key=f"{job.id}/{file_name}",
+#             Body=decoded_program,
+#         )
 
-        return True
-    except Exception as e:
-        logger.exception(f"Failed to upload the user program to S3: {str(e)}")
-        return False
+#         return True
+#     except Exception as e:
+#         logger.exception(f"Failed to upload the user program to S3: {str(e)}")
+#         return False
 
 
 def delete_s3_folder(job: Job) -> bool:
@@ -537,12 +538,12 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def decode_job_info(j: Any) -> JobInfo | ValueError:
-    try:
-        jobinfo = JobInfo.model_validate(j)
-        return jobinfo
-    except Exception as e:
-        return ValueError(f"Failed to decode job_info: {str(e)}")
+# def decode_job_info(j: Any) -> JobInfo | ValueError:
+#     try:
+#         jobinfo = JobInfo.model_validate(j)
+#         return jobinfo
+#     except Exception as e:
+#         return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
 def model_to_schema(
@@ -579,12 +580,7 @@ def model_to_schema(
             return None
         return pytz.utc.localize(dt)
 
-    job_info = decode_job_info(json.loads(model.job_info))
-
     if fields is None:
-        job_info = decode_job_info(json.loads(model.job_info))
-        if isinstance(job_info, ValueError):
-            return job_info
         return JobDef(
             job_id=model.id,
             name=model.name,
@@ -592,7 +588,7 @@ def model_to_schema(
             device_id=model.device_id,
             shots=model.shots,
             job_type=JobType(model.job_type),
-            job_info=job_info,
+            job_info="",
             status=JobStatus(model.status),
             transpiler_info=json.loads(model.transpiler_info),
             mitigation_info=json.loads(model.mitigation_info),
@@ -611,11 +607,7 @@ def model_to_schema(
             elif k == "job_type":
                 dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
-                job_info = decode_job_info(json.loads(model.job_info))
-                if isinstance(job_info, ValueError):
-                    return job_info
-                else:
-                    dict_schema[k] = job_info
+                dict_schema[k] = ""
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
             elif is_object_field(k):
@@ -629,8 +621,8 @@ def model_to_schema(
         return None
 
 
-def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
-    if info.operator is not None:
-        return [JobType.estimation]
-    else:
-        return [JobType.sampling, JobType.multi_manual, JobType.sse]
+# def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
+#     if info.operator is not None:
+#         return [JobType.estimation]
+#     else:
+#         return [JobType.sampling, JobType.multi_manual, JobType.sse]

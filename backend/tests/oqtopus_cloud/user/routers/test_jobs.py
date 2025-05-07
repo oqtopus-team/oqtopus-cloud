@@ -25,12 +25,9 @@ from oqtopus_cloud.user.schemas.errors import (
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
     JobDef,
-    JobInfo,
     JobStatus,
     JobType,
-    SubmitJobInfo,
     SubmitJobRequest,
-    SubmitJobResponse,
 )
 from pydantic import ValidationError
 from pydantic.type_adapter import TypeAdapter
