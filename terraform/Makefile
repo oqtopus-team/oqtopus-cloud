@@ -36,8 +36,8 @@ help: ## Show this help message
 
 generate-env: ## Generate environment configuration
 	@echo "Generating environment configuration..."
-	@cp ./example/dev/example-infrastructure.tfbackend.txt ./infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
-	@cp ./example/dev/example-infrastructure.tfvars.txt ./infrastructure/oqtopus-dev/terraform.tfvars
-	@cp ./example/dev/example-service.tfbackend.txt ./service/oqtopus-dev/oqtopus-dev.tfbackend
-	@cp ./example/dev/example-service.tfvars.txt ./service/oqtopus-dev/terraform.tfvars
+	@cp ./example/oqtopus-dev/infrastructure/oqtopus-dev.tfbackend.txt ./infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/oqtopus-dev/infrastructure/terraform.tfvars.txt ./infrastructure/oqtopus-dev/terraform.tfvars
+	@cp ./example/oqtopus-dev/service/oqtopus-dev.tfbackend.txt ./service/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/oqtopus-dev/service/terraform.tfvars.txt ./service/oqtopus-dev/terraform.tfvars
 	@echo "Environment configuration generated."
