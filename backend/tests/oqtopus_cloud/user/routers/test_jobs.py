@@ -44,7 +44,6 @@ def _get_model(n: int) -> Job:
         "description": f"test job {n}",
         "device_id": "Kawasaki",
         "job_type": "sampling",
-        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -56,6 +55,15 @@ def _get_model(n: int) -> Job:
         "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
     }
     return Job(**model_dict)
+
+
+def assert_jobs_equal(actual: JobDef, expect: JobDef):
+    for prop in vars(expect):
+        if prop == "job_info":
+            pass
+            assert getattr(actual, prop).startswith(getattr(expect, prop))
+        else:
+            assert getattr(actual, prop) == getattr(expect, prop)
 
 
 def test_get_job_404(
@@ -80,9 +88,16 @@ def test_get_jobs_simple(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+
+    submitted_job_model = _get_model(1)
+    test_db.add(submitted_job_model)
+    succeeded_job_model = _get_model(2)
+    succeeded_job_model.status = "succeeded"
+
+    test_db.add(succeeded_job_model)
     test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs")
     adapter = TypeAdapter(List[JobDef])
@@ -95,7 +110,7 @@ def test_get_jobs_simple(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -117,7 +132,7 @@ def test_get_jobs_simple(
             description="test job 2",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob2id/output.zip",
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -125,7 +140,7 @@ def test_get_jobs_simple(
                 "field2": "value2",
                 "field3": "value3",
             },
-            status=JobStatus.submitted,
+            status=JobStatus.succeeded,
             shots=1000,
             execution_time=None,
             submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
@@ -136,7 +151,9 @@ def test_get_jobs_simple(
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_ignore_illegal_job(

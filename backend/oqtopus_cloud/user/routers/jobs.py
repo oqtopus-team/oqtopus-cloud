@@ -54,6 +54,10 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 DEFAULT_PAGE_INDEX = 1
 DEFAULT_ITEMS_PER_PAGE = 100
 
+s3_client = boto3.client("s3")
+S3_JOB_INFO_INPUT_FILE = "input.zip"
+S3_JOB_INFO_OUTPUT_FILE = "output.zip"
+
 
 class BadRequest(Exception):
     def __init__(self, message: str):
@@ -422,7 +426,6 @@ def get_sselog(
         # get the logs from the AWS S3 bucket
         log_object = None
         try:
-            s3_client = boto3.client("s3")
             log_object = s3_client.get_object(
                 Bucket=bucket_name,
                 Key=f"{job_id}/{log_name}",
@@ -538,17 +541,20 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-# def decode_job_info(j: Any) -> JobInfo | ValueError:
-#     try:
-#         jobinfo = JobInfo.model_validate(j)
-#         return jobinfo
-#     except Exception as e:
-#         return ValueError(f"Failed to decode job_info: {str(e)}")
-
-
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
+
+    def get_presigned_url(job_id: str, status: str) -> str:
+        bucket_name = os.environ["OQTOPUS_BUCKET"]
+        exp_time = os.environ["PRESIGNED_ULR_EXP_S"]
+        filename = S3_JOB_INFO_OUTPUT_FILE if status in ["succeeded", "failed", "cancelled"] else \
+                   S3_JOB_INFO_INPUT_FILE
+        return s3_client.generate_presigned_url("get_object",
+                                                Params={"Bucket": bucket_name,
+                                                        "Key": f"{job_id}/{filename}"},
+                                                ExpiresIn=exp_time)
+
     def is_datetime_field(fld: str) -> bool:
         if fld == "submitted_at":
             return True
@@ -588,7 +594,7 @@ def model_to_schema(
             device_id=model.device_id,
             shots=model.shots,
             job_type=JobType(model.job_type),
-            job_info="",
+            job_info=get_presigned_url(model.id, model.status),
             status=JobStatus(model.status),
             transpiler_info=json.loads(model.transpiler_info),
             mitigation_info=json.loads(model.mitigation_info),
@@ -607,7 +613,7 @@ def model_to_schema(
             elif k == "job_type":
                 dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
-                dict_schema[k] = ""
+                dict_schema[k] = get_presigned_url(model.id, model.status)
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
             elif is_object_field(k):
