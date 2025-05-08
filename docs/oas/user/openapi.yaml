@@ -891,6 +891,7 @@ components:
     jobs.JobStatus:
       type: string
       enum:
+        - registered
         - submitted
         - ready
         - running

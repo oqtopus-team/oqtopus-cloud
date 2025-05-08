@@ -18,6 +18,7 @@ class JobType(str, Enum):
 
 
 class JobStatus(str, Enum):
+    registered = "registered"
     submitted = "submitted"
     ready = "ready"
     running = "running"
