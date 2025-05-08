@@ -27,6 +27,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobDef,
     JobStatus,
     JobType,
+    RegisterJobResponse,
     SubmitJobRequest,
 )
 from pydantic import ValidationError
@@ -64,6 +65,32 @@ def assert_jobs_equal(actual: JobDef, expect: JobDef):
             assert getattr(actual, prop).startswith(getattr(expect, prop))
         else:
             assert getattr(actual, prop) == getattr(expect, prop)
+
+
+def test_register_job(
+    test_db,
+):
+    """_summary_
+    Register new job_id with POST /jobs test
+    """
+    test_db.flush()
+
+    response = client.post("/jobs")
+    adapter = TypeAdapter(RegisterJobResponse)
+    actual = adapter.validate_python(response.json())
+
+    new_job_id = actual.job_id
+
+    # basic validation of presign URL data
+    region = boto3.client('s3').meta.region_name
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    assert actual.presigned_url.url == f"https://s3.{region}.amazonaws.com/{bucket_name}"
+    assert actual.presigned_url.fields.key == f"{new_job_id}/input.zip"
+
+    # basic validation of DB record
+    job_model = test_db.get(Job, new_job_id)
+    assert job_model is not None
+    assert job_model.status == "registered"
 
 
 def test_get_job_404(

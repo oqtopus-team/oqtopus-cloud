@@ -40,6 +40,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobDef,
     JobStatus,
     JobType,
+    RegisterJobResponse,
     SubmitJobRequest,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
@@ -58,10 +59,74 @@ s3_client = boto3.client("s3")
 S3_JOB_INFO_INPUT_FILE = "input.zip"
 S3_JOB_INFO_OUTPUT_FILE = "output.zip"
 
+DEFAULT_MAX_JOB_INFO_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
+DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
+
 
 class BadRequest(Exception):
     def __init__(self, message: str):
         self.message = message
+
+
+@router.post(
+    "/jobs",
+    response_model=RegisterJobResponse,
+    responses={
+        400: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def register_job(
+    event: Event,
+    db: Session = Depends(get_db),
+) -> RegisterJobResponse | ErrorResponse:
+    try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job_id = uuid7(as_type="str")
+        presigned_data = s3_client.generate_presigned_post(
+            Bucket=os.environ["OQTOPUS_BUCKET"],
+            Key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}",
+            Conditions=[
+                [
+                    "content-length-range",
+                    0,
+                    int(
+                        os.environ.get(
+                            "MAX_JOB_INFO_CONTENT_LENGTH",
+                            DEFAULT_MAX_JOB_INFO_CONTENT_LENGTH_B,
+                        )
+                    ),
+                ]
+            ],
+            ExpiresIn=int(
+                os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
+            ),
+        )
+
+        job = Job(
+            id=job_id,
+            owner=owner,
+            status="registered",
+            created_at=datetime.now(),
+            # dummy data to comply with the NOT NULL DB constraint
+            device_id="",
+            transpiler_info="",
+            simulator_info="",
+            mitigation_info="",
+            job_type="sampling",
+            shots=-1,
+        )
+        db.add(job)
+        db.commit()
+
+        return RegisterJobResponse(job_id=job.id, presigned_url=presigned_data)
+
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(
@@ -544,16 +609,21 @@ MAP_MODEL_TO_SCHEMA = {
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
-
     def get_presigned_url(job_id: str, status: str) -> str:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
-        exp_time = os.environ["PRESIGNED_ULR_EXP_S"]
-        filename = S3_JOB_INFO_OUTPUT_FILE if status in ["succeeded", "failed", "cancelled"] else \
-                   S3_JOB_INFO_INPUT_FILE
-        return s3_client.generate_presigned_url("get_object",
-                                                Params={"Bucket": bucket_name,
-                                                        "Key": f"{job_id}/{filename}"},
-                                                ExpiresIn=exp_time)
+        filename = (
+            S3_JOB_INFO_OUTPUT_FILE
+            if status in ["succeeded", "failed", "cancelled"]
+            else S3_JOB_INFO_INPUT_FILE
+        )
+        exp_time = int(
+            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
+        )
+        return s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket_name, "Key": f"{job_id}/{filename}"},
+            ExpiresIn=exp_time,
+        )
 
     def is_datetime_field(fld: str) -> bool:
         if fld == "submitted_at":
