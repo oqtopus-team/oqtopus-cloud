@@ -23,11 +23,11 @@ from oqtopus_cloud.user.schemas.errors import (
 #     model_to_schema,
 # )
 from oqtopus_cloud.user.schemas.jobs import (
-    GetJobsResponse,
-    JobDef,
+    JobBase,
     JobStatus,
     JobType,
     RegisterJobResponse,
+    SubmittedJob,
     SubmitJobRequest,
 )
 from pydantic import ValidationError
@@ -58,7 +58,7 @@ def _get_model(n: int) -> Job:
     return Job(**model_dict)
 
 
-def assert_jobs_equal(actual: JobDef, expect: JobDef):
+def assert_jobs_equal(actual: SubmittedJob, expect: SubmittedJob):
     for prop in vars(expect):
         if prop == "job_info":
             pass
@@ -128,11 +128,11 @@ def test_get_jobs_simple(
     bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs")
-    adapter = TypeAdapter(List[JobDef])
+    adapter = TypeAdapter(List[SubmittedJob])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobDef(
+        SubmittedJob(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -154,7 +154,7 @@ def test_get_jobs_simple(
             running_at=None,
             ended_at=None,
         ),
-        JobDef(
+        SubmittedJob(
             job_id="testjob2id",
             name="testjob2",
             description="test job 2",
@@ -201,7 +201,7 @@ def test_get_jobs_ignore_illegal_job(
     test_db.commit()
 
     response = client.get("/jobs")
-    adapter = TypeAdapter(List[JobDef])
+    adapter = TypeAdapter(List[SubmittedJob])
     actual = adapter.validate_python(response.json())
 
     assert response.status_code == 200
@@ -223,15 +223,15 @@ def test_get_jobs_filtering_fields(
     test_db.commit()
 
     response = client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob1id",
             name="testjob1",
             status=JobStatus.submitted,
         ),
-        GetJobsResponse(
+        JobBase(
             job_id="testjob2id",
             name="testjob2",
             status=JobStatus.submitted,
@@ -252,7 +252,7 @@ def test_get_jobs_all_fields(test_db):
     response = client.get(
         "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
     )
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     assert response.status_code == 200
     assert len(actual) == 2
@@ -297,10 +297,10 @@ def test_get_jobs_filtering_start_time(
     response = client.get(
         "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
     )
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob2id",
             name="testjob2",
             description="test job 2",
@@ -341,10 +341,10 @@ def test_get_jobs_filtering_end_time(
     test_db.commit()
 
     response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -385,10 +385,10 @@ def test_get_jobs_filtering_search_string(
     test_db.commit()
 
     response = client.get("/jobs?q=1&order=ASC")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -429,10 +429,10 @@ def test_get_jobs_desc_order(
     test_db.commit()
 
     response = client.get("/jobs?order=DESC")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob2id",
             name="testjob2",
             description="test job 2",
@@ -454,7 +454,7 @@ def test_get_jobs_desc_order(
             running_at=None,
             ended_at=None,
         ),
-        GetJobsResponse(
+        JobBase(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -495,16 +495,16 @@ def test_get_jobs_pagination(
     test_db.commit()
 
     response = client.get("/jobs?page=3&size=3&fields=job_id")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob7id",
         ),
-        GetJobsResponse(
+        JobBase(
             job_id="testjob8id",
         ),
-        GetJobsResponse(
+        JobBase(
             job_id="testjob9id",
         ),
     ]
@@ -528,15 +528,15 @@ def test_get_jobs_all_parameters(
     response = client.get(
         "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
     )
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
-        GetJobsResponse(
+        JobBase(
             job_id="testjob3id",
             description="test job 3",
             job_info=JobInfo(program=["code"]),
         ),
-        GetJobsResponse(
+        JobBase(
             job_id="testjob2id",
             description="test job 2",
             job_info=JobInfo(program=["code"]),
@@ -590,10 +590,10 @@ def test_get_jobs_handler(
     response = client.get("/jobs")
     assert response.status_code == 200
 
-    adapter = TypeAdapter(List[JobDef])
+    adapter = TypeAdapter(List[SubmittedJob])
     jobs = adapter.validate_python(response.json())
 
-    expected = JobDef(
+    expected = SubmittedJob(
         job_id="testjob1id",
         name="testjob1",
         description="test job 1",
@@ -681,7 +681,7 @@ def test_submit_get(
     # Getting the job of reteurned job_id
     get_resp = client.get(f"/jobs/{resp_job_id}")
     assert get_resp.status_code == 200
-    resp_job = JobDef.model_validate(get_resp.json())
+    resp_job = SubmittedJob.model_validate(get_resp.json())
     # And these jobs should be same.
     assert resp_job.name == body.name
     assert resp_job.description == body.description
@@ -1065,7 +1065,7 @@ def test_put_user_program_to_s3(
     # Getting the job of reteurned job_id
     get_resp = client.get(f"/jobs/{resp_job_id}")
     assert get_resp.status_code == 200
-    resp_job = JobDef.model_validate(get_resp.json())
+    resp_job = SubmittedJob.model_validate(get_resp.json())
     # And these jobs should be same.
     assert resp_job.name == body.name
     assert resp_job.description == body.description

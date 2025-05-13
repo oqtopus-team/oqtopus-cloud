@@ -32,7 +32,7 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
-class GetJobsResponse(BaseModel):
+class JobBase(BaseModel):
     job_id: Annotated[
         str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
     ] = None
@@ -143,12 +143,9 @@ class RegisterJobResponse(BaseModel):
     presigned_url: JobInfoUploadPresignedURL
 
 
-class JobDef(BaseModel):
+class SubmittedJob(JobBase):
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
     name: Annotated[str, Field(examples=["Bell State Sampling"])]
-    description: Annotated[
-        str | None, Field(examples=["Bell State Sampling Example"])
-    ] = None
     job_type: JobType
     status: JobStatus
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
@@ -166,53 +163,12 @@ class JobDef(BaseModel):
 
     Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
     """
-    transpiler_info: Annotated[
-        dict[str, Any] | None,
-        Field(
-            examples=[
-                {
-                    "qubit_allocation": {"0": 12, "1": 16},
-                    "skip_transpilation": False,
-                    "seed_transpilation": 873,
-                }
-            ]
-        ),
-    ] = None
-    simulator_info: Annotated[
-        dict[str, Any] | None,
-        Field(
-            examples=[
-                {
-                    "n_qubits": 5,
-                    "n_nodes": 12,
-                    "n_per_node": 2,
-                    "seed_simulation": 39058567,
-                    "simulation_opt": {
-                        "optimization_method": "light",
-                        "optimization_block_size": 1,
-                        "optimization_swap_level": 1,
-                    },
-                }
-            ]
-        ),
-    ] = None
-    mitigation_info: Annotated[
-        dict[str, Any] | None,
-        Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
-    ] = None
-    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
-    submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
-    ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ] = None
+
+
+class RegisteredJob(JobBase):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    job_type: JobType
+    status: JobStatus
 
 
 class SubmitJobType(str, Enum):

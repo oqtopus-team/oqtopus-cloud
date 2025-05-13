@@ -34,10 +34,11 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
-    GetJobsResponse,
+    JobBase,
     GetJobStatusResponse,
     GetSselogResponse,
-    JobDef,
+    SubmittedJob,
+    RegisteredJob,
     JobStatus,
     JobType,
     RegisterJobResponse,
@@ -109,14 +110,16 @@ def register_job(
         job = Job(
             id=job_id,
             owner=owner,
+            job_type="none",
             status="registered",
             created_at=datetime.now(),
             # dummy data to comply with the NOT NULL DB constraint
+            name="",
+            description="",
             device_id="",
             transpiler_info="",
             simulator_info="",
             mitigation_info="",
-            job_type="none",
             shots=-1,
         )
         db.add(job)
@@ -131,7 +134,7 @@ def register_job(
 
 @router.get(
     "/jobs",
-    response_model=list[GetJobsResponse | JobDef],
+    response_model=list[JobBase | SubmittedJob | RegisteredJob],
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -145,7 +148,7 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[GetJobsResponse | JobDef] | ErrorResponse:
+) -> list[JobBase | SubmittedJob | RegisteredJob] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
@@ -162,7 +165,7 @@ def get_jobs(
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
-            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            valid_fields_list = [field in SubmittedJob.model_fields for field in fields_list]
             if all(valid_fields_list):
                 MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
                 converted_fields_list = [
@@ -219,19 +222,20 @@ def get_jobs(
             else:
                 results.append(job)
         return results
+
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
 
 
-def validate_name(request: JobDef) -> str | None:
+def validate_name(request: SubmitJobRequest) -> str | None:
     if request.name is not None:
         return request.name
     return ""
 
 
 def validate_description(
-    request: JobDef,
+    request: SubmitJobRequest,
 ) -> str | None:
     return request.description if (request.description is not None) else ""
 
@@ -303,7 +307,7 @@ def submit_jobs(
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=JobDef,
+    response_model=SubmittedJob | RegisteredJob,
     responses={
         400: {"model": Message},
         404: {"model": Message},
@@ -315,7 +319,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | GetJobsResponse | ErrorResponse:
+) -> SubmittedJob | RegisteredJob | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
@@ -608,7 +612,7 @@ MAP_MODEL_TO_SCHEMA = {
 
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
-) -> JobDef | GetJobsResponse | ValueError:
+) -> JobBase | RegisteredJob | SubmittedJob | ValueError:
     def get_presigned_url(job_id: str, status: str) -> str:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
         filename = (
@@ -657,24 +661,31 @@ def model_to_schema(
         return pytz.utc.localize(dt)
 
     if fields is None:
-        return JobDef(
-            job_id=model.id,
-            name=model.name,
-            description=model.description,
-            device_id=model.device_id,
-            shots=model.shots,
-            job_type=JobType(model.job_type),
-            job_info=get_presigned_url(model.id, model.status),
-            status=JobStatus(model.status),
-            transpiler_info=json.loads(model.transpiler_info),
-            mitigation_info=json.loads(model.mitigation_info),
-            simulator_info=json.loads(model.simulator_info),
-            execution_time=model.execution_time,
-            submitted_at=localize(model.submitted_at),
-            ready_at=localize(model.ready_at),
-            running_at=localize(model.running_at),
-            ended_at=localize(model.ended_at),
-        )
+        if model.status != "registered":
+            return SubmittedJob(
+                job_id=model.id,
+                name=model.name,
+                description=model.description,
+                device_id=model.device_id,
+                shots=model.shots,
+                job_type=JobType(model.job_type),
+                job_info=get_presigned_url(model.id, model.status),
+                status=JobStatus(model.status),
+                transpiler_info=json.loads(model.transpiler_info),
+                mitigation_info=json.loads(model.mitigation_info),
+                simulator_info=json.loads(model.simulator_info),
+                execution_time=model.execution_time,
+                submitted_at=localize(model.submitted_at),
+                ready_at=localize(model.ready_at),
+                running_at=localize(model.running_at),
+                ended_at=localize(model.ended_at),
+            )
+        else:
+            return RegisteredJob(
+                job_id=model.id,
+                job_type=JobType(model.job_type),
+                status=JobStatus(model.status),
+            )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
         for k in fields:
@@ -692,7 +703,7 @@ def model_to_schema(
                 dict_schema[k] = localize(getattr(model, k))
             else:
                 dict_schema[k] = getattr(model, k)
-        return GetJobsResponse(**dict_schema)
+        return JobBase(**dict_schema)
     else:
         return None
 
