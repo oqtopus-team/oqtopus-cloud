@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 import boto3
+import botocore
 import pytz
 from fastapi import (
     APIRouter,
@@ -165,7 +166,9 @@ def get_jobs(
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
-            valid_fields_list = [field in SubmittedJob.model_fields for field in fields_list]
+            valid_fields_list = [
+                field in SubmittedJob.model_fields for field in fields_list
+            ]
             if all(valid_fields_list):
                 MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
                 converted_fields_list = [
@@ -228,16 +231,33 @@ def get_jobs(
         return InternalServerErrorResponse(message=str(e))
 
 
-def validate_name(request: SubmitJobRequest) -> str | None:
-    if request.name is not None:
-        return request.name
-    return ""
+def validate_name(request: SubmitJobRequest) -> str:
+    return request.name if request.name is not None else ""
 
 
-def validate_description(
-    request: SubmitJobRequest,
-) -> str | None:
+def validate_description(request: SubmitJobRequest) -> str:
     return request.description if (request.description is not None) else ""
+
+
+def validate_job_info(job_id: str) -> bool:
+    try:
+        s3_client.head_object(
+            Bucket=os.environ["OQTOPUS_BUCKET"],
+            Key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}",
+        )
+        return True
+
+    except botocore.exceptions.ClientError as exc:
+        if exc.response["Error"]["Code"] == "404":
+            logger.info(
+                f"job information file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not found"
+            )
+            return False
+        else:
+            logger.error(
+                f"job information file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not accessible"
+            )
+            raise exc
 
 
 @router.post(
@@ -250,44 +270,47 @@ def validate_description(
     },
 )
 @tracer.capture_method
-def submit_jobs(
+def submit_job(
     event: Event,
+    job_id: str,
     request: SubmitJobRequest,
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job = db.get(Job, job_id)
+        if job is None:
+            return NotFoundErrorResponse(message="job not found with the given id")
+
+        if job.owner != owner or job.status != "registered":
+            return NotFoundErrorResponse(
+                message=f"{job_id} job is not in valid status for submission (valid status for submission: 'registered')"
+            )
+
+        # name is optional
+        job.name = validate_name(request)
+        # description is optional
+        job.description = validate_description(request)
+
         device = db.get(Device, request.device_id)  # type: ignore
         if device is None:
             return BadRequestResponse(message="device not found")
-        owner = event.state.owner
-        logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
-        # if request.job_type not in jobtype_of_jobinfo(request.job_info):
-        #     return BadRequestResponse("job_info is not compatible with job_type")
+        job.device_id = request.device_id
 
-        # NOTE: method and operator is validated by pydantic
-        shots = request.shots
-        # name is optional
-        name = validate_name(request)
+        job.transpiler_info = json.dumps(request.transpiler_info)
+        job.simulator_info = json.dumps(request.simulator_info)
+        job.mitigation_info = json.dumps(request.mitigation_info)
+        job.job_type = JobType(request.job_type)
+        job.shots = request.shots
+        job.status = JobStatus.submitted
+        job.submitted_at = datetime.now()
 
-        # description is optional
-        description = validate_description(request)
-
-        job = Job(
-            id=uuid7(as_type="str"),
-            owner=owner,
-            name=name,
-            description=description,
-            device_id=request.device_id,
-            transpiler_info=json.dumps(request.transpiler_info),
-            simulator_info=json.dumps(request.simulator_info),
-            mitigation_info=json.dumps(request.mitigation_info),
-            job_type=request.job_type,
-            shots=shots,
-            submitted_at=datetime.now(),
-            created_at=datetime.now(),
-        )
+        if not validate_job_info(job_id):
+            return BadRequestResponse(f"job information for {job_id} job not found")
 
         # TODO: check new SSE handling with general S3 upload
         # # put the user program to S3 when SSE
@@ -297,9 +320,9 @@ def submit_jobs(
         #         message="Failed to upload the user program to S3"
         #     )
 
-        db.add(job)
         db.commit()
         return SuccessResponse(message="job submitted")
+
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
