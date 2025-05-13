@@ -882,7 +882,9 @@ components:
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.JobType:
       type: string
+      description: none is valid only for newly registered job_ids (job status=registered)
       enum:
+        - none
         - estimation
         - sampling
         - multi_manual
@@ -1153,6 +1155,14 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
+    jobs.SubmitJobType:
+      type: string
+      enum:
+        - estimation
+        - sampling
+        - multi_manual
+        - sse
+      example: sampling
     jobs.SubmitJobRequest:
       type: object
       properties:
@@ -1166,7 +1176,7 @@ components:
           type: string
           example: Kawasaki
         job_type:
-          $ref: '#/components/schemas/jobs.JobType'
+          $ref: '#/components/schemas/jobs.SubmitJobType'
         transpiler_info:
           type: object
           properties: {}

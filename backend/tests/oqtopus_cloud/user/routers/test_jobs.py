@@ -91,6 +91,7 @@ def test_register_job(
     job_model = test_db.get(Job, new_job_id)
     assert job_model is not None
     assert job_model.status == "registered"
+    assert job_model.job_type == "none"
 
 
 def test_get_job_404(

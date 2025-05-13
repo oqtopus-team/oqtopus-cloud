@@ -137,9 +137,21 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.JobType:
+jobs.SubmitJobType:
   type: string
   enum:
+    - estimation
+    - sampling
+    - multi_manual
+    - sse
+  example: sampling
+
+jobs.JobType:
+  type: string
+  description: |-
+    none is valid only for newly registered job_ids (job status=registered)
+  enum:
+    - none
     - estimation
     - sampling
     - multi_manual
@@ -282,7 +294,7 @@ jobs.SubmitJobRequest:
       type: string
       example: Kawasaki
     job_type:
-      $ref: "#/jobs.JobType"
+      $ref: "#/jobs.SubmitJobType"
     transpiler_info:
       type: object
       properties: {}

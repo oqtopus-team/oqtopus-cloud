@@ -11,6 +11,11 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 
 class JobType(str, Enum):
+    """
+    none is valid only for newly registered job_ids (job status=registered)
+    """
+
+    none = "none"
     estimation = "estimation"
     sampling = "sampling"
     multi_manual = "multi_manual"
@@ -210,13 +215,20 @@ class JobDef(BaseModel):
     ] = None
 
 
+class SubmitJobType(str, Enum):
+    estimation = "estimation"
+    sampling = "sampling"
+    multi_manual = "multi_manual"
+    sse = "sse"
+
+
 class SubmitJobRequest(BaseModel):
     name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    job_type: JobType
+    job_type: SubmitJobType
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(

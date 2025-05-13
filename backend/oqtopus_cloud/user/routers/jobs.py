@@ -116,7 +116,7 @@ def register_job(
             transpiler_info="",
             simulator_info="",
             mitigation_info="",
-            job_type="sampling",
+            job_type="none",
             shots=-1,
         )
         db.add(job)

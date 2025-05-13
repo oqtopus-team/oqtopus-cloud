@@ -59,6 +59,7 @@ class Job(Base):
     mitigation_info: Mapped[str]
     job_type: Mapped[enum.Enum] = mapped_column(
         Enum(
+            "none",
             "sampling",
             "estimation",
             "sse",
