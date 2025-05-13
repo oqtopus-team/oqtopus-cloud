@@ -170,6 +170,32 @@ jobs.SubmittedJob:
     - shots
     - job_info
 
+jobs.RegisteredJob:
+  allOf:
+     - $ref: "#/jobs.JobBase"
+  required:
+    - job_id
+    - job_type
+    - status
+  example: {
+      "job_id": "06823102-73a0-793c-8000-70ac55fe4811",
+      "name": null,
+      "description": null,
+      "job_type": "none",
+      "status": "registered",
+      "device_id": null,
+      "shots": null,
+      "job_info": null,
+      "transpiler_info": null,
+      "simulator_info": null,
+      "mitigation_info": null,
+      "execution_time": null,
+      "submitted_at": null,
+      "ready_at": null,
+      "running_at": null,
+      "ended_at": null
+    }
+
 jobs.SubmitJobRequest:
   type: object
   properties:

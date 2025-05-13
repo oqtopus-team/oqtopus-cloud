@@ -86,7 +86,7 @@ jobs:
           default: "ASC"
     responses:
       "200":
-        description: "Return a list of submitted quantum jobs"
+        description: "Return a list of quantum jobs"
         content:
           application/json:
             schema:
@@ -157,7 +157,10 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              oneOf:
+              - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+
       "400":
         description: Bad Request
         content:
