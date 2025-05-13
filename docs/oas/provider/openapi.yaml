@@ -15,6 +15,62 @@ servers:
 security:
   - ApiKeyAuth: []
 paths:
+  /devices/{device_id}:
+    patch:
+      tags:
+        - devices
+      summary: Update a part of selected device's properties.
+      description: Update a part of selected device's properties.
+      operationId: patchDevice
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: device_id
+          description: Device ID
+          required: true
+          schema:
+            type: string
+            example: Kawasaki
+      requestBody:
+        description: Chagens to the specified device.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/devices.UpdateDeviceRequest'
+      responses:
+        '200':
+          description: Device is updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.UpdateDeviceResponse'
+              example:
+                message: Device is successfully updated
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
   /devices/{device_id}/status:
     patch:
       tags:
@@ -466,25 +522,20 @@ components:
       in: header
       name: X-Api-Key
   schemas:
-    devices.DeviceStatusUpdate:
+    devices.UpdateDeviceRequest:
       type: object
       properties:
-        status:
-          type: string
-          enum:
-            - available
-            - unavailable
-          nullable: false
-      required:
-        - status
-    devices.DeviceDataUpdateResponse:
+        n_qubits:
+          type: integer
+          nullable: true
+    devices.UpdateDeviceResponse:
       type: object
       properties:
         message:
           type: string
           nullable: false
-          default: Device's data updated
-          example: Device's data updated
+          default: Device is successfully updated.
+          example: Device is successfully updated.
       required:
         - message
     error.BadRequest:
@@ -509,6 +560,27 @@ components:
         message:
           type: string
           nullable: false
+      required:
+        - message
+    devices.DeviceStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          nullable: false
+      required:
+        - status
+    devices.DeviceDataUpdateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          nullable: false
+          default: Device's data updated
+          example: Device's data updated
       required:
         - message
     devices.DeviceInfoUpdate:

@@ -1,10 +1,8 @@
-name: Deploy all
+name: Prod CD
 on:
   push:
-    branches:
-      - develop
-    paths:
-      - 'backend/oqtopus_cloud/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   deployment:
@@ -24,12 +22,13 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: 'ap-northeast-1'
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deploy-lambda
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_PROD }}:role/oqtopus-oqtopus-prod-deploy-lambda
 
       - name: Set AWS Profile
         run: |
           ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
           echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
+
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,9 +47,7 @@ jobs:
         run: sudo apt install make
 
       - name: Deploy
-        working-directory: ./deployment/oqtopus-dev
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        working-directory: ./deployment/oqtopus-prod
         run: |
           sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
 
@@ -68,7 +65,7 @@ jobs:
           --data @- <<EOF
           {
             "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "✅ Deploy successful (${{ matrix.deploy-target }})",
+            "text": "✅ [Prod] Deploy successful (${{ matrix.deploy-target }})",
             "attachments": [
               {
                 "color": "#00dd00",
@@ -124,7 +121,7 @@ jobs:
           --data @- <<EOF
           {
             "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "❌ Deploy failed (${{ matrix.deploy-target }})",
+            "text": "❌ [Prod] Deploy failed (${{ matrix.deploy-target }})",
             "attachments": [
               {
                 "color": "#dd0000",

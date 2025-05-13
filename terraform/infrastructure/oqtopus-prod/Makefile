@@ -23,7 +23,7 @@ scan: ## Run trivy
 	@trivy config .
 
 plan: ## Run terraform plan
-	@terraform plan
+	@terraform plan > diffs.ansi
 
 apply: ## Run terraform apply
 	@terraform apply
