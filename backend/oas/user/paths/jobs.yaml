@@ -92,7 +92,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.GetJobsResponse"
+                $ref: "../schemas/jobs.yaml#/jobs.JobBase"
       "401":
         description: Unauthorized
         content:
@@ -157,7 +157,7 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+              $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
       "400":
         description: Bad Request
         content:

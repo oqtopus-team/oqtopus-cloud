@@ -171,7 +171,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.GetJobsResponse'
+                  $ref: '#/components/schemas/jobs.JobBase'
         '401':
           description: Unauthorized
           content:
@@ -236,7 +236,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jobs.JobDef'
+                $ref: '#/components/schemas/jobs.SubmittedJob'
         '400':
           description: Bad Request
           content:
@@ -908,7 +908,7 @@ components:
         Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
       type: string
       example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-    jobs.GetJobsResponse:
+    jobs.JobBase:
       type: object
       properties:
         job_id:
@@ -1043,79 +1043,9 @@ components:
           type: string
       required:
         - message
-    jobs.JobDef:
-      type: object
-      properties:
-        job_id:
-          $ref: '#/components/schemas/jobs.JobId'
-        name:
-          type: string
-          example: Bell State Sampling
-        description:
-          type: string
-          example: Bell State Sampling Example
-        job_type:
-          $ref: '#/components/schemas/jobs.JobType'
-        status:
-          $ref: '#/components/schemas/jobs.JobStatus'
-        device_id:
-          type: string
-          example: Kawasaki
-        shots:
-          type: integer
-          minimum: 1
-          maximum: 10000000
-          example: '1000'
-        job_info:
-          $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
-        transpiler_info:
-          type: object
-          properties: {}
-          additionalProperties: true
-          example:
-            qubit_allocation:
-              '0': 12
-              '1': 16
-            skip_transpilation: false
-            seed_transpilation: 873
-        simulator_info:
-          type: object
-          properties: {}
-          additionalProperties: true
-          example:
-            n_qubits: 5
-            n_nodes: 12
-            n_per_node: 2
-            seed_simulation: 39058567
-            simulation_opt:
-              optimization_method: light
-              optimization_block_size: 1
-              optimization_swap_level: 1
-        mitigation_info:
-          type: object
-          properties: {}
-          additionalProperties: true
-          example:
-            ro_error_mitigation: pseudo_inverse
-        execution_time:
-          type: number
-          example: '10.123'
-        submitted_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        ready_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        running_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
-        ended_at:
-          type: string
-          format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+    jobs.SubmittedJob:
+      allOf:
+        - $ref: '#/components/schemas/jobs.JobBase'
       required:
         - job_id
         - name
@@ -1124,37 +1054,6 @@ components:
         - device_id
         - shots
         - job_info
-      example:
-        job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-        name: Bell State Sampling
-        description: Bell State Sampling Example
-        device_id: Kawasaki
-        job_type: estimation
-        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-        transpiler_info:
-          qubit_allocation:
-            '0': 12
-            '1': 16
-          skip_transpilation: false
-          seed_transpilation: 873
-        simulator_info:
-          n_qubits: 5
-          n_nodes: 12
-          n_per_node: 2
-          seed_simulation: 39058567
-          simulation_opt:
-            optimization_method: light
-            optimization_block_size: 1
-            optimization_swap_level: 1
-        mitigation_info:
-          ro_error_mitigation: pseudo_inverse
-        shots: 1000
-        status: submitted
-        execution_time: 10.123
-        submitted_at: '2022-10-19T11:45:34+09:00'
-        ready_at: '2022-10-19T11:45:34+09:00'
-        running_at: '2022-10-19T11:45:34+09:00'
-        ended_at: '2022-10-19T11:45:34+09:00'
     jobs.SubmitJobType:
       type: string
       enum:
