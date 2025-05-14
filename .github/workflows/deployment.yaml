@@ -58,15 +58,9 @@ jobs:
       - name: On Exit
         if: ${{ always() }}
         run:
-          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          DEPLOY_TARGET=${{ matrix.deploy-target }}
+          python3 ./scripts/build_slack_notification.py \
+            --success=${{ success() }} \
+            --timestamp=$(date "+%Y-%m-%d %H:%M:%S") \
+            --run-url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
+            --deploy-target=${{ matrix.deploy-target }}
 
-          curl -X POST https://slack.com/api/chat.postMessage \
-              -H "Content-Type: application/json" \
-              -d '{ \
-                "success" : true, \
-                "timestamp" : "${TIMESTAMP}", \
-                "run_url" : "${RUN_URL}", \
-                "deploy_target" : "${DEPLOY_TARGET}"
-              }'
