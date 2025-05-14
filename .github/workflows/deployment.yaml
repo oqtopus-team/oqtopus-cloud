@@ -59,8 +59,10 @@ jobs:
         if: ${{ always() }}
         run:
           python3 ./scripts/build_slack_notification.py \
-            --success=${{ success() }} \
-            --timestamp=$(date "+%Y-%m-%d %H:%M:%S") \
-            --run-url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
-            --deploy-target=${{ matrix.deploy-target }}
-
+            --success="${{ success() }}" \
+            --timestamp="${{ steps.set_timestamp.outputs.timestamp }}" \
+            --run-url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --deploy-target="${{ matrix.deploy-target }}"
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+          SLACK_CHANNEL_NAME: ${{ secrets.SLACK_CHANNEL_NAME }}
