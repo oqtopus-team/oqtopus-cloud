@@ -2,7 +2,6 @@ import argparse
 import os
 
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--success", type=int)
