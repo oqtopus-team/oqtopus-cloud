@@ -60,7 +60,7 @@ jobs:
         run:
           python3 ./scripts/build_slack_notification.py \
             --success="${{ success() }}" \
-            --timestamp="${{ steps.set_timestamp.outputs.timestamp }}" \
+            --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
             --run-url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --deploy-target="${{ matrix.deploy-target }}"
         env:
