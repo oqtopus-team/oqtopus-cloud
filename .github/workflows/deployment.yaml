@@ -18,6 +18,10 @@ jobs:
       contents: read
 
     steps:
+      - name: Init Variables
+        run: |
+          echo "SUCCESS=0" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -60,11 +64,6 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "SUCCESS=1" >> $GITHUB_ENV
-
-      - name: On Failure
-        if: ${{ failure() }}
-        run: |
-          echo "SUCCESS=0" >> $GITHUB_ENV
 
       - name: On Exit
         if: ${{ always() }}
