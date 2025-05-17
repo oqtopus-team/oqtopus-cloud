@@ -58,6 +58,7 @@ jobs:
       - name: On Exit
         if: ${{ always() }}
         run: |
+          source .venv/bin/activate
           python3 ./scripts/build_slack_notification.py \
             --success="${{ success() }}" \
             --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
