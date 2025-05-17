@@ -5,7 +5,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--success", type=str2bool)
+parser.add_argument("--success", type=int)
 parser.add_argument("--timestamp", type=str)
 parser.add_argument("--run-url", type=str)
 parser.add_argument("--deploy-target", type=str)
