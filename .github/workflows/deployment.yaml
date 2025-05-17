@@ -10,6 +10,7 @@ jobs:
   deployment:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         deploy-target: [user, provider, admin, lambda_auth, user_signup]
 
