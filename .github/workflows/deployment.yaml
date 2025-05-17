@@ -57,7 +57,7 @@ jobs:
 
       - name: On Exit
         if: ${{ always() }}
-        run:
+        run: |
           python3 ./scripts/build_slack_notification.py \
             --success="${{ success() }}" \
             --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
