@@ -7,8 +7,8 @@ from slack_sdk.errors import SlackApiError
 parser = argparse.ArgumentParser()
 parser.add_argument("--success", type=bool)
 parser.add_argument("--timestamp", type=str)
-parser.add_argument("--run_url", type=str)
-parser.add_argument("--deploy_target", type=str)
+parser.add_argument("--run-url", type=str)
+parser.add_argument("--deploy-target", type=str)
 args = parser.parse_args()
 
 slack_token = os.environ.get("SLACK_API_TOKEN")
