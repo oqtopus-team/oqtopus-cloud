@@ -70,7 +70,7 @@ export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
-export OQTOPUS_BUCKET=oqtopus_bucket
+export OQTOPUS_BUCKET=oqtopus-test-bucket
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \

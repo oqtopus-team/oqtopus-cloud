@@ -4,7 +4,7 @@ import json
 import os
 import zipfile
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import boto3
 import botocore
@@ -87,7 +87,7 @@ def register_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job_id = uuid7(as_type="str")
+        job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
         presigned_data = s3_client.generate_presigned_post(
             Bucket=os.environ["OQTOPUS_BUCKET"],
             Key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}",
@@ -350,9 +350,12 @@ def get_job(
         if job_model is None:
             return NotFoundErrorResponse(message="job not found with the given id")
         job = model_to_schema(job_model)
-        if isinstance(job, ValueError):
-            logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
+        if not (isinstance(job, (SubmittedJob, RegisteredJob))):
+            if isinstance(job, ValueError):
+                logger.warning("warn: Failed to encode job model to schema.")
+                return NotFoundErrorResponse(message="job not found with the given id")
+            else:
+                raise TypeError("invalid job schema type")
         return job
     except Exception as e:
         logger.info(f"error: {str(e)}")
