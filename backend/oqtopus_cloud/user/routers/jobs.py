@@ -133,6 +133,66 @@ def register_job(
         return InternalServerErrorResponse(message=str(e))
 
 
+@router.patch(
+    "/jobs/{job_id}",
+    response_model=SuccessResponse,
+    responses={
+        400: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def submit_job(
+    event: Event,
+    job_id: str,
+    request: SubmitJobRequest,
+    db: Session = Depends(get_db),
+) -> SuccessResponse | ErrorResponse:
+    try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job = db.get(Job, job_id)
+        if job is None:
+            return NotFoundErrorResponse(message="job not found with the given id")
+
+        if job.owner != owner or job.status != "registered":
+            return NotFoundErrorResponse(
+                message=f"{job_id} job is not in valid status for submission (valid status for submission: 'registered')"
+            )
+
+        # name is optional
+        job.name = validate_name(request)
+        # description is optional
+        job.description = validate_description(request)
+
+        device = db.get(Device, request.device_id)  # type: ignore
+        if device is None:
+            return BadRequestResponse(message="device not found")
+        if device.status != "available":
+            return BadRequestResponse(f"device {device.id} is not available")
+        job.device_id = request.device_id
+
+        job.transpiler_info = json.dumps(request.transpiler_info)
+        job.simulator_info = json.dumps(request.simulator_info)
+        job.mitigation_info = json.dumps(request.mitigation_info)
+        job.job_type = JobType(request.job_type)
+        job.shots = request.shots
+        job.status = JobStatus.submitted
+        job.submitted_at = datetime.now()
+
+        if not validate_job_info(job_id):
+            return BadRequestResponse(f"job information for {job_id} job not found")
+
+        db.commit()
+        return SuccessResponse(message="job submitted")
+
+    except Exception as e:
+        logger.info(f"error: {str(e)}")
+        return InternalServerErrorResponse(message=str(e))
+
+
 @router.get(
     "/jobs",
     response_model=list[JobBase | SubmittedJob | RegisteredJob],
@@ -258,74 +318,6 @@ def validate_job_info(job_id: str) -> bool:
                 f"job information file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not accessible"
             )
             raise exc
-
-
-@router.post(
-    "/jobs/{job_id}",
-    response_model=SuccessResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def submit_job(
-    event: Event,
-    job_id: str,
-    request: SubmitJobRequest,
-    db: Session = Depends(get_db),
-) -> SuccessResponse | ErrorResponse:
-    try:
-        owner = event.state.owner
-        logger.info("invoked!", extra={"owner": owner})
-
-        job = db.get(Job, job_id)
-        if job is None:
-            return NotFoundErrorResponse(message="job not found with the given id")
-
-        if job.owner != owner or job.status != "registered":
-            return NotFoundErrorResponse(
-                message=f"{job_id} job is not in valid status for submission (valid status for submission: 'registered')"
-            )
-
-        # name is optional
-        job.name = validate_name(request)
-        # description is optional
-        job.description = validate_description(request)
-
-        device = db.get(Device, request.device_id)  # type: ignore
-        if device is None:
-            return BadRequestResponse(message="device not found")
-        if device.status != "available":
-            return BadRequestResponse(f"device {device.id} is not available")
-        job.device_id = request.device_id
-
-        job.transpiler_info = json.dumps(request.transpiler_info)
-        job.simulator_info = json.dumps(request.simulator_info)
-        job.mitigation_info = json.dumps(request.mitigation_info)
-        job.job_type = JobType(request.job_type)
-        job.shots = request.shots
-        job.status = JobStatus.submitted
-        job.submitted_at = datetime.now()
-
-        if not validate_job_info(job_id):
-            return BadRequestResponse(f"job information for {job_id} job not found")
-
-        # TODO: check new SSE handling with general S3 upload
-        # # put the user program to S3 when SSE
-        # is_success_put_s3 = put_user_program_to_s3(job)
-        # if not is_success_put_s3:
-        #     return InternalServerErrorResponse(
-        #         message="Failed to upload the user program to S3"
-        #     )
-
-        db.commit()
-        return SuccessResponse(message="job submitted")
-
-    except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get(

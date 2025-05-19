@@ -185,7 +185,7 @@ jobs.job_id:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
-  post:
+  patch:
     tags:
       - job
     summary: "Complete submission of a quantum job"

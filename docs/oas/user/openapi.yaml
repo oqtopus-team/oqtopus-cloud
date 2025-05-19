@@ -263,7 +263,7 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
-    post:
+    patch:
       tags:
         - job
       summary: Complete submission of a quantum job
@@ -1080,6 +1080,13 @@ components:
         ready_at: null
         running_at: null
         ended_at: null
+    success.SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     jobs.SubmitJobType:
       type: string
       enum:
@@ -1140,13 +1147,6 @@ components:
         - device_id
         - shots
         - job_type
-    success.SuccessResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
     jobs.GetJobStatusResponse:
       description: job status
       type: object
