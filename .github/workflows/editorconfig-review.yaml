@@ -24,7 +24,7 @@ jobs:
 
       - name: Init envs
         run: |
-          echo "DIST_DIR=usr/local/bin" >> $GITHUB_ENV
+          echo "DIST_DIR=/usr/local/bin" >> $GITHUB_ENV
 
       - name: Install editorconfig-checker
         run: |
