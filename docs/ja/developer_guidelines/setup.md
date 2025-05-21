@@ -30,6 +30,8 @@ Aquaをインストールするには、以下のコマンドを実行します�
 make setup-aqua
 ```
 
+このコマンドの最後に出てくるメッセージで`aqua`をPATHに追加するように指示されますので従ってください。
+
 ## 環境の確認
 
 環境を確認するには、以下のコマンドを実行します：
@@ -80,25 +82,13 @@ pyenv local 3.12.3
 
 ### Poetry
 
-PyenvでインストールしたPythonバージョンを使用するには、以下のコマンドを実行します：
+環境設定の一環でpoetryを設定するために、以下のコマンドを実行します：
 
-```bash
-poetry env use ~/.pyenv/shims/python
+```
+make setup-poetry
 ```
 
-Python環境をセットアップするには、以下のコマンドを実行します：
-
-```bash
-poetry config virtualenvs.in-project true
-```
-
-次に、依存関係をインストールします：
-
-```bash
-poetry install
-```
-
-これで、ルートディレクトリに.venvが作成されます。
+このコマンドは、PyenvでインストールされたPythonバージョンの使用、Python環境のセットアップ、依存関係のインストールに必要です。これにより、ルートディレクトリに `.venv` が作成されます。
 
 ## ドキュメンテーションサーバーの起動
 

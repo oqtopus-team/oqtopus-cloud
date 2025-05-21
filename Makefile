@@ -66,3 +66,8 @@ help: ## Show this help message
 setup-hooks:
 	@bash scripts/setup_hooks.sh
 	@echo "Setup hooks successfully"
+
+setup-poetry:
+	@poetry env use ~/.pyenv/shims/python
+	@poetry config virtualenvs.in-project true
+	@poetry install

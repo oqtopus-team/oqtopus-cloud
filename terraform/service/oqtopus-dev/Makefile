@@ -20,7 +20,7 @@ lint: ## Run tflint
 	@tflint --recursive --config $(PWD)/.tflint.hcl --fix
 
 plan: ## Run terraform plan
-	@terraform plan
+	@terraform plan > diffs.ansi
 
 apply: ## Run terraform apply
 	@terraform apply

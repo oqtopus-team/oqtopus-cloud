@@ -1,0 +1,5 @@
+# infrastructure/terraform.tfvars
+product="oqtopus"
+org="oqtopus"
+env="dev"
+region = "ap-northeast-1"

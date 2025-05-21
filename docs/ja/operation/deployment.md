@@ -31,6 +31,29 @@ infrastructureディレクトリには、ネットワークやデータストア
 
 まずはネットワークやデータストアなどのインフラ環境をデプロイするための手順について説明します。
 
+### 環境変数ファイルの生成
+
+環境変数ファイルを生成するために、以下のコマンドを実行します：
+
+```bash
+cd terraform
+make generate-env
+```
+
+このコマンドで、4つの環境変数ファイルが作成されます：
+
+```bash
+.
+├── infrastructure
+│   └── oqtopus-dev
+│       ├── oqtopus-dev.tfbackend
+│       └── terraform.tfvars
+└── service
+    └── oqtopus-dev
+        ├── oqtopus-dev.tfbackend
+        └── terraform.tfvars
+```
+
 ### インフラ層のデプロイ
 
 terraform/infrastructure/oqtopus-devが各環境のデプロイメントディレクトリです。
@@ -47,7 +70,7 @@ aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-dev --profile oqtopus-d
 aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
 ```
 
-次に、terraformの設定ファイルを用意します。以下の2つのファイルを作成します。
+次に、terraformの設定ファイルを用意します。以下の2つのファイルを編集します。
 
 ```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 # infrastructure/oqtopus-dev.tfbackend
@@ -86,7 +109,7 @@ terraform apply
 
 次に、サービスのデプロイについて説明します。
 
-先ほどと同様に、terraformの設定ファイルを用意します。以下の2つのファイルを作成します。
+先ほどと同様に、terraformの設定ファイルを用意します。以下の2つのファイルを編集します。
 
 ```hcl:service/oqtopus-dev/oqtopus-dev.tfbackend
 # service/oqtopus-dev.tfbackend
@@ -107,6 +130,11 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+repository       = "oqtopus-cloud"
+github_user      = "oqtopus-team"
+branch           = "develop"
+aws_account_id   = "ここにAWSアカウントIDを記述"
 ```
 
 `terraform init`で初期化を行います。以下のコマンドを実行します。
