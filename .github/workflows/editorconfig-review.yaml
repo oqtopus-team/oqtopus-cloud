@@ -22,18 +22,23 @@ jobs:
         with:
           reviewdog_version: latest
 
+      - name: Init envs
+        run: |
+          echo "DIST_DIR=usr/local/bin" >> $GITHUB_ENV
+
       - name: Install editorconfig-checker
         run: |
           VERSION="v3.3.0"
           OS="linux"
           ARCH="amd64"
-          DIST_PATH="/usr/local/bin/editorconfig-checker"
-          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/${VERSION}/download/ec-${OS}-${ARCH} -o ${DIST_PATH}
-          chmod +x ${DIST_PATH}
+
+          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/download/${VERSION}/ec-${OS}-${ARCH}.tar.gz  -o ec.tar.gz
+          tar -xzf ec.tar.gz -C ${{ env.DIST_DIR }}
+          chmod +x ${{ env.DIST_DIR }}/editorconfig-checker
 
       - name: Run editorconfig-checker with reviewdog
         run: |
-          editorconfig-checker | reviewdog -efm="%f:%l:%c: %m" \
+          ${{ env.DIST_DIR }}/editorconfig-checker | reviewdog -efm="%f:%l:%c: %m" \
             -name="editorconfig-checker" -reporter=github-pr-review -level=warning
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
