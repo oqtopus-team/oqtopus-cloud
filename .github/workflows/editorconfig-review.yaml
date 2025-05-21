@@ -37,11 +37,11 @@ jobs:
 
       - name: Run editorconfig-checker with reviewdog
         run: |
-          bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig 2> errors.log
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} -format codeclimate -config .editorconfig 2> errors.log
           echo "=========="
           cat errors.log
           echo "=========="
-          bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig | \
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} -format codeclimate -config .editorconfig | \
           reviewdog -efm="%f:\n\t%l: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
