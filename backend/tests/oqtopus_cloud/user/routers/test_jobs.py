@@ -30,11 +30,48 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmittedJob,
     SubmitJobRequest,
 )
+
 from pydantic import ValidationError
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy import select
 
 client = TestClient(app)
+
+
+def _get_registered_model(n: int) -> Job:
+    model_dict = {
+        "id": f"testjob{n}id",
+        "owner": "admin",
+        "name": "",
+        "device_id": "null",
+        "job_type": "none",
+        "transpiler_info": "null",
+        "simulator_info": "null",
+        "mitigation_info": "null",
+        "status": "registered",
+        "shots": 0,
+        "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+    }
+    return Job(**model_dict)
+
+
+def _get_submit_body():
+    return {
+        "name": "submit-job-test",
+        "description": "Submit job test",
+        "device_id": "Kawasaki",
+        "simulator_info": {"this_is": "simulator info"},
+        "transpiler_info": {"this_is": "transpiler info"},
+        "mitigation_info": {
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        "job_type": "sampling",
+        "shots": 1024,
+    }
 
 
 def _get_model(n: int) -> Job:
@@ -93,6 +130,140 @@ def test_register_job(
     assert job_model.status == "registered"
     assert job_model.job_type == "none"
     assert job_model.shots == 0
+
+
+@mock_aws
+def test_submit_job(
+    test_db,
+):
+    """_summary_
+    Complete job submission with PATCH /jobs/{job_id} test
+    """
+    test_db.flush()
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="dummy_job_info")
+
+    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    assert response.status_code == 200
+
+    actual = test_db.get(Job, "testjob1id")
+
+    assert actual is not None
+    assert actual.owner == "admin"
+
+    assert actual.name == "submit-job-test"
+    assert actual.description == "Submit job test"
+    assert actual.device_id == "Kawasaki"
+    assert actual.simulator_info == '{"this_is": "simulator info"}'
+    assert actual.transpiler_info == '{"this_is": "transpiler info"}'
+    assert actual.mitigation_info == '{"field1": "value1", "field2": {"subfield1": "value2", "subfield2": ["value3", 42, true]}}'
+    assert actual.job_type == "sampling"
+    assert actual.shots == 1024
+    assert actual.execution_time is None
+    assert actual.submitted_at is not None
+    assert actual.ready_at is None
+    assert actual.running_at is None
+    assert actual.ended_at is None
+    assert actual.created_at == datetime(2024, 3, 4, 12, 34, 56)
+    assert actual.updated_at == actual.submitted_at
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/input.zip")
+
+
+def test_submit_job_404(
+    test_db,
+):
+    """_summary_
+    Complete job submission with PATCH /jobs/{job_id} test, job_id not exist
+    """
+    response = client.patch("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517", content=json.dumps(_get_submit_body()))
+    assert response.status_code == 404
+    assert response.json() == {"message": "job not found with the given id"}
+
+
+@mock_aws
+def test_submit_job_400_invalid_status(
+    test_db,
+):
+    """_summary_
+    Complete job submission with PATCH /jobs/{job_id} test, job already submitted
+    """
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    assert response.status_code == 400
+    assert response.json() == {"message": "testjob1id job is not in valid status for submission (valid status for submission: 'registered')"}
+
+
+@mock_aws
+def test_submit_job_400_missing_job_info(
+    test_db,
+):
+    """_summary_
+    Complete job submission with PATCH /jobs/{job_id} test, no S3 job_info file
+    """
+    test_db.flush()
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    assert response.status_code == 400
+    assert response.json() == {"message": "job information for testjob1id job not found"}
+
+
+@mock_aws
+def test_submit_job_422_invalid_input(
+    test_db,
+):
+    """_summary_
+    Complete job submission with PATCH /jobs/{job_id} test: try submit values valid only for newly registered jobs
+    """
+    test_db.flush()
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="dummy_job_info")
+
+    body = _get_submit_body()
+    body["job_type"] = "none"
+    response = client.patch("/jobs/testjob1id", content=json.dumps(body))
+    assert response.status_code == 422
+
+    body = _get_submit_body()
+    body["shots"] = 0
+    response = client.patch("/jobs/testjob1id", content=json.dumps(body))
+    assert response.status_code == 422
 
 
 def test_get_job_404(
