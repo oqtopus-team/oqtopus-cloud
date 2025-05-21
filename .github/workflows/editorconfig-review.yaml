@@ -32,9 +32,9 @@ jobs:
           VERSION="v3.3.0"
 
           curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/download/${VERSION}/ec-${{ env.OS }}-${{ env.ARCH }}.tar.gz  -o ec.tar.gz
-          tar -xzf ec.tar.gz ec
+          tar -xzf ec.tar.gz
           ls -l
-          chmod +x ec
+          chmod -R +x ec-${{ env.OS }}-${{ env.ARCH }}
 
       - name: Run editorconfig-checker with reviewdog
         run: |
