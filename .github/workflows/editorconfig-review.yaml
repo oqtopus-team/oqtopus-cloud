@@ -31,6 +31,8 @@ jobs:
           VERSION="v3.3.0"
           OS="linux"
           ARCH="amd64"
+          pwd
+          ls
 
           curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/download/${VERSION}/ec-${OS}-${ARCH}.tar.gz  -o ec.tar.gz
           tar -xzf ec.tar.gz -C ${{ env.DIST_DIR }}
