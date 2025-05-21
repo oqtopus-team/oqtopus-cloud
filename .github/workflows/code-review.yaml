@@ -24,8 +24,12 @@ jobs:
 
       - name: Install editorconfig-checker
         run: |
-          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download/ec-linux-amd64 -o /usr/local/bin/editorconfig-checker
-          chmod +x /usr/local/bin/editorconfig-checker
+          VERSION="v3.3.0"
+          OS="linux"
+          ARCH="amd64"
+          DIST_PATH="/usr/local/bin/editorconfig-checker"
+          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/${VERSION}/download/ec-${OS}-${ARCH} -o ${DIST_PATH}
+          chmod +x ${DIST_PATH}
 
       - name: Run editorconfig-checker with reviewdog
         run: |
