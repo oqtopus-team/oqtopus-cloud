@@ -42,6 +42,6 @@ jobs:
           cat errors.log
           echo "=========="
           bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig | \
-          reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning
+          reviewdog -efm="%f:\n\t%l: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
