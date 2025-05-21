@@ -61,7 +61,6 @@ def _get_model(n: int) -> Job:
 def assert_jobs_equal(actual: SubmittedJob, expect: SubmittedJob):
     for prop in vars(expect):
         if prop == "job_info":
-            pass
             assert getattr(actual, prop).startswith(getattr(expect, prop))
         else:
             assert getattr(actual, prop) == getattr(expect, prop)
@@ -90,8 +89,10 @@ def test_register_job(
     # basic validation of DB record
     job_model = test_db.get(Job, new_job_id)
     assert job_model is not None
+    assert job_model.name is ""
     assert job_model.status == "registered"
     assert job_model.job_type == "none"
+    assert job_model.shots == 0
 
 
 def test_get_job_404(

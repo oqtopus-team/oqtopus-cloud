@@ -175,11 +175,10 @@ jobs.RegisteredJob:
      - $ref: "#/jobs.JobBase"
   required:
     - job_id
-    - job_type
     - status
   example: {
       "job_id": "06823102-73a0-793c-8000-70ac55fe4811",
-      "name": null,
+      "name": "",
       "description": null,
       "job_type": "none",
       "status": "registered",
@@ -273,8 +272,10 @@ jobs.JobBase:
       type: string
       example: "Kawasaki"
     shots:
+      description: |-
+        0 is valid only for newly registered job_ids (job status=registered)
       type: integer
-      minimum: 1
+      minimum: 0
       maximum: 1e7
       example: "1000"
     job_info:

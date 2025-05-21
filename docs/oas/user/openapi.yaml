@@ -172,6 +172,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/jobs.JobBase'
+              example:
+                - job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                  name: Bell State Sampling
+                  description: Bell State Sampling Example
+                  device_id: Kawasaki
+                  job_type: estimation
+                  job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+                  transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
+                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
+                  mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
+                  shots: 1000
+                  status: submitted
+                  execution_time: null
+                  submitted_at: '2022-10-19T11:45:34+09:00'
+                  ready_at: null
+                  running_at: null
+                  ended_at: null
+                - job_id: 0682b528-aef9-7492-8000-d8b69371c5b5
+                  name: ''
+                  description: null
+                  device_id: null
+                  job_type: none
+                  job_info: null
+                  transpiler_info: null
+                  simulator_info: null
+                  mitigation_info: null
+                  shots: 0
+                  status: registered
+                  execution_time: null
+                  submitted_at: null
+                  ready_at: null
+                  running_at: null
+                  ended_at: null
         '401':
           description: Unauthorized
           content:
@@ -239,6 +272,45 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/jobs.SubmittedJob'
                   - $ref: '#/components/schemas/jobs.RegisteredJob'
+              examples:
+                submitted_job:
+                  description: Submitted job example
+                  value:
+                    job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+                    name: Bell State Sampling
+                    description: Bell State Sampling Example
+                    device_id: Kawasaki
+                    job_type: estimation
+                    job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+                    transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
+                    simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
+                    mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
+                    shots: 1000
+                    status: submitted
+                    execution_time: null
+                    submitted_at: '2022-10-19T11:45:34+09:00'
+                    ready_at: null
+                    running_at: null
+                    ended_at: null
+                registered_job:
+                  description: Registered job example
+                  value:
+                    job_id: 0682b528-aef9-7492-8000-d8b69371c5b5
+                    name: ''
+                    description: null
+                    device_id: null
+                    job_type: none
+                    job_info: null
+                    transpiler_info: null
+                    simulator_info: null
+                    mitigation_info: null
+                    shots: 0
+                    status: registered
+                    execution_time: null
+                    submitted_at: null
+                    ready_at: null
+                    running_at: null
+                    ended_at: null
         '400':
           description: Bad Request
           content:
@@ -929,8 +1001,9 @@ components:
           type: string
           example: Kawasaki
         shots:
+          description: 0 is valid only for newly registered job_ids (job status=registered)
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 10000000
           example: '1000'
         job_info:
@@ -1061,11 +1134,10 @@ components:
         - $ref: '#/components/schemas/jobs.JobBase'
       required:
         - job_id
-        - job_type
         - status
       example:
         job_id: 06823102-73a0-793c-8000-70ac55fe4811
-        name: null
+        name: ''
         description: null
         job_type: none
         status: registered

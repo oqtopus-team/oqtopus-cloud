@@ -43,7 +43,10 @@ class JobBase(BaseModel):
     job_type: JobType | None = None
     status: JobStatus | None = None
     device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
-    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    shots: Annotated[int | None, Field(examples=["1000"], ge=0, le=10000000)] = None
+    """
+    0 is valid only for newly registered job_ids (job status=registered)
+    """
     job_info: Annotated[
         str | None,
         Field(
@@ -149,7 +152,10 @@ class SubmittedJob(JobBase):
     job_type: JobType
     status: JobStatus
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    shots: Annotated[int, Field(examples=["1000"], ge=0, le=10000000)]
+    """
+    0 is valid only for newly registered job_ids (job status=registered)
+    """
     job_info: Annotated[
         str,
         Field(
@@ -167,7 +173,6 @@ class SubmittedJob(JobBase):
 
 class RegisteredJob(JobBase):
     job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    job_type: JobType
     status: JobStatus
 
 

@@ -111,17 +111,16 @@ def register_job(
         job = Job(
             id=job_id,
             owner=owner,
-            job_type="none",
             status="registered",
             created_at=datetime.now(),
             # dummy data to comply with the NOT NULL DB constraint
             name="",
-            description="",
-            device_id="",
-            transpiler_info="",
-            simulator_info="",
-            mitigation_info="",
-            shots=-1,
+            device_id="null",
+            transpiler_info="null",
+            simulator_info="null",
+            mitigation_info="null",
+            job_type="none",
+            shots=0,
         )
         db.add(job)
         db.commit()
@@ -701,6 +700,8 @@ def model_to_schema(
         else:
             return RegisteredJob(
                 job_id=model.id,
+                name=model.name,
+                shots=model.shots,
                 job_type=JobType(model.job_type),
                 status=JobStatus(model.status),
             )
