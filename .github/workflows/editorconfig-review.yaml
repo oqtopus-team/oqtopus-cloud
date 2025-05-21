@@ -37,7 +37,7 @@ jobs:
 
       - name: Run editorconfig-checker with reviewdog
         run: |
-          bin/ec-${{ env.OS }}-${{ env.ARCH }} -format codeclimate -config .editorconfig 2> errors.log
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} 2> errors.log
           echo "=========="
           cat errors.log
         env:
