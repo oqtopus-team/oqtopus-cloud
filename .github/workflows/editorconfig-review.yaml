@@ -37,6 +37,10 @@ jobs:
 
       - name: Run editorconfig-checker with reviewdog
         run: |
+          bin/ec-${{ env.OS }}-${{ env.ARCH }}
+          echo "=========="
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig
+          echo "=========="
           bin/ec-${{ env.OS }}-${{ env.ARCH }} | reviewdog -efm="%f:%l:%c: %m" \
             -name="editorconfig-checker" -reporter=github-pr-review -level=warning
         env:
