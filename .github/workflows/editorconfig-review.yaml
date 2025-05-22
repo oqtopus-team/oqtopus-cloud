@@ -37,10 +37,16 @@ jobs:
 
       - name: Run editorconfig-checker with reviewdog
         run: |
-          bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig | python3 scripts/ecc_converter.py > result.txt
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} -config .editorconfig > result1.txt
           echo "========"
-          cat result.txt
+          cat result1.txt
           echo "========"
-          cat result.txt | reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning
+
+          python3 scripts/ecc_converter.py < result1.txt > result2.txt
+          echo "========"
+          cat result2.txt
+          echo "========"
+
+          reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning < result2.txt
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
