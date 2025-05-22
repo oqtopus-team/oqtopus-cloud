@@ -1,5 +1,5 @@
-import sys
 import re
+import sys
 
 
 def convert_to_efm(lines):
@@ -21,4 +21,6 @@ def convert_to_efm(lines):
 
 
 if __name__ == "__main__":
+    print("Converting to EFM format...")
     convert_to_efm(sys.stdin)
+    print("Conversion complete.")
