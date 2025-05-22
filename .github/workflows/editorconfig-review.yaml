@@ -37,8 +37,12 @@ jobs:
 
       - name: Run editorconfig-checker with reviewdog
         run: |
-          bin/ec-${{ env.OS }}-${{ env.ARCH }} 2> result_ecc.txt || true
-          python3 scripts/ecc_converter.py < result_ecc.txt > result_py.txt
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} > output_ecc.txt 2> errors_ecc.txt || true
+          python3 scripts/ecc_converter.py < output_ecc.txt > result_py.txt
+          echo "======"
+          cat output_ecc.txt
+          echo "======"
+          cat errors_ecc.txt
           echo "======"
           cat result_py.txt
           echo "======"
