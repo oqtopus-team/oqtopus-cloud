@@ -38,6 +38,7 @@ jobs:
       - name: Run editorconfig-checker with reviewdog
         run: |
           bin/ec-${{ env.OS }}-${{ env.ARCH }} > output_ecc.txt || true
+          head -5 output_ecc.txt
           python3 scripts/ecc_converter.py < output_ecc.txt > result_py.txt
           cat result_py.txt
           reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review -level=warning < result_py.txt
