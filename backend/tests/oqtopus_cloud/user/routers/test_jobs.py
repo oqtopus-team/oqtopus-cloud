@@ -26,6 +26,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobBase,
     JobStatus,
     JobType,
+    RegisteredJob,
     RegisterJobResponse,
     SubmittedJob,
     SubmitJobRequest,
@@ -74,7 +75,7 @@ def _get_submit_body():
     }
 
 
-def _get_model(n: int) -> Job:
+def _get_submitted_model(n: int) -> Job:
     model_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
@@ -96,11 +97,14 @@ def _get_model(n: int) -> Job:
 
 
 def assert_jobs_equal(actual: SubmittedJob, expect: SubmittedJob):
-    for prop in vars(expect):
-        if prop == "job_info":
-            assert getattr(actual, prop).startswith(getattr(expect, prop))
-        else:
-            assert getattr(actual, prop) == getattr(expect, prop)
+    if expect.status == JobStatus.registered:
+        assert actual == expect
+    else:
+        for prop in vars(expect):
+            if prop == "job_info":
+                assert getattr(actual, prop).startswith(getattr(expect, prop))
+            else:
+                assert getattr(actual, prop) == getattr(expect, prop)
 
 
 def test_register_job(
@@ -172,7 +176,7 @@ def test_submit_job(
     assert actual.ready_at is None
     assert actual.running_at is None
     assert actual.ended_at is None
-    assert actual.created_at == datetime(2024, 3, 4, 12, 34, 56)
+    assert actual.created_at == pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56))
     assert actual.updated_at == actual.submitted_at
 
     # clean up
@@ -198,7 +202,7 @@ def test_submit_job_400_invalid_status(
     Complete job submission with PATCH /jobs/{job_id} test, job already submitted
     """
     test_db.flush()
-    test_db.add(_get_model(1))
+    test_db.add(_get_submitted_model(1))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
@@ -289,18 +293,14 @@ def test_get_jobs_simple(
 
     test_db.flush()
 
-    submitted_job_model = _get_model(1)
-    test_db.add(submitted_job_model)
-    succeeded_job_model = _get_model(2)
-    succeeded_job_model.status = "succeeded"
-
-    test_db.add(succeeded_job_model)
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs")
-    adapter = TypeAdapter(List[SubmittedJob])
+    adapter = TypeAdapter(List[SubmittedJob | RegisteredJob])
     actual = adapter.validate_python(response.json())
 
     expect = [
@@ -326,27 +326,13 @@ def test_get_jobs_simple(
             running_at=None,
             ended_at=None,
         ),
-        SubmittedJob(
+        RegisteredJob(
             job_id="testjob2id",
-            name="testjob2",
-            description="test job 2",
-            device_id="Kawasaki",
-            job_type=JobType.sampling,
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob2id/output.zip",
-            transpiler_info={"this_is": "transpiler_info"},
-            simulator_info={"this_is": "simulator_info"},
-            mitigation_info={
-                "field1": "value1",
-                "field2": "value2",
-                "field3": "value3",
-            },
-            status=JobStatus.succeeded,
-            shots=1000,
-            execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            ready_at=None,
-            running_at=None,
-            ended_at=None,
+            name="",
+            job_type=JobType.none,
+            status=JobStatus.registered,
+            shots=0,
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
     ]
 
@@ -354,32 +340,6 @@ def test_get_jobs_simple(
     assert len(expect) == len(actual)
     for (act, exp) in zip(actual, expect):
         assert_jobs_equal(act, exp)
-
-
-def test_get_jobs_ignore_illegal_job(
-    test_db,
-):
-    """_summary_
-    Simple GET /jobs tests
-    """
-
-    test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
-    # job3 has invalid job_info
-    job_3 = _get_model(3)
-    job_3.job_info = json.dumps({"dummy": ["dummy"]})
-    test_db.add(job_3)
-    test_db.commit()
-
-    response = client.get("/jobs")
-    adapter = TypeAdapter(List[SubmittedJob])
-    actual = adapter.validate_python(response.json())
-
-    assert response.status_code == 200
-    assert len(actual) == 2
-    assert actual[0].job_id == "testjob1id"
-    assert actual[1].job_id == "testjob2id"
 
 
 def test_get_jobs_filtering_fields(
@@ -390,8 +350,8 @@ def test_get_jobs_filtering_fields(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
@@ -416,8 +376,8 @@ def test_get_jobs_filtering_fields(
 
 def test_get_jobs_all_fields(test_db):
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     # This is the request sent from oqtopus-frontend
@@ -438,8 +398,8 @@ def test_get_jobs_invalid_fields(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
@@ -462,8 +422,8 @@ def test_get_jobs_filtering_start_time(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get(
@@ -508,8 +468,8 @@ def test_get_jobs_filtering_end_time(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
@@ -552,8 +512,8 @@ def test_get_jobs_filtering_search_string(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get("/jobs?q=1&order=ASC")
@@ -596,8 +556,8 @@ def test_get_jobs_desc_order(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
-    test_db.add(_get_model(2))
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_submitted_model(2))
     test_db.commit()
 
     response = client.get("/jobs?order=DESC")
@@ -663,7 +623,7 @@ def test_get_jobs_pagination(
 
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_model(i))
+        test_db.add(_get_submitted_model(i))
     test_db.commit()
 
     response = client.get("/jobs?page=3&size=3&fields=job_id")
@@ -694,7 +654,7 @@ def test_get_jobs_all_parameters(
 
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_model(i))
+        test_db.add(_get_submitted_model(i))
     test_db.commit()
 
     response = client.get(
@@ -756,7 +716,7 @@ def test_get_jobs_handler(
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
+    test_db.add(_get_submitted_model(1))
     test_db.commit()
 
     response = client.get("/jobs")
@@ -795,16 +755,16 @@ def test_get_get(test_db):
     """
 
     test_db.flush()
-    test_db.add(_get_model(1))
+    test_db.add(_get_submitted_model(1))
     test_db.commit()
 
     sql = select(Job).order_by(Job.created_at)
 
-    resp1 = client.get(f"/jobs/{_get_model(1).id}")
+    resp1 = client.get(f"/jobs/{_get_submitted_model(1).id}")
     assert resp1.status_code == 200
     before_db = test_db.execute(sql).scalars().all()
 
-    resp2 = client.get(f"/jobs/{_get_model(1).id}")
+    resp2 = client.get(f"/jobs/{_get_submitted_model(1).id}")
     assert resp2.status_code == 200
     after_db = test_db.execute(sql).scalars().all()
 
@@ -991,7 +951,7 @@ def test_get_sselog(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1037,7 +997,7 @@ def test_get_sselog_invalid_owner(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     job_model.owner = "user1"
@@ -1073,7 +1033,7 @@ def test_get_sselog_unknown_jobid(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     job_model.id = "anotherjobid"
@@ -1109,7 +1069,7 @@ def test_get_sselog_invalid_jobtype(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sampling"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1144,7 +1104,7 @@ def test_get_sselog_running_job(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "running"
     test_db.add(job_model)
@@ -1179,7 +1139,7 @@ def test_get_sselog_no_log(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "failed"
     test_db.add(job_model)
@@ -1335,7 +1295,7 @@ def test_delete_s3_folder(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1382,7 +1342,7 @@ def test_delete_s3_folder_no_folder(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1417,7 +1377,7 @@ def test_delete_s3_folder_no_file(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1454,7 +1414,7 @@ def test_delete_s3_folder_folder_only(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1491,7 +1451,7 @@ def test_delete_s3_not_sse_job(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sampling"
     job_model.status = "succeeded"
     test_db.add(job_model)
@@ -1514,7 +1474,7 @@ def test_delete_s3_folder_exception(
     """
 
     test_db.flush()
-    job_model = _get_model(1)
+    job_model = _get_submitted_model(1)
     job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)

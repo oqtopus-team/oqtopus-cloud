@@ -277,12 +277,7 @@ def get_jobs(
         for model, job in [
             (model, model_to_schema(model, fields_list)) for model in models.items
         ]:
-            if isinstance(job, ValueError):
-                logger.warning(str(job))
-                # ignore illegal jobs
-                continue
-            else:
-                results.append(job)
+            results.append(job)
         return results
 
     except Exception as e:
@@ -342,11 +337,7 @@ def get_job(
             return NotFoundErrorResponse(message="job not found with the given id")
         job = model_to_schema(job_model)
         if not (isinstance(job, (SubmittedJob, RegisteredJob))):
-            if isinstance(job, ValueError):
-                logger.warning("warn: Failed to encode job model to schema.")
-                return NotFoundErrorResponse(message="job not found with the given id")
-            else:
-                raise TypeError("invalid job schema type")
+            raise TypeError("invalid job schema type")
         return job
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -629,7 +620,7 @@ MAP_MODEL_TO_SCHEMA = {
 
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
-) -> JobBase | RegisteredJob | SubmittedJob | ValueError:
+) -> JobBase | RegisteredJob | SubmittedJob:
     def get_presigned_url(job_id: str, status: str) -> str:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
         filename = (
