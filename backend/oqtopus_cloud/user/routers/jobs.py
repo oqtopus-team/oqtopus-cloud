@@ -221,6 +221,8 @@ def get_jobs(
         else:
             arg_order = asc(Job.created_at)
 
+        stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
+
         # Fields Control
         fields_list = None
         if fields is not None:
@@ -229,20 +231,23 @@ def get_jobs(
                 field in SubmittedJob.model_fields for field in fields_list
             ]
             if all(valid_fields_list):
-                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+                # this removes job_info field which doesn't have a relevant model property
                 converted_fields_list = [
-                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                    MAP_SCHEMA_TO_MODEL[field]
+                    for field in fields_list
+                    if field in MAP_SCHEMA_TO_MODEL
                 ]
-                columns = [getattr(Job, field) for field in converted_fields_list]
+                arg_select = [getattr(Job, field) for field in converted_fields_list]
+
+                # setting up name and job_info in model_to_schema() requires status
+                if "name" in arg_select or "job_info" in arg_select:
+                    arg_select.append("status")
 
                 # remove duplicated fields
-                arg_select = list(dict.fromkeys(columns))
-                stmt = (
-                    select(Job)
-                    .filter(Job.owner == owner)
-                    .order_by(arg_order)
-                    .options(load_only(*arg_select))
-                )
+                arg_select = list(dict.fromkeys(arg_select))
+
+                if arg_select:
+                    stmt = stmt.options(load_only(*arg_select))
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -251,8 +256,6 @@ def get_jobs(
                 return InternalServerErrorResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
-        else:
-            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
 
         # Filtering Jobs
         if start_time is not None:
@@ -602,7 +605,6 @@ MAP_MODEL_TO_SCHEMA = {
     "name": "name",
     "description": "description",
     "device_id": "device_id",
-    "job_info": "job_info",
     "transpiler_info": "transpiler_info",
     "simulator_info": "simulator_info",
     "mitigation_info": "mitigation_info",
@@ -616,6 +618,9 @@ MAP_MODEL_TO_SCHEMA = {
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
+
+
+MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 
 
 def model_to_schema(
@@ -700,11 +705,19 @@ def model_to_schema(
         dict_schema: dict[str, Any] = {}
         for k in fields:
             if k == "job_id":
-                dict_schema["job_id"] = model.id
+                dict_schema[k] = model.id
+            elif k == "device_id":
+                dict_schema[k] = (
+                    model.device_id if model.status != "registered" else None
+                )
             elif k == "job_type":
                 dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
-                dict_schema[k] = get_presigned_url(model.id, model.status)
+                dict_schema[k] = (
+                    get_presigned_url(model.id, model.status)
+                    if model.status != "registered"
+                    else None
+                )
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
             elif is_object_field(k):
@@ -716,10 +729,3 @@ def model_to_schema(
         return JobBase(**dict_schema)
     else:
         return None
-
-
-# def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
-#     if info.operator is not None:
-#         return [JobType.estimation]
-#     else:
-#         return [JobType.sampling, JobType.multi_manual, JobType.sse]

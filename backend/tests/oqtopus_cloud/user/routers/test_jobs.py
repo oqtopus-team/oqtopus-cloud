@@ -97,14 +97,14 @@ def _get_submitted_model(n: int) -> Job:
 
 
 def assert_jobs_equal(actual: SubmittedJob, expect: SubmittedJob):
-    if expect.status == JobStatus.registered:
-        assert actual == expect
-    else:
-        for prop in vars(expect):
-            if prop == "job_info":
-                assert getattr(actual, prop).startswith(getattr(expect, prop))
-            else:
+    for prop in vars(expect):
+        if getattr(expect, prop) is None:
+            assert getattr(actual, prop) is None
+        else:
+            if prop != "job_info":
                 assert getattr(actual, prop) == getattr(expect, prop)
+            else:
+                assert getattr(actual, prop).startswith(getattr(expect, prop))
 
 
 def test_register_job(
@@ -176,7 +176,7 @@ def test_submit_job(
     assert actual.ready_at is None
     assert actual.running_at is None
     assert actual.ended_at is None
-    assert actual.created_at == pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56))
+    assert actual.created_at == datetime(2024, 3, 4, 12, 34, 56)
     assert actual.updated_at == actual.submitted_at
 
     # clean up
@@ -346,38 +346,80 @@ def test_get_jobs_filtering_fields(
     test_db,
 ):
     """_summary_
-    GET job_id, status and name by ASC order
+    GET job_id, name, device_id, job_type, shots and status by ASC order
     """
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
+    response = client.get("/jobs?fields=job_id%2Cname%2Cdevice_id%2Cjob_type%2Cshots%2Cstatus&order=ASC")
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
+
     expect = [
         JobBase(
             job_id="testjob1id",
+            device_id="Kawasaki",
             name="testjob1",
+            job_type=JobType.sampling,
+            shots=1000,
             status=JobStatus.submitted,
         ),
         JobBase(
             job_id="testjob2id",
-            name="testjob2",
-            status=JobStatus.submitted,
+            name="",
+            device_id=None,
+            job_type=JobType.none,
+            shots=0,
+            status=JobStatus.registered,
         ),
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
+
+
+def test_get_jobs_filtering_job_info(
+    test_db,
+):
+    """_summary_
+    GET job_info (job_info requires dedicated handling as it is not stored in DB)
+    """
+
+    test_db.flush()
+    test_db.add(_get_submitted_model(1))
+    test_db.add(_get_registered_model(2))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+
+    response = client.get("/jobs?fields=job_info&order=ASC")
+    adapter = TypeAdapter(List[JobBase])
+    actual = adapter.validate_python(response.json())
+
+    expect = [
+        JobBase(
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"
+        ),
+        JobBase(
+            job_info=None,
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_all_fields(test_db):
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
 
     # This is the request sent from oqtopus-frontend
@@ -399,7 +441,7 @@ def test_get_jobs_invalid_fields(
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
 
     response = client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
