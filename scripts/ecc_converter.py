@@ -17,7 +17,7 @@ def convert_to_efm(lines):
                 print(f"{current_file}:{lineno}:1: {msg}")
             else:
                 msg = line.strip()
-                print(f"{current_file}:1:1: {msg}")
+                print(f"{current_file}:?:1: {msg}")
 
 
 if __name__ == "__main__":
