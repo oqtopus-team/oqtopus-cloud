@@ -30,7 +30,9 @@ def convert_to_efm(text):
                     f"{current_file}:{start_lineno}:1: {msg} (Raw {start_lineno}-{end_lineno})"
                 )
             elif "newline" in line:
-                print(f"{current_file}:{len(lines) - 1}:1: {line}")
+                with open(current_file, "r") as f:
+                     target_file_line_length = line.split("newline")[0].strip()
+                print(f"{current_file}:{target_file_line_length}:1: {line}")
             else:
                 msg = line.strip()
                 print(f"{current_file}:1:1: {msg}")
