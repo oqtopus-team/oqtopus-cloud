@@ -96,7 +96,7 @@ def _get_submitted_model(n: int) -> Job:
     return Job(**model_dict)
 
 
-def assert_jobs_equal(actual: SubmittedJob, expect: SubmittedJob):
+def assert_jobs_equal(actual: JobBase, expect: JobBase):
     for prop in vars(expect):
         if getattr(expect, prop) is None:
             assert getattr(actual, prop) is None
@@ -465,7 +465,7 @@ def test_get_jobs_filtering_start_time(
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
 
     response = client.get(
@@ -476,30 +476,18 @@ def test_get_jobs_filtering_start_time(
     expect = [
         JobBase(
             job_id="testjob2id",
-            name="testjob2",
-            description="test job 2",
-            device_id="Kawasaki",
-            job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
-            transpiler_info={"this_is": "transpiler_info"},
-            simulator_info={"this_is": "simulator_info"},
-            mitigation_info={
-                "field1": "value1",
-                "field2": "value2",
-                "field3": "value3",
-            },
-            status=JobStatus.submitted,
-            shots=1000,
-            execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            ready_at=None,
-            running_at=None,
-            ended_at=None,
+            name="",
+            job_type=JobType.none,
+            status=JobStatus.registered,
+            shots=0,
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(actual) == len(expect)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_filtering_end_time(
@@ -511,12 +499,15 @@ def test_get_jobs_filtering_end_time(
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
+
     expect = [
         JobBase(
             job_id="testjob1id",
@@ -524,7 +515,7 @@ def test_get_jobs_filtering_end_time(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -543,7 +534,9 @@ def test_get_jobs_filtering_end_time(
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(actual) == len(expect)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_filtering_search_string(
@@ -555,12 +548,15 @@ def test_get_jobs_filtering_search_string(
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(3))
     test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs?q=1&order=ASC")
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
+
     expect = [
         JobBase(
             job_id="testjob1id",
@@ -568,7 +564,7 @@ def test_get_jobs_filtering_search_string(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -587,7 +583,9 @@ def test_get_jobs_filtering_search_string(
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_desc_order(
@@ -599,34 +597,23 @@ def test_get_jobs_desc_order(
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
-    test_db.add(_get_submitted_model(2))
+    test_db.add(_get_registered_model(2))
     test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get("/jobs?order=DESC")
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
+
     expect = [
         JobBase(
             job_id="testjob2id",
-            name="testjob2",
-            description="test job 2",
-            device_id="Kawasaki",
-            job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
-            transpiler_info={"this_is": "transpiler_info"},
-            simulator_info={"this_is": "simulator_info"},
-            mitigation_info={
-                "field1": "value1",
-                "field2": "value2",
-                "field3": "value3",
-            },
-            status=JobStatus.submitted,
-            shots=1000,
-            execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
-            ready_at=None,
-            running_at=None,
-            ended_at=None,
+            name="",
+            job_type=JobType.none,
+            status=JobStatus.registered,
+            shots=0,
+            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
         JobBase(
             job_id="testjob1id",
@@ -634,7 +621,7 @@ def test_get_jobs_desc_order(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(program=["code"]),
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -653,7 +640,9 @@ def test_get_jobs_desc_order(
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(actual) == len(expect)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_pagination(
@@ -665,13 +654,44 @@ def test_get_jobs_pagination(
 
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_submitted_model(i))
+        if i % 2 == 1:
+            test_db.add(_get_submitted_model(i))
+        else:
+            test_db.add(_get_registered_model(i))
     test_db.commit()
 
-    response = client.get("/jobs?page=3&size=3&fields=job_id")
+    response = client.get("/jobs?page=1&size=5&fields=job_id")
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
     expect = [
+        JobBase(
+            job_id="testjob1id",
+        ),
+        JobBase(
+            job_id="testjob2id",
+        ),
+        JobBase(
+            job_id="testjob3id",
+        ),
+        JobBase(
+            job_id="testjob4id",
+        ),
+        JobBase(
+            job_id="testjob5id",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
+
+    response = client.get("/jobs?page=2&size=5&fields=job_id")
+    actual = adapter.validate_python(response.json())
+    expect = [
+        JobBase(
+            job_id="testjob6id",
+        ),
         JobBase(
             job_id="testjob7id",
         ),
@@ -684,7 +704,9 @@ def test_get_jobs_pagination(
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_get_jobs_all_parameters(
@@ -695,97 +717,70 @@ def test_get_jobs_all_parameters(
     """
 
     test_db.flush()
-    for i in range(1, 10):
-        test_db.add(_get_submitted_model(i))
+    for i in range(1, 20):
+        if i % 2 == 1:
+            test_db.add(_get_submitted_model(i))
+        else:
+            test_db.add(_get_registered_model(i))
     test_db.commit()
 
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=2&order=DESC"
     )
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
+
     expect = [
         JobBase(
-            job_id="testjob3id",
-            description="test job 3",
-            job_info=JobInfo(program=["code"]),
+            job_id="testjob7id",
+            description="test job 7",
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob7id/input.zip",
         ),
         JobBase(
-            job_id="testjob2id",
-            description="test job 2",
-            job_info=JobInfo(program=["code"]),
+            job_id="testjob5id",
+            description="test job 5",
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob5id/input.zip",
         ),
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
+
+    response = client.get(
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=3&size=2&order=DESC"
+    )
+    actual = adapter.validate_python(response.json())
+
+    expect = [
+        JobBase(
+            job_id="testjob3id",
+            description="test job 3",
+            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob3id/input.zip",
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert len(expect) == len(actual)
+    for (act, exp) in zip(actual, expect):
+        assert_jobs_equal(act, exp)
 
 
 def test_job_sortedness(test_db):
-    def mk_job(n: int) -> SubmitJobRequest:
-        return SubmitJobRequest(
-            name=f"test-job-{n}",
-            device_id="Kawasaki",
-            job_type=JobType.sampling,
-            job_info=SubmitJobInfo(program=["code"]),
-            simulator_info={"this_is": "simulator info"},
-            transpiler_info={"this_is": "transpiler info"},
-            mitigation_info={"this_is": "mitigation info"},
-            shots=1000,
-        )
-
     def is_sorted(xs: list[str]) -> bool:
         return xs == sorted(xs)
 
     test_db.flush()
     job_ids: list[str] = []
     for n in range(1, 10):
-        submit_resp = client.post("/jobs", content=mk_job(n).model_dump_json())
-        print(f"submit_resp={submit_resp.json()}")
-        job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
+        register_resp = client.post("/jobs")
+        job_id = RegisterJobResponse.model_validate(register_resp.json()).job_id
         job_ids.append(job_id)
 
     assert is_sorted(job_ids)
-
-
-def test_get_jobs_handler(
-    test_db,
-):
-    """_summary_
-
-    Args:
-            test_db (_type_): _description_
-    """
-
-    test_db.flush()
-    test_db.add(_get_submitted_model(1))
-    test_db.commit()
-
-    response = client.get("/jobs")
-    assert response.status_code == 200
-
-    adapter = TypeAdapter(List[SubmittedJob])
-    jobs = adapter.validate_python(response.json())
-
-    expected = SubmittedJob(
-        job_id="testjob1id",
-        name="testjob1",
-        description="test job 1",
-        device_id="Kawasaki",
-        job_type=JobType.sampling,
-        job_info=JobInfo(program=["code"]),
-        transpiler_info={"this_is": "transpiler_info"},
-        simulator_info={"this_is": "simulator_info"},
-        mitigation_info={"field1": "value1", "field2": "value2", "field3": "value3"},
-        status=JobStatus.submitted,
-        shots=1000,
-        execution_time=None,
-        submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-        ready_at=None,
-        running_at=None,
-        ended_at=None,
-    )
-    assert jobs[0] == expected
 
 
 def test_get_get(test_db):
