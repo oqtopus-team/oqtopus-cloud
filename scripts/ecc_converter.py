@@ -31,7 +31,7 @@ def convert_to_efm(text):
                 )
             elif "newline" in line:
                 with open(current_file, "r") as f:
-                     target_file_line_length = line.split("newline")[0].strip()
+                    target_file_line_length = line.split("newline")[0].strip()
                 print(f"{current_file}:{target_file_line_length}:1: {line}")
             else:
                 msg = line.strip()
