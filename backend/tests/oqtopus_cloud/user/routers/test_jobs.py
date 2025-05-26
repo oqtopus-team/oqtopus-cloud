@@ -179,9 +179,6 @@ def test_submit_job(
     assert actual.created_at == datetime(2024, 3, 4, 12, 34, 56)
     assert actual.updated_at == actual.submitted_at
 
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key=f"testjob1id/input.zip")
-
 
 def test_submit_job_404(
     test_db,
@@ -811,55 +808,68 @@ def test_get_get(test_db):
         assert bef == aft
 
 
-def test_submit_get(
+@mock_aws
+def test_register_submit_get(
     test_db,
 ):
     """_summary_
-    Test for **the invariance of submit and get**:
-    retrieving the job using the ID returned by the submit request
-    should yield the exact job that was submitted.
+    Test for **the invariance of register, submit and get**:
+    retrieving the job using the ID returned by the register request
+    should yield the exact job that was registered and submitted.
 
     Args:
             test_db (_type_): _description_
     """
     test_db.flush()
-    test_db.commit()
 
-    body = SubmitJobRequest(
-        name="submit-job-test",
-        description="Submit job test",
-        device_id="Kawasaki",
-        job_type=JobType.sampling,
-        job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info={
-            "field1": "value1",
-            "field2": {
-                "subfield1": "value2",
-                "subfield2": ["value3", 42, True],
-            },
-        },
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        shots=1024,
+    # Registering
+    reg_response = client.post("/jobs")
+    adapter = TypeAdapter(RegisterJobResponse)
+    reg_response_json = adapter.validate_python(reg_response.json())
+
+    job_id = reg_response_json.job_id
+
+    # Get newly registered job
+    get_resp = client.get(f"/jobs/{job_id}")
+    assert get_resp.status_code == 200
+    get_resp_json = RegisteredJob.model_validate(get_resp.json())
+
+    assert get_resp_json.name is ""
+    assert get_resp_json.status == "registered"
+    assert get_resp_json.job_type == "none"
+    assert get_resp_json.shots == 0
+
+    # Upload job info
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
     )
+    s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
-    assert submit_resp.status_code == 200
-    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
-    # Getting the job of reteurned job_id
-    get_resp = client.get(f"/jobs/{resp_job_id}")
+    sub_response = client.patch(f"/jobs/{job_id}", content=json.dumps(_get_submit_body()))
+    assert sub_response.status_code == 200
+
+    # Get submitted job
+    get_resp = client.get(f"/jobs/{job_id}")
     assert get_resp.status_code == 200
-    resp_job = SubmittedJob.model_validate(get_resp.json())
-    # And these jobs should be same.
-    assert resp_job.name == body.name
-    assert resp_job.description == body.description
-    assert resp_job.job_type == body.job_type
-    assert resp_job.job_info.program == body.job_info.program
-    assert resp_job.job_info.result is None
+    get_resp_json = SubmittedJob.model_validate(get_resp.json())
+
+    # And these job properties should be same as _get_submit_body().
+    assert get_resp_json.name == "submit-job-test"
+    assert get_resp_json.description == "Submit job test"
+    assert get_resp_json.device_id == "Kawasaki"
+    assert get_resp_json.simulator_info == {"this_is": "simulator info"}
+    assert get_resp_json.transpiler_info == {"this_is": "transpiler info"}
+    assert get_resp_json.mitigation_info == {"field1": "value1", "field2": {"subfield1": "value2", "subfield2": ["value3", 42, True]}}
+    assert get_resp_json.job_type == "sampling"
+    assert get_resp_json.shots == 1024
 
 
-def test_submit_cancel_delete(test_db):
+@mock_aws
+def test_register_submit_cancel_delete(test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -870,38 +880,35 @@ def test_submit_cancel_delete(test_db):
     sql = select(Job).order_by(Job.created_at)
     before_db = test_db.execute(sql).scalars().all()
 
-    body = SubmitJobRequest(
-        name="submit-job-test",
-        description="Submit job test",
-        device_id="Kawasaki",
-        job_type=JobType.sampling,
-        job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info={
-            "field1": "value1",
-            "field2": {
-                "subfield1": "value2",
-                "subfield2": ["value3", 42, True],
-            },
-        },
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        shots=1024,
+    # Registering
+    reg_response = client.post("/jobs")
+    adapter = TypeAdapter(RegisterJobResponse)
+    reg_response_json = adapter.validate_python(reg_response.json())
+
+    job_id = reg_response_json.job_id
+
+    # Upload job info
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
     )
+    s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = client.patch(f"/jobs/{job_id}", content=json.dumps(_get_submit_body()))
     assert submit_resp.status_code == 200
-    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
 
-    # Deleting the job of reteurned job_id (Before deleting, canceling is required)
-    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    # Deleting the job of returned job_id (Before deleting, canceling is required)
+    cancel_resp = client.post(f"/jobs/{job_id}/cancel")
     assert cancel_resp.status_code == 200
 
     # After cancelling, the same cancel request returs 200
-    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    cancel_resp = client.post(f"/jobs/{job_id}/cancel")
     assert cancel_resp.status_code == 200
 
-    delete_resp = client.delete(f"/jobs/{resp_job_id}")
+    delete_resp = client.delete(f"/jobs/{job_id}")
     assert delete_resp.status_code == 200
 
     after_db = test_db.execute(sql).scalars().all()
@@ -912,49 +919,17 @@ def test_submit_cancel_delete(test_db):
         assert bef == aft
 
 
-def test_submit_job_compat_error(test_db):
-    """_summary_
-    Test for **the invariance of submit and delete**:
-    submitting a job and then sequentially deleting it should result in no remaining effects."
-
-    Args:
-            test_db (_type_): _description_
-    """
-
-    body = SubmitJobRequest(
-        name="submit-job-test",
-        description="Submit job test",
-        device_id="Kawasaki",
-        job_type=JobType.estimation,
-        job_info=SubmitJobInfo(program=["codecodecode"]),
-        mitigation_info={
-            "field1": "value1",
-            "field2": {
-                "subfield1": "value2",
-                "subfield2": ["value3", 42, True],
-            },
-        },
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        shots=1024,
-    )
-
-    # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
-    assert submit_resp.status_code == 400
-
-
 def test_submit_job_shots_boundary(test_db):
     """_summary_
     Test for checking out of range shots
     """
 
+    error_title = ""
     try:
         SubmitJobRequest(
             name="submit-job-test",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=SubmitJobInfo(program=["codecodecode"]),
             shots=int(1e7) + 1,
         )
     except ValidationError as e:
@@ -969,8 +944,7 @@ def test_submit_job_shots_boundary(test_db):
             name="submit-job-test",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=SubmitJobInfo(program=["codecodecode"]),
-            shots=int(1e7),
+             shots=int(1e7),
         )
     except ValidationError as e:
         error_title = e.title
@@ -1194,133 +1168,6 @@ def test_get_sselog_no_log(
     adapter.validate_python(response.json())
 
     assert response.status_code == 404
-
-
-@mock_aws
-def test_put_user_program_to_s3(
-    test_db,
-):
-    """_summary_
-    Test for put user program to S3 when SSE
-    """
-
-    test_db.flush()
-
-    bucket_name = os.environ["SSE_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
-    program = base64.b64encode(b"program1").decode("utf-8")
-
-    body = SubmitJobRequest(
-        name="submit-sse-job-test",
-        description="Submit sse job test",
-        device_id="Kawasaki",
-        job_type=JobType.sse,
-        job_info=SubmitJobInfo(program=[program]),
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        mitigation_info={"this_is": "mitigation info"},
-        shots=1,
-    )
-
-    # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
-    assert submit_resp.status_code == 200
-    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
-    # Getting the job of reteurned job_id
-    get_resp = client.get(f"/jobs/{resp_job_id}")
-    assert get_resp.status_code == 200
-    resp_job = SubmittedJob.model_validate(get_resp.json())
-    # And these jobs should be same.
-    assert resp_job.name == body.name
-    assert resp_job.description == body.description
-    assert resp_job.job_type == body.job_type
-    assert resp_job.job_info.program == body.job_info.program
-    assert resp_job.job_info.result is None
-
-    s3object = s3client.get_object(
-        Bucket=bucket_name, Key=f"{resp_job_id}/oqtopus_test_program.py"
-    )
-    assert s3object["Body"].read().decode() == "program1"
-
-    # clean up
-    s3client.delete_object(
-        Bucket=bucket_name, Key=f"{resp_job_id}/oqtopus_test_program.py"
-    )
-
-
-@mock_aws
-def test_put_user_program_to_s3_invalid_program(
-    test_db,
-):
-    """_summary_
-    Test for put user program to S3 when SSE
-    """
-
-    test_db.flush()
-
-    bucket_name = os.environ["SSE_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
-    program = "invalid_program"  # not base64 encoded
-
-    body = SubmitJobRequest(
-        name="submit-sse-job-test",
-        description="Submit sse job test",
-        device_id="Kawasaki",
-        job_type=JobType.sse,
-        job_info=SubmitJobInfo(program=[program]),
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        mitigation_info={"this_is": "mitigation info"},
-        shots=1,
-    )
-
-    # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
-    assert submit_resp.status_code == 500
-
-
-@mock_aws
-def test_put_user_program_to_s3_no_program(
-    test_db,
-):
-    """_summary_
-    Test for put user program to S3 when SSE
-    """
-
-    test_db.flush()
-
-    bucket_name = os.environ["SSE_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
-    body = SubmitJobRequest(
-        name="submit-sse-job-test",
-        description="Submit sse job test",
-        device_id="Kawasaki",
-        job_type=JobType.sse,
-        job_info=SubmitJobInfo(program=[]),
-        simulator_info={"this_is": "simulator info"},
-        transpiler_info={"this_is": "transpiler info"},
-        mitigation_info={"this_is": "mitigation info"},
-        shots=1,
-    )
-
-    # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
-    assert submit_resp.status_code == 500
 
 
 @mock_aws
