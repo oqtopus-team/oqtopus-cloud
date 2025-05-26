@@ -52,7 +52,8 @@ def test_get_all_announcements(
                 content="content_1",
                 start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
                 end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
-                publishable=True
+                publishable=True,
+                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
             ),
             GetAnnouncementResponse(
                 id=2,
@@ -60,7 +61,8 @@ def test_get_all_announcements(
                 content="content_2",
                 start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
                 end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
-                publishable=True
+                publishable=True,
+                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
             ),
         ],
     )
@@ -94,7 +96,8 @@ def test_get_all_announcements_offset1_limit1(
                 content="content_2",
                 start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
                 end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
-                publishable=True
+                publishable=True,
+                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
             ),
         ],
     )
@@ -133,7 +136,8 @@ def test_get_announcement(
         content="content_1",
         start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
         end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
-        publishable=True
+        publishable=True,
+        updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
     )
 
     assert response.status_code == 200

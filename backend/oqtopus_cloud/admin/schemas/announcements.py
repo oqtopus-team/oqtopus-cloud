@@ -16,6 +16,7 @@ class GetAnnouncementResponse(BaseModel):
     start_time: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
     end_time: Annotated[AwareDatetime, Field(examples=["2022-12-19T11:45:34+09:00"])]
     publishable: Annotated[bool, Field(examples=[True])]
+    updated_at: Annotated[AwareDatetime, Field(examples=["2022-12-19T11:45:34+09:00"])]
 
 
 class GetAnnouncementsListResponse(BaseModel):

@@ -1096,6 +1096,10 @@ components:
         publishable:
           type: boolean
           example: true
+        updated_at:
+          type: string
+          format: date-time
+          example: '2022-12-19T11:45:34+09:00'
       required:
         - id
         - title
@@ -1103,6 +1107,7 @@ components:
         - start_time
         - end_time
         - publishable
+        - updated_at
       example:
         id: 0
         title: Example Title

@@ -625,6 +625,97 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+  /announcements:
+    get:
+      tags:
+        - Announcements
+      summary: Get announcements list from backend
+      description: Get announcements list from backend
+      operationId: get_announcements_list
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          description: offset information
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limit information
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return announcements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/announcements.GetAnnouncementsListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: 'Not authorized : user is not admin'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /announcements/{announcement_id}:
+    get:
+      tags:
+        - Announcements
+      summary: Get selected announcement
+      description: Get selected announcement
+      operationId: get_announcement
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: announcement_id
+          description: announcement ID
+          required: true
+          schema:
+            type: integer
+            example: 0
+      responses:
+        '200':
+          description: Return selected announcement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/announcements.GetAnnouncementResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Announcement not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
 components:
   securitySchemes:
     BearerAuth:
@@ -1278,3 +1369,46 @@ components:
           type: string
       required:
         - message
+    announcements.GetAnnouncementResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        title:
+          type: string
+          example: Example Title
+        content:
+          type: string
+          example: Example Content
+        start_time:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34+09:00'
+        end_time:
+          type: string
+          format: date-time
+          example: '2022-12-19T11:45:34+09:00'
+        publishable:
+          type: boolean
+          example: true
+      required:
+        - id
+        - title
+        - content
+        - start_time
+        - end_time
+        - publishable
+      example:
+        id: 0
+        title: Example Title
+        content: Example Content
+        start_time: '2022-10-19T11:45:34+09:00'
+        end_time: '2022-12-19T11:45:34+09:00'
+        publishable: true
+    announcements.GetAnnouncementsListResponse:
+      properties:
+        announcements:
+          type: array
+          items:
+            $ref: '#/components/schemas/announcements.GetAnnouncementResponse'

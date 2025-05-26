@@ -226,5 +226,6 @@ def model_to_schema(model: Announcement) -> GetAnnouncementResponse:
         "start_time": ensure_timezone(model.start_time),
         "end_time": ensure_timezone(model.end_time),
         "publishable": model.publishable,
+        "updated_at": ensure_timezone(model.updated_at),
     }
     return GetAnnouncementResponse.model_validate(dict)

@@ -61,6 +61,10 @@ announcements.GetAnnouncementResponse:
     publishable:
       type: boolean
       example: true
+    updated_at:
+      type: string
+      format: date-time
+      example: "2022-12-19T11:45:34+09:00"
   required:
     - id
     - title
@@ -68,6 +72,7 @@ announcements.GetAnnouncementResponse:
     - start_time
     - end_time
     - publishable
+    - updated_at
 
   example:
     id: 0
