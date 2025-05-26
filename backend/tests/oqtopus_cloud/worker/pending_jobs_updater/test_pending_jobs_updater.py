@@ -10,7 +10,7 @@ from oqtopus_cloud.worker.pending_jobs_updater.lambda_function import (
 from sqlalchemy import select
 
 
-def _get_device(id: int) -> Device:
+def _get_device(id: str) -> Device:
     mode_dict = {
         "id": id,
         "device_type": "simulator",
@@ -36,7 +36,6 @@ def _get_job(n: int, device_id: str, status: str) -> Job:
         "description": f"test job {n}",
         "device_id": device_id,
         "job_type": "sampling",
-        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
