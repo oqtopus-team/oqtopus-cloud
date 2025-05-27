@@ -482,7 +482,7 @@ def get_sselog(
 ) -> GetSselogResponse | ErrorResponse:
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     zip_name = os.environ["SSE_ZIP_FILE_NAME"]
 
@@ -536,45 +536,11 @@ def get_sselog(
         return InternalServerErrorResponse(message=str(e))
 
 
-# def put_user_program_to_s3(job: Job) -> bool:
-#     if job.job_type != JobType.sse:
-#         return True
-
-#     bucket_name = os.environ["SSE_BUCKET"]
-#     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
-#     try:
-#         job_info = decode_job_info(json.loads(job.job_info))
-#         if isinstance(job_info, ValueError):
-#             return False
-#         if (
-#             job_info.program is None
-#             or len(job_info.program) == 0
-#             or job_info.program[0] == ""
-#         ):
-#             logger.error("the job has no program")
-#             return False
-
-#         # decode the base64 encoded program
-#         decoded_program = base64.b64decode(job_info.program[0])
-#         # upload the program to the AWS S3 bucket
-#         s3_client = boto3.client("s3")
-#         s3_client.put_object(
-#             Bucket=bucket_name,
-#             Key=f"{job.id}/{file_name}",
-#             Body=decoded_program,
-#         )
-
-#         return True
-#     except Exception as e:
-#         logger.exception(f"Failed to upload the user program to S3: {str(e)}")
-#         return False
-
-
 def delete_s3_folder(job: Job) -> bool:
     if job.job_type != JobType.sse:
         return True
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     try:
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(bucket_name)

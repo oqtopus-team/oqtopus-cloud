@@ -968,7 +968,7 @@ def test_get_sselog(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = "log1"
     s3client = boto3.client("s3")
@@ -1015,7 +1015,7 @@ def test_get_sselog_invalid_owner(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = "log1"
     s3client = boto3.client("s3")
@@ -1051,7 +1051,7 @@ def test_get_sselog_unknown_jobid(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = "log1"
     s3client = boto3.client("s3")
@@ -1086,7 +1086,7 @@ def test_get_sselog_invalid_jobtype(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = "log1"
     s3client = boto3.client("s3")
@@ -1121,7 +1121,7 @@ def test_get_sselog_running_job(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = "log1"
     s3client = boto3.client("s3")
@@ -1156,7 +1156,7 @@ def test_get_sselog_no_log(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     s3client = boto3.client("s3")
     s3client.create_bucket(
         Bucket=bucket_name,
@@ -1185,7 +1185,7 @@ def test_delete_s3_folder(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     s3client = boto3.client("s3")
     s3client.create_bucket(
         Bucket=bucket_name,
@@ -1232,7 +1232,7 @@ def test_delete_s3_folder_no_folder(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     s3client = boto3.client("s3")
     s3client.create_bucket(
         Bucket=bucket_name,
@@ -1267,7 +1267,7 @@ def test_delete_s3_folder_no_file(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     s3client = boto3.client("s3")
     s3client.create_bucket(
         Bucket=bucket_name,
@@ -1304,7 +1304,7 @@ def test_delete_s3_folder_folder_only(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     s3client = boto3.client("s3")
     s3client.create_bucket(
         Bucket=bucket_name,
