@@ -365,13 +365,13 @@ def delete_job(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        job = db.get(Job, job_id)
 
+        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
-        if job.owner != owner or job.status not in ["succeeded", "failed", "cancelled"]:
-            return NotFoundErrorResponse(
+        if job.status not in ["succeeded", "failed", "cancelled"]:
+            return BadRequestResponse(
                 message=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
             )
 
@@ -386,6 +386,7 @@ def delete_job(
             )
 
         return SuccessResponse(message="job deleted")
+
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
@@ -440,26 +441,24 @@ def cancel_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job = db.get(Job, job_id)
-
+        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
-        if job.owner != owner or job.status not in [
-            "ready",
-            "submitted",
-            "running",
-            "cancelled",
-        ]:
-            return NotFoundErrorResponse(
+
+        if job.status not in ["ready", "submitted", "running", "cancelled"]:
+            return BadRequestResponse(
                 message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
             )
+
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
                 "job is in submitted or ready or running state, so it will be marked as cancelled"
             )
             job.status = JobStatus.cancelled
             db.commit()
+
         return SuccessResponse(message="cancel request accepted")
+
     except Exception as e:
         logger.info(f"error: {str(e)}")
         return InternalServerErrorResponse(message=str(e))
