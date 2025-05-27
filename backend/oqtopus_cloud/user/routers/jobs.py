@@ -536,9 +536,6 @@ def get_sselog(
 
 
 def delete_s3_folder(job: Job) -> bool:
-    if job.job_type != JobType.sse:
-        return True
-
     bucket_name = os.environ["OQTOPUS_BUCKET"]
     try:
         s3 = boto3.resource("s3")

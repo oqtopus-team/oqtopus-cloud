@@ -1175,12 +1175,11 @@ def test_delete_s3_folder(
     test_db,
 ):
     """_summary_
-    Test for delete s3 folder from S3 when SSE
+    Test for delete s3 folder from S3
     """
 
     test_db.flush()
     job_model = _get_submitted_model(1)
-    job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
     test_db.commit()
@@ -1191,8 +1190,10 @@ def test_delete_s3_folder(
         Bucket=bucket_name,
         CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
     )
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="job_info")
     s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_program.py", Body="program1")
     s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_log.log", Body="log1")
+    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/input.zip", Body="job_info")
     s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_program.py", Body="program2")
     s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_log.log", Body="log2")
 
@@ -1202,15 +1203,18 @@ def test_delete_s3_folder(
 
     objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
     assert "Contents" not in objects
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob2id")
-    assert "Contents" in objects
-    assert len(objects["Contents"]) == 2
-    assert objects["Contents"][0]["Key"] in ["testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
-    assert objects["Contents"][1]["Key"] in ["testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
     job = test_db.get(Job, "testjob1id")
     assert job is None
 
+    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob2id")
+    assert "Contents" in objects
+    assert len(objects["Contents"]) == 3
+    assert objects["Contents"][0]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
+    assert objects["Contents"][1]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
+    assert objects["Contents"][2]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
+
     # clean up
+    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/input.zip")
     s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_program.py")
     s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_log.log")
     s3client.delete_object(Bucket=bucket_name, Key="testjob2id/")
@@ -1222,12 +1226,11 @@ def test_delete_s3_folder_no_folder(
     test_db,
 ):
     """_summary_
-    Test for delete s3 folder from S3 when SSE
+    Test for delete s3 folder from S3
     """
 
     test_db.flush()
     job_model = _get_submitted_model(1)
-    job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
     test_db.commit()
@@ -1257,12 +1260,11 @@ def test_delete_s3_folder_no_file(
     test_db,
 ):
     """_summary_
-    Test for delete s3 folder from S3 when SSE
+    Test for delete s3 folder from S3
     """
 
     test_db.flush()
     job_model = _get_submitted_model(1)
-    job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
     test_db.commit()
@@ -1287,66 +1289,6 @@ def test_delete_s3_folder_no_file(
     # clean up
     s3client.delete_object(Bucket=bucket_name, Key="testjob1id/")
     s3client.delete_bucket(Bucket=bucket_name)
-
-
-@mock_aws
-def test_delete_s3_folder_folder_only(
-    test_db,
-):
-    """_summary_
-    Test for delete s3 folder from S3 when SSE
-    """
-
-    test_db.flush()
-    job_model = _get_submitted_model(1)
-    job_model.job_type = "sse"
-    job_model.status = "succeeded"
-    test_db.add(job_model)
-    test_db.commit()
-
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/", Body="program1")
-
-    # Request
-    delete_resp = client.delete("/jobs/testjob1id")
-    assert delete_resp.status_code == 200
-
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
-    assert "Contents" not in objects
-    job = test_db.get(Job, "testjob1id")
-    assert job is None
-
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key="testjob1id/")
-    s3client.delete_bucket(Bucket=bucket_name)
-
-
-@mock_aws
-def test_delete_s3_not_sse_job(
-    test_db,
-):
-    """_summary_
-    Test for delete s3 folder from S3 when SSE
-    """
-
-    test_db.flush()
-    job_model = _get_submitted_model(1)
-    job_model.job_type = "sampling"
-    job_model.status = "succeeded"
-    test_db.add(job_model)
-    test_db.commit()
-
-    # Request
-    delete_resp = client.delete("/jobs/testjob1id")
-    assert delete_resp.status_code == 200
-
-    job = test_db.get(Job, "testjob1id")
-    assert job is None
 
 
 @mock_aws
@@ -1359,7 +1301,6 @@ def test_delete_s3_folder_exception(
 
     test_db.flush()
     job_model = _get_submitted_model(1)
-    job_model.job_type = "sse"
     job_model.status = "succeeded"
     test_db.add(job_model)
     test_db.commit()
