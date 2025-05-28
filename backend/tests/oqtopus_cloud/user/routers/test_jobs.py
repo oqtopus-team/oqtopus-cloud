@@ -24,12 +24,14 @@ from oqtopus_cloud.user.schemas.errors import (
 # )
 from oqtopus_cloud.user.schemas.jobs import (
     JobBase,
+    JobInfo,
     JobStatus,
     JobType,
     RegisteredJob,
     RegisterJobResponse,
-    SubmittedJob,
     SubmitJobRequest,
+    SubmitJobType,
+    SubmittedJob,
 )
 
 from pydantic import ValidationError
@@ -96,6 +98,14 @@ def _get_submitted_model(n: int) -> Job:
     return Job(**model_dict)
 
 
+def assert_job_info_equals(actual: JobInfo, expect: JobInfo):
+    for prop in vars(expect):
+        if getattr(expect, prop) is None:
+            assert getattr(actual, prop) is None
+        else:
+            assert getattr(actual, prop).startswith(getattr(expect, prop))
+
+
 def assert_jobs_equal(actual: JobBase, expect: JobBase):
     for prop in vars(expect):
         if getattr(expect, prop) is None:
@@ -104,7 +114,7 @@ def assert_jobs_equal(actual: JobBase, expect: JobBase):
             if prop != "job_info":
                 assert getattr(actual, prop) == getattr(expect, prop)
             else:
-                assert getattr(actual, prop).startswith(getattr(expect, prop))
+                assert_job_info_equals(getattr(actual, prop), getattr(expect, prop))
 
 
 def test_register_job(
@@ -234,7 +244,7 @@ def test_submit_job_400_missing_job_info(
 
     response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
     assert response.status_code == 400
-    assert response.json() == {"message": "job information for testjob1id job not found"}
+    assert response.json() == {"message": "job information input for testjob1id job not found"}
 
 
 @mock_aws
@@ -307,7 +317,7 @@ def test_get_jobs_simple(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -400,7 +410,7 @@ def test_get_jobs_filtering_job_info(
 
     expect = [
         JobBase(
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
         ),
         JobBase(
             job_info=None,
@@ -512,7 +522,7 @@ def test_get_jobs_filtering_end_time(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -561,7 +571,7 @@ def test_get_jobs_filtering_search_string(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -618,7 +628,7 @@ def test_get_jobs_desc_order(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -733,12 +743,12 @@ def test_get_jobs_all_parameters(
         JobBase(
             job_id="testjob7id",
             description="test job 7",
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob7id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob7id/input.zip"),
         ),
         JobBase(
             job_id="testjob5id",
             description="test job 5",
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob5id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob5id/input.zip"),
         ),
     ]
 
@@ -756,7 +766,7 @@ def test_get_jobs_all_parameters(
         JobBase(
             job_id="testjob3id",
             description="test job 3",
-            job_info=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob3id/input.zip",
+            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob3id/input.zip"),
         ),
     ]
 
@@ -929,7 +939,7 @@ def test_submit_job_shots_boundary(test_db):
         SubmitJobRequest(
             name="submit-job-test",
             device_id="Kawasaki",
-            job_type=JobType.sampling,
+            job_type=SubmitJobType.sampling,
             shots=int(1e7) + 1,
         )
     except ValidationError as e:
@@ -943,7 +953,7 @@ def test_submit_job_shots_boundary(test_db):
         SubmitJobRequest(
             name="submit-job-test",
             device_id="Kawasaki",
-            job_type=JobType.sampling,
+            job_type=SubmitJobType.sampling,
              shots=int(1e7),
         )
     except ValidationError as e:

@@ -35,14 +35,15 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
-    JobBase,
     GetJobStatusResponse,
     GetSselogResponse,
-    SubmittedJob,
-    RegisteredJob,
+    JobBase,
+    JobInfo,
     JobStatus,
     JobType,
+    RegisteredJob,
     RegisterJobResponse,
+    SubmittedJob,
     SubmitJobRequest,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
@@ -58,7 +59,6 @@ DEFAULT_PAGE_INDEX = 1
 DEFAULT_ITEMS_PER_PAGE = 100
 
 S3_JOB_INFO_INPUT_FILE = "input.zip"
-S3_JOB_INFO_OUTPUT_FILE = "output.zip"
 
 DEFAULT_MAX_JOB_INFO_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
 DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
@@ -182,7 +182,9 @@ def submit_job(
         job.updated_at = job.submitted_at
 
         if not validate_job_info(job_id):
-            return BadRequestResponse(f"job information for {job_id} job not found")
+            return BadRequestResponse(
+                f"job information input for {job_id} job not found"
+            )
 
         db.commit()
         return SuccessResponse(message="job submitted")
@@ -307,12 +309,12 @@ def validate_job_info(job_id: str) -> bool:
     except botocore.exceptions.ClientError as exc:
         if exc.response["Error"]["Code"] == "404":
             logger.info(
-                f"job information file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not found"
+                f"job information input file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not found"
             )
             return False
         else:
             logger.error(
-                f"job information file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not accessible"
+                f"job information input file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not accessible"
             )
             raise exc
 
@@ -588,21 +590,24 @@ MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobBase | RegisteredJob | SubmittedJob:
-    def get_presigned_url(job_id: str, status: str) -> str:
+    def get_job_info(model: Job) -> JobInfo:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
-        filename = (
-            S3_JOB_INFO_OUTPUT_FILE
-            if status in ["succeeded", "failed", "cancelled"]
-            else S3_JOB_INFO_INPUT_FILE
-        )
         exp_time = int(
             os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
         )
-        return boto3.client("s3").generate_presigned_url(
+
+        input = boto3.client("s3").generate_presigned_url(
             "get_object",
-            Params={"Bucket": bucket_name, "Key": f"{job_id}/{filename}"},
+            Params={
+                "Bucket": bucket_name,
+                "Key": f"{model.id}/{S3_JOB_INFO_INPUT_FILE}",
+            },
             ExpiresIn=exp_time,
         )
+
+        # TODO: add other URLs
+
+        return JobInfo(input=input)
 
     def is_datetime_field(fld: str) -> bool:
         if fld == "submitted_at":
@@ -644,7 +649,7 @@ def model_to_schema(
                 device_id=model.device_id,
                 shots=model.shots,
                 job_type=JobType(model.job_type),
-                job_info=get_presigned_url(model.id, model.status),
+                job_info=get_job_info(model),
                 status=JobStatus(model.status),
                 transpiler_info=json.loads(model.transpiler_info),
                 mitigation_info=json.loads(model.mitigation_info),
@@ -676,9 +681,7 @@ def model_to_schema(
                 dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
                 dict_schema[k] = (
-                    get_presigned_url(model.id, model.status)
-                    if model.status != "registered"
-                    else None
+                    get_job_info(model) if model.status != "registered" else None
                 )
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)

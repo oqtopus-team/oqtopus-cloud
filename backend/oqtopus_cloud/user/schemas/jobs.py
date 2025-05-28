@@ -10,6 +10,19 @@ from typing import Annotated, Any
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 
+class S3TranspileResult(BaseModel):
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
+    stats: Annotated[dict[str, Any] | None, Field(...)]
+    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
+
+
 class JobType(str, Enum):
     """
     none is valid only for newly registered job_ids (job status=registered)
@@ -32,6 +45,68 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class JobInfo(BaseModel):
+    """
+    Presigned URLs for downloading relevant job information .zip files from OQTOPUS cloud.
+    """
+
+    input: Annotated[
+        str,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ]
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+    combined_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+    result: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+    transpile_result: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+    sse_log: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+
+
 class JobBase(BaseModel):
     job_id: Annotated[
         str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
@@ -47,19 +122,7 @@ class JobBase(BaseModel):
     """
     0 is valid only for newly registered job_ids (job status=registered)
     """
-    job_info: Annotated[
-        str | None,
-        Field(
-            examples=[
-                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
-            ]
-        ),
-    ] = None
-    """
-    Presigned URL for downloading job information from OCTOPUS cloud.
-
-    Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
-    """
+    job_info: JobInfo | None = None
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(
@@ -112,7 +175,7 @@ class JobBase(BaseModel):
 class Fields(BaseModel):
     key: Annotated[
         str | None,
-        Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip"]),
+        Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"]),
     ] = None
     AWSAccessKeyId: str | None = None
     x_amz_security_token: Annotated[str | None, Field(alias="x-amz-security-token")] = (
@@ -124,11 +187,7 @@ class Fields(BaseModel):
 
 class JobInfoUploadPresignedURL(BaseModel):
     """
-    Presigned URL for uploading job information to OCTOPUS cloud.
-
-    Job information should be uploaded as a .zip file.
-
-    Content of the file must match `jobs.S3SubmitJobInfo` schema.
+    Presigned URL for uploading file to OCTOPUS cloud.
     """
 
     url: Annotated[
@@ -156,19 +215,7 @@ class SubmittedJob(JobBase):
     """
     0 is valid only for newly registered job_ids (job status=registered)
     """
-    job_info: Annotated[
-        str,
-        Field(
-            examples=[
-                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
-            ]
-        ),
-    ]
-    """
-    Presigned URL for downloading job information from OCTOPUS cloud.
-
-    Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
-    """
+    job_info: JobInfo
 
 
 class RegisteredJob(JobBase):
@@ -258,7 +305,7 @@ class OperatorItem(BaseModel):
     """
 
 
-class SamplingResult(BaseModel):
+class S3SamplingResult(BaseModel):
     """
     *(Only for sampling jobs)* JSON string representing the sampling result
     """
@@ -280,7 +327,7 @@ class SamplingResult(BaseModel):
     ] = None
 
 
-class EstimationResult(BaseModel):
+class S3EstimationResult(BaseModel):
     """
     *(Only for estimation jobs)* The estimated expectation value and the standard deviation
     of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
@@ -297,71 +344,24 @@ class EstimationResult(BaseModel):
     """
 
 
-class JobResult(BaseModel):
+class S3SubmitJobInfo(BaseModel):
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[OperatorItem] | None = None
+
+
+class S3JobResult(BaseModel):
     model_config = ConfigDict(
         extra="allow",
     )
-    sampling: SamplingResult | None = None
-    estimation: EstimationResult | None = None
-
-
-class TranspileResult(BaseModel):
-    transpiled_program: Annotated[
-        str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
-    ] = None
-    stats: Annotated[dict[str, Any] | None, Field(...)]
-    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
-
-
-class S3SubmitJobInfo(BaseModel):
-    """
-    All fields in this schema also exist in the `jobs.S3JobInfo` schema and have the same meaning as their counterparts in the `jobs.S3JobInfo` schema.
-    """
-
-    program: Annotated[
-        list[str],
-        Field(
-            examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-            ]
-        ),
-    ]
-    """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-    """
-    operator: list[OperatorItem] | None = None
-
-
-class S3JobInfo(BaseModel):
-    program: Annotated[
-        list[str],
-        Field(
-            examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-            ]
-        ),
-    ]
-    """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-    """
-    combined_program: str | None = None
-    """
-    For multiprogramming jobs, this field contains the combined circuit.
-    """
-    operator: list[OperatorItem] | None = None
-    """
-    *(Only for estimation jobs)* The operator (or observable) for which the expectation
-    value is to be estimated.
-
-    """
-    result: JobResult | None = None
-    transpile_result: TranspileResult | None = None
-    message: str | None = None
-    """
-    Describing the reason why there is no result
-    """
+    sampling: S3SamplingResult | None = None
+    estimation: S3EstimationResult | None = None
