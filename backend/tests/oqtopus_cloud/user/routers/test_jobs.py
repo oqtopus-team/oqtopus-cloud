@@ -117,6 +117,7 @@ def assert_jobs_equal(actual: JobBase, expect: JobBase):
                 assert_job_info_equals(getattr(actual, prop), getattr(expect, prop))
 
 
+@mock_aws
 def test_register_job(
     test_db,
 ):
@@ -190,6 +191,7 @@ def test_submit_job(
     assert actual.updated_at == actual.submitted_at
 
 
+@mock_aws
 def test_submit_job_404(
     test_db,
 ):
@@ -277,6 +279,7 @@ def test_submit_job_422_invalid_input(
     assert response.status_code == 422
 
 
+@mock_aws
 def test_get_job_404(
     test_db,
 ):
@@ -291,6 +294,7 @@ def test_get_job_404(
     assert response.json() == {"message": "job not found with the given id"}
 
 
+@mock_aws
 def test_get_jobs_simple(
     test_db,
 ):
@@ -349,6 +353,7 @@ def test_get_jobs_simple(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_filtering_fields(
     test_db,
 ):
@@ -390,6 +395,7 @@ def test_get_jobs_filtering_fields(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_filtering_job_info(
     test_db,
 ):
@@ -423,6 +429,7 @@ def test_get_jobs_filtering_job_info(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_all_fields(test_db):
     test_db.flush()
     test_db.add(_get_submitted_model(1))
@@ -439,6 +446,7 @@ def test_get_jobs_all_fields(test_db):
     assert len(actual) == 2
 
 
+@mock_aws
 def test_get_jobs_invalid_fields(
     test_db,
 ):
@@ -463,6 +471,7 @@ def test_get_jobs_invalid_fields(
     assert actual == expect
 
 
+@mock_aws
 def test_get_jobs_filtering_start_time(
     test_db,
 ):
@@ -497,6 +506,7 @@ def test_get_jobs_filtering_start_time(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_filtering_end_time(
     test_db,
 ):
@@ -546,6 +556,7 @@ def test_get_jobs_filtering_end_time(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_filtering_search_string(
     test_db,
 ):
@@ -595,6 +606,7 @@ def test_get_jobs_filtering_search_string(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_desc_order(
     test_db,
 ):
@@ -652,6 +664,7 @@ def test_get_jobs_desc_order(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_pagination(
     test_db,
 ):
@@ -716,6 +729,7 @@ def test_get_jobs_pagination(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_get_jobs_all_parameters(
     test_db,
 ):
@@ -776,6 +790,7 @@ def test_get_jobs_all_parameters(
         assert_jobs_equal(act, exp)
 
 
+@mock_aws
 def test_job_sortedness(test_db):
     def is_sorted(xs: list[str]) -> bool:
         return xs == sorted(xs)
@@ -790,6 +805,7 @@ def test_job_sortedness(test_db):
     assert is_sorted(job_ids)
 
 
+@mock_aws
 def test_get_get(test_db):
     """_summary_
     Test for **the invariance of get and get**:
