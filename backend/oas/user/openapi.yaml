@@ -172,39 +172,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/jobs.JobBase'
-              example:
-                - job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                  name: Bell State Sampling
-                  description: Bell State Sampling Example
-                  device_id: Kawasaki
-                  job_type: estimation
-                  job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-                  transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
-                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
-                  mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
-                  shots: 1000
-                  status: submitted
-                  execution_time: null
-                  submitted_at: '2022-10-19T11:45:34+09:00'
-                  ready_at: null
-                  running_at: null
-                  ended_at: null
-                - job_id: 0682b528-aef9-7492-8000-d8b69371c5b5
-                  name: ''
-                  description: null
-                  device_id: null
-                  job_type: none
-                  job_info: null
-                  transpiler_info: null
-                  simulator_info: null
-                  mitigation_info: null
-                  shots: 0
-                  status: registered
-                  execution_time: null
-                  submitted_at: null
-                  ready_at: null
-                  running_at: null
-                  ended_at: null
         '401':
           description: Unauthorized
           content:
@@ -217,7 +184,7 @@ paths:
       tags:
         - job
       summary: Register new job
-      description: Register new job and generate a presigned URL to upload job information (`jobs.SubmitJobInfo`) to OQTOPUS cloud.
+      description: Register new job and generate a presigned URL to upload job information (`jobs.S3SubmitJobInfo`) to OQTOPUS cloud.
       operationId: register_job_id
       security:
         - BearerAuth: []
@@ -272,45 +239,6 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/jobs.SubmittedJob'
                   - $ref: '#/components/schemas/jobs.RegisteredJob'
-              examples:
-                submitted_job:
-                  description: Submitted job example
-                  value:
-                    job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-                    name: Bell State Sampling
-                    description: Bell State Sampling Example
-                    device_id: Kawasaki
-                    job_type: estimation
-                    job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-                    transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
-                    simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
-                    mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
-                    shots: 1000
-                    status: submitted
-                    execution_time: null
-                    submitted_at: '2022-10-19T11:45:34+09:00'
-                    ready_at: null
-                    running_at: null
-                    ended_at: null
-                registered_job:
-                  description: Registered job example
-                  value:
-                    job_id: 0682b528-aef9-7492-8000-d8b69371c5b5
-                    name: ''
-                    description: null
-                    device_id: null
-                    job_type: none
-                    job_info: null
-                    transpiler_info: null
-                    simulator_info: null
-                    mitigation_info: null
-                    shots: 0
-                    status: registered
-                    execution_time: null
-                    submitted_at: null
-                    ready_at: null
-                    running_at: null
-                    ended_at: null
         '400':
           description: Bad Request
           content:
@@ -344,7 +272,7 @@ paths:
 
         job_id must be created via 'POST /jobs' request.
 
-        Submit job information (`jobs.SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
+        Submit job information (`jobs.S3SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
       operationId: submit_job
       security:
         - BearerAuth: []
@@ -742,7 +670,6 @@ components:
       bearerFormat: JWT
   schemas:
     jobs.S3SubmitJobInfo:
-      description: All fields in this schema also exist in the `jobs.S3JobInfo` schema and have the same meaning as their counterparts in the `jobs.S3JobInfo` schema.
       type: object
       properties:
         program:
@@ -759,34 +686,36 @@ components:
             $ref: '#/components/schemas/jobs.OperatorItem'
       required:
         - program
-    jobs.S3JobInfo:
+    jobs.S3JobResult:
       type: object
       properties:
-        program:
-          type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-          items:
-            type: string
-          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-        combined_program:
+        sampling:
+          $ref: '#/components/schemas/jobs.S3SamplingResult'
+        estimation:
+          $ref: '#/components/schemas/jobs.S3EstimationResult'
+      additionalProperties: true
+      required: []
+    jobs.S3TranspileResult:
+      type: object
+      properties:
+        transpiled_program:
           type: string
-          description: For multiprogramming jobs, this field contains the combined circuit.
-        operator:
-          description: |
-            *(Only for estimation jobs)* The operator (or observable) for which the expectation
-            value is to be estimated.
-          type: array
-          items:
-            $ref: '#/components/schemas/jobs.OperatorItem'
-        result:
-          $ref: '#/components/schemas/jobs.JobResult'
-        transpile_result:
-          $ref: '#/components/schemas/jobs.TranspileResult'
-        message:
-          type: string
-          description: Describing the reason why there is no result
+          nullable: true
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+        virtual_physical_mapping:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
       required:
-        - program
+        - transpiled_program
+        - stats
+        - virtual_physical_mapping
     devices.DeviceInfo:
       type: object
       properties:
@@ -976,12 +905,35 @@ components:
         - cancelled
       example: submitted
     jobs.JobInfoDownloadPresignedURL:
-      description: |-
-        Presigned URL for downloading job information from OCTOPUS cloud.
-
-        Content of the downloaded .zip will match `jobs.S3JobInfo` schema.
+      description: Presigned URL for downloading a file from OCTOPUS cloud.
       type: string
-      example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+      example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+    jobs.JobInfo:
+      description: Presigned URLs for downloading relevant job information .zip files from OQTOPUS cloud.
+      type: object
+      properties:
+        input:
+          allOf:
+            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+            - description: Content of the file will match `jobs.S3SubmitJobInfo` schema.
+        combined_program:
+          allOf:
+            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+            - description: For multiprogramming jobs, this file contains the combined circuit.
+        result:
+          allOf:
+            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+            - description: Content of the file will match `jobs.S3JobResult` schema.
+        transpile_result:
+          allOf:
+            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+            - description: Content of the file will match `jobs.S3TranspileResult` schema.
+        sse_log:
+          allOf:
+            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+            - description: File available only for sse jobs.
+      required:
+        - input
     jobs.JobBase:
       type: object
       properties:
@@ -1007,7 +959,7 @@ components:
           maximum: 10000000
           example: '1000'
         job_info:
-          $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
+          $ref: '#/components/schemas/jobs.JobInfo'
         transpiler_info:
           type: object
           properties: {}
@@ -1063,7 +1015,7 @@ components:
         description: Bell State Sampling Example
         device_id: Kawasaki
         job_type: estimation
-        job_info: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+        job_info: '{"input": https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D}'
         transpiler_info: '{ "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },'
         simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }'
         mitigation_info: '{ "ro_error_mitigation": "pseudo_inverse" }'
@@ -1075,12 +1027,7 @@ components:
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
     jobs.JobInfoUploadPresignedURL:
-      description: |-
-        Presigned URL for uploading job information to OCTOPUS cloud.
-
-        Job information should be uploaded as a .zip file.
-
-        Content of the file must match `jobs.S3SubmitJobInfo` schema.
+      description: Presigned URL for uploading file to OCTOPUS cloud.
       type: object
       properties:
         url:
@@ -1091,7 +1038,7 @@ components:
           properties:
             key:
               type: string
-              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip
+              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip
             AWSAccessKeyId:
               type: string
             x-amz-security-token:
@@ -1272,7 +1219,7 @@ components:
           example: 1
       required:
         - pauli
-    jobs.SamplingResult:
+    jobs.S3SamplingResult:
       type: object
       description: '*(Only for sampling jobs)* JSON string representing the sampling result'
       properties:
@@ -1301,7 +1248,7 @@ components:
               '11': 387
               '00': 84
               '01': 75
-    jobs.EstimationResult:
+    jobs.S3EstimationResult:
       type: object
       description: |
         *(Only for estimation jobs)* The estimated expectation value and the standard deviation
@@ -1313,33 +1260,3 @@ components:
         stds:
           description: The standard deviation value
           type: number
-    jobs.JobResult:
-      type: object
-      properties:
-        sampling:
-          $ref: '#/components/schemas/jobs.SamplingResult'
-        estimation:
-          $ref: '#/components/schemas/jobs.EstimationResult'
-      additionalProperties: true
-      required: []
-    jobs.TranspileResult:
-      type: object
-      properties:
-        transpiled_program:
-          type: string
-          nullable: true
-          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
-        stats:
-          type: object
-          properties: {}
-          additionalProperties: true
-          nullable: true
-        virtual_physical_mapping:
-          type: object
-          properties: {}
-          additionalProperties: true
-          nullable: true
-      required:
-        - transpiled_program
-        - stats
-        - virtual_physical_mapping

@@ -36,5 +36,7 @@ components:
   schemas:
     jobs.S3SubmitJobInfo:
       $ref: './schemas/jobs.yaml#/jobs.S3SubmitJobInfo'
-    jobs.S3JobInfo:
-      $ref: './schemas/jobs.yaml#/jobs.S3JobInfo'
+    jobs.S3JobResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3JobResult'
+    jobs.S3TranspileResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3TranspileResult'
