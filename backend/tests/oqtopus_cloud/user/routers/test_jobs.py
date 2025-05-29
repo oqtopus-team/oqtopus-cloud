@@ -5,6 +5,7 @@ import os
 import zipfile
 from datetime import datetime
 from typing import List
+from urllib.parse import urlparse
 
 import boto3
 import pytz
@@ -103,7 +104,7 @@ def assert_job_info_equals(actual: JobInfo, expect: JobInfo):
         if getattr(expect, prop) is None:
             assert getattr(actual, prop) is None
         else:
-            assert getattr(actual, prop).startswith(getattr(expect, prop))
+            assert urlparse(getattr(actual, prop)).path == getattr(expect, prop)
 
 
 def assert_jobs_equal(actual: JobBase, expect: JobBase):
@@ -133,9 +134,8 @@ def test_register_job(
     new_job_id = actual.job_id
 
     # basic validation of presign URL data
-    region = boto3.client('s3').meta.region_name
     bucket_name = os.environ["OQTOPUS_BUCKET"]
-    assert actual.presigned_url.url == f"https://s3.{region}.amazonaws.com/{bucket_name}"
+    assert urlparse(actual.presigned_url.url).path == f"/{bucket_name}"
     assert actual.presigned_url.fields.key == f"{new_job_id}/input.zip"
 
     # basic validation of DB record
@@ -321,7 +321,7 @@ def test_get_jobs_simple(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -416,7 +416,7 @@ def test_get_jobs_filtering_job_info(
 
     expect = [
         JobBase(
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
         ),
         JobBase(
             job_info=None,
@@ -532,7 +532,7 @@ def test_get_jobs_filtering_end_time(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -582,7 +582,7 @@ def test_get_jobs_filtering_search_string(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -640,7 +640,7 @@ def test_get_jobs_desc_order(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -757,12 +757,12 @@ def test_get_jobs_all_parameters(
         JobBase(
             job_id="testjob7id",
             description="test job 7",
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob7id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob7id/input.zip"),
         ),
         JobBase(
             job_id="testjob5id",
             description="test job 5",
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob5id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob5id/input.zip"),
         ),
     ]
 
@@ -780,7 +780,7 @@ def test_get_jobs_all_parameters(
         JobBase(
             job_id="testjob3id",
             description="test job 3",
-            job_info=JobInfo(input=f"https://s3.ap-northeast-1.amazonaws.com/{bucket_name}/testjob3id/input.zip"),
+            job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip"),
         ),
     ]
 
