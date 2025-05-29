@@ -2,7 +2,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -41,13 +41,22 @@ utc = ZoneInfo("UTC")
 )
 @tracer.capture_method
 def get_announcements_list(
-    offset: Optional[int] = 0, limit: Optional[int] = 10, db: Session = Depends(get_db)
+    offset: Optional[int] = 0,
+    limit: Optional[int] = 10,
+    order: Optional[str] = None,
+    db: Session = Depends(get_db)
 ) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
         logger.info("invoked get_announcements")
 
+        arg_order = (
+            desc(Announcement.start_time)
+            if order == "DESC"
+            else asc(Announcement.start_time)
+        )
+
         query_result = db.scalars(
-            select(Announcement).offset(offset).limit(limit)
+            select(Announcement).offset(offset).limit(limit).order_by(arg_order)
         ).all()
         announcements_list = [
             model_to_schema(announcement) for announcement in query_result

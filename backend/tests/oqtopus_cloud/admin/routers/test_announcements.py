@@ -19,11 +19,11 @@ def _get_model(n: int) -> Announcement:
         "id": n,
         "title": f"title_{n}",
         "content": f"content_{n}",
-        "start_time": datetime(2024, 3, 4, 14, 0, 0),
-        "end_time": datetime(2024, 3, 5, 14, 0, 0),
+        "start_time": datetime(2024, 3, 4 + n, 14, 0, 0),
+        "end_time": datetime(2024, 3, 5 + n, 14, 0, 0),
         "publishable": True,
-        "created_at": datetime(2024, 3, 4, 12, 34, 57),
-        "updated_at": datetime(2024, 3, 4, 12, 34, 58),
+        "created_at": datetime(2024, 3, 4 + n, 12, 34, 57),
+        "updated_at": datetime(2024, 3, 4 + n, 12, 34, 58),
     }
     return Announcement(**model_dict)
 
@@ -50,19 +50,19 @@ def test_get_all_announcements(
                 id=1,
                 title="title_1",
                 content="content_1",
-                start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
-                end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+                start_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+                end_time=datetime(2024, 3, 6, 14, 0, 0, tzinfo=timezone.utc),
                 publishable=True,
-                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
+                updated_at=datetime(2024, 3, 5, 12, 34, 58, tzinfo=timezone.utc)
             ),
             GetAnnouncementResponse(
                 id=2,
                 title="title_2",
                 content="content_2",
-                start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
-                end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+                start_time=datetime(2024, 3, 6, 14, 0, 0, tzinfo=timezone.utc),
+                end_time=datetime(2024, 3, 7, 14, 0, 0, tzinfo=timezone.utc),
                 publishable=True,
-                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
+                updated_at=datetime(2024, 3, 6, 12, 34, 58, tzinfo=timezone.utc)
             ),
         ],
     )
@@ -71,7 +71,7 @@ def test_get_all_announcements(
     assert actual == expect
 
 
-def test_get_all_announcements_offset1_limit1(
+def test_get_all_announcements_offset1_limit2_desc(
     test_db,
 ):
     """_summary_
@@ -82,22 +82,32 @@ def test_get_all_announcements_offset1_limit1(
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
     test_db.add(_get_model(3))
+    test_db.add(_get_model(4))
     test_db.commit()
 
-    response = client.get("/announcements?offset=1&limit=1")
+    response = client.get("/announcements?offset=1&limit=2&order=DESC")
 
     adapter = TypeAdapter(GetAnnouncementsListResponse)
     actual = adapter.validate_python(response.json())
     expect = GetAnnouncementsListResponse(
         announcements=[
             GetAnnouncementResponse(
+                id=3,
+                title="title_3",
+                content="content_3",
+                start_time=datetime(2024, 3, 7, 14, 0, 0, tzinfo=timezone.utc),
+                end_time=datetime(2024, 3, 8, 14, 0, 0, tzinfo=timezone.utc),
+                publishable=True,
+                updated_at=datetime(2024, 3, 7, 12, 34, 58, tzinfo=timezone.utc)
+            ),
+            GetAnnouncementResponse(
                 id=2,
                 title="title_2",
                 content="content_2",
-                start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
-                end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+                start_time=datetime(2024, 3, 6, 14, 0, 0, tzinfo=timezone.utc),
+                end_time=datetime(2024, 3, 7, 14, 0, 0, tzinfo=timezone.utc),
                 publishable=True,
-                updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
+                updated_at=datetime(2024, 3, 6, 12, 34, 58, tzinfo=timezone.utc)
             ),
         ],
     )
@@ -134,10 +144,10 @@ def test_get_announcement(
         id=1,
         title="title_1",
         content="content_1",
-        start_time=datetime(2024, 3, 4, 14, 0, 0, tzinfo=timezone.utc),
-        end_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+        start_time=datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc),
+        end_time=datetime(2024, 3, 6, 14, 0, 0, tzinfo=timezone.utc),
         publishable=True,
-        updated_at=datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc)
+        updated_at=datetime(2024, 3, 5, 12, 34, 58, tzinfo=timezone.utc)
     )
 
     assert response.status_code == 200
@@ -166,6 +176,7 @@ def test_get_announcement_500():
     response = client.get("/announcements/1")
     assert response.status_code == 500
 
+
 @pytest.fixture
 def announcement_body():
     return {
@@ -175,6 +186,7 @@ def announcement_body():
         "end_time": "2025-04-09 13:05:47+00:00",
         "publishable": True
     }
+
 
 def test_register_announcement(
     test_db,
@@ -303,8 +315,8 @@ def test_update_announcement_partial_update(
 
     assert announcement.title == "Test title"
     assert announcement.content == "Test content"
-    assert announcement.start_time == datetime(2024, 3, 4, 14, 0, 0)
-    assert announcement.end_time == datetime(2024, 3, 5, 14, 0, 0)
+    assert announcement.start_time == datetime(2024, 3, 5, 14, 0, 0)
+    assert announcement.end_time == datetime(2024, 3, 6, 14, 0, 0)
     assert announcement.publishable == True
 
 

@@ -6,7 +6,7 @@ from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.user.schemas.announcements import GetAnnouncementsListResponse
 import pytz
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -37,13 +37,22 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 def get_announcements_list(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
+    order: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
         logger.info("invoked get_announcements_list")
+
+        arg_order = (
+            desc(Announcement.start_time)
+            if order == "DESC"
+            else asc(Announcement.start_time)
+        )
+
         announcements_list = db.scalars(
-            select(Announcement).offset(offset).limit(limit)
+            select(Announcement).offset(offset).limit(limit).order_by(arg_order)
         ).all()
+
         return GetAnnouncementsListResponse(
             announcements=[
                 model_to_schema(announcement) for announcement in announcements_list

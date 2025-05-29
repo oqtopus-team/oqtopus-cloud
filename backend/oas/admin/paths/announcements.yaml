@@ -18,6 +18,16 @@ announcements:
         description: "Limit information"
         required: false
         schema: {type: string}
+      - name: order
+        in: query
+        description: |-
+          Specify order according to start time
+        required: false
+        schema:
+          type: string
+          enum:
+            ["DESC", "ASC"]
+          default: "ASC"
     responses:
       "200":
         description: "Return announcements"
