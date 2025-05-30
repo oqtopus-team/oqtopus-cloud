@@ -17,8 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: reviewdog/action-actionlint@v1.65.2
         with:
-          fail_level: error
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_level: error
           filter_mode: nofilter
           level: error
           reporter: github-pr-review
