@@ -18,6 +18,7 @@ jobs:
       - uses: reviewdog/action-actionlint@v1.65.2
         with:
           fail_level: error
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           filter_mode: nofilter
           level: error
           reporter: github-pr-review
