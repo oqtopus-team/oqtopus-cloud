@@ -334,7 +334,7 @@ def update_job_transpiler_info(
 def get_ssesrc(
     job_id: str,
 ) -> PlainTextResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
         # get the program file from the AWS S3 bucket
@@ -369,7 +369,7 @@ def upload_sselog(
     file: UploadFile = Form(...),
     db: Session = Depends(get_db),
 ) -> UploadSselogResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
 
     try:

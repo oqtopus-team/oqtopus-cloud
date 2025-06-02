@@ -465,7 +465,7 @@ def test_update_job_status(test_db: Session):
 @mock_aws
 def test_get_ssesrc():
     # Arrange
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     program_name = os.environ["SSE_USER_PROGRAM_NAME"]
     job_id = "testjob1id"
     src_body = "program1"
@@ -490,7 +490,7 @@ def test_get_ssesrc():
 @mock_aws
 def test_get_ssesrc_no_src():
     # Arrange skip creating object for this test
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     job_id = "testjob1id"
     s3client = boto3.client("s3")
     s3client.create_bucket(
@@ -509,7 +509,7 @@ def test_upload_sselog(test_db: Session):
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     job_id = "testjob1id"
     src_body = "program1"
     s3client = boto3.client("s3")
@@ -544,7 +544,7 @@ def test_upload_sselog_unknown_jobid(test_db: Session):
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     src_body = "program1"
     s3client = boto3.client("s3")
     s3client.create_bucket(
@@ -567,7 +567,7 @@ def test_upload_sselog_invalid_jobtype(test_db: Session):
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
     job_id = "testjob1id"
     src_body = "program1"
     s3client = boto3.client("s3")
