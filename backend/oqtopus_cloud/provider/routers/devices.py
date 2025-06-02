@@ -157,6 +157,7 @@ def update_device_calibration(
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         device_info = request.device_info
         calibrated_at = request.calibrated_at
+        logger.info(f"{calibrated_at}")
         if device.device_type != DeviceType.QPU.value:
             return BadRequestResponse("Calibration is only supported for QPU devices")
         if device_info is None:
