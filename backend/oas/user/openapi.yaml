@@ -680,10 +680,8 @@ components:
           example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
         operator:
           type: array
-          x-see-also:
-            - '#/jobs.JonInfo.operator'
           items:
-            $ref: '#/components/schemas/jobs.OperatorItem'
+            $ref: '#/components/schemas/jobs.S3OperatorItem'
       required:
         - program
     jobs.S3JobResult:
@@ -1206,7 +1204,7 @@ components:
           type: string
       required:
         - message
-    jobs.OperatorItem:
+    jobs.S3OperatorItem:
       type: object
       properties:
         pauli:

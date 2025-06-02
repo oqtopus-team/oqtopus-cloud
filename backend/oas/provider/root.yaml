@@ -41,3 +41,10 @@ components:
       type: apiKey
       in: header
       name: X-Api-Key
+  schemas:
+    jobs.S3SubmitJobInfo:
+      $ref: './schemas/jobs.yaml#/jobs.S3SubmitJobInfo'
+    jobs.S3JobResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3JobResult'
+    jobs.S3TranspileResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3TranspileResult'

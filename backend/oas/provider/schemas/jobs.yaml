@@ -13,179 +13,6 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.JobProgram:
-  type: array
-  description: >-
-    A list of OPENQASM3 program.
-    For non-multiprogramming jobs, this field is assumed to contain exactly one program.
-    Otherwise, those programs are combined according to the multiprogramming machinery.
-  items:
-    type: string
-  example: >-
-      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
-
-jobs.OperatorItem:
-  type: object
-  properties:
-    pauli:
-      type: string
-      description: The Pauli string.
-      nullable: false
-      example: "X 0 X 1"
-    coeff:
-      description: "Coefficient number in the Pauli string representation."
-      type: number
-  required:
-    - pauli
-
-jobs.SamplingResult:
-  type: object
-  nullable: true
-  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
-  properties:
-    counts:
-      type: object
-      nullable: false
-      properties: {}
-      additionalProperties: true
-      example: >-
-        {
-          "10": 84,
-          "11": 387,
-          "10": 454,
-          "01": 75
-        }
-    divided_counts:
-      type: object
-      nullable: true
-      properties: {}
-      additionalProperties: true
-      example: >-
-        {
-          "0": {
-            "10": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          },
-          "1": {
-            "10": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          }
-  required:
-    - counts
-
-jobs.EstimationResult:
-  type: object
-  nullable: true
-  description: |
-      *(Only for estimation jobs)* The estimated expectation value and the standard deviation
-      of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-  properties:
-    exp_value:
-      description: "The estimated expection value."
-      nullable: false
-      type: number
-    stds:
-      description: "The standard deviation value"
-      nullable: false
-      type: number
-  required:
-    - exp_value
-    - stds
-
-jobs.TranspileResult:
-  type: object
-  nullable: true
-  properties:
-    transpiled_program:
-      type: string
-      nullable: true
-      example: >-
-        OPENQASM 3;
-        include "stdgates.inc";
-        qubit[2] _all_qubits;
-        let q = _all_qubits[0:1];
-        h q[0];
-        cx q[0], q[1];
-    stats:
-      type: object
-      properties: {}
-      additionalProperties: true
-      nullable: true
-    virtual_physical_mapping:
-      type: object
-      properties: {}
-      additionalProperties: true
-      nullable: true
-  required:
-    - transpiled_program
-    - stats
-    - virtual_physical_mapping
-
-jobs.JobResult:
-  type: object
-  nullable: true
-  properties:
-    sampling:
-      $ref: "#/jobs.SamplingResult"
-    estimation:
-      $ref: "#/jobs.EstimationResult"
-  additionalProperties: true
-  required: []
-
-jobs.JobInfo:
-  type: object
-  properties:
-    program:
-      type: array
-      description: >-
-        A list of OPENQASM3 program.
-        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
-        Otherwise, those programs are combined according to the multiprogramming machinery.
-      items:
-        type: string
-      nullable: false
-      example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
-
-    combined_program:
-      type: string
-      description: >-
-        For multiprogramming jobs, this field contains the combined circuit.
-      nullable: true
-      default: null
-
-    operator:
-      description: |
-        *(Only for estimation jobs)* The operator (or observable) for which the expectation
-        value is to be estimated.
-      type: array
-      nullable: true
-      default: null
-      items:
-        $ref: "#/jobs.OperatorItem"
-
-    result:
-      $ref: "#/jobs.JobResult"
-      nullable: true
-      default: null
-
-    transpile_result:
-      $ref: "#/jobs.TranspileResult"
-      nullable: true
-      default: null
-
-    message:
-      type: string
-      description: Describing the reason why there is no result
-      nullable: true
-      default: null
-  required:
-    - program
-
 jobs.JobType:
   type: string
   enum:
@@ -306,18 +133,40 @@ jobs.JobDef:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: sampling
-      job_info:
-        program:
-          - >-
-              OPENQASM 3;
-              qubit[2] q;
-              bit[2] c;
-              h q[0];
-              cnot q[0], q[1];
-              c = measure q;
-        transpiled_program: null
-        result: null
-        reason: null
+      job_info: {
+        "input": https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D,
+        "combined_program": {
+          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
+          "fields": {
+            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip",
+            "AWSAccessKeyId": "string",
+            "x-amz-security-token": "string",
+            "policy": "string",
+            "signature": "string"
+          }
+        },
+        "result": {
+          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
+          "fields": {
+            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip",
+            "AWSAccessKeyId": "string",
+            "x-amz-security-token": "string",
+            "policy": "string",
+            "signature": "string"
+          }
+        },
+        "transpile_result": {
+          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
+          "fields": {
+            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip",
+            "AWSAccessKeyId": "string",
+            "x-amz-security-token": "string",
+            "policy": "string",
+            "signature": "string"
+          }
+        },
+        "sse_log": null
+      }
       transpiler_info: {
         qubit_allocation: {
           "0": 12,
@@ -340,149 +189,6 @@ jobs.JobDef:
         }
       mitigation_info: |
         { "ro_error_mitigation": "pseudo_inverse" }
-      shots: 1000
-      status: submitted
-      execution_time: 10.123
-      submitted_at: 2022-10-19T11:45:34+09:00
-      ready_at: 2022-10-19T11:45:34+09:00
-      running_at: 2022-10-19T11:45:34+09:00
-      ended_at: 2022-10-19T11:45:34+09:00
-
-jobs.GetJobsResponse:
-  type: object
-  properties:
-    job_id:
-      $ref: "#/jobs.JobId"
-      nullable: false
-    name:
-      type: string
-      example: Bell State Sampling
-      nullable: true
-      default: null
-    description:
-      type: string
-      example: Bell State Sampling Example
-      nullable: false
-    device_id:
-      type: string
-      example: Kawasaki
-      nullable: false
-    shots:
-      type: integer
-      minimum: 1
-      maximum: 1e7
-      nullable: false
-      example: "1000"
-    job_info:
-      $ref: "#/jobs.JobInfo"
-      nullable: false
-    transpiler_info:
-      type: string
-      nullable: true
-      example: >-
-        {
-          "qubit_allocation": {
-            "0"": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
-    simulator_info:
-      type: string
-      nullable: true
-      example: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
-        }
-    mitigation_info:
-      type: string
-      nullable: true
-      example: |
-        { "ro_error_mitigation": "pseudo_inverse" }
-    status:
-      $ref: "#/jobs.JobStatus"
-      nullable: false
-    execution_time:
-      type: number
-      nullable: true
-      default: null
-      example: "10.123"
-    submitted_at:
-      type: string
-      format: date-time
-      nullable: true
-      default: null
-      example: 2022-10-19T11:45:34+09:00
-    ready_at:
-      type: string
-      format: date-time
-      nullable: true
-      default: null
-      example: 2022-10-19T11:45:34+09:00
-    running_at:
-      type: string
-      format: date-time
-      nullable: true
-      default: null
-      example: 2022-10-19T11:45:34+09:00
-    ended_at:
-      type: string
-      format: date-time
-      nullable: true
-      default: null
-      example: 2022-10-19T11:45:34+09:00
-  required: []
-  example:
-      job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-      name: Bell State Sampling
-      description: Bell State Sampling Example
-      device_id: Kawasaki
-      job_info:
-        program:
-          - >-
-              OPENQASM 3;
-              qubit[2] q;
-              bit[2] c;
-              h q[0];
-              cnot q[0], q[1];
-              c = measure q;
-        combined_program: null
-        transpiled_prgoram: null
-        result: {}
-        reason: null
-      transpiler_info: >-
-        {
-          "qubit_allocation": {
-            "0": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
-      simulator_info: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
-        }
-      mitigation_info: |
-        { "ro_error_mitigation": "pseudo_inverse" }
-      job_type: sampling
       shots: 1000
       status: submitted
       execution_time: 10.123
@@ -519,10 +225,10 @@ jobs.UpdateJobInfo:
         type: string
         nullable: true
     transpile_result:
-      $ref: "#/jobs.TranspileResult"
+      $ref: "#/jobs.S3TranspileResult"
       nullable: true
     result:
-      $ref: "#/jobs.JobResult"
+      $ref: "#/jobs.S3JobResult"
       nullable: true
     message:
       type: string
@@ -586,3 +292,195 @@ jobs.UpdateJobTranspilerInfoResponse:
       nullable: false
   required:
     - message
+
+jobs.JobInfoUploadPresignedURL:
+  description: |-
+    Presigned URL for uploading file to OCTOPUS cloud.
+  type: object
+  properties:
+    url:
+      type: string
+      example: https://oqtopus-cloud.s3.amazonaws.com/
+    fields:
+      type: object
+      properties:
+        key:
+          type: string
+          example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip
+        AWSAccessKeyId:
+          type: string
+        x-amz-security-token:
+          type: string
+        policy:
+          type: string
+        signature:
+          type: string
+
+jobs.JobInfoDownloadPresignedURL:
+  description: |-
+    Presigned URL for downloading a file from OCTOPUS cloud.
+  type: string
+  example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+
+jobs.JobInfo:
+  description: |-
+    Presigned URLs for downloading/uploading relevant job information .zip files from/to OQTOPUS cloud.
+  type: object
+  properties:
+    input:
+      allOf:
+        - $ref: "#/jobs.JobInfoDownloadPresignedURL"
+        - description: Content of the file will match `jobs.S3SubmitJobInfo` schema.
+    combined_program:
+      allOf:
+        - $ref: "#/jobs.JobInfoUploadPresignedURL"
+        - description: For multiprogramming jobs, this file contains the combined circuit.
+    result:
+      allOf:
+        - $ref: "#/jobs.JobInfoUploadPresignedURL"
+        - description: Content of the file should match `jobs.S3JobResult` schema.
+    transpile_result:
+      allOf:
+        - $ref: "#/jobs.JobInfoUploadPresignedURL"
+        - description: Content of the file should match `jobs.S3TranspileResult` schema.
+    sse_log:
+      allOf:
+        - $ref: "#/jobs.JobInfoUploadPresignedURL"
+        - description: File available only for sse jobs.
+  required:
+    - input
+    - combined_program
+    - result
+    - transpile_result
+
+jobs.S3OperatorItem:
+  type: object
+  properties:
+    pauli:
+      type: string
+      description: The Pauli string.
+      nullable: false
+      example: "X 0 X 1"
+    coeff:
+      description: "Coefficient number in the Pauli string representation."
+      type: number
+  required:
+    - pauli
+
+jobs.S3SubmitJobInfo:
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+    operator:
+      type: array
+      items:
+        $ref: "#/jobs.S3OperatorItem"
+  required:
+    - program
+
+jobs.S3SamplingResult:
+  type: object
+  nullable: true
+  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
+  properties:
+    counts:
+      type: object
+      nullable: false
+      properties: {}
+      additionalProperties: true
+      example: >-
+        {
+          "10": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+    divided_counts:
+      type: object
+      nullable: true
+      properties: {}
+      additionalProperties: true
+      example: >-
+        {
+          "0": {
+            "00": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          },
+          "1": {
+            "00": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          }
+  required:
+    - counts
+
+jobs.S3EstimationResult:
+  type: object
+  nullable: true
+  description: |
+      *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+      of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+  properties:
+    exp_value:
+      description: "The estimated expection value."
+      nullable: false
+      type: number
+    stds:
+      description: "The standard deviation value"
+      nullable: false
+      type: number
+  required:
+    - exp_value
+    - stds
+
+jobs.S3JobResult:
+  type: object
+  nullable: true
+  properties:
+    sampling:
+      $ref: "#/jobs.S3SamplingResult"
+    estimation:
+      $ref: "#/jobs.S3EstimationResult"
+  additionalProperties: true
+  required: []
+
+jobs.S3TranspileResult:
+  type: object
+  nullable: true
+  properties:
+    transpiled_program:
+      type: string
+      nullable: true
+      example: >-
+        OPENQASM 3;
+        include "stdgates.inc";
+        qubit[2] _all_qubits;
+        let q = _all_qubits[0:1];
+        h q[0];
+        cx q[0], q[1];
+    stats:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+    virtual_physical_mapping:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+  required:
+    - transpiled_program
+    - stats
+    - virtual_physical_mapping

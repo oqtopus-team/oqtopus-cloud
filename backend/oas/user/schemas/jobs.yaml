@@ -26,20 +26,6 @@ jobs.RegisterJobResponse:
     - job_id
     - presigned_url
 
-jobs.OperatorItem:
-  type: object
-  properties:
-    pauli:
-      type: string
-      description: The Pauli string.
-      example: "X 0 X 1"
-    coeff:
-      type: number
-      description: "Coefficient number in the Pauli string representation."
-      example: 1.0
-  required:
-    - pauli
-
 jobs.JobStatus:
   type: string
   enum:
@@ -340,6 +326,20 @@ jobs.JobInfo:
   required:
     - input
 
+jobs.S3OperatorItem:
+  type: object
+  properties:
+    pauli:
+      type: string
+      description: The Pauli string.
+      example: "X 0 X 1"
+    coeff:
+      type: number
+      description: "Coefficient number in the Pauli string representation."
+      example: 1.0
+  required:
+    - pauli
+
 jobs.S3SubmitJobInfo:
   type: object
   properties:
@@ -355,10 +355,8 @@ jobs.S3SubmitJobInfo:
           [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
     operator:
       type: array
-      x-see-also:
-        - '#/jobs.JonInfo.operator'
       items:
-        $ref: "#/jobs.OperatorItem"
+        $ref: "#/jobs.S3OperatorItem"
   required:
     - program
 
