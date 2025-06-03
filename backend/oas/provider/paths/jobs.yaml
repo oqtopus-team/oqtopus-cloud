@@ -97,8 +97,8 @@ jobs.job_id:
 
 jobs.job_status:
   patch:
-    summary: "Modify selected quantum job (update status)."
-    description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
+    summary: Update job status
+    description: Update job status and status related data
     operationId: patch_job
     tags:
       - jobs
@@ -109,7 +109,7 @@ jobs.job_status:
         description: "Job identifier"
         schema: { type: string, nullable: false }
     requestBody:
-      description: "New job status. "
+      description: "New job status and status related data"
       content:
         application/json:
           schema:

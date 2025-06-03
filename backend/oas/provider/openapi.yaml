@@ -285,8 +285,8 @@ paths:
                 message: job not found
   /jobs/{job_id}/status:
     patch:
-      summary: Modify selected quantum job (update status).
-      description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
+      summary: Update job status
+      description: Update job status and status related data
       operationId: patch_job
       tags:
         - jobs
@@ -299,7 +299,7 @@ paths:
             type: string
             nullable: false
       requestBody:
-        description: 'New job status. '
+        description: New job status and status related data
         content:
           application/json:
             schema:
@@ -855,8 +855,30 @@ components:
           type: string
           enum:
             - running
-          example: running
+            - succeeded
+            - failed
+            - cancelled
+          example: succeeded
           nullable: false
+        output_files:
+          description: List of all S3 files uploaded by provider during job execution.
+          type: array
+          items:
+            type: string
+          nullable: true
+          example:
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
+        message:
+          type: string
+          nullable: true
+          example: Execution successful
+        execution_time:
+          type: number
+          description: Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
+          nullable: true
+          example: 1256.58
       required:
         - status
     jobs.JobStatusUpdateResponse:

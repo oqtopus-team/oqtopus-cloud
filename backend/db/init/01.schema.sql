@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   transpiler_info TEXT,
   simulator_info TEXT,
   mitigation_info TEXT,
+  output_files TEXT,
+  message TEXT,
   submitted_at DATETIME,
   ready_at DATETIME,
   running_at DATETIME,
