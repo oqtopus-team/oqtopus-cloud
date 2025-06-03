@@ -26,12 +26,13 @@ class DateTimeTz(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        # DB保存時: UTCに変換して保存
+        # When storing data to DB, we change the timezone to UTC
         if value is not None and value.tzinfo is not None:
             return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         return value
 
     def process_result_value(self, value, dialect):
+        # When retrieving data from DB, we add the timezone info UTC
         if value is not None:
             return value.replace(tzinfo=datetime.timezone.utc)
         return value
