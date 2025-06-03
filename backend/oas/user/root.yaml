@@ -16,16 +16,19 @@ paths:
   /devices:
     $ref: ./paths/devices.yaml#/devices
   /devices/{device_id}:
-    $ref: ./paths/devices.yaml#/devices.deviceId
+    $ref: ./paths/devices.yaml#/devices.device_id
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
-    $ref: ./paths/jobs.yaml#/jobs.jobId
+    $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.status
+    $ref: ./paths/jobs.yaml#/jobs.job_id.status
   /jobs/{job_id}/cancel:
-    $ref: ./paths/jobs.yaml#/jobs.jobId.cancel
-
+    $ref: ./paths/jobs.yaml#/jobs.job_id.cancel
+  /jobs/{job_id}/sselog:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
+  /api-token:
+    $ref: ./paths/api-token.yaml#/api-token
 components:
   securitySchemes:
     BearerAuth:

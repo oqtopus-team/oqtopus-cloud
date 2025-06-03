@@ -1,19 +1,11 @@
-<div align="center">
+![OQTOPUS](../asset/oqtopus-logo.png)
 
-<h1> 🐙 OQTOPUS Cloud </h1>
+# OQTOPUS Cloud
 
-<table>
-  <thead>
-    <tr>
-      <th style="text-align:center"><a href="../">🇺🇸English</a></th>
-      <th style="text-align:center"><a href="./">🇯🇵日本語</a></th>
-    </tr>
-  </thead>
-</table>
-
-</div>
-
-[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml) [![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python CI](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/python-ci.yaml)
+[![TFLint](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml/badge.svg)](https://github.com/oqtopus-team/oqtopus-cloud/actions/workflows/tflint.yaml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![slack](https://img.shields.io/badge/slack-OQTOPUS-pink.svg?logo=slack&style=plastic")](https://oqtopus.slack.com/archives/C08JKNLVDMM)
 
 ## 概要
 
@@ -76,6 +68,10 @@ OQTOPUS Cloudを研究に引用する際には、以下のDOIをご利用いた�
 このリポジトリで問題が発生した場合は、Issueもしくは以下のメールアドレスにお問い合わせください。
 
 - [oqtopus-team[at]googlegroups.com](mailto:oqtopus-team[at]googlegroups.com)
+
+または、Slackワークスペースに参加していただくことも可能です。
+
+[![slack](https://img.shields.io/badge/slack-OQTOPUS-pink.svg?logo=slack&style=plastic")](https://oqtopus.slack.com/archives/C08JKNLVDMM)
 
 ## ライセンス
 

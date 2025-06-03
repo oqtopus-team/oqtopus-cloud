@@ -9,7 +9,7 @@ devices:
       - device
     summary: List available devices
     description: List available devices
-    operationId: listDevices
+    operationId: list_devices
     security:
       - BearerAuth: []
     responses:
@@ -28,7 +28,7 @@ devices:
             schema:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
             example:
-              detail: Unauthorized
+              message: Unauthorized
       '500':
         description: Internal Server Error
         content:
@@ -36,13 +36,13 @@ devices:
             schema:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
 
-devices.deviceId:
+devices.device_id:
   get:
     tags:
       - device
     summary: Get specified device details
     description: get device
-    operationId: getDevice
+    operationId: get_device
     security:
       - BearerAuth: []
     parameters:

@@ -40,10 +40,10 @@ variable "lambda_handler" {
   type        = string
 }
 
-variable "use_cognito_authorizer" {
-  description = "Set `true` if API is authorized with cognito userpool."
-  type        = bool
-  default     = true
+variable "authorizer_type" {
+  description = "Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required."
+  type        = string
+  default     = "COGNITO"
 }
 
 variable "require_api_key" {
@@ -66,29 +66,99 @@ variable "power_tools_service_name" {
   type        = string
 }
 
+variable "enable_cors" {
+  type        = bool
+  description = "Should enable CORS? (APIs for web client, this should be true, otherse false)"
+  default     = true
+}
+
 variable "allow_origins" {
   description = "The allowed origins for the API Gateway"
   type        = string
+  default     = null
 }
 
 variable "allow_credentials" {
   description = "The allowed credentials for the API Gateway"
   type        = string
+  default     = null
 }
 
 
 variable "allow_methods" {
   description = "The allowed methods for the API Gateway"
   type        = string
+  default     = null
 }
 
 variable "allow_headers" {
   description = "The allowed headers for the API Gateway"
   type        = string
+  default     = null
 }
 
 
 variable "log_level" {
   description = "The log level for the Lambda function"
   type        = string
+}
+
+variable "client_cognito_user_pool_id" {
+  description = "The ID of the Cognito user pool"
+  type        = string
+  default     = ""
+}
+
+variable "client_cognito_user_pool_web_client_id" {
+  description = "The web client ID of the Cognito user pool"
+  type        = string
+  default     = ""
+}
+
+variable "manage_cognito_user_pool" {
+  description = "Set `true` if the module should manage the Cognito user pool"
+  type        = bool
+  default     = false
+}
+
+variable "lambda_authorizer_arn" {
+  type        = string
+  default     = ""
+  description = "ARN of the Lambda function used for authorizer"
+}
+
+variable "sse_bucket" {
+  type        = string
+  default     = ""
+  description = "SSE bucket name"
+}
+
+variable "sse_container_log_name" {
+  type        = string
+  default     = ""
+  description = "SSE container log name"
+}
+
+variable "sse_user_program_name" {
+  type        = string
+  default     = ""
+  description = "SSE user program name"
+}
+
+variable "sse_zip_file_name" {
+  type        = string
+  default     = ""
+  description = "SSE zip file name"
+}
+
+variable "lambda_timeout" {
+  type        = number
+  default     = 15
+  description = "Lambda timeout"
+}
+
+variable "lambda_additional_env" {
+  type        = map(any)
+  default     = {}
+  description = "Additional environment variables"
 }

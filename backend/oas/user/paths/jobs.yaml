@@ -6,10 +6,10 @@ jobs:
     description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'startTime', 'endTime' and 'q' parameters.
+        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
-    operationId: listJobs
+    operationId: list_jobs
     security:
       - BearerAuth: []
     parameters:
@@ -26,19 +26,19 @@ jobs:
           type: string
           maxLength: 1024
           example: "job_id,status,name"
-      - name: startTime
+      - name: start_time
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= startTime are returned.
+          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
         required: false
         schema:
           type: string
           format: date-time
           example: "2022-10-19T11:45:34+09:00"
-      - name: endTime
+      - name: end_tiime
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= endTime are returned.
+          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
         required: false
         schema:
           type: string
@@ -100,13 +100,13 @@ jobs:
             schema:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
             example:
-              detail: Unauthorized
+              message: Unauthorized
   post:
     tags:
       - job
     summary: "Submit a quantum job"
     description: "Submit a quantum job"
-    operationId: submitJob
+    operationId: submit_job
     security:
       - BearerAuth: []
     requestBody:
@@ -123,37 +123,59 @@ jobs:
                   name: "Bell State Sampling",
                   description: "Bell State Sampling Example",
                   device_id: "Kawasaki",
+                  job_type: "sampling",
                   job_info: {
-                    job_type: "sampling",
-                    code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+                    program:
+                      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
                   },
-                  transpiler_info: '{}',
-                  simulator_info: '{ "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": {"optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1}}',
-                  mitigation_info: '{}',
+                  transpiler_info: {},
+                  simulator_info: {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                      "optimization_method": "light",
+                      "optimization_block_size": 1,
+                      "optimization_swap_level": 1
+                    }
+                  },
+                  mitigation_info: {},
                   shots: 1000,
-                  status: "submitted",
-                  created_at: "2022-10-19T11:45:34",
-                  updated_at: "2022-10-19T11:45:34"
                 }
             qpu:
               description: QPU example
               value:
                 {
-                  name: "Bell State Sampling",
-                  description: "Bell State Sampling Example",
+                  name: "Bell State Estimation",
+                  description: "Bell State Estimation Example",
                   device_id: "Kawasaki",
+                  job_type: "estimation",
                   job_info: {
-                    job_type: "estimation",
-                    code: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                    operator: "X 0 Y 1 Z 5 I 2"
+                    program: [
+                      "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                    ],
+                    operator: [
+                      {
+                        pauli: "X 0 X 1",
+                        coeff: 1.5
+                      },
+                      {
+                        pauli: "Y 0 Z 1",
+                        coeff: 1.2
+                      }
+                    ]
                   },
-                  transpiler_info: '{"qubit_allocation": {"0": 12, "1": 16}, "skip_transpilation": false, "seed_transpilation": 873}',
-                  simulator_info: '{}',
-                  mitigation_info: '{"ro_error_mitigation": "pseudo_inverse"}',
+                  transpiler_info: {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": false,
+                    "seed_transpilation": 873
+                  },
+                  simulator_info: {},
+                  mitigation_info: {
+                    "ro_error_mitigation": "pseudo_inverse"
+                  },
                   shots: 1000,
-                  status: "submitted",
-                  created_at: "2022-10-19T11:45:34",
-                  updated_at: "2022-10-19T11:45:34"
                 }
 
     responses:
@@ -172,7 +194,7 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -180,15 +202,15 @@ jobs:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
 
-jobs.jobId:
+jobs.job_id:
   get:
     tags:
       - job
     summary: "Get selected job"
     description: "Get selected job"
-    operationId: getSamplingJob
+    operationId: get_job
     security:
       - BearerAuth: []
     parameters:
@@ -211,7 +233,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -219,7 +241,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -227,13 +249,13 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
   delete:
     tags:
       - job
     summary: "Delete job"
     description: "Deletes quantum job and related result<br/><br/>Operation is valid only for job with status: succeeded, failed and cancelled. submitted, ready and running jobs must be cancelled before deletion."
-    operationId: deleteSamplingJob
+    operationId: delete_job
     security:
       - BearerAuth: []
     parameters:
@@ -258,7 +280,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -266,7 +288,7 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -274,15 +296,15 @@ jobs.jobId:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
 
-jobs.jobId.status:
+jobs.job_id.status:
   get:
     tags:
       - job
     summary: "Get selected job's status"
     description: "Get selected job's status"
-    operationId: getSamplingJobStatus
+    operationId: get_job_status
     security:
       - BearerAuth: []
     parameters:
@@ -305,7 +327,7 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -313,7 +335,7 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -321,15 +343,15 @@ jobs.jobId.status:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
 
-jobs.jobId.cancel:
+jobs.job_id.cancel:
   post:
     tags:
       - job
     summary: "Cancel job"
     description: "Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running."
-    operationId: cancelSamplingJob
+    operationId: cancel_job
     security:
       - BearerAuth: []
     parameters:
@@ -354,7 +376,7 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
             example:
-              detail: Bad request malformed input data
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
@@ -362,7 +384,7 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
-              detail: Unauthorized
+              message: Unauthorized
       "404":
         description: Not Found
         content:
@@ -370,4 +392,59 @@ jobs.jobId.cancel:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
-              detail: job not found
+              message: job not found
+
+jobs.job_id.sse_log:
+  get:
+    tags:
+      - job
+    summary: "Get SSE log file"
+    description: "Get SSE log file of selected job"
+    operationId: get_sselog
+    security:
+      - BearerAuth: []
+    parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: "Job identifier"
+          schema: {type: string}
+    responses:
+      "200":
+        description: "Return SSE log file"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.GetSselogResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error

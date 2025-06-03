@@ -23,66 +23,73 @@ jobs.SubmitJobResponse:
   required:
     - job_id
 
-jobs.JobInfoSampling:
+jobs.OperatorItem:
   type: object
-  description: "The descriptor of sampling jobs"
   properties:
-    job_type:
+    pauli:
       type: string
-      enum:
-        - sampling
-    code:
-      type: string
-      example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
+      description: The Pauli string.
+      example: "X 0 X 1"
+    coeff:
+      type: number
+      description: "Coefficient number in the Pauli string representation."
+      example: 1.0
   required:
-    - job_type
-    - code
+    - pauli
 
-
-jobs.JobInfoEstimation:
+jobs.SamplingResult:
   type: object
-  description: "The descriptor of estimation jobs"
+  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
   properties:
-    job_type:
-      type: string
-      enum:
-        - estimation
-    code:
-      type: string
-      example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
-    operator:
-      type: string
-      example: X 0 Y 1 Z 5 I 2
-  required:
-    - job_type
-    - code
-    - operator
+    counts:
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "00": 84,
+        "11": 387,
+        "10": 454,
+        "01": 75
+      }
+    divided_counts:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+      example: {
+        "0": {
+          "00": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        },
+        "1": {
+          "00": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+      }
 
-jobs.JobInfoDesc:
+jobs.EstimationResult:
   type: object
-  oneOf:
-    - $ref: "#/jobs.JobInfoEstimation"
-    - $ref: "#/jobs.JobInfoSampling"
+  description: |
+      *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+      of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+  properties:
+    exp_value:
+      description: The estimated expectation value
+      type: number
+    stds:
+      description: "The standard deviation value"
+      type: number
 
-jobs.JobInfo:
+jobs.TranspileResult:
   type: object
   properties:
-    desc:
-      $ref: "#/jobs.JobInfoDesc"
-    transpiled_code:
+    transpiled_program:
       type: string
+      nullable: true
       example: >-
         OPENQASM 3;
         include "stdgates.inc";
@@ -90,16 +97,69 @@ jobs.JobInfo:
         let q = _all_qubits[0:1];
         h q[0];
         cx q[0], q[1];
-    result:
-      type: string
-      description: "The result of quantum computation, set only if the computation is successful."
-      example: |
-        { "11": 4980, "00": 5020 }
-    reason:
-      type: string
-      description: The reason indicating why there is no result
+    stats:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+    virtual_physical_mapping:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
   required:
-    - desc
+    - transpiled_program
+    - stats
+    - virtual_physical_mapping
+
+jobs.JobResult:
+  type: object
+  properties:
+    sampling:
+      $ref: "#/jobs.SamplingResult"
+    estimation:
+      $ref: "#/jobs.EstimationResult"
+  additionalProperties: true
+  required: []
+
+jobs.JobInfo:
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+    combined_program:
+      type: string
+      description: >-
+        For multiprogramming jobs, this field contains the combined circuit.
+
+    operator:
+      description: |
+        *(Only for estimation jobs)* The operator (or observable) for which the expectation
+        value is to be estimated.
+      type: array
+      items:
+        $ref: "#/jobs.OperatorItem"
+
+    result:
+      $ref: "#/jobs.JobResult"
+
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
+
+    message:
+      type: string
+      description: Describing the reason why there is no result
+  required:
+    - program
 
 jobs.JobStatus:
   type: string
@@ -112,45 +172,13 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.TranspilerInfo:
-  type: string
-  example: >-
-    {
-      "qubit_allocation": {
-        "0": 12,
-        "1": 16
-      },
-      "skip_transpilation": false,
-      "seed_transpilation": 873
-    }
-
-jobs.SimulatorInfo:
-  type: string
-  example: >-
-    {
-      "n_qubits": 5,
-      "n_nodes": 12,
-      "n_per_node": 2,
-      "seed_simulation": 39058567,
-      "simulation_opt": {
-        "optimization_method": "light",
-        "optimization_block_size": 1,
-        "optimization_swap_level": 1
-      }
-    }
-
-jobs.MitigationInfo:
-  type: string
-  example: >-
-    {
-      "ro_error_mitigation": "pseudo_inverse"
-    }
-
 jobs.JobType:
   type: string
   enum:
     - estimation
     - sampling
+    - multi_manual
+    - sse
   example: sampling
 
 jobs.JobDef:
@@ -179,16 +207,55 @@ jobs.JobDef:
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
-      $ref: "#/jobs.TranspilerInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      $ref: "#/jobs.SimulatorInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
     mitigation_info:
-      $ref: "#/jobs.MitigationInfo"
-    created_at:
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
+    execution_time:
+      type: number
+      example: "10.123"
+    submitted_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
-    updated_at:
+    ready_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+    running_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+    ended_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
@@ -204,26 +271,69 @@ jobs.JobDef:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
       description: Bell State Sampling Example
-      device_id: Kawasaki,
+      device_id: Kawasaki
+      job_type: estimation
       job_info:
-        desc:
-          job_type: estimation
-          code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          operator: X 0 Y 1 Z 5 I 2
+        program:
+          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+        operator:
+          - pauli: "X 0 Y 1 Z 5 I 2"
+            coeff: 1.0
         transpiled_code: "{}"
         result: "{}"
         reason: ""
-      transpiler_info: >-
-        { "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873 },
-      simulator_info: >-
-        { "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 } }
-      mitigation_info: >-
-        { "ro_error_mitigation": "pseudo_inverse" }
+      transpiler_info: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
+      simulator_info: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
+      mitigation_info: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
+      execution_time: 10.123
+      submitted_at: 2022-10-19T11:45:34+09:00
+      ready_at: 2022-10-19T11:45:34+09:00
+      running_at: 2022-10-19T11:45:34+09:00
+      ended_at: 2022-10-19T11:45:34+09:00
 
+jobs.SubmitJobInfo:
+  description: "All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema."
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+    operator:
+      type: array
+      x-see-also:
+        - '#/jobs.JonInfo.operator'
+      items:
+        $ref: "#/jobs.OperatorItem"
+  required:
+    - program
 
 jobs.SubmitJobRequest:
   type: object
@@ -237,48 +347,53 @@ jobs.SubmitJobRequest:
     device_id:
       type: string
       example: Kawasaki
+    job_type:
+      $ref: "#/jobs.JobType"
     job_info:
-      $ref: "#/jobs.JobInfoDesc"
+      $ref: "#/jobs.SubmitJobInfo"
     transpiler_info:
-      type: string
-      description: When specified, valid JSON string is required.
-      example: "{}"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      type: string
-      example: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
         }
+      }
     mitigation_info:
-      type: string
-      description: "When specified, valid JSON string is required"
-      example: "{}"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
     shots:
       type: integer
+      minimum: 1
+      maximum: 1e7
       example: 1000
-    status:
-      $ref: "#/jobs.JobStatus"
-      example: submitted
-    created_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
   required:
-    - name
     - device_id
     - shots
+    - job_type
     - job_info
 
 jobs.GetJobsResponse:
@@ -307,16 +422,55 @@ jobs.GetJobsResponse:
     job_info:
       $ref: "#/jobs.JobInfo"
     transpiler_info:
-      $ref: "#/jobs.TranspilerInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "qubit_allocation": {
+          "0": 12,
+          "1": 16
+        },
+        "skip_transpilation": false,
+        "seed_transpilation": 873
+      }
     simulator_info:
-      $ref: "#/jobs.SimulatorInfo"
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
+        }
+      }
     mitigation_info:
-      $ref: "#/jobs.MitigationInfo"
-    created_at:
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
+    execution_time:
+      type: number
+      example: "10.123"
+    submitted_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
-    updated_at:
+    ready_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+    running_at:
+      type: string
+      format: date-time
+      example: 2022-10-19T11:45:34+09:00
+    ended_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
@@ -325,12 +479,13 @@ jobs.GetJobsResponse:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
       description: Bell State Sampling Example
-      device_id: Kawasaki,
+      device_id: Kawasaki
+      job_type: estimation
       job_info:
-        desc:
-          job_type: estimation
-          code: OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          operator: X 0 Y 1 Z 5 I 2
+        program:
+          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+        operator:
+          - pauli: "X 0 Y 1 Z 5 I 2"
         transpiled_code: "{}"
         result: "{}"
         reason: ""
@@ -342,5 +497,20 @@ jobs.GetJobsResponse:
         { "ro_error_mitigation": "pseudo_inverse" }
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
+      execution_time: 10.123
+      submitted_at: 2022-10-19T11:45:34+09:00
+      ready_at: 2022-10-19T11:45:34+09:00
+      running_at: 2022-10-19T11:45:34+09:00
+      ended_at: 2022-10-19T11:45:34+09:00
+
+jobs.GetSselogResponse:
+  description: sse log file
+  type: object
+  properties:
+    file:
+      type: string
+      format: byte
+    file_name:
+      type: string
+      example: "sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"
+  required: []

@@ -1,6 +1,5 @@
 jobs.JobId:
   type: string
-  format: string
   example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
 
 jobs.JobStatus:
@@ -14,65 +13,96 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.JobInfoSampling:
+jobs.JobProgram:
+  type: array
+  description: >-
+    A list of OPENQASM3 program.
+    For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+    Otherwise, those programs are combined according to the multiprogramming machinery.
+  items:
+    type: string
+  example: >-
+      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+jobs.OperatorItem:
   type: object
-  description: The descriptor of sampling jobs
   properties:
-    job_type:
+    pauli:
       type: string
-      enum:
-        - sampling
-    code:
-      type: string
-      example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
+      description: The Pauli string.
+      nullable: false
+      example: "X 0 X 1"
+    coeff:
+      description: "Coefficient number in the Pauli string representation."
+      type: number
   required:
-    - job_type
-    - code
+    - pauli
 
-jobs.JobInfoEstimation:
+jobs.SamplingResult:
   type: object
-  description: The descriptor of estimation jobs
+  nullable: true
+  description: "*(Only for sampling jobs)* JSON string representing the sampling result"
   properties:
-    job_type:
-      type: string
-      enum:
-        - estimation
-    code:
-      type: string
+    counts:
+      type: object
+      nullable: false
+      properties: {}
+      additionalProperties: true
       example: >-
-        OPENQASM 3;
-        qubit[2] q;
-        bit[2] c;
-        h q[0];
-        cnot q[0], q[1];
-        c = measure q;
-    operator:
-      type: string
-      example: X 0 Y 1 Z 5 I 2
+        {
+          "10": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+    divided_counts:
+      type: object
+      nullable: true
+      properties: {}
+      additionalProperties: true
+      example: >-
+        {
+          "0": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          },
+          "1": {
+            "10": 84,
+            "11": 387,
+            "10": 454,
+            "01": 75
+          }
   required:
-    - job_type
-    - code
-    - operator
+    - counts
 
-jobs.JobInfoDesc:
+jobs.EstimationResult:
   type: object
-  oneOf:
-    - $ref: "#/jobs.JobInfoEstimation"
-    - $ref: "#/jobs.JobInfoSampling"
-
-jobs.JobInfo:
-  type: object
+  nullable: true
+  description: |
+      *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+      of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
   properties:
-    desc:
-      $ref: "#/jobs.JobInfoDesc"
-    transpiled_code:
+    exp_value:
+      description: "The estimated expection value."
+      nullable: false
+      type: number
+    stds:
+      description: "The standard deviation value"
+      nullable: false
+      type: number
+  required:
+    - exp_value
+    - stds
+
+jobs.TranspileResult:
+  type: object
+  nullable: true
+  properties:
+    transpiled_program:
       type: string
+      nullable: true
       example: >-
         OPENQASM 3;
         include "stdgates.inc";
@@ -80,120 +110,222 @@ jobs.JobInfo:
         let q = _all_qubits[0:1];
         h q[0];
         cx q[0], q[1];
-    result:
-      type: string
-      description: The result of quantum computation, set only if the computation is successful.
-      example: >-
-        {
-          "11": 4980,
-          "00": 5020
-        }
-    reason:
-      type: string
-      description: The reason indicating why there is no result
+    stats:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+    virtual_physical_mapping:
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
   required:
-    - desc
+    - transpiled_program
+    - stats
+    - virtual_physical_mapping
+
+jobs.JobResult:
+  type: object
+  nullable: true
+  properties:
+    sampling:
+      $ref: "#/jobs.SamplingResult"
+    estimation:
+      $ref: "#/jobs.EstimationResult"
+  additionalProperties: true
+  required: []
+
+jobs.JobInfo:
+  type: object
+  properties:
+    program:
+      type: array
+      description: >-
+        A list of OPENQASM3 program.
+        For non-multiprogramming jobs, this field is assumed to contain exactly one program.
+        Otherwise, those programs are combined according to the multiprogramming machinery.
+      items:
+        type: string
+      nullable: false
+      example: >-
+          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+
+    combined_program:
+      type: string
+      description: >-
+        For multiprogramming jobs, this field contains the combined circuit.
+      nullable: true
+      default: null
+
+    operator:
+      description: |
+        *(Only for estimation jobs)* The operator (or observable) for which the expectation
+        value is to be estimated.
+      type: array
+      nullable: true
+      default: null
+      items:
+        $ref: "#/jobs.OperatorItem"
+
+    result:
+      $ref: "#/jobs.JobResult"
+      nullable: true
+      default: null
+
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
+      nullable: true
+      default: null
+
+    message:
+      type: string
+      description: Describing the reason why there is no result
+      nullable: true
+      default: null
+  required:
+    - program
 
 jobs.JobType:
   type: string
   enum:
     - sampling
     - estimation
+    - multi_manual
+    - sse
 
 jobs.JobDef:
   type: object
   properties:
     job_id:
       $ref: "#/jobs.JobId"
+      nullable: false
     name:
       type: string
       example: Bell State Sampling
+      nullable: true
     description:
       type: string
       example: Bell State Sampling Example
+      nullable: false
     device_id:
       type: string
       example: Kawasaki
+      nullable: false
     shots:
       type: integer
       minimum: 1
       maximum: 1e7
       example: "1000"
+      nullable: false
+    job_type:
+      $ref: "#/jobs.JobType"
+      nullable: false
     job_info:
       $ref: "#/jobs.JobInfo"
+      nullable: false
     transpiler_info:
-      type: string
-      example: >-
-        {
-          "qubit_allocation": {
-            "0"": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
+      type: object
+      nullable: true
+      properties: {}
+      additionalProperties: true
+      example: {
+        qubit_allocation: {
+          "0": 12,
+          "1": 16
+        },
+        skip_transpilation: false,
+        seed_transpilation: 873
+      }
     simulator_info:
-      type: string
-      example: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
+      type: object
+      properties: {}
+      additionalProperties: true
+      nullable: true
+      example: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
         }
+      }
     mitigation_info:
-      type: string
-      example: |
-        { "ro_error_mitigation": "pseudo_inverse" }
+      type: object
+      properties: {}
+      additionalProperties: true
+      example: {
+        ro_error_mitigation": "pseudo_inverse"
+      }
+      nullable: true
     status:
       $ref: "#/jobs.JobStatus"
-    created_at:
+      nullable: false
+    execution_time:
+      type: number
+      example: "10.123"
+      nullable: true
+      default: null
+    submitted_at:
+      type: string
+      format: date-time
+      nullable: true
+      default: null
+      example: 2022-10-19T11:45:34+09:00
+    ready_at:
+      type: string
+      format: date-time
+      nullable: true
+      default: null
+      example: 2022-10-19T11:45:34+09:00
+    running_at:
+      type: string
+      format: date-time
+      nullable: true
+      default: null
+      example: 2022-10-19T11:45:34+09:00
+    ended_at:
       type: string
       format: date-time
       example: 2022-10-19T11:45:34+09:00
-    updated_at:
-      type: string
-      format: date-time
-      example: 2022-10-19T11:45:34+09:00
+      nullable: true
+      default: null
   required:
     - job_id
     - device_id
+    - job_type
     - job_info
     - shots
     - status
-    - created_at
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
       description: Bell State Sampling Example
       device_id: Kawasaki
+      job_type: sampling
       job_info:
-        desc:
-          job_type: sampling
-          code: >-
-            OPENQASM 3;
-            qubit[2] q;
-            bit[2] c;
-            h q[0];
-            cnot q[0], q[1];
-            c = measure q;
-        transpiled_code: null
+        program:
+          - >-
+              OPENQASM 3;
+              qubit[2] q;
+              bit[2] c;
+              h q[0];
+              cnot q[0], q[1];
+              c = measure q;
+        transpiled_program: null
         result: null
         reason: null
-      transpiler_info: >-
-        {
-          "qubit_allocation": {
-            "0": 12,
-            "1": 16
-          },
-          "skip_transpilation": false,
-          "seed_transpilation": 873
-        }
+      transpiler_info: {
+        qubit_allocation: {
+          "0": 12,
+          "1": 16
+        },
+        skip_transpilation: false,
+        seed_transpilation: 873
+      }
       simulator_info: >-
         {
           "n_qubits": 5,
@@ -208,35 +340,45 @@ jobs.JobDef:
         }
       mitigation_info: |
         { "ro_error_mitigation": "pseudo_inverse" }
-      job_type: sampling
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
+      execution_time: 10.123
+      submitted_at: 2022-10-19T11:45:34+09:00
+      ready_at: 2022-10-19T11:45:34+09:00
+      running_at: 2022-10-19T11:45:34+09:00
+      ended_at: 2022-10-19T11:45:34+09:00
 
 jobs.GetJobsResponse:
   type: object
   properties:
     job_id:
       $ref: "#/jobs.JobId"
+      nullable: false
     name:
       type: string
       example: Bell State Sampling
+      nullable: true
+      default: null
     description:
       type: string
       example: Bell State Sampling Example
+      nullable: false
     device_id:
       type: string
       example: Kawasaki
+      nullable: false
     shots:
       type: integer
       minimum: 1
       maximum: 1e7
+      nullable: false
       example: "1000"
     job_info:
       $ref: "#/jobs.JobInfo"
+      nullable: false
     transpiler_info:
       type: string
+      nullable: true
       example: >-
         {
           "qubit_allocation": {
@@ -248,6 +390,7 @@ jobs.GetJobsResponse:
         }
     simulator_info:
       type: string
+      nullable: true
       example: >-
         {
           "n_qubits": 5,
@@ -262,17 +405,40 @@ jobs.GetJobsResponse:
         }
     mitigation_info:
       type: string
+      nullable: true
       example: |
         { "ro_error_mitigation": "pseudo_inverse" }
     status:
       $ref: "#/jobs.JobStatus"
-    created_at:
+      nullable: false
+    execution_time:
+      type: number
+      nullable: true
+      default: null
+      example: "10.123"
+    submitted_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
-    updated_at:
+    ready_at:
       type: string
       format: date-time
+      nullable: true
+      default: null
+      example: 2022-10-19T11:45:34+09:00
+    running_at:
+      type: string
+      format: date-time
+      nullable: true
+      default: null
+      example: 2022-10-19T11:45:34+09:00
+    ended_at:
+      type: string
+      format: date-time
+      nullable: true
+      default: null
       example: 2022-10-19T11:45:34+09:00
   required: []
   example:
@@ -281,17 +447,17 @@ jobs.GetJobsResponse:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_info:
-        desc:
-          job_type: sampling
-          code: >-
-            OPENQASM 3;
-            qubit[2] q;
-            bit[2] c;
-            h q[0];
-            cnot q[0], q[1];
-            c = measure q;
-        transpiled_code: null
-        result: null
+        program:
+          - >-
+              OPENQASM 3;
+              qubit[2] q;
+              bit[2] c;
+              h q[0];
+              cnot q[0], q[1];
+              c = measure q;
+        combined_program: null
+        transpiled_prgoram: null
+        result: {}
         reason: null
       transpiler_info: >-
         {
@@ -319,8 +485,11 @@ jobs.GetJobsResponse:
       job_type: sampling
       shots: 1000
       status: submitted
-      created_at: 2022-10-19T11:45:34+09:00
-      updated_at: 2022-10-19T11:45:34+09:00
+      execution_time: 10.123
+      submitted_at: 2022-10-19T11:45:34+09:00
+      ready_at: 2022-10-19T11:45:34+09:00
+      running_at: 2022-10-19T11:45:34+09:00
+      ended_at: 2022-10-19T11:45:34+09:00
 
 jobs.JobStatusUpdate:
   type: object
@@ -330,6 +499,7 @@ jobs.JobStatusUpdate:
       enum:
         - running
       example: running
+      nullable: false
   required:
     - status
 
@@ -338,23 +508,81 @@ jobs.JobStatusUpdateResponse:
   properties:
     message:
       type: string
+      nullable: false
   required:
     - message
+
+jobs.UpdateJobInfo:
+  type: object
+  properties:
+    combined_program:
+        type: string
+        nullable: true
+    transpile_result:
+      $ref: "#/jobs.TranspileResult"
+      nullable: true
+    result:
+      $ref: "#/jobs.JobResult"
+      nullable: true
+    message:
+      type: string
+      nullable: true
 
 jobs.UpdateJobInfoRequest:
   type: object
   properties:
-    transpiled_code:
-      type: string
-    result:
-      type: string
-    reason:
-      type: string
+    overwrite_status:
+      description: >-
+        Overwrite the job status. If this field is not specified,
+        the status will be updated automatically.
+      nullable: true
+      $ref: "#/jobs.JobStatus"
+    execution_time:
+      type: number
+      description: >-
+        Execution time for quantum computation. Specify the time in seconds,
+        including up to milliseconds.
+      nullable: true
+    job_info:
+      $ref: "#/jobs.UpdateJobInfo"
+      nullable: true
 
 jobs.UpdateJobInfoResponse:
   type: object
   properties:
     message:
       type: string
+      nullable: false
+  required:
+    - message
+
+jobs.UploadSselogRequest:
+  type: object
+  properties:
+    file:
+      type: string
+      format: binary
+  required:
+    - file
+
+jobs.UploadSselogResponse:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
+
+jobs.UpdateJobTranspilerInfoRequest:
+  type: object
+  properties: {}
+  additionalProperties: true
+
+jobs.UpdateJobTranspilerInfoResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      nullable: false
   required:
     - message

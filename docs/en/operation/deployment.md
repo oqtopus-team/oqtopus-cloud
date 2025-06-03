@@ -30,6 +30,29 @@ The `infrastructure` directory contains the code to deploy the infrastructure en
 
 First, let's explain the procedure to deploy the infrastructure environment, such as networks and data stores.
 
+### Generating environment files
+
+To generate environment variable files, use following commands:
+
+```bash
+cd terraform
+make generate-env
+```
+
+These commands will generate 4 environment files:
+
+```bash
+.
+├── infrastructure
+│   └── oqtopus-dev
+│       ├── oqtopus-dev.tfbackend
+│       └── terraform.tfvars
+└── service
+    └── oqtopus-dev
+        ├── oqtopus-dev.tfbackend
+        └── terraform.tfvars
+```
+
 ### Deploying the Infrastructure Layer
 
 `terraform/infrastructure/oqtopus-dev` is the deployment directory for each environment. Since the state file is managed by S3, an S3 bucket needs to be created. Run the following command to create an S3 bucket.
@@ -44,7 +67,7 @@ Next, create a DynamoDB table to lock the Terraform state file.
 aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
 ```
 
-Next, prepare the Terraform configuration files. Create the following two files.
+Next, prepare the Terraform configuration files. Edit the following two files.
 
 ```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
 # infrastructure/oqtopus-dev.tfbackend
@@ -59,7 +82,7 @@ dynamodb_table = "terraform-lock"
 ```hcl:infrastructure/oqtopus-dev/terraform.tfvars
 # infrastructure/terraform.tfvars
 product="oqtopus"
-org="example"
+org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 ```
@@ -83,7 +106,7 @@ terraform apply
 
 Next, let's explain the service deployment.
 
-Prepare the Terraform configuration files similarly as before. Create the following two files:
+Prepare the Terraform configuration files similarly as before. Edit the following two files:
 
 ```hcl:service/oqtopus-dev/oqtopus-dev.tfbackend
 # service/oqtopus-dev.tfbackend
@@ -98,12 +121,17 @@ dynamodb_table = "terraform-lock"
 ```hcl:service/oqtopus-dev/terraform.tfvars
 # service/terraform.tfvars
 product          = "oqtopus"
-org              = "example"
+org              = "oqtopus"
 env              = "dev"
 region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+repository       = "oqtopus-cloud"
+github_user      = "oqtopus-team"
+branch           = "develop"
+aws_account_id   = "Write AWS Account ID here"
 ```
 
 Initialize with `terraform init`. Run the following command:

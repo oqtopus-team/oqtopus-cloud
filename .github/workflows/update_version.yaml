@@ -22,9 +22,19 @@ jobs:
           echo "VERSION: $VERSION"
           echo "::set-output name=version::$VERSION"
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install Poetry
+        run: |
+          pip install poetry poetry-plugin-export
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Update version in pyproject.toml
         run: |
-          sed -i 's/version = "[^"]*"/version = "${{ steps.extract_version.outputs.version }}"/' pyproject.toml
+          poetry version ${{ steps.extract_version.outputs.version }}
 
       - name: Display pyproject.toml after modification
         run: cat pyproject.toml

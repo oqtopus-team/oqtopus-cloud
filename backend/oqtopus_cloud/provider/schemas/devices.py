@@ -4,11 +4,20 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field
+
+
+class UpdateDeviceRequest(BaseModel):
+    n_qubits: int | None = None
+
+
+class UpdateDeviceResponse(BaseModel):
+    message: Annotated[str, Field(examples=["Device is successfully updated."])] = (
+        "Device is successfully updated."
+    )
 
 
 class Status(str, Enum):
@@ -17,29 +26,16 @@ class Status(str, Enum):
 
 
 class DeviceStatusUpdate(BaseModel):
-    command: Annotated[
-        Literal["DeviceStatusUpdate"], Field(examples=["DeviceStatusUpdate"])
-    ]
-    status: Status | None = None
-    available_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00"])
-    ] = None
-    """
-    Parameter mandatory and valid for status `unavailable`
-    """
+    status: Status
 
 
-class DevicePendingJobsUpdate(BaseModel):
-    command: Annotated[
-        Literal["DevicePendingJobsUpdate"], Field(examples=["DevicePendingJobsUpdate"])
-    ]
-    n_pending_jobs: int | None = None
+class DeviceDataUpdateResponse(BaseModel):
+    message: Annotated[str, Field(examples=["Device's data updated"])] = (
+        "Device's data updated"
+    )
 
 
-class DeviceCalibrationUpdate(BaseModel):
-    command: Annotated[
-        Literal["DeviceCalibrationUpdate"], Field(examples=["DeviceCalibrationUpdate"])
-    ]
+class DeviceInfoUpdate(BaseModel):
     device_info: Annotated[
         str | None,
         Field(
@@ -52,23 +48,8 @@ class DeviceCalibrationUpdate(BaseModel):
     Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
     """
     calibrated_at: Annotated[
-        datetime | None, Field(examples=["2023-09-10T14:00:00"])
+        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
     ] = None
     """
     Parameter mandatory and valid if calibrationData not null
     """
-
-
-class DeviceDataUpdate(
-    RootModel[DeviceStatusUpdate | DevicePendingJobsUpdate | DeviceCalibrationUpdate]
-):
-    root: Annotated[
-        DeviceStatusUpdate | DevicePendingJobsUpdate | DeviceCalibrationUpdate,
-        Field(discriminator="command"),
-    ]
-
-
-class DeviceDataUpdateResponse(BaseModel):
-    message: Annotated[str, Field(examples=["Device's data updated"])] = (
-        "Device's data updated"
-    )

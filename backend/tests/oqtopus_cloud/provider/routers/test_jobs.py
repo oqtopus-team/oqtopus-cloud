@@ -1,8 +1,13 @@
+import base64
+import io
 import json
+import os
 from datetime import datetime
 from typing import List
 
+import boto3
 from fastapi.testclient import TestClient
+from moto import mock_aws
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -13,17 +18,25 @@ from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.jobs import (
     get_job,
     get_jobs,
-    update_job,
+    jobtype_of_result,
+    update_job_status,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    GetJobsResponse,
+    EstimationResult,
     JobDef,
     JobInfo,
-    JobInfoSampling,
+    JobResult,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
+    JobType,
+    OperatorItem,
+    SamplingResult,
+    TranspileResult,
+    UpdateJobInfo,
     UpdateJobInfoRequest,
+    UpdateJobTranspilerInfoRequest,
+    UploadSselogResponse,
 )
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy.orm.session import Session
@@ -68,22 +81,24 @@ def _get_device_model():
     return Device(**mode_dict)
 
 
-def _get_job_model(n: int) -> Job:
+def _get_job_info(jt: JobType) -> JobInfo:
+    return JobInfo(
+        program=["code"],
+        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=0.5)]
+        if jt == JobType.estimation
+        else None,
+    )
+
+
+def _get_job_model(n: int, jt: JobType) -> Job:
     mode_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
         "name": f"testjob{n}",
         "description": f"test job {n}",
         "device_id": "SC2",
-        "job_type": "sampling",
-        "job_info": json.dumps(
-            {
-                "desc": {
-                    "job_type": "sampling",
-                    "code": "code",
-                }
-            }
-        ),
+        "job_type": jt.value,
+        "job_info": JobInfo.model_dump_json(_get_job_info(jt)),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -91,6 +106,7 @@ def _get_job_model(n: int) -> Job:
         ),
         "status": "ready",
         "shots": 1000,
+        "submitted_at": datetime(2024, 3, 4 + n, 12, 34, 56),
         "created_at": datetime(2024, 3, 4 + n, 12, 34, 56),
     }
     return Job(**mode_dict)
@@ -104,14 +120,7 @@ def _get_job_model_2() -> Job:
         "description": "test job 2",
         "device_id": "SC2",
         "job_type": "sampling",
-        "job_info": json.dumps(
-            {
-                "desc": {
-                    "job_type": "sampling",
-                    "code": "code",
-                }
-            }
-        ),
+        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
@@ -119,6 +128,7 @@ def _get_job_model_2() -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
+        "submitted_at": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
     return Job(**mode_dict)
@@ -135,164 +145,213 @@ def test_get_jobs(test_db: Session):
 
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
-        assert job.status == "submitted"
+        assert job.status == JobStatus.submitted
 
     jobs = get_jobs(device_id=device_id, db=test_db)
-    assert jobs[0].device_id == device_id
-    assert jobs[0].status == "ready"
+    assert isinstance(jobs, list)
+    for job in jobs:
+        assert job.device_id == device_id
+        assert job.status != JobStatus.submitted
 
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
-        assert job.status == "ready"
+        assert job.job_id == job_id
+        assert job.status != JobStatus.submitted
 
 
-def test_get_jobs_filtering(test_db: Session):
-    # Arrange
+def test_get_jobs_ignore_illegal_job(
+    test_db,
+):
+    """_summary_
+    Simple GET /jobs tests
+    """
+
     test_db.flush()
-    test_db.add(_get_job_model(1))
-    test_db.add(_get_job_model(2))
-    test_db.add(_get_device_model())
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    # job3 has invalid job_info
+    job_3 = _get_job_model(3, JobType.sampling)
+    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(job_3)
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&fields=job_id%2Cdescription%2Cjob_info")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    response = client.get("/jobs?device_id=SC2")
+    adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
-    expect = [
-        GetJobsResponse(
-            job_id="testjob1id",
-            description="test job 1",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
-        ),
-        GetJobsResponse(
-            job_id="testjob2id",
-            description="test job 2",
-            job_info=JobInfo(
-                desc=JobInfoSampling(job_type="sampling", code="code"),
-            ),
-        ),
-    ]
 
     assert response.status_code == 200
-    assert actual == expect
+    assert len(actual) == 2
+    assert actual[0].job_id == "testjob1id"
+    assert actual[1].job_id == "testjob2id"
 
 
 def test_get_jobs_timestamp(test_db: Session):
     # Arrange
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i))
+        test_db.add(_get_job_model(i, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
 
     response = client.get(
-        "/jobs?device_id=SC2&fields=job_id&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
     )
-    adapter = TypeAdapter(List[GetJobsResponse])
+    adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
+    assert isinstance(actual, list) and len(actual) == 3
     expect = [
-        GetJobsResponse(
-            job_id="testjob7id",
-        ),
-        GetJobsResponse(
-            job_id="testjob8id",
-        ),
-        GetJobsResponse(
-            job_id="testjob9id",
-        ),
+        "testjob7id",
+        "testjob8id",
+        "testjob9id",
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    for act, exp_job_id in zip(actual, expect):
+        assert act.job_id == exp_job_id
 
 
 def test_get_jobs_max_results(test_db: Session):
     # Arrange
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i))
+        test_db.add(_get_job_model(i, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&fields=job_id&max_results=3")
-    adapter = TypeAdapter(List[GetJobsResponse])
+    response = client.get("/jobs?device_id=SC2&max_results=3")
+    adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
-    expect = [
-        GetJobsResponse(
-            job_id="testjob1id",
-        ),
-        GetJobsResponse(
-            job_id="testjob2id",
-        ),
-        GetJobsResponse(
-            job_id="testjob3id",
-        ),
+    expect_job_ids = [
+        "testjob1id",
+        "testjob2id",
+        "testjob3id",
     ]
 
     assert response.status_code == 200
-    assert actual == expect
+    for act, exp_job_id in zip(actual, expect_job_ids):
+        assert act.job_id == exp_job_id
 
 
 def test_get_job(test_db: Session):
     # Arrange
 
-    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(1, JobType.sampling))
     test_db.add(_get_device_model())
     test_db.commit()
     job_id = "testjob1id"
     job = get_job(job_id=job_id, db=test_db)
     if isinstance(job, JobDef):
         assert job.job_id == job_id
+        assert job.status == JobStatus.ready
+    test_db.add(_get_job_model(2, JobType.estimation))
+    job_id = "testjob2id"
+    job = get_job(job_id=job_id, db=test_db)
+    if isinstance(job, JobDef):
+        assert job.job_id == job_id
+        assert job.status == JobStatus.ready
 
 
 def test_update_job(test_db: Session):
     # Arrange
-    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.estimation))
     test_db.add(_get_device_model())
     test_db.commit()
-    job_id = "testjob1id"
+    job_id1 = "testjob1id"
     request = JobStatusUpdate(status="running")
-    actual = update_job(job_id=job_id, request=request, db=test_db)
+    actual = update_job_status(job_id=job_id1, request=request, db=test_db)
 
     expected = JobStatusUpdateResponse(message="Job status updated")
     # Assert
-
     assert actual == expected
 
-
-def test_update_job_info_400(test_db: Session):
-    job_model = _get_job_model(1)
-    test_db.add(_get_device_model())
-    test_db.add(job_model)
-    test_db.commit()
-
-    # Submitting
-    result = json.dumps({"field1": "value", "field2": "value2"})
-    reason = "Oops! Job failed!"
-    body = UpdateJobInfoRequest(
-        result=result,
-        reason=reason,
-    )
-    submit_resp = client.patch(
-        f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
-    )
-    assert submit_resp.status_code == 400
+    # for estimation jobs
+    job_id2 = "testjob2id"
+    actual2 = update_job_status(job_id=job_id2, request=request, db=test_db)
+    assert actual2 == expected
 
 
 def test_update_job_info_result(test_db: Session):
-    job_model = _get_job_model(1)
-    bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+    cases: list[tuple[int, JobType, JobResult, float, int]] = [
+        (
+            1,
+            JobType.sampling,
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
+            123.45,
+            200,
+        ),
+        (
+            2,
+            JobType.estimation,
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
+            45.6,
+            200,
+        ),
+        (
+            3,
+            JobType.sampling,
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
+            7.89,
+            400,
+        ),
+        (
+            4,
+            JobType.estimation,
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
+            10,
+            400,
+        ),
+    ]
+
+    test_db.flush()
     test_db.add(_get_device_model())
+
+    for n, jt, res, exectime, resp_expect in cases:
+        job_model = _get_job_model(n, jt)
+        bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+        test_db.add(job_model)
+        test_db.commit()
+
+        # Submitting
+        body = UpdateJobInfoRequest(
+            job_info=UpdateJobInfo(result=res), execution_time=exectime
+        )
+        submit_resp = client.patch(
+            f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
+        )
+        assert submit_resp.status_code == resp_expect
+        if resp_expect == 200:
+            get_resp = client.get(f"/jobs/{job_model.id}")
+            aft_job = JobDef.model_validate(get_resp.json())
+            aft_job_info = aft_job.job_info
+            assert bef_job_info.program == aft_job_info.program
+            assert bef_job_info.operator == aft_job_info.operator
+            assert aft_job_info.result == res
+            assert aft_job_info.message is None
+            assert aft_job.status == JobStatus.succeeded
+            assert aft_job.execution_time == exectime
+            assert aft_job.ended_at is not None
+            assert aft_job.job_type in jobtype_of_result(aft_job_info.result)
+
+
+def test_update_job_info_transpile_result(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(_get_device_model())
+    # Set ready
+    job_model.ready_at = datetime.now()
+    job_model.status = JobStatus.ready
     test_db.add(job_model)
     test_db.commit()
 
     # Submitting
-    result = json.dumps({"field1": "value", "field2": "value2"})
-    transpiled_code = "transpiled_code"
+    transpile_result = TranspileResult(
+        transpiled_program="transpiled_program",
+        stats={"field": "value"},
+        virtual_physical_mapping={"field": "value"},
+    )
     body = UpdateJobInfoRequest(
-        result=result,
-        transpiled_code=transpiled_code,
+        overwrite_status=JobStatus.ready,
+        job_info=UpdateJobInfo(transpile_result=transpile_result),
     )
     submit_resp = client.patch(
         f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
@@ -301,23 +360,24 @@ def test_update_job_info_result(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
-    assert bef_job_info.desc == aft_job_info.desc
-    assert aft_job_info.result == result
-    assert aft_job_info.reason is None
-    assert aft_job.status == JobStatus.succeeded
+    assert aft_job_info.transpile_result == aft_job_info.transpile_result
+    assert aft_job_info.message is None
+    assert aft_job_info.result is None
+    assert aft_job.status == JobStatus.ready
 
 
 def test_update_job_info_reason(test_db: Session):
-    job_model = _get_job_model(1)
+    job_model = _get_job_model(1, JobType.sampling)
     bef_job_info = JobInfo.model_validate(json.loads(job_model.job_info))
     test_db.add(_get_device_model())
     test_db.add(job_model)
     test_db.commit()
 
     # Submitting
-    reason = "Oops, job failed!"
+    message = "Oops, job failed!"
     body = UpdateJobInfoRequest(
-        reason=reason,
+        overwrite_status=JobStatus.failed,
+        job_info=UpdateJobInfo(message=message),
     )
     submit_resp = client.patch(
         f"/jobs/{job_model.id}/job_info", content=body.model_dump_json()
@@ -326,11 +386,222 @@ def test_update_job_info_reason(test_db: Session):
     get_resp = client.get(f"/jobs/{job_model.id}")
     aft_job = JobDef.model_validate(get_resp.json())
     aft_job_info = aft_job.job_info
-    assert bef_job_info.desc == aft_job_info.desc
-    assert aft_job_info.reason == reason
+    assert bef_job_info.program == aft_job_info.program
+    assert bef_job_info.operator == aft_job_info.operator
+    assert aft_job_info.message == message
     assert aft_job_info.result is None
     assert aft_job.status == JobStatus.failed
+    assert aft_job.ended_at is not None
+
+
+def test_update_job_info_consist(test_db: Session):
+    # None of the following updates should be acceptable.
+    cases = [
+        (
+            1,
+            JobType.sampling,
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
+            JobStatus.failed,
+        ),
+        (
+            2,
+            JobType.estimation,
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.1)),
+            JobStatus.failed,
+        ),
+        (4, JobType.sampling, None, JobStatus.submitted),
+    ]
+
+    test_db.add(_get_device_model())
+    for n, jobtype, result, status in cases:
+        job_model = _get_job_model(n, jobtype)
+        job_info = JobInfo.model_validate(json.loads(job_model.job_info))
+        if isinstance(result, str):
+            job_info.message = result
+        elif isinstance(result, JobResult):
+            job_info.result = result
+        job_model.job_info = job_info.model_dump_json()
+        test_db.add(job_model)
+        test_db.commit()
+
+        resp = client.patch(
+            f"jobs/{job_model.id}/job_info",
+            content=UpdateJobInfoRequest(overwrite_status=status).model_dump_json(),
+        )
+
+        assert resp.status_code == 400
+
+
+def test_update_job_status(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(_get_device_model())
+    test_db.add(job_model)
+    test_db.commit()
+
+    resp = client.patch(
+        f"/jobs/{job_model.id}/status",
+        content=JobStatusUpdate(status="running").model_dump_json(),
+    )
+    model = test_db.get(Job, job_model.id)
+    assert model is not None
+    assert model.status == JobStatus.running
+    assert model.running_at is not None
+    running_at = model.running_at
+    assert resp.status_code == 200
+
+    resp = client.patch(
+        f"/jobs/{job_model.id}/status",
+        content=JobStatusUpdate(status="running").model_dump_json(),
+    )
+    assert model.status == JobStatus.running
+    assert running_at == running_at
+    assert resp.status_code == 409
 
 
 # TODO: add invalid test cases
 # TODO: add test cases for handler
+
+
+@mock_aws
+def test_get_ssesrc():
+    # Arrange
+    bucket_name = os.environ["SSE_BUCKET"]
+    program_name = os.environ["SSE_USER_PROGRAM_NAME"]
+    job_id = "testjob1id"
+    src_body = "program1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(
+        Bucket=bucket_name, Key=f"{job_id}/{program_name}", Body=src_body
+    )
+
+    resp = client.get(f"/jobs/{job_id}/ssesrc")
+    resp.status_code == 200
+    decoded = base64.b64decode(resp.content).decode("utf-8")
+    assert decoded == src_body
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"{job_id}/oqtopus_test_program.py")
+
+
+@mock_aws
+def test_get_ssesrc_no_src():
+    # Arrange skip creating object for this test
+    bucket_name = os.environ["SSE_BUCKET"]
+    job_id = "testjob1id"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    resp = client.get(f"/jobs/{job_id}/ssesrc")
+    assert resp.status_code == 500
+
+
+@mock_aws
+def test_upload_sselog(test_db: Session):
+    # Arrange
+    job_model = _get_job_model(1, JobType.sse)
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    job_id = "testjob1id"
+    src_body = "program1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    encoded = base64.b64encode(src_body.encode())
+    form_data = {"file": encoded}
+
+    resp = client.patch(f"/jobs/{job_id}/sselog", files=form_data)
+
+    assert resp.status_code == 200
+    adapter = TypeAdapter(UploadSselogResponse)
+    sselog_resp = adapter.validate_python(resp.json())
+    assert sselog_resp.message == "SSE log uploaded"
+
+    # assert uploaded s3 object
+    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
+    s3object = s3client.get_object(Bucket=bucket_name, Key=f"{job_id}/{log_name}")
+    assert base64.b64decode(s3object["Body"].read()).decode("utf-8") == src_body
+
+    # clean up
+    s3client.delete_object(Bucket=bucket_name, Key=f"{job_id}/oqtopus_test_program.py")
+
+
+@mock_aws
+def test_upload_sselog_unknown_jobid(test_db: Session):
+    # Arrange
+    job_model = _get_job_model(1, JobType.sse)
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    src_body = "program1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    encoded = base64.b64encode(src_body.encode())
+    form_data = {"file": encoded}
+
+    resp = client.patch("/jobs/anotherjobid/sselog", files=form_data)
+
+    assert resp.status_code == 404
+
+
+@mock_aws
+def test_upload_sselog_invalid_jobtype(test_db: Session):
+    # Arrange
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(job_model)
+    test_db.commit()
+
+    bucket_name = os.environ["SSE_BUCKET"]
+    job_id = "testjob1id"
+    src_body = "program1"
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    encoded = base64.b64encode(src_body.encode())
+    form_data = {"file": encoded}
+
+    resp = client.patch(f"/jobs/{job_id}/sselog", files=form_data)
+
+    assert resp.status_code == 400
+
+
+@mock_aws
+def test_update_job_transpiler_info(test_db: Session):
+    job_model = _get_job_model(1, JobType.sampling)
+    test_db.add(job_model)
+    test_db.commit()
+    job_id = job_model.id
+
+    transpilerInfo = {
+        "updated_field1": "updated_value1",
+        "updated_field2": [42, True, "updated_value2"],
+        "updated_field3": {"x": {}, "y": None},
+    }
+    body = UpdateJobTranspilerInfoRequest(**transpilerInfo)
+    resp = client.put(f"/jobs/{job_id}/transpiler_info", content=body.model_dump_json())
+    assert resp.status_code == 200
+
+    get_resp = client.get(f"/jobs/{job_id}")
+    adapter = TypeAdapter(JobDef)
+    aft_job = adapter.validate_python(get_resp.json())
+    assert get_resp.status_code == 200
+    assert aft_job.transpiler_info == transpilerInfo

@@ -1,0 +1,34 @@
+confirm_signup:
+  put:
+    tags:
+      - signup
+    summary: Confirm signup
+    description: Confirm a new user
+    operationId: confirm_signup
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/confirm_signup.yaml#/confirm_signup.ConfirmationSignupRequest'
+    responses:
+      '200':
+        description: Confirmation successful
+      '400':
+        description: Confirmation failed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+      '401':
+        description: Unauthorized
+      '403':
+        description: Not authorized
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'

@@ -32,18 +32,19 @@ resource "aws_cognito_user_pool" "this" {
     allow_admin_create_user_only = "false"
   }
 
-  # deletion_protection = "ACTIVE"
+  deletion_protection = var.enable_delete_protection ? "ACTIVE" : "INACTIVE"
 
   device_configuration {
     challenge_required_on_new_device      = "true"
     device_only_remembered_on_user_prompt = "true"
   }
 
+  auto_verified_attributes = var.userpool_auto_verified_attributes
+
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
   }
 
-  # mfa_configuration = "ON"
   name = "${var.product}-${var.org}-${var.env}-${var.identifier}"
 
   password_policy {
@@ -68,9 +69,14 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
-  # software_token_mfa_configuration {
-  #   enabled = "true"
-  # }
+  mfa_configuration = var.enable_mfa ? "OPTIONAL" : "OFF"
+
+  dynamic "software_token_mfa_configuration" {
+    for_each = var.enable_mfa ? [1] : []
+    content {
+      enabled = var.enable_mfa ? "true" : "false"
+    }
+  }
 
   username_configuration {
     case_sensitive = "false"
@@ -79,6 +85,8 @@ resource "aws_cognito_user_pool" "this" {
   verification_message_template {
     default_email_option = "CONFIRM_WITH_CODE"
   }
+
+  username_attributes = var.username_attributes
 }
 
 resource "aws_cognito_user_pool_client" "this" {
@@ -91,7 +99,7 @@ resource "aws_cognito_user_pool_client" "this" {
   enable_propagate_additional_user_context_data = "false"
   enable_token_revocation                       = "true"
   explicit_auth_flows = [
-    # 認証フローの指定
+    # Authentication flow specification
     "ADMIN_NO_SRP_AUTH"
   ]
   id_token_validity             = "60"

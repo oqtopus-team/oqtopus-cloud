@@ -1,0 +1,46 @@
+users.GetOneUserResponse:
+  description: detail of users response
+  type: object
+  properties:
+    id:
+      type: integer
+    email:
+      type: string
+    name:
+      type: string
+    organization:
+      type: string
+    status:
+      $ref: "#/users.UserStatus"
+    group_id:
+      type: string
+  xml:
+    name: User
+  required: [
+    id,
+  ]
+
+users.UserStatus:
+  type: string
+  enum:
+    - approved
+    - unapproved
+    - suspended
+  example: approved
+
+users.UpdateUserStatusRequest:
+  type: object
+  properties:
+    status:
+      $ref: "#/users.UserStatus"
+
+users.GetUsersResponse:
+  properties:
+    offset:
+      type: string
+    limit:
+      type: string
+    users:
+      type: array
+      items:
+        $ref: "#/users.GetOneUserResponse"

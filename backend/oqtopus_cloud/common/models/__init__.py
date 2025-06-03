@@ -9,8 +9,9 @@ __all__ = [
     "JobId",
     "Job",
     "JobStatus",
-    "Base",
+    "User",
 ]
 from oqtopus_cloud.common.models.base import Base
 from oqtopus_cloud.common.models.device import Device, DeviceId, DeviceStatus
 from oqtopus_cloud.common.models.job import Job, JobId, JobStatus
+from oqtopus_cloud.common.models.user import User

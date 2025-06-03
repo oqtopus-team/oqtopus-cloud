@@ -28,6 +28,7 @@ doctor: ## Check the environment
 copy: generate-oas terraform-docs
 	@cp ./backend/oas/user/openapi.yaml ./docs/oas/user/openapi.yaml
 	@cp ./backend/oas/provider/openapi.yaml ./docs/oas/provider/openapi.yaml
+	@cp ./backend/oas/admin/openapi.yaml ./docs/oas/admin/openapi.yaml
 	@cp ./terraform/infrastructure/modules/cognito/README.md ./docs/terraform_modules/cognito/README.md
 	@cp ./terraform/infrastructure/modules/db/README.md ./docs/terraform_modules/db/README.md
 	@cp ./terraform/infrastructure/modules/management/README.md ./docs/terraform_modules/management/README.md
@@ -61,3 +62,12 @@ help: ## Show this help message
 	@echo "Available targets:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+setup-hooks:
+	@bash scripts/setup_hooks.sh
+	@echo "Setup hooks successfully"
+
+setup-poetry:
+	@poetry env use ~/.pyenv/shims/python
+	@poetry config virtualenvs.in-project true
+	@poetry install

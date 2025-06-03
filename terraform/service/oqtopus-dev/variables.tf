@@ -33,4 +33,22 @@ variable "profile" {
   type        = string
 }
 
+variable "repository" {
+  description = "github repository name"
+  type        = string
+}
 
+variable "github_user" {
+  description = "github user name"
+  type        = string
+}
+
+variable "branch" {
+  description = "github branch name"
+  type        = string
+}
+
+variable "aws_account_id" {
+  description = "aws account id"
+  type        = string
+}

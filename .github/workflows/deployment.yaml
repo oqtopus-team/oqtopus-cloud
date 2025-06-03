@@ -1,0 +1,167 @@
+name: Deploy all
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'backend/oqtopus_cloud/**'
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deploy-target: [user, provider, admin, lambda_auth, user_signup]
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: 'ap-northeast-1'
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deploy-lambda
+
+      - name: Set AWS Profile
+        run: |
+          ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
+          echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install Poetry
+        run: |
+          pip install poetry poetry-plugin-export
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install poetry dependencies
+        run: poetry install
+
+      - name: Install make
+        run: sudo apt install make
+
+      - name: Deploy
+        working-directory: ./deployment/oqtopus-dev
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
+
+
+      - name: On Success
+        if: ${{ success() }}
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data @- <<EOF
+          {
+            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
+            "text": "✅ Deploy successful (${{ matrix.deploy-target }})",
+            "attachments": [
+              {
+                "color": "#00dd00",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "[${TIMESTAMP}] Deployed successfully!"
+                    }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: On Failure
+        if: ${{ failure() }}
+        env:
+          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+        run: |
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE=$(cat error.log)
+          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $SLACK_API_TOKEN" \
+          --data @- <<EOF
+          {
+            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
+            "text": "❌ Deploy failed (${{ matrix.deploy-target }})",
+            "attachments": [
+              {
+                "color": "#dd0000",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Log*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "[${TIMESTAMP}] Deploy failed!"
+                    }
+                  },
+                  {
+                    "type": "divider"
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Action*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "${RUN_URL}"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
