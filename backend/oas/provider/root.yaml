@@ -27,8 +27,6 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:
     $ref: ./paths/jobs.yaml#/jobs.job_status
-  /jobs/{job_id}/job_info:
-    $ref: ./paths/jobs.yaml#/jobs.job_info
   /jobs/{job_id}/transpiler_info:
     $ref: ./paths/jobs.yaml#/jobs.job_id.transpiler_info
   /jobs/{job_id}/ssesrc:

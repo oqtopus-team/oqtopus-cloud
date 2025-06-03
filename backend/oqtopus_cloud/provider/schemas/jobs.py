@@ -153,6 +153,36 @@ class JobStatusUpdateResponse(BaseModel):
     message: str
 
 
+class UpdateJobTranspilerInfoRequest(BaseModel):
+    pass
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
+
+class UpdateJobTranspilerInfoResponse(BaseModel):
+    message: str
+
+
+class UploadSselogRequest(BaseModel):
+    file: bytes
+
+
+class UploadSselogResponse(BaseModel):
+    message: str
+
+
+class S3OperatorItem(BaseModel):
+    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
+    """
+    The Pauli string.
+    """
+    coeff: float | None = None
+    """
+    Coefficient number in the Pauli string representation.
+    """
+
+
 class S3SamplingResult(BaseModel):
     """
     *(Only for sampling jobs)* JSON string representing the sampling result
@@ -189,40 +219,6 @@ class S3EstimationResult(BaseModel):
     """
 
 
-class UpdateJobInfoResponse(BaseModel):
-    message: str
-
-
-class UpdateJobTranspilerInfoRequest(BaseModel):
-    pass
-    model_config = ConfigDict(
-        extra="allow",
-    )
-
-
-class UpdateJobTranspilerInfoResponse(BaseModel):
-    message: str
-
-
-class UploadSselogRequest(BaseModel):
-    file: bytes
-
-
-class UploadSselogResponse(BaseModel):
-    message: str
-
-
-class S3OperatorItem(BaseModel):
-    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
-    """
-    The Pauli string.
-    """
-    coeff: float | None = None
-    """
-    Coefficient number in the Pauli string representation.
-    """
-
-
 class S3SubmitJobInfo(BaseModel):
     program: Annotated[
         list[str],
@@ -244,22 +240,3 @@ class S3JobResult(BaseModel):
     )
     sampling: S3SamplingResult | None = None
     estimation: S3EstimationResult | None = None
-
-
-class UpdateJobInfo(BaseModel):
-    combined_program: str | None = None
-    transpile_result: S3TranspileResult | None = None
-    result: S3JobResult | None = None
-    message: str | None = None
-
-
-class UpdateJobInfoRequest(BaseModel):
-    overwrite_status: JobStatus | None = None
-    """
-    Overwrite the job status. If this field is not specified, the status will be updated automatically.
-    """
-    execution_time: float | None = None
-    """
-    Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
-    """
-    job_info: UpdateJobInfo | None = None

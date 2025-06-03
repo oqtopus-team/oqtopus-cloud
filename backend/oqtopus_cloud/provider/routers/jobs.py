@@ -27,9 +27,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobStatusUpdate,
     JobStatusUpdateResponse,
     JobType,
-    S3JobResult,
-    UpdateJobInfoRequest,
-    UpdateJobInfoResponse,
     UpdateJobTranspilerInfoRequest,
     UpdateJobTranspilerInfoResponse,
     UploadSselogResponse,
@@ -198,101 +195,6 @@ def update_job_status(
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 
-@router.patch(
-    "/jobs/{job_id}/job_info",
-    response_model=UpdateJobInfoResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def update_job_info(
-    job_id: str,
-    request: UpdateJobInfoRequest,
-    db: Session = Depends(get_db),
-) -> UpdateJobInfoResponse | ErrorResponse:
-    logger.info("invoked: update_job_info")
-    logger.info(
-        f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
-    )
-
-    def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
-        status = request.overwrite_status
-        incoming = request.job_info
-        if incoming is None:
-            return (status, job_info)
-
-        if incoming.combined_program is not None:
-            job_info.combined_program = incoming.combined_program
-
-        if incoming.transpile_result is not None:
-            job_info.transpile_result = incoming.transpile_result
-
-        if incoming.result is not None:
-            job_info.result = incoming.result
-            if status is None:
-                status = JobStatus.succeeded
-
-        if incoming.message is not None:
-            job_info.message = incoming.message
-
-        return (status, job_info)
-
-    try:
-        stmt = select(Job).where(Job.id == job_id)
-        model = db.execute(stmt).scalar_one_or_none()
-        if model is None:
-            return NotFoundErrorResponse("Job not found")
-
-        job_info = JobInfo.model_validate(json.loads(model.job_info))
-
-        # The job result must be compatible with the job info.
-        if (
-            request.job_info is not None
-            and request.job_info.result is not None
-            and model.job_type not in jobtype_of_result(request.job_info.result)
-        ):
-            return BadRequestResponse(
-                message="The job result type is not compatible with job info."
-            )
-
-        # Calculate upodated job_info.
-        (status, job_info) = patch_job_info(job_info)
-
-        # Validate the consitency of patched job_info and status
-        if (
-            # Job with non-null result should be succeeded
-            job_info.result is not None and status != JobStatus.succeeded
-            # Job cannot go back to status of submitted or ready.
-        ):
-            return BadRequestResponse(
-                message="The overwritten status and job_info is inconsistent"
-            )
-
-        status0 = decode_job_status(model.status)
-        assert isinstance(status0, JobStatus)
-        if status is not None and stage_of_status(status) < stage_of_status(status0):
-            return BadRequestResponse(message="Job cannot go back to previous status.")
-
-        model.job_info = JobInfo.model_dump_json(job_info)
-        if status is not None:
-            set_job_status(model, status)
-        # execution time
-        if request.execution_time is not None:
-            if request.execution_time < 0:
-                return BadRequestResponse(
-                    message="Execution time should not be negative."
-                )
-            model.execution_time = request.execution_time
-
-        db.commit()
-        return UpdateJobInfoResponse(message="Job info updated")
-    except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
-
-
 @router.put(
     "/jobs/{job_id}/transpiler_info",
     response_model=UpdateJobTranspilerInfoResponse,
@@ -431,14 +333,6 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: S3JobResult) -> list[JobType | None]:
-    if r.sampling is not None:
-        return [JobType.sampling, JobType.multi_manual, JobType.sse]
-    elif r.estimation is not None:
-        return [JobType.estimation]
-    return [None]
-
-
 def decode_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
@@ -495,18 +389,6 @@ def set_job_status(model: Job, status: str | JobStatus) -> None:
         if model.ended_at is None:
             model.ended_at = datetime.now()
     return
-
-
-def stage_of_status(st: JobStatus) -> int:
-    match st:
-        case JobStatus.submitted:
-            return 0
-        case JobStatus.ready:
-            return 1
-        case JobStatus.running:
-            return 2
-        case _:
-            return 3
 
 
 def get_download_presigned_url(bucket: str, key: str) -> str:

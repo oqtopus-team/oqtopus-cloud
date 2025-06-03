@@ -94,6 +94,7 @@ jobs.job_id:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
+
 jobs.job_status:
   patch:
     summary: "Modify selected quantum job (update status)."
@@ -138,52 +139,6 @@ jobs.job_status:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
               message: The specified job is not in a status thatt allows transition to the requested status.
-jobs.job_info:
-  patch:
-    summary: "Update selected quantum job's job_info by placing job results"
-    description: |
-      Used by device to set results or error details in job_info、accompanied by appropriate status updating.
-      Note that job info descriptor (sampling, estimation, etc) cannot be modified.
-    operationId: patch_job_info
-    tags:
-      - jobs
-    parameters:
-      - in: path
-        name: job_id
-        required: true
-        description: "Job identifier"
-        schema: { type: string, nullable: false }
-    requestBody:
-      description: "Modifications applied to Job info"
-      content:
-        application/json:
-          schema:
-            $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoRequest"
-    responses:
-      "200":
-        description: job info updated
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoResponse"
-            example:
-              message: Job info updated.
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "404":
-        description: Not Found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Job not found
 
 jobs.job_id.transpiler_info:
   put:

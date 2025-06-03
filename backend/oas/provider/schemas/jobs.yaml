@@ -218,50 +218,6 @@ jobs.JobStatusUpdateResponse:
   required:
     - message
 
-jobs.UpdateJobInfo:
-  type: object
-  properties:
-    combined_program:
-        type: string
-        nullable: true
-    transpile_result:
-      $ref: "#/jobs.S3TranspileResult"
-      nullable: true
-    result:
-      $ref: "#/jobs.S3JobResult"
-      nullable: true
-    message:
-      type: string
-      nullable: true
-
-jobs.UpdateJobInfoRequest:
-  type: object
-  properties:
-    overwrite_status:
-      description: >-
-        Overwrite the job status. If this field is not specified,
-        the status will be updated automatically.
-      nullable: true
-      $ref: "#/jobs.JobStatus"
-    execution_time:
-      type: number
-      description: >-
-        Execution time for quantum computation. Specify the time in seconds,
-        including up to milliseconds.
-      nullable: true
-    job_info:
-      $ref: "#/jobs.UpdateJobInfo"
-      nullable: true
-
-jobs.UpdateJobInfoResponse:
-  type: object
-  properties:
-    message:
-      type: string
-      nullable: false
-  required:
-    - message
-
 jobs.UploadSselogRequest:
   type: object
   properties:
