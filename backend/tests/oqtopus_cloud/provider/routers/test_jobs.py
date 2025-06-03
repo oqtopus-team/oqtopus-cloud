@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime
 from typing import List
+from urllib.parse import urlparse
 
 import boto3
 from fastapi.testclient import TestClient
@@ -22,17 +23,12 @@ from oqtopus_cloud.provider.routers.jobs import (
     update_job_status,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
-    EstimationResult,
     JobDef,
     JobInfo,
-    JobResult,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
     JobType,
-    OperatorItem,
-    SamplingResult,
-    TranspileResult,
     UpdateJobInfo,
     UpdateJobInfoRequest,
     UpdateJobTranspilerInfoRequest,
@@ -65,7 +61,7 @@ client = TestClient(app)
 
 def _get_device_model():
     mode_dict = {
-        "id": "SC2",
+        "id": "SC",
         "device_type": "QPU",
         "status": "available",
         "available_at": datetime(2023, 1, 2, 12, 34, 56),
@@ -81,30 +77,39 @@ def _get_device_model():
     return Device(**mode_dict)
 
 
-def _get_job_info(jt: JobType) -> JobInfo:
-    return JobInfo(
-        program=["code"],
-        operator=[OperatorItem(pauli="X 0 Y 1 Z 2", coeff=0.5)]
-        if jt == JobType.estimation
-        else None,
-    )
+def _get_registered_job_model(n: int) -> Job:
+    model_dict = {
+        "id": f"testjob{n}id",
+        "owner": "admin",
+        "name": "",
+        "device_id": "null",
+        "job_type": "none",
+        "transpiler_info": "null",
+        "simulator_info": "null",
+        "mitigation_info": "null",
+        "status": "registered",
+        "shots": 0,
+        "created_at": datetime(2024, 3, 3 + n, 12, 34, 56),
+    }
+    return Job(**model_dict)
 
 
-def _get_job_model(n: int, jt: JobType) -> Job:
+def _get_job_model(n: int,
+                   jt: JobType = JobType.sampling,
+                   status: JobStatus=JobStatus.ready) -> Job:
     mode_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
         "name": f"testjob{n}",
         "description": f"test job {n}",
-        "device_id": "SC2",
+        "device_id": "SC",
         "job_type": jt.value,
-        "job_info": JobInfo.model_dump_json(_get_job_info(jt)),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
             {"field1": "value1", "field2": "value2", "field3": "value3"}
         ),
-        "status": "ready",
+        "status": status.value,
         "shots": 1000,
         "submitted_at": datetime(2024, 3, 4 + n, 12, 34, 56),
         "created_at": datetime(2024, 3, 4 + n, 12, 34, 56),
@@ -112,53 +117,59 @@ def _get_job_model(n: int, jt: JobType) -> Job:
     return Job(**mode_dict)
 
 
-def _get_job_model_2() -> Job:
-    mode_dict = {
-        "id": "testjob2id",
-        "owner": "admin",
-        "name": "testjob2",
-        "description": "test job 2",
-        "device_id": "SC2",
-        "job_type": "sampling",
-        "job_info": json.dumps({"program": ["code"]}),
-        "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
-        "simulator_info": json.dumps({"this_is": "simulator_info"}),
-        "mitigation_info": json.dumps(
-            {"field1": "value1", "field2": "value2", "field3": "value3"}
-        ),
-        "status": "submitted",
-        "shots": 1000,
-        "submitted_at": datetime(2024, 3, 4, 12, 34, 56),
-        "created_at": datetime(2024, 3, 4, 12, 34, 56),
-    }
-    return Job(**mode_dict)
+def assert_job_info(actual: JobInfo,
+                    bucket_name: str,
+                    job_id: str,
+                    expect_sse: bool):
+    assert actual is not None
+
+    assert urlparse(actual.input).path == f"/{bucket_name}/{job_id}/input.zip"
+    assert urlparse(actual.combined_program.url).path == f"/{bucket_name}"
+    assert actual.combined_program.fields.key == f"{job_id}/combined_program.zip"
+    assert urlparse(actual.result.url).path == f"/{bucket_name}"
+    assert actual.result.fields.key == f"{job_id}/result.zip"
+    assert urlparse(actual.transpile_result.url).path == f"/{bucket_name}"
+    assert actual.transpile_result.fields.key == f"{job_id}/transpile_result.zip"
+
+    if (expect_sse):
+        assert urlparse(actual.sse_log.url).path == f"/{bucket_name}"
+        assert actual.sse_log.fields.key == f"{job_id}/sse_log.zip"
+    else:
+        assert actual.sse_log is None
 
 
+@mock_aws
 def test_get_jobs(test_db: Session):
-    # Arrange
     test_db.flush()
-    test_db.add(_get_job_model_2())
-    test_db.add(_get_device_model())
+    test_db.add(_get_registered_job_model(0))
+    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(2, jt=JobType.sse))
     test_db.commit()
-    device_id = "SC2"
-    job_id = "testjob2id"
 
-    job = get_job(job_id=job_id, db=test_db)
-    if isinstance(job, JobDef):
-        assert job.status == JobStatus.submitted
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
 
-    jobs = get_jobs(device_id=device_id, db=test_db)
-    assert isinstance(jobs, list)
-    for job in jobs:
-        assert job.device_id == device_id
-        assert job.status != JobStatus.submitted
+    # check response
+    response = client.get("/jobs?device_id=SC")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
 
-    job = get_job(job_id=job_id, db=test_db)
-    if isinstance(job, JobDef):
-        assert job.job_id == job_id
-        assert job.status != JobStatus.submitted
+    assert response.status_code == 200
+    assert len(actual) == 2
+
+    assert actual[0].job_id == "testjob1id"
+    assert_job_info(actual[0].job_info, bucket_name, "testjob1id", False)
+    assert actual[0].status == JobStatus.ready
+
+    assert actual[1].job_id == "testjob2id"
+    assert_job_info(actual[1].job_info, bucket_name, "testjob2id", True)
+    assert actual[1].status == JobStatus.ready
+
+    # check status update in db
+    assert test_db.get(Job, "testjob1id").status == "ready"
+    assert test_db.get(Job, "testjob2id").status == "ready"
 
 
+@mock_aws
 def test_get_jobs_ignore_illegal_job(
     test_db,
 ):
@@ -167,15 +178,15 @@ def test_get_jobs_ignore_illegal_job(
     """
 
     test_db.flush()
-    test_db.add(_get_job_model(1, JobType.sampling))
-    test_db.add(_get_job_model(2, JobType.sampling))
-    # job3 has invalid job_info
-    job_3 = _get_job_model(3, JobType.sampling)
-    job_3.job_info = json.dumps({"dummy": ["dummy"]})
+    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(2))
+    # job3 has unexpected job_type
+    job_3 = _get_job_model(3)
+    job_3.job_type = "none"
     test_db.add(job_3)
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2")
+    response = client.get("/jobs?device_id=SC")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
 
@@ -185,20 +196,47 @@ def test_get_jobs_ignore_illegal_job(
     assert actual[1].job_id == "testjob2id"
 
 
-def test_get_jobs_timestamp(test_db: Session):
-    # Arrange
+@mock_aws
+def test_get_jobs_with_status(test_db: Session):
+    test_db.flush()
+    for i in range(1, 4):
+        test_db.add(_get_job_model(i, status=JobStatus.running))
+    test_db.add(_get_job_model(4, status=JobStatus.ready))
+    test_db.add(_get_job_model(5, status=JobStatus.submitted))
+    test_db.add(_get_registered_job_model(6))
+    test_db.add(_get_device_model())
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC&status=running")
+    adapter = TypeAdapter(List[JobDef])
+    actual = adapter.validate_python(response.json())
+
+    expect = [
+        "testjob1id",
+        "testjob2id",
+        "testjob3id",
+    ]
+
+    assert response.status_code == 200
+    assert len(actual) == 3
+    for act, exp_job_id in zip(actual, expect):
+        assert act.job_id == exp_job_id
+
+
+@mock_aws
+def test_get_jobs_with_timestamp(test_db: Session):
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i, JobType.sampling))
+        test_db.add(_get_job_model(i))
     test_db.add(_get_device_model())
     test_db.commit()
 
     response = client.get(
-        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+        "/jobs?device_id=SC&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
     )
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
-    assert isinstance(actual, list) and len(actual) == 3
+
     expect = [
         "testjob7id",
         "testjob8id",
@@ -206,21 +244,23 @@ def test_get_jobs_timestamp(test_db: Session):
     ]
 
     assert response.status_code == 200
+    assert len(actual) == 3
     for act, exp_job_id in zip(actual, expect):
         assert act.job_id == exp_job_id
 
 
-def test_get_jobs_max_results(test_db: Session):
-    # Arrange
+@mock_aws
+def test_get_jobs_with_max_results(test_db: Session):
     test_db.flush()
     for i in range(1, 10):
-        test_db.add(_get_job_model(i, JobType.sampling))
+        test_db.add(_get_job_model(i))
     test_db.add(_get_device_model())
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&max_results=3")
+    response = client.get("/jobs?device_id=SC&max_results=3")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
+
     expect_job_ids = [
         "testjob1id",
         "testjob2id",
@@ -232,23 +272,33 @@ def test_get_jobs_max_results(test_db: Session):
         assert act.job_id == exp_job_id
 
 
+@mock_aws
 def test_get_job(test_db: Session):
-    # Arrange
-
-    test_db.add(_get_job_model(1, JobType.sampling))
-    test_db.add(_get_device_model())
+    test_db.flush()
+    test_db.add(_get_registered_job_model(0))
+    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(2, jt=JobType.sse))
     test_db.commit()
-    job_id = "testjob1id"
-    job = get_job(job_id=job_id, db=test_db)
-    if isinstance(job, JobDef):
-        assert job.job_id == job_id
-        assert job.status == JobStatus.ready
-    test_db.add(_get_job_model(2, JobType.estimation))
-    job_id = "testjob2id"
-    job = get_job(job_id=job_id, db=test_db)
-    if isinstance(job, JobDef):
-        assert job.job_id == job_id
-        assert job.status == JobStatus.ready
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+
+    response = client.get("/jobs/testjob1id")
+    adapter = TypeAdapter(JobDef)
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert actual.job_id == "testjob1id"
+    assert_job_info(actual.job_info, bucket_name, "testjob1id", False)
+    assert actual.status == JobStatus.ready
+    assert test_db.get(Job, "testjob1id").status == "ready"
+
+    response = client.get("/jobs/testjob2id")
+    actual = adapter.validate_python(response.json())
+
+    assert actual.job_id == "testjob2id"
+    assert_job_info(actual.job_info, bucket_name, "testjob2id", True)
+    assert actual.status == JobStatus.ready
+    assert test_db.get(Job, "testjob2id").status == "ready"
 
 
 def test_update_job(test_db: Session):

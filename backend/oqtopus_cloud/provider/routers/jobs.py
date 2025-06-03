@@ -2,7 +2,7 @@ import base64
 import json
 import os
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 import boto3
 import pytz
@@ -22,11 +22,12 @@ from oqtopus_cloud.provider.schemas.errors import (
 from oqtopus_cloud.provider.schemas.jobs import (
     JobDef,
     JobInfo,
-    JobResult,
+    JobInfoUploadPresignedURL,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
     JobType,
+    S3JobResult,
     UpdateJobInfoRequest,
     UpdateJobInfoResponse,
     UpdateJobTranspilerInfoRequest,
@@ -46,6 +47,15 @@ jst = ZoneInfo("Asia/Tokyo")
 
 JobId = str
 
+S3_JOB_INFO_INPUT_FILE = "input.zip"
+S3_COMBINED_PROGRAM_FILE = "combined_program.zip"
+S3_RESULT_FILE = "result.zip"
+S3_TRANSPILE_RESULT_FILE = "transpile_result.zip"
+S3_SSE_LOG_FILE = "sse_log.zip"
+
+DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
+DEFAULT_MAX_UPLOAD_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
+
 
 @router.get(
     "/jobs",
@@ -63,6 +73,10 @@ def get_jobs(
 ) -> list[JobDef] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
+        select_stmt = select(Job).filter(
+            Job.device_id == device_id, Job.status != "registered"
+        )
+
         # Fields Control
         fields_list = None
         if fields is not None:
@@ -77,11 +91,7 @@ def get_jobs(
 
                 # remove duplicated fields
                 arg_select = list(dict.fromkeys(columns))
-                select_stmt = (
-                    select(Job)
-                    .filter(Job.device_id == device_id)
-                    .options(load_only(*arg_select))
-                )
+                select_stmt = select_stmt.options(load_only(*arg_select))
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -90,8 +100,6 @@ def get_jobs(
                 return InternalServerErrorResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
-        else:
-            select_stmt = select(Job).filter(Job.device_id == device_id)
 
         # Filtering Jobs
         if status is not None:
@@ -408,7 +416,6 @@ MAP_MODEL_TO_SCHEMA = {
     "name": "name",
     "description": "description",
     "device_id": "device_id",
-    "job_info": "job_info",
     "transpiler_info": "transpiler_info",
     "simulator_info": "simulator_info",
     "mitigation_info": "mitigation_info",
@@ -424,7 +431,7 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> list[JobType | None]:
+def jobtype_of_result(r: S3JobResult) -> list[JobType | None]:
     if r.sampling is not None:
         return [JobType.sampling, JobType.multi_manual, JobType.sse]
     elif r.estimation is not None:
@@ -437,14 +444,6 @@ def decode_job_status(s: str) -> JobStatus | ValueError:
         return JobStatus(s)
     except Exception as err:
         return ValueError(f"Failed to decode JobStatus: {str(err)}")
-
-
-def decode_job_info(j: Any) -> JobInfo | ValueError:
-    try:
-        jobinfo = JobInfo.model_validate(j)
-        return jobinfo
-    except Exception as e:
-        return ValueError(f"Failed to decode job_info: {str(e)}")
 
 
 def parse_job_type(jt: str) -> JobType | ValueError:
@@ -510,18 +509,69 @@ def stage_of_status(st: JobStatus) -> int:
             return 3
 
 
+def get_download_presigned_url(bucket: str, key: str) -> str:
+    return boto3.client("s3").generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=int(
+            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
+        ),
+    )
+
+
+def get_upload_presigned_url(bucket: str, key: str) -> JobInfoUploadPresignedURL:
+    presigned_data = boto3.client("s3").generate_presigned_post(
+        Bucket=bucket,
+        Key=key,
+        Conditions=[
+            [
+                "content-length-range",
+                0,
+                int(
+                    os.environ.get(
+                        "MAX_UPLOAD_CONTENT_LENGTH",
+                        DEFAULT_MAX_UPLOAD_CONTENT_LENGTH_B,
+                    )
+                ),
+            ]
+        ],
+        ExpiresIn=int(
+            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
+        ),
+    )
+    return JobInfoUploadPresignedURL(**presigned_data)
+
+
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
     status = decode_job_status(model.status)
     if isinstance(status, ValueError):
         return status
-    job_info = decode_job_info(json.loads(model.job_info))
-    if isinstance(job_info, ValueError):
-        return job_info
     job_type = parse_job_type(str(model.job_type))
     if isinstance(job_type, ValueError):
         return job_type
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    job_info = JobInfo(
+        input=get_download_presigned_url(
+            bucket_name, f"{model.id}/{S3_JOB_INFO_INPUT_FILE}"
+        ),
+        combined_program=get_upload_presigned_url(
+            bucket_name, f"{model.id}/{S3_COMBINED_PROGRAM_FILE}"
+        ),
+        result=get_upload_presigned_url(bucket_name, f"{model.id}/{S3_RESULT_FILE}"),
+        transpile_result=get_upload_presigned_url(
+            bucket_name, f"{model.id}/{S3_TRANSPILE_RESULT_FILE}"
+        ),
+        sse_log=get_upload_presigned_url(bucket_name, f"{model.id}/{S3_SSE_LOG_FILE}")
+        if model.job_type == "sse"
+        else None,
+    )
+
     return JobDef(
         job_id=model.id,
         name=model.name,

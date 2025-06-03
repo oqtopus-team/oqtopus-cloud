@@ -294,7 +294,7 @@ class GetSselogResponse(BaseModel):
     ] = None
 
 
-class OperatorItem(BaseModel):
+class S3OperatorItem(BaseModel):
     pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """
     The Pauli string.
@@ -356,7 +356,7 @@ class S3SubmitJobInfo(BaseModel):
     """
     A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
     """
-    operator: list[OperatorItem] | None = None
+    operator: list[S3OperatorItem] | None = None
 
 
 class S3JobResult(BaseModel):
