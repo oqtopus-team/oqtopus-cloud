@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
@@ -350,10 +350,10 @@ def test_update_device_data_full(
     assert device.device_type == "QPU"
     assert device.status == "unavailable"
     assert device.n_qubits == 4
-    assert device.available_at == datetime(2023, 1, 2, 12, 35, 56)
+    assert device.available_at == datetime(2023, 1, 2, 12, 35, 56, tzinfo=timezone.utc)
     assert device.basis_gates == '["x", "sx", "rz", "cx", "cy"]'
     assert device.instructions == '["measure", "barrier"]'
-    assert device.calibrated_at == datetime(2024, 3, 4, 12, 54, 56)
+    assert device.calibrated_at == datetime(2024, 3, 4, 12, 54, 56, tzinfo=timezone.utc)
     assert device.description == "State vector-based quantum circuit simulator updated"
 
 
@@ -381,6 +381,32 @@ def test_update_device_data_partial(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.description == "updated description"
     assert device.n_qubits == 999
+
+
+def test_update_device_data_timezone_awareness(
+    test_db,
+):
+    """_summary_
+    Simple PATCH /devices/{device_id} tests partially update
+    """
+
+    device_info = {"device_id": "SVSim1"}
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    body = {
+        "device_info": json.dumps(device_info),
+        "calibrated_at": "2024-03-04T12:34:56+09:00",
+        "description": "State vector-based quantum circuit simulator updated",
+    }
+
+    response = client.patch("/devices/SVSim1", json=body)
+    assert response.status_code == 200
+    assert response.json() == {"message": "Device updated successfully"}
+    # confirm the device is updated
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device.calibrated_at == datetime(2024, 3, 4, 3, 34, 56, tzinfo=timezone.utc)
 
 
 def test_update_device_data_inconsistent_device_id(
