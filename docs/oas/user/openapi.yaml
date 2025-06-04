@@ -127,7 +127,7 @@ paths:
             example: '2022-10-19T11:45:34+09:00'
         - name: q
           in: query
-          description: Allows to filter the list of jobs to fetch by job's name and description. If specified only jobs which name or description contains specified search string are returned.
+          description: Allows to filter the list of jobs to fetch by job's id, name and description. If specified only jobs which id, name or description contains specified search string are returned.
           required: false
           schema:
             type: string
