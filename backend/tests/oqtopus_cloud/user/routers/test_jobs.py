@@ -99,6 +99,18 @@ def _get_submitted_model(n: int) -> Job:
     return Job(**model_dict)
 
 
+def _get_succeeded_model(n: int) -> Job:
+    job = _get_submitted_model(n)
+    job.status = "succeeded"
+    job.output_files = json.dumps(["result", "transpile_result"])
+    job.message = "job completed successfully"
+    job.execution_time = 124.56
+    job.ready_at= pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 57))
+    job.running_at = pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 58))
+    job.ended_at = pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 36, 56))
+    return job
+
+
 def assert_job_info_equals(actual: JobInfo, expect: JobInfo):
     for prop in vars(expect):
         if getattr(expect, prop) is None:
@@ -303,9 +315,9 @@ def test_get_jobs_simple(
     """
 
     test_db.flush()
-
     test_db.add(_get_submitted_model(1))
     test_db.add(_get_registered_model(2))
+    test_db.add(_get_succeeded_model(3))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
@@ -345,6 +357,31 @@ def test_get_jobs_simple(
             shots=0,
             created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
+        SubmittedJob(
+            job_id="testjob3id",
+            name="testjob3",
+            description="test job 3",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip",
+                             result=f"/{bucket_name}/testjob3id/result.zip",
+                             transpile_result=f"/{bucket_name}/testjob3id/transpile_result.zip",
+                             message="job completed successfully"),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
+            status=JobStatus.succeeded,
+            shots=1000,
+            execution_time=124.56,
+            submitted_at=pytz.utc.localize(datetime(2024, 3, 6, 12, 34, 56)),
+            ready_at=pytz.utc.localize(datetime(2024, 3, 6, 12, 34, 57)),
+            running_at=pytz.utc.localize(datetime(2024, 3, 6, 12, 34, 58)),
+            ended_at=pytz.utc.localize(datetime(2024, 3, 6, 12, 36, 56)),
+        ),
     ]
 
     assert response.status_code == 200
@@ -364,6 +401,7 @@ def test_get_jobs_filtering_fields(
     test_db.flush()
     test_db.add(_get_submitted_model(1))
     test_db.add(_get_registered_model(2))
+    test_db.add(_get_succeeded_model(3))
     test_db.commit()
 
     response = client.get("/jobs?fields=job_id%2Cname%2Cdevice_id%2Cjob_type%2Cshots%2Cstatus&order=ASC")
@@ -387,6 +425,14 @@ def test_get_jobs_filtering_fields(
             shots=0,
             status=JobStatus.registered,
         ),
+        JobBase(
+            job_id="testjob3id",
+            device_id="Kawasaki",
+            name="testjob3",
+            job_type=JobType.sampling,
+            shots=1000,
+            status=JobStatus.succeeded,
+        ),
     ]
 
     assert response.status_code == 200
@@ -406,6 +452,7 @@ def test_get_jobs_filtering_job_info(
     test_db.flush()
     test_db.add(_get_submitted_model(1))
     test_db.add(_get_registered_model(2))
+    test_db.add(_get_succeeded_model(3))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
@@ -420,6 +467,11 @@ def test_get_jobs_filtering_job_info(
         ),
         JobBase(
             job_info=None,
+        ),
+        JobBase(job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip",
+                                 result=f"/{bucket_name}/testjob3id/result.zip",
+                                 transpile_result=f"/{bucket_name}/testjob3id/transpile_result.zip",
+                                 message="job completed successfully"),
         ),
     ]
 

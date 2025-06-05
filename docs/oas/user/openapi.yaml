@@ -930,6 +930,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
             - description: File available only for sse jobs.
+        message:
+          type: string
       required:
         - input
     jobs.JobBase:

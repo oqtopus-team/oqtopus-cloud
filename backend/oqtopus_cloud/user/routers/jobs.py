@@ -27,10 +27,6 @@ from oqtopus_cloud.common.s3 import (
     get_download_presigned_url,
     get_upload_presigned_url_data,
     JOB_INFO_INPUT_PARAM,
-    # JOB_INFO_COMBINED_PROGRAM_PARAM,
-    # JOB_INFO_RESULT_PARAM,
-    # JOB_INFO_TRANSPILE_RESULT_PARAM,
-    # JOB_INFO_SSE_LOG_PARAM,
 )
 from oqtopus_cloud.common.session import (
     get_db,
@@ -591,12 +587,20 @@ def model_to_schema(
     def get_job_info(model: Job) -> JobInfo:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
 
-        # TODO: add other URLs
+        output_dict = {}
+        if model.output_files:
+            output_files = json.loads(model.output_files)
+            output_dict = {
+                file: get_download_presigned_url(bucket_name, f"{model.id}/{file}.zip")
+                for file in output_files
+            }
 
         return JobInfo(
             input=get_download_presigned_url(
                 bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
-            )
+            ),
+            message=model.message,
+            **output_dict,
         )
 
     def is_datetime_field(fld: str) -> bool:

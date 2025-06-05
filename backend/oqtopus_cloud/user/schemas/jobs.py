@@ -105,6 +105,7 @@ class JobInfo(BaseModel):
     """
     Presigned URL for downloading a file from OCTOPUS cloud.
     """
+    message: str | None = None
 
 
 class JobBase(BaseModel):
