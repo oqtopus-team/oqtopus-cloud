@@ -23,6 +23,15 @@ from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.s3 import (
+    get_download_presigned_url,
+    get_upload_presigned_url_data,
+    JOB_INFO_INPUT_PARAM,
+    # JOB_INFO_COMBINED_PROGRAM_PARAM,
+    # JOB_INFO_RESULT_PARAM,
+    # JOB_INFO_TRANSPILE_RESULT_PARAM,
+    # JOB_INFO_SSE_LOG_PARAM,
+)
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -39,6 +48,7 @@ from oqtopus_cloud.user.schemas.jobs import (
     GetSselogResponse,
     JobBase,
     JobInfo,
+    JobInfoUploadPresignedURL,
     JobStatus,
     JobType,
     RegisteredJob,
@@ -87,25 +97,6 @@ def register_job(
         logger.info("invoked!", extra={"owner": owner})
 
         job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
-        presigned_data = boto3.client("s3").generate_presigned_post(
-            Bucket=os.environ["OQTOPUS_BUCKET"],
-            Key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}",
-            Conditions=[
-                [
-                    "content-length-range",
-                    0,
-                    int(
-                        os.environ.get(
-                            "MAX_JOB_INFO_CONTENT_LENGTH",
-                            DEFAULT_MAX_JOB_INFO_CONTENT_LENGTH_B,
-                        )
-                    ),
-                ]
-            ],
-            ExpiresIn=int(
-                os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
-            ),
-        )
 
         job = Job(
             id=job_id,
@@ -124,7 +115,14 @@ def register_job(
         db.add(job)
         db.commit()
 
-        return RegisterJobResponse(job_id=job.id, presigned_url=presigned_data)
+        return RegisterJobResponse(
+            job_id=job.id,
+            presigned_url=JobInfoUploadPresignedURL(
+                **get_upload_presigned_url_data(
+                    os.environ["OQTOPUS_BUCKET"], f"{job_id}/{JOB_INFO_INPUT_PARAM}.zip"
+                )
+            ),
+        )
 
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -592,22 +590,14 @@ def model_to_schema(
 ) -> JobBase | RegisteredJob | SubmittedJob:
     def get_job_info(model: Job) -> JobInfo:
         bucket_name = os.environ["OQTOPUS_BUCKET"]
-        exp_time = int(
-            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
-        )
-
-        input = boto3.client("s3").generate_presigned_url(
-            "get_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": f"{model.id}/{S3_JOB_INFO_INPUT_FILE}",
-            },
-            ExpiresIn=exp_time,
-        )
 
         # TODO: add other URLs
 
-        return JobInfo(input=input)
+        return JobInfo(
+            input=get_download_presigned_url(
+                bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+            )
+        )
 
     def is_datetime_field(fld: str) -> bool:
         if fld == "submitted_at":

@@ -10,6 +10,15 @@ import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.s3 import (
+    get_download_presigned_url,
+    get_upload_presigned_url_data,
+    JOB_INFO_INPUT_PARAM,
+    JOB_INFO_COMBINED_PROGRAM_PARAM,
+    JOB_INFO_RESULT_PARAM,
+    JOB_INFO_TRANSPILE_RESULT_PARAM,
+    JOB_INFO_SSE_LOG_PARAM,
+)
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
@@ -45,16 +54,7 @@ jst = ZoneInfo("Asia/Tokyo")
 
 JobId = str
 
-JOB_INFO_INPUT_PARAM = "input"
-JOB_INFO_COMBINED_PROGRAM_PARAM = "combined_program"
-JOB_INFO_RESULT_PARAM = "result"
-JOB_INFO_TRANSPILE_RESULT_PARAM = "transpile_result"
-JOB_INFO_SSE_LOG_PARAM = "sse_log"
-
 s3_key_pattern = r"^(?P<id>[\w-]+)/(?P<name>input|combined_program|result|transpile_result|sse_log)\.zip$"
-
-DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
-DEFAULT_MAX_UPLOAD_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
 
 
 @router.get(
@@ -431,42 +431,6 @@ def set_job_status(model: Job, status: str | JobStatus) -> None:
     return
 
 
-def get_download_presigned_url(bucket: str, key: str) -> str:
-    return boto3.client("s3").generate_presigned_url(
-        "get_object",
-        Params={
-            "Bucket": bucket,
-            "Key": key,
-        },
-        ExpiresIn=int(
-            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
-        ),
-    )
-
-
-def get_upload_presigned_url(bucket: str, key: str) -> JobInfoUploadPresignedURL:
-    presigned_data = boto3.client("s3").generate_presigned_post(
-        Bucket=bucket,
-        Key=key,
-        Conditions=[
-            [
-                "content-length-range",
-                0,
-                int(
-                    os.environ.get(
-                        "MAX_UPLOAD_CONTENT_LENGTH",
-                        DEFAULT_MAX_UPLOAD_CONTENT_LENGTH_B,
-                    )
-                ),
-            ]
-        ],
-        ExpiresIn=int(
-            os.environ.get("PRESIGNED_ULR_EXP_S", DEFAULT_PRESIGNED_ULR_EXP_S)
-        ),
-    )
-    return JobInfoUploadPresignedURL(**presigned_data)
-
-
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
@@ -482,17 +446,25 @@ def model_to_schema(
         input=get_download_presigned_url(
             bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
         ),
-        combined_program=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{JOB_INFO_COMBINED_PROGRAM_PARAM}.zip"
+        combined_program=JobInfoUploadPresignedURL(
+            **get_upload_presigned_url_data(
+                bucket_name, f"{model.id}/{JOB_INFO_COMBINED_PROGRAM_PARAM}.zip"
+            )
         ),
-        result=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{JOB_INFO_RESULT_PARAM}.zip"
+        result=JobInfoUploadPresignedURL(
+            **get_upload_presigned_url_data(
+                bucket_name, f"{model.id}/{JOB_INFO_RESULT_PARAM}.zip"
+            )
         ),
-        transpile_result=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{JOB_INFO_TRANSPILE_RESULT_PARAM}.zip"
+        transpile_result=JobInfoUploadPresignedURL(
+            **get_upload_presigned_url_data(
+                bucket_name, f"{model.id}/{JOB_INFO_TRANSPILE_RESULT_PARAM}.zip"
+            )
         ),
-        sse_log=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{JOB_INFO_SSE_LOG_PARAM}.zip"
+        sse_log=JobInfoUploadPresignedURL(
+            **get_upload_presigned_url_data(
+                bucket_name, f"{model.id}/{JOB_INFO_SSE_LOG_PARAM}.zip"
+            )
         )
         if model.job_type == "sse"
         else None,
