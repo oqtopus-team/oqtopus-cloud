@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -145,8 +145,35 @@ class JobDef(BaseModel):
     ] = None
 
 
+class Status(str, Enum):
+    running = "running"
+    succeeded = "succeeded"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
 class JobStatusUpdate(BaseModel):
-    status: Annotated[Literal["running"], Field(examples=["running"])]
+    status: Annotated[Status, Field(examples=["succeeded"])]
+    output_files: Annotated[
+        list[str] | None,
+        Field(
+            examples=[
+                [
+                    "7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip",
+                    "7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip",
+                    "7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip",
+                ]
+            ]
+        ),
+    ] = None
+    """
+    List of all S3 file keys uploaded by provider during job execution.
+    """
+    message: Annotated[str | None, Field(examples=["Execution successful"])] = None
+    execution_time: Annotated[float | None, Field(examples=[1256.58])] = None
+    """
+    Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
+    """
 
 
 class JobStatusUpdateResponse(BaseModel):

@@ -292,54 +292,147 @@ def test_get_job(test_db: Session):
     assert test_db.get(Job, "testjob2id").status == "ready"
 
 
-def test_update_job(test_db: Session):
-    # Arrange
-    test_db.add(_get_job_model(1, JobType.sampling))
-    test_db.add(_get_job_model(2, JobType.estimation))
-    test_db.add(_get_device_model())
-    test_db.commit()
-    job_id1 = "testjob1id"
-    request = JobStatusUpdate(status="running")
-    actual = update_job_status(job_id=job_id1, request=request, db=test_db)
-
-    expected = JobStatusUpdateResponse(message="Job status updated")
-    # Assert
-    assert actual == expected
-
-    # for estimation jobs
-    job_id2 = "testjob2id"
-    actual2 = update_job_status(job_id=job_id2, request=request, db=test_db)
-    assert actual2 == expected
-
-
+@mock_aws
 def test_update_job_status(test_db: Session):
-    job_model = _get_job_model(1, JobType.sampling)
-    test_db.add(_get_device_model())
-    test_db.add(job_model)
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.ready))
     test_db.commit()
 
-    resp = client.patch(
-        f"/jobs/{job_model.id}/status",
-        content=JobStatusUpdate(status="running").model_dump_json(),
-    )
-    model = test_db.get(Job, job_model.id)
+    model = test_db.get(Job, "testjob1id")
     assert model is not None
+
+    body = {
+        "status": "running"
+    }
+    resp = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 200
     assert model.status == JobStatus.running
     assert model.running_at is not None
     running_at = model.running_at
-    assert resp.status_code == 200
+    assert model.ended_at is None
 
+    body = {
+        "status": "succeeded",
+        "output_files": ["testjob1id/result.zip", "testjob1id/transpile_result.zip"],
+        "message": "job succeeded",
+        "execution_time": 15.8
+    }
     resp = client.patch(
-        f"/jobs/{job_model.id}/status",
-        content=JobStatusUpdate(status="running").model_dump_json(),
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
     )
-    assert model.status == JobStatus.running
-    assert running_at == running_at
+    assert resp.status_code == 200
+    assert model.status == JobStatus.succeeded
+    assert model.output_files == json.dumps(["result", "transpile_result"])
+    assert model.message == "job succeeded"
+    assert model.execution_time == 15.8
+    assert model.running_at == running_at
+    assert model.ended_at is not None
+
+
+@mock_aws
+def test_update_job_invalid_status_transitions(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.submitted))
+    test_db.add(_get_job_model(2, status=JobStatus.ready))
+    test_db.commit()
+
+    model = test_db.get(Job, "testjob1id")
+    assert model is not None
+
+    body = {
+        "status": "running"
+    }
+    resp = client.patch(
+        f"/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
     assert resp.status_code == 409
+    assert resp.json()["message"] == "The specified job is not a status that allows transition to the status: Status.running"
+    assert model.status == JobStatus.submitted
+
+    model = test_db.get(Job, "testjob2id")
+    assert model is not None
+
+    body = {
+        "status": "succeeded"
+    }
+    resp = client.patch(
+        f"/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 409
+    assert resp.json()["message"] == "The specified job is not a status that allows transition to the status: Status.succeeded"
+    assert model.status == JobStatus.ready
 
 
-# TODO: add invalid test cases
-# TODO: add test cases for handler
+@mock_aws
+def test_update_job_status_invalid_output_files_1(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.running))
+    test_db.commit()
+
+    model = test_db.get(Job, "testjob1id")
+    assert model is not None
+
+    body = {
+        "status": "succeeded",
+        "output_files": ["testjob2id/result.zip", "testjob1id/transpile_result.zip"],
+    }
+    resp = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["message"] == "Invalid output file key: testjob2id/result.zip for job_id: testjob1id"
+    assert model.output_files is None
+
+
+@mock_aws
+def test_update_job_status_invalid_output_files_2(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.running))
+    test_db.commit()
+
+    model = test_db.get(Job, "testjob1id")
+    assert model is not None
+
+    body = {
+        "status": "succeeded",
+        "output_files": ["testjob1id/resultxxx.zip", "testjob1id/transpile_result.zip"],
+    }
+    resp = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["message"] == "Invalid output file key: testjob1id/resultxxx.zip"
+    assert model.output_files is None
+
+
+@mock_aws
+def test_update_job_status_invalid_execution_time(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.running))
+    test_db.commit()
+
+    model = test_db.get(Job, "testjob1id")
+    assert model is not None
+
+    body = {
+        "status": "succeeded",
+        "output_files": ["testjob1id/result.zip", "testjob1id/transpile_result.zip"],
+        "execution_time": -15.8
+    }
+    resp = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 400
+    assert model.execution_time is None
 
 
 @mock_aws

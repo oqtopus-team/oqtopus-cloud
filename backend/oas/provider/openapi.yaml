@@ -861,7 +861,7 @@ components:
           example: succeeded
           nullable: false
         output_files:
-          description: List of all S3 files uploaded by provider during job execution.
+          description: List of all S3 file keys uploaded by provider during job execution.
           type: array
           items:
             type: string

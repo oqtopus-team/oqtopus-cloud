@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -44,11 +45,13 @@ jst = ZoneInfo("Asia/Tokyo")
 
 JobId = str
 
-S3_JOB_INFO_INPUT_FILE = "input.zip"
-S3_COMBINED_PROGRAM_FILE = "combined_program.zip"
-S3_RESULT_FILE = "result.zip"
-S3_TRANSPILE_RESULT_FILE = "transpile_result.zip"
-S3_SSE_LOG_FILE = "sse_log.zip"
+JOB_INFO_INPUT_PARAM = "input"
+JOB_INFO_COMBINED_PROGRAM_PARAM = "combined_program"
+JOB_INFO_RESULT_PARAM = "result"
+JOB_INFO_TRANSPILE_RESULT_PARAM = "transpile_result"
+JOB_INFO_SSE_LOG_PARAM = "sse_log"
+
+s3_key_pattern = r"^(?P<id>[\w-]+)/(?P<name>input|combined_program|result|transpile_result|sse_log)\.zip$"
 
 DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
 DEFAULT_MAX_UPLOAD_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
@@ -119,7 +122,7 @@ def get_jobs(
                 continue
             else:
                 # if status is "submitted", then update status to "ready"
-                if decode_job_status(model.status) == JobStatus.submitted:
+                if parse_job_status(model.status) == JobStatus.submitted:
                     set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
@@ -183,14 +186,51 @@ def update_job_status(
         if model is None:
             return NotFoundErrorResponse("Job not found")
 
-        if decode_job_status(model.status) != JobStatus.ready:
-            return ConflictErrorResponse(
-                f"The specified job is not a status that allows transition to the status {request.status}"
-            )
+        model_status = parse_job_status(model.status)
+        if request.status == JobStatus.running:
+            if model_status != JobStatus.ready:
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        elif request.status in [
+            JobStatus.succeeded,
+            JobStatus.failed,
+            JobStatus.cancelled,
+        ]:
+            if model_status != JobStatus.running:
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        else:
+            return BadRequestResponse(f"Invalid status: {request.status}")
 
         set_job_status(model, request.status)
+
+        if request.output_files:
+            output_files = []
+            for s3_key in request.output_files:
+                match = re.match(s3_key_pattern, s3_key)
+                if match:
+                    if match.group("id") != job_id:
+                        return BadRequestResponse(
+                            f"Invalid output file key: {s3_key} for job_id: {job_id}"
+                        )
+                    output_files.append(match.group("name"))
+                else:
+                    return BadRequestResponse(f"Invalid output file key: {s3_key}")
+            model.output_files = json.dumps(output_files)
+
+        if request.message:
+            model.message = request.message
+
+        if request.execution_time:
+            if request.execution_time < 0:
+                return BadRequestResponse("Execution time should not be negative.")
+            model.execution_time = request.execution_time
+
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
+
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
@@ -333,11 +373,11 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def decode_job_status(s: str) -> JobStatus | ValueError:
+def parse_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
-    except Exception as err:
-        return ValueError(f"Failed to decode JobStatus: {str(err)}")
+    except Exception:
+        return ValueError(f"{s} is not a valid JobStatus")
 
 
 def parse_job_type(jt: str) -> JobType | ValueError:
@@ -430,7 +470,7 @@ def get_upload_presigned_url(bucket: str, key: str) -> JobInfoUploadPresignedURL
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
-    status = decode_job_status(model.status)
+    status = parse_job_status(model.status)
     if isinstance(status, ValueError):
         return status
     job_type = parse_job_type(str(model.job_type))
@@ -440,16 +480,20 @@ def model_to_schema(
     bucket_name = os.environ["OQTOPUS_BUCKET"]
     job_info = JobInfo(
         input=get_download_presigned_url(
-            bucket_name, f"{model.id}/{S3_JOB_INFO_INPUT_FILE}"
+            bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
         ),
         combined_program=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{S3_COMBINED_PROGRAM_FILE}"
+            bucket_name, f"{model.id}/{JOB_INFO_COMBINED_PROGRAM_PARAM}.zip"
         ),
-        result=get_upload_presigned_url(bucket_name, f"{model.id}/{S3_RESULT_FILE}"),
+        result=get_upload_presigned_url(
+            bucket_name, f"{model.id}/{JOB_INFO_RESULT_PARAM}.zip"
+        ),
         transpile_result=get_upload_presigned_url(
-            bucket_name, f"{model.id}/{S3_TRANSPILE_RESULT_FILE}"
+            bucket_name, f"{model.id}/{JOB_INFO_TRANSPILE_RESULT_PARAM}.zip"
         ),
-        sse_log=get_upload_presigned_url(bucket_name, f"{model.id}/{S3_SSE_LOG_FILE}")
+        sse_log=get_upload_presigned_url(
+            bucket_name, f"{model.id}/{JOB_INFO_SSE_LOG_PARAM}.zip"
+        )
         if model.job_type == "sse"
         else None,
     )

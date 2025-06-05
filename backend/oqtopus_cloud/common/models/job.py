@@ -29,6 +29,8 @@ class Job(Base):
         job_type (str): The action to be performed by the job (sampling or estimation).
         shots (int): The number of shots for the job.
         status (str): The status of the job (registered, submitted, ready, running, succeeded, failed, cancelled).
+        output_files (str): List of job output files uploaded by provider.
+        message (str): Message set by provider.
         execution_time(float): The duration of the QPU execution.
         submitted_at(datetime): The timestamp when the job was submitted.
         ready_at(datetime): The timestamp when the job became ready.
@@ -79,6 +81,8 @@ class Job(Base):
         Float,
         nullable=True,
     )
+    output_files: Mapped[Optional[str]]
+    message: Mapped[Optional[str]]
     submitted_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
     ready_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
