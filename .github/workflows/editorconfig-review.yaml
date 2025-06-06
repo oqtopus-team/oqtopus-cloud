@@ -24,8 +24,8 @@ jobs:
 
       - name: Define envs
         run: |
-          echo "OS=linux" >> $GITHUB_ENV
-          echo "ARCH=amd64" >> $GITHUB_ENV
+          echo "OS=linux" >> "$GITHUB_ENV"
+          echo "ARCH=amd64" >> "$GITHUB_ENV"
 
       - name: Install editorconfig-checker
         run: |

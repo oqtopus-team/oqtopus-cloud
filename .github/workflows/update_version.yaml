@@ -32,7 +32,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Update version in pyproject.toml
         run: |

@@ -54,7 +54,7 @@ jobs:
     - name: Create new branch and switch
       run: |
         BRANCH_NAME="chore/auto-update-docs-$(date +%Y%m%d-%H%M%S)"
-        git checkout -b $BRANCH_NAME
+        git checkout -b "$BRANCH_NAME"
         echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
 
     - name: Auto PR
@@ -67,7 +67,7 @@ jobs:
           exit 0
         fi
         git commit -m "Auto update document $(date +%Y%m%d-%H%M%S)" -a
-        git push origin $BRANCH_NAME
+        git push origin "$BRANCH_NAME"
         gh pr create --title "chore: [CI] Auto update document $(date +%Y%m%d-%H%M%S)" \
                       --body "This PR was automatically generated.$TRIGGERED_PUSH_URL" \
                       --base develop \
