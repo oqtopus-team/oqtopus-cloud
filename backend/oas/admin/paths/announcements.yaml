@@ -35,7 +35,7 @@ announcements:
         schema:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34Z'      
+          example: '2022-10-19T11:45:34Z'
     responses:
       "200":
         description: "Return announcements"

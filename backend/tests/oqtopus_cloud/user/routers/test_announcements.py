@@ -198,7 +198,7 @@ def test_get_announcements_list_with_current_time(test_db):
     actual = adapter.validate_python(response.json())
 
     expected = GetAnnouncementsListResponse(announcements=[
-         GetAnnouncementResponse(
+        GetAnnouncementResponse(
             id=2,
             title="title2",
             content="content2",
