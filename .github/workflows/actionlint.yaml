@@ -1,9 +1,10 @@
 name: Actionlint
 
 on:
-  push:
-    branches:
-      - "fix/*"
+  pull_request:
+    paths:
+      - ".github/workflows/**/*.yaml"
+      - ".github/workflows/**/*.yml"
 
 jobs:
   actionlint:
