@@ -22,6 +22,3 @@ jobs:
           filter_mode: nofilter
           level: error
           reporter: github-pr-review
-      - name: Test
-        run: |
-          echo "test"
