@@ -71,5 +71,5 @@ jobs:
         gh pr create --title "chore: [CI] Auto update document $(date +%Y%m%d-%H%M%S)" \
                       --body "This PR was automatically generated.$TRIGGERED_PUSH_URL" \
                       --base develop \
-                      --head $BRANCH_NAME \
+                      --head "$BRANCH_NAME" \
                       --label documentation
