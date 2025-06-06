@@ -51,15 +51,15 @@ def _get_model():
         "id": "SVSim",
         "device_type": "simulator",
         "status": "available",
-        "available_at": datetime(2023, 1, 2, 12, 34, 56),
+        "available_at": datetime(2023, 1, 2, 12, 34, 56, tzinfo=pytz.utc),
         "pending_jobs": 8,
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
         "device_info": "{}",
-        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
+        "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
-        "created_at": datetime(2024, 3, 4, 12, 34, 56),
+        "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
     }
     return Device(**mode_dict)
 
@@ -102,14 +102,14 @@ def test_model_to_shema():
         device_id="SVSim",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=pytz.utc),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # calibrationData=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected

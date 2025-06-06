@@ -76,17 +76,6 @@ module "user_cognito" {
   identifier = "user"
 }
 
-module "provider_cognito" {
-  source = "../modules/cognito"
-
-  product                           = var.product
-  org                               = var.org
-  env                               = var.env
-  identifier                        = "provider"
-  enable_mfa                        = false
-  userpool_auto_verified_attributes = []
-}
-
 module "admin_cognito" {
   source = "../modules/cognito"
 

@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import TIMESTAMP, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models.base import (
     Base,
 )
@@ -52,6 +53,7 @@ class Device(Base):
         default="unavailable",
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(),
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
@@ -70,7 +72,7 @@ class Device(Base):
         nullable=False,
     )
     device_info: Mapped[str]
-    calibrated_at: Mapped[datetime.datetime]
+    calibrated_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,

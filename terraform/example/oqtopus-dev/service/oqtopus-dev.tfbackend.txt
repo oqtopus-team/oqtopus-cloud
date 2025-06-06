@@ -1,0 +1,7 @@
+# service/oqtopus-dev.tfbackend
+bucket         = "tfstate.oqtopus-oqtopus-dev"
+key            = "service.tfstate"
+encrypt        = true
+profile        = "oqtopus-dev"
+region         = "ap-northeast-1"
+dynamodb_table = "terraform-lock"
