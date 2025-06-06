@@ -29,10 +29,6 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.job_status
   /jobs/{job_id}/transpiler_info:
     $ref: ./paths/jobs.yaml#/jobs.job_id.transpiler_info
-  /jobs/{job_id}/ssesrc:
-    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_src
-  /jobs/{job_id}/sselog:
-    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
 components:
   securitySchemes:
     ApiKeyAuth:

@@ -1,14 +1,11 @@
-import base64
 import json
 import os
 import re
 from datetime import datetime
 from typing import Optional
 
-import boto3
 import pytz
-from fastapi import APIRouter, Depends, Form, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.s3 import (
     get_download_presigned_url,
@@ -40,7 +37,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
     JobType,
     UpdateJobTranspilerInfoRequest,
     UpdateJobTranspilerInfoResponse,
-    UploadSselogResponse,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
@@ -274,84 +270,6 @@ def update_job_transpiler_info(
 
     except Exception as e:
         logger.error(e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
-
-
-@router.get(
-    "/jobs/{job_id}/ssesrc",
-    response_model=None,
-    response_class=PlainTextResponse,
-    responses={
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def get_ssesrc(
-    job_id: str,
-) -> PlainTextResponse | ErrorResponse:
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
-    try:
-        # get the program file from the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        program = s3_client.get_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-        )
-        program = program["Body"].read()
-
-        # encode the file to base64
-        program_base64 = base64.b64encode(program).decode("utf-8")
-        return PlainTextResponse(content=program_base64)
-
-    except Exception as e:
-        logger.exception("Failed to get SSE user program file: %s", e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
-
-
-@router.patch(
-    "/jobs/{job_id}/sselog",
-    response_model=UploadSselogResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def upload_sselog(
-    job_id: str,
-    file: UploadFile = Form(...),
-    db: Session = Depends(get_db),
-) -> UploadSselogResponse | ErrorResponse:
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
-
-    try:
-        # Check that the job exists
-        job_model = db.query(Job).filter(Job.id == job_id).first()
-        if job_model is None:
-            logger.info("job not found with the given id")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        job = model_to_schema(job_model)
-        if isinstance(job, ValueError):
-            logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        if job.job_type != JobType.sse:
-            logger.info("job is not an SSE job")
-            return BadRequestResponse(message="job is not an SSE job")
-
-        binary = file.file.read()
-
-        s3_client = boto3.client("s3")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-            Body=binary,
-        )
-        return UploadSselogResponse(message="SSE log uploaded")
-    except Exception as e:
-        logger.exception("Failed to upload SSE log file: %s", e)
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
 

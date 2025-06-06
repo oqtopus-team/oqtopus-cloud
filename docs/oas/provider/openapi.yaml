@@ -376,97 +376,6 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: Job not found
-  /jobs/{job_id}/ssesrc:
-    get:
-      tags:
-        - job
-      summary: Get SSE program source file
-      description: Get SSE program source file of selected job
-      operationId: get_ssesrc
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Return SSE program source file
-          content:
-            text/plain:
-              schema:
-                type: string
-                format: binary
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
-  /jobs/{job_id}/sselog:
-    patch:
-      tags:
-        - job
-      summary: Upload SSE log file
-      description: Upload SSE log file of selected job
-      operationId: patch_sselog
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      requestBody:
-        description: Log file to be uploaded
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/jobs.UploadSselogRequest'
-      responses:
-        '200':
-          description: Log uploaded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/jobs.UploadSselogResponse'
-              example:
-                message: Log uploaded
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -907,21 +816,6 @@ components:
         message:
           type: string
           nullable: false
-      required:
-        - message
-    jobs.UploadSselogRequest:
-      type: object
-      properties:
-        file:
-          type: string
-          format: binary
-      required:
-        - file
-    jobs.UploadSselogResponse:
-      type: object
-      properties:
-        message:
-          type: string
       required:
         - message
     jobs.S3OperatorItem:

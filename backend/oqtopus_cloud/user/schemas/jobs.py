@@ -284,17 +284,6 @@ class GetJobStatusResponse(BaseModel):
     status: JobStatus
 
 
-class GetSselogResponse(BaseModel):
-    """
-    sse log file
-    """
-
-    file: str | None = None
-    file_name: Annotated[
-        str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
-    ] = None
-
-
 class S3OperatorItem(BaseModel):
     pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """

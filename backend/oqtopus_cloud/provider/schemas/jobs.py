@@ -191,14 +191,6 @@ class UpdateJobTranspilerInfoResponse(BaseModel):
     message: str
 
 
-class UploadSselogRequest(BaseModel):
-    file: bytes
-
-
-class UploadSselogResponse(BaseModel):
-    message: str
-
-
 class S3OperatorItem(BaseModel):
     pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """

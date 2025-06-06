@@ -241,23 +241,6 @@ jobs.JobStatusUpdateResponse:
   required:
     - message
 
-jobs.UploadSselogRequest:
-  type: object
-  properties:
-    file:
-      type: string
-      format: binary
-  required:
-    - file
-
-jobs.UploadSselogResponse:
-  type: object
-  properties:
-    message:
-      type: string
-  required:
-    - message
-
 jobs.UpdateJobTranspilerInfoRequest:
   type: object
   properties: {}

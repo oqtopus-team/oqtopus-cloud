@@ -495,61 +495,6 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
-  /jobs/{job_id}/sselog:
-    get:
-      tags:
-        - job
-      summary: Get SSE log file
-      description: Get SSE log file of selected job
-      operationId: get_sselog
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Return SSE log file
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/jobs.GetSselogResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
   /api-token:
     get:
       tags:
@@ -1177,17 +1122,6 @@ components:
       required:
         - job_id
         - status
-    jobs.GetSselogResponse:
-      description: sse log file
-      type: object
-      properties:
-        file:
-          type: string
-          format: byte
-        file_name:
-          type: string
-          example: sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip
-      required: []
     api-token.ApiToken:
       type: object
       properties:
