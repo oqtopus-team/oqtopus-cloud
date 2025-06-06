@@ -10,6 +10,7 @@ jobs:
   deployment:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         deploy-target: [user, provider, admin, lambda_auth, user_signup]
 
@@ -47,6 +48,7 @@ jobs:
       - name: Install make
         run: sudo apt install make
 
+
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
         env:
@@ -57,111 +59,23 @@ jobs:
 
       - name: On Success
         if: ${{ success() }}
-        env:
-          SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
         run: |
-          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $SLACK_API_TOKEN" \
-          --data @- <<EOF
-          {
-            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "✅ Deploy successful (${{ matrix.deploy-target }})",
-            "attachments": [
-              {
-                "color": "#00dd00",
-                "blocks": [
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "*Log*"
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "[${TIMESTAMP}] Deployed successfully!"
-                    }
-                  },
-                  {
-                    "type": "divider"
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "*Action*"
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "${RUN_URL}"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-          EOF
+          echo "SUCCESS=1" >> $GITHUB_ENV
 
       - name: On Failure
         if: ${{ failure() }}
+        run: |
+          echo "SUCCESS=0" >> $GITHUB_ENV
+
+      - name: On Exit
+        if: ${{ always() }}
+        run: |
+          source .venv/bin/activate
+          python3 ./scripts/build_slack_notification.py \
+            --success=$SUCCESS \
+            --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
+            --run-url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --deploy-target="${{ matrix.deploy-target }}"
         env:
           SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
-        run: |
-          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          MESSAGE=$(cat error.log)
-          curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $SLACK_API_TOKEN" \
-          --data @- <<EOF
-          {
-            "channel": "${{ secrets.SLACK_CHANNEL_NAME }}",
-            "text": "❌ Deploy failed (${{ matrix.deploy-target }})",
-            "attachments": [
-              {
-                "color": "#dd0000",
-                "blocks": [
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "*Log*"
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "[${TIMESTAMP}] Deploy failed!"
-                    }
-                  },
-                  {
-                    "type": "divider"
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "*Action*"
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "${RUN_URL}"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-          EOF
+          SLACK_CHANNEL_NAME: ${{ secrets.SLACK_CHANNEL_NAME }}

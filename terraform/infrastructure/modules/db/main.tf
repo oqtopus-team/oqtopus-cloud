@@ -36,7 +36,7 @@ resource "aws_db_instance" "this" {
   db_subnet_group_name                  = aws_db_subnet_group.this.name
   deletion_protection                   = "true"
   engine                                = "mysql"
-  engine_version                        = "8.0.35"
+  engine_version                        = "8.0.40"
   iam_database_authentication_enabled   = "true"
   instance_class                        = var.db_performance_insights_enabled == true ? "db.t3.medium" : "db.t3.micro"
   iops                                  = "0"
@@ -59,6 +59,10 @@ resource "aws_db_instance" "this" {
   storage_type                          = "gp2"
   username                              = var.user_name
   vpc_security_group_ids                = var.db_security_group_ids
+
+  lifecycle {
+    ignore_changes = [engine_version]
+  }
 }
 
 
