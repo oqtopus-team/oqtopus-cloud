@@ -16,11 +16,13 @@ jobs:
 
       - name: Extract version from comment
         id: extract_version
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          echo "Requested comment: ${{ github.event.comment.body }}"
-          VERSION=$(echo "${{ github.event.comment.body }}" | sed 's/update-version=//')
+          echo "Requested comment: $COMMENT_BODY"
+          VERSION=$(echo "$COMMENT_BODY" | sed 's/update-version=//')
           echo "VERSION: $VERSION"
-          echo "::set-output name=version::$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
