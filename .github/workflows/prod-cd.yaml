@@ -27,7 +27,7 @@ jobs:
       - name: Set AWS Profile
         run: |
           ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
-          echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
+          echo "PROFILE=$ACCOUNT_NAME" >> "$GITHUB_ENV"
 
 
       - name: Set up Python
@@ -38,7 +38,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install poetry dependencies
         run: poetry install
@@ -114,7 +114,6 @@ jobs:
         run: |
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          MESSAGE=$(cat error.log)
           curl -s -o /dev/null -X POST https://slack.com/api/chat.postMessage \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $SLACK_API_TOKEN" \
