@@ -503,7 +503,7 @@ def delete_s3_folder(job: Job) -> bool:
 
 
 def set_job_failure(job: Job) -> None:
-    job.status = JobStatus.failed
+    job.status = "failed"
     job.ended_at = datetime.now()
 
 

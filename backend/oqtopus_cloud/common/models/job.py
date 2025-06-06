@@ -1,7 +1,7 @@
 import datetime
 from typing import Literal, Optional
 
-from sqlalchemy import TIMESTAMP, Enum, Float, String, Text, func, text
+from sqlalchemy import TIMESTAMP, Float, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -11,7 +11,7 @@ from oqtopus_cloud.common.models.device import DeviceId
 
 JobId = str
 
-JobType = Literal["sampling", "estimation", "sse"]
+JobType = Literal["sampling", "estimation", "sse", "multi_manual"]
 
 JobStatus = Literal["submitted", "ready", "running", "succeeded", "failed", "cancelled"]
 
@@ -54,7 +54,9 @@ class Job(Base):
     job_type: Mapped[JobType] = mapped_column(String(32), nullable=False)
     device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
     shots: Mapped[int] = mapped_column(nullable=True)
-    status: Mapped[JobStatus] = mapped_column(String(32), nullable=False, default="submitted")
+    status: Mapped[JobStatus] = mapped_column(
+        String(32), nullable=False, default="submitted"
+    )
     job_info: Mapped[str] = mapped_column(Text)
     transpiler_info: Mapped[str] = mapped_column(Text)
     simulator_info: Mapped[str] = mapped_column(Text)

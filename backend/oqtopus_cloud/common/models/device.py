@@ -1,16 +1,23 @@
 import datetime
-from typing import Literal, Optional, TypeVar
+from enum import Enum
+from typing import Literal, Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String, Text, func, text
+from sqlalchemy import TIMESTAMP, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models import Base
 
 DeviceId = str
 
-DeviceType = Literal["QPU", "simulator"]
 
-DeviceStatus = Literal["available", "unavailable"]
+class DeviceType(Enum):
+    QPU = "QPU"
+    simulator = "simulator"
+
+
+class DeviceStatus(Enum):
+    Available = "available"
+    Unavailable = "unavailable"
 
 
 class Device(Base):
@@ -40,11 +47,11 @@ class Device(Base):
         primary_key=True,
     )
     device_type: Mapped[DeviceType] = mapped_column(
-        Enum("QPU", "simulator"),
+        String(32),
         nullable=False,
     )
     status: Mapped[DeviceStatus] = mapped_column(
-        Enum("available", "unavailable"),
+        String(64),
         nullable=False,
         default="unavailable",
     )
