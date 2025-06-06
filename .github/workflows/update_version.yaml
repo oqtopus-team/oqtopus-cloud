@@ -20,7 +20,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           echo "Requested comment: $COMMENT_BODY"
-          VERSION=$(echo "$COMMENT_BODY" | sed 's/update-version=//')
+          VERSION="${COMMENT_BODY//update-version=}"
           echo "VERSION: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
