@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Optional, cast
 
 import boto3
-import botocore
 import pytz
 from fastapi import (
     APIRouter,
@@ -26,6 +25,7 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.s3 import (
     get_download_presigned_url,
     get_upload_presigned_url_data,
+    validate_upload,
     JOB_INFO_INPUT_PARAM,
 )
 from oqtopus_cloud.common.session import (
@@ -175,7 +175,9 @@ def submit_job(
         job.submitted_at = datetime.now()
         job.updated_at = job.submitted_at
 
-        if not validate_job_info(job_id):
+        if not validate_upload(
+            os.environ["OQTOPUS_BUCKET"], f"{job_id}/{S3_JOB_INFO_INPUT_FILE}"
+        ):
             return BadRequestResponse(
                 f"job information input for {job_id} job not found"
             )
@@ -290,27 +292,6 @@ def validate_name(request: SubmitJobRequest) -> str:
 
 def validate_description(request: SubmitJobRequest) -> str:
     return request.description if (request.description is not None) else ""
-
-
-def validate_job_info(job_id: str) -> bool:
-    try:
-        boto3.client("s3").head_object(
-            Bucket=os.environ["OQTOPUS_BUCKET"],
-            Key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}",
-        )
-        return True
-
-    except botocore.exceptions.ClientError as exc:
-        if exc.response["Error"]["Code"] == "404":
-            logger.info(
-                f"job information input file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not found"
-            )
-            return False
-        else:
-            logger.error(
-                f"job information input file: {job_id}/{S3_JOB_INFO_INPUT_FILE} not accessible"
-            )
-            raise exc
 
 
 @router.get(

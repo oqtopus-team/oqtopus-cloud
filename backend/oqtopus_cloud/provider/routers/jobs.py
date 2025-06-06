@@ -13,6 +13,7 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.s3 import (
     get_download_presigned_url,
     get_upload_presigned_url_data,
+    validate_upload,
     JOB_INFO_INPUT_PARAM,
     JOB_INFO_COMBINED_PROGRAM_PARAM,
     JOB_INFO_RESULT_PARAM,
@@ -211,11 +212,15 @@ def update_job_status(
             for s3_key in request.output_files:
                 match = re.match(s3_key_pattern, s3_key)
                 if match:
-                    if match.group("id") != job_id:
-                        return BadRequestResponse(
+                    if match.group("id") == job_id:
+                        if validate_upload(os.environ["OQTOPUS_BUCKET"], s3_key):
+                            output_files.append(match.group("name"))
+                        else:
+                            return BadRequestResponse(f"{s3_key} not found")
+                    else:
+                        return ConflictErrorResponse(
                             f"Invalid output file key: {s3_key} for job_id: {job_id}"
                         )
-                    output_files.append(match.group("name"))
                 else:
                     return BadRequestResponse(f"Invalid output file key: {s3_key}")
             model.output_files = json.dumps(output_files)

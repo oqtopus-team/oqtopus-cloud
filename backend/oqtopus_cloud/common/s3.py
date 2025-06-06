@@ -1,6 +1,9 @@
 import os
 
 import boto3
+import botocore
+
+from oqtopus_cloud.user.conf import logger
 
 JOB_INFO_INPUT_PARAM = "input"
 JOB_INFO_COMBINED_PROGRAM_PARAM = "combined_program"
@@ -46,3 +49,20 @@ def get_upload_presigned_url_data(bucket: str, key: str) -> dict:
         ),
     )
     return presigned_data
+
+
+def validate_upload(bucket: str, key: str) -> bool:
+    try:
+        boto3.client("s3").head_object(
+            Bucket=bucket,
+            Key=key,
+        )
+        return True
+
+    except botocore.exceptions.ClientError as exc:
+        if exc.response["Error"]["Code"] == "404":
+            logger.info(f"job information input file: {key} not found")
+            return False
+        else:
+            logger.error(f"job information input file: {key} not accessible")
+            raise exc

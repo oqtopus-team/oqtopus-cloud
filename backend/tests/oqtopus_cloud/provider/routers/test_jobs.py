@@ -314,6 +314,15 @@ def test_update_job_status(test_db: Session):
     running_at = model.running_at
     assert model.ended_at is None
 
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key="testjob1id/result.zip", Body="dummy_content")
+    s3client.put_object(Bucket=bucket_name, Key="testjob1id/transpile_result.zip", Body="dummy_content")
+
     body = {
         "status": "succeeded",
         "output_files": ["testjob1id/result.zip", "testjob1id/transpile_result.zip"],
@@ -386,8 +395,37 @@ def test_update_job_status_invalid_output_files_1(test_db: Session):
         "/jobs/testjob1id/status",
         content=json.dumps(body),
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 409
     assert resp.json()["message"] == "Invalid output file key: testjob2id/result.zip for job_id: testjob1id"
+    assert model.output_files is None
+
+
+@mock_aws
+def test_update_job_status_missing_output_file(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1, status=JobStatus.running))
+    test_db.commit()
+
+    model = test_db.get(Job, "testjob1id")
+    assert model is not None
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    body = {
+        "status": "succeeded",
+        "output_files": ["testjob1id/result.zip", "testjob1id/transpile_result.zip"],
+    }
+    resp = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(body),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["message"] == "testjob1id/result.zip not found"
     assert model.output_files is None
 
 
@@ -421,6 +459,15 @@ def test_update_job_status_invalid_execution_time(test_db: Session):
 
     model = test_db.get(Job, "testjob1id")
     assert model is not None
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+    s3client.put_object(Bucket=bucket_name, Key="testjob1id/result.zip", Body="dummy_content")
+    s3client.put_object(Bucket=bucket_name, Key="testjob1id/transpile_result.zip", Body="dummy_content")
 
     body = {
         "status": "succeeded",
