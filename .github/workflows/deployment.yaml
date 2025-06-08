@@ -30,7 +30,7 @@ jobs:
       - name: Set AWS Profile
         run: |
           ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
-          echo "PROFILE=$ACCOUNT_NAME" >> $GITHUB_ENV
+          echo "PROFILE=$ACCOUNT_NAME" >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -40,7 +40,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install poetry dependencies
         run: poetry install
@@ -60,19 +60,19 @@ jobs:
       - name: On Success
         if: ${{ success() }}
         run: |
-          echo "SUCCESS=1" >> $GITHUB_ENV
+          echo "SUCCESS=1" >> "$GITHUB_ENV"
 
       - name: On Failure
         if: ${{ failure() }}
         run: |
-          echo "SUCCESS=0" >> $GITHUB_ENV
+          echo "SUCCESS=0" >> "$GITHUB_ENV"
 
       - name: On Exit
         if: ${{ always() }}
         run: |
           source .venv/bin/activate
           python3 ./scripts/build_slack_notification.py \
-            --success=$SUCCESS \
+            --success="$SUCCESS" \
             --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
             --run-url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --deploy-target="${{ matrix.deploy-target }}"

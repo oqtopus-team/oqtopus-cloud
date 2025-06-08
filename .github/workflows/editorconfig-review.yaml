@@ -24,8 +24,8 @@ jobs:
 
       - name: Define envs
         run: |
-          echo "OS=linux" >> $GITHUB_ENV
-          echo "ARCH=amd64" >> $GITHUB_ENV
+          echo "OS=linux" >> "$GITHUB_ENV"
+          echo "ARCH=amd64" >> "$GITHUB_ENV"
 
       - name: Install editorconfig-checker
         run: |
@@ -39,6 +39,6 @@ jobs:
         run: |
           bin/ec-${{ env.OS }}-${{ env.ARCH }} > output_ecc.txt || true
           python3 scripts/ecc_converter.py < output_ecc.txt > result_py.txt
-          cat result_py.txt | reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review
+          reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review < result_py.txt
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -60,9 +60,11 @@ jobs:
           echo "$unique_labels"
 
           # Set the output as a newline-separated string
-          echo "labels<<EOF" >> $GITHUB_OUTPUT
-          echo "$unique_labels" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "labels<<EOF"
+            echo "$unique_labels"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Add labels to PR
         uses: actions-ecosystem/action-add-labels@v1
@@ -70,7 +72,7 @@ jobs:
           labels: ${{ steps.set-labels.outputs.labels }}
 
       - name: Assign PR creator
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             await github.rest.issues.addAssignees({
