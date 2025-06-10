@@ -109,7 +109,8 @@ def test_db() -> (
     ):
         try:
             yield db
-            db.commit()
+            # expire all attributes to ignore all partial/uncommited modifications in ORM objects
+            db.expire_all()
         except SQLAlchemyError as e:
             assert e is not None
             db.rollback()
