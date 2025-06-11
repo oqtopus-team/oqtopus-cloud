@@ -6,7 +6,6 @@ import zipfile
 from datetime import datetime
 from typing import Any, Optional
 
-import boto3
 import pytz
 from fastapi import (
     APIRouter,
@@ -25,6 +24,7 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
@@ -79,8 +79,10 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
+        storage.put("hogehoge/fugafuga.txt", b"HELLO")
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
@@ -282,6 +284,7 @@ def delete_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         owner = event.state.owner
@@ -300,7 +303,7 @@ def delete_job(
         db.commit()
 
         # delete the user program and logs from S3 when SSE
-        is_success_delete_s3 = delete_s3_folder(job)
+        is_success_delete_s3 = delete_storage_folder(job, storage)
         if not is_success_delete_s3:
             return InternalServerErrorResponse(
                 message="job deleted successfully, but failed to delete SSE related resources."
@@ -400,10 +403,10 @@ def get_sselog(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> GetSselogResponse | ErrorResponse:
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-    bucket_name = os.environ["SSE_BUCKET"]
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     zip_name = os.environ["SSE_ZIP_FILE_NAME"]
 
@@ -427,18 +430,15 @@ def get_sselog(
         # get the logs from the AWS S3 bucket
         log_object = None
         try:
-            s3_client = boto3.client("s3")
-            log_object = s3_client.get_object(
-                Bucket=bucket_name,
-                Key=f"{job_id}/{log_name}",
-            )
+            log_object = storage.get(f"{job_id}/{log_name}")
+
         except Exception as e:
             logger.exception(f"Failed to get the log file: {str(e)}")
 
         if log_object is None:
             return NotFoundErrorResponse(message="log file not found")
 
-        log_str = log_object["Body"].read().decode()
+        log_str = log_object.decode()
         file_name = zip_name.replace("{job_id}", job_id)
 
         # make a zip stream and encode it to base64
@@ -458,11 +458,10 @@ def get_sselog(
         return InternalServerErrorResponse(message=str(e))
 
 
-def put_user_program_to_s3(job: Job) -> bool:
+def put_user_program_to_s3(job: Job, storage: AbstractStorage) -> bool:
     if job.job_type != JobType.sse:
         return True
 
-    bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
         job_info = decode_job_info(json.loads(job.job_info))
@@ -478,13 +477,9 @@ def put_user_program_to_s3(job: Job) -> bool:
 
         # decode the base64 encoded program
         decoded_program = base64.b64decode(job_info.program[0])
-        # upload the program to the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=f"{job.id}/{file_name}",
-            Body=decoded_program,
-        )
+
+        # upload the program to storage
+        storage.put(f"{job.id}/{file_name}", decoded_program)
 
         return True
     except Exception as e:
@@ -492,25 +487,25 @@ def put_user_program_to_s3(job: Job) -> bool:
         return False
 
 
-def delete_s3_folder(job: Job) -> bool:
+def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
     if job.job_type != JobType.sse:
         return True
 
-    bucket_name = os.environ["SSE_BUCKET"]
+    def delete_by_key(key: str) -> bool:
+        try:
+            storage.delete(key)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete {key}: {str(e)}")
+            return False
+
     try:
-        s3 = boto3.resource("s3")
-        bucket = s3.Bucket(bucket_name)
-        deleted_list = bucket.objects.filter(Prefix=f"{job.id}/").delete()
-        for deleted in deleted_list:
-            if deleted.get("Errors") and len(deleted.get("Errors")) > 0:
-                for error in deleted.get("Errors"):
-                    logger.error(
-                        f"Failed to delete the file from S3: {error.get("Message")}"
-                    )
-                return False
-        return True
+        prefix = f"{job.id}/"
+        results = storage.traverse_prefix(prefix, delete_by_key)
+        return all(results)
+
     except Exception as e:
-        logger.exception(f"Failed to delete the folder from S3: {str(e)}")
+        logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
         return False
 
 

@@ -4,12 +4,12 @@ import os
 from datetime import datetime
 from typing import Any, Optional
 
-import boto3
 import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
@@ -332,19 +332,15 @@ def update_job_transpiler_info(
 )
 @tracer.capture_method
 def get_ssesrc(
-    job_id: str,
+    job_id: str, storage: AbstractStorage = Depends(get_storage)
 ) -> PlainTextResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
-        # get the program file from the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        program = s3_client.get_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-        )
-        program = program["Body"].read()
-
+        # get the program file from storage
+        key = f"{job_id}/{file_name}"
+        program = storage.get(key)
+        if program is None:
+            return InternalServerErrorResponse(f"SSE user program not found: {key}")
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
         return PlainTextResponse(content=program_base64)
@@ -368,8 +364,8 @@ def upload_sselog(
     job_id: str,
     file: UploadFile = Form(...),
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> UploadSselogResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
 
     try:
@@ -387,13 +383,7 @@ def upload_sselog(
             return BadRequestResponse(message="job is not an SSE job")
 
         binary = file.file.read()
-
-        s3_client = boto3.client("s3")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-            Body=binary,
-        )
+        storage.put(key=f"{job_id}/{file_name}", data=binary)
         return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
         logger.exception("Failed to upload SSE log file: %s", e)
