@@ -411,13 +411,13 @@ paths:
               $ref: '#/components/schemas/devices.DeviceBase'
       responses:
         '200':
-          description: Device's data updated
+          description: Device data updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/success.SuccessResponse'
               example:
-                message: Device's data updated
+                message: Device data updated
         '400':
           description: Bad Request
           content:
