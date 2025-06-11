@@ -17,6 +17,15 @@ class AbstractStorage(ABC):
     @abstractmethod
     def prefix(self, prefix: str) -> Iterator[str]: ...
 
+    @abstractmethod
+    def is_file(self, key: str) -> bool: ...
+
+    @abstractmethod
+    def is_directory(self, key: str) -> bool: ...
+
+    @abstractmethod
+    def does_exist(self, key: str) -> bool: ...
+
     def traverse_prefix(self, prefix: str, action: Callable[[str], R]) -> List[R]:
         results: List[R] = []
         for path in self.prefix(prefix):

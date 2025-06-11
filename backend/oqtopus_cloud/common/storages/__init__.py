@@ -17,6 +17,10 @@ def get_storage() -> AbstractStorage:
                 client_kwargs={"region_name": s3_region},
             )
 
+        case "local":
+            local_base_path = environ.get("STORAGE_LOCAL_BASE_PATH", "/tmp/storage")
+            return FSSpecStorage(fs_url=f"file://{local_base_path}")
+
         case "local:minio":
             minio_bucket_name = environ.get("STORAGE_LOCAL_MINIO_BUCKET_NAME")
             minio_username = environ.get("STORAGE_LOCAL_MINIO_USERNAME")

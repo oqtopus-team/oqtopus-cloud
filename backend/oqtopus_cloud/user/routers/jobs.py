@@ -79,10 +79,8 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
-    storage: AbstractStorage = Depends(get_storage),
 ) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
-        storage.put("hogehoge/fugafuga.txt", b"HELLO")
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
@@ -188,6 +186,7 @@ def submit_jobs(
     event: Event,
     request: SubmitJobRequest,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SubmitJobResponse | ErrorResponse:
     try:
         device = db.get(Device, request.device_id)  # type: ignore
@@ -225,7 +224,7 @@ def submit_jobs(
         )
 
         # put the user program to S3 when SSE
-        is_success_put_s3 = put_user_program_to_s3(job)
+        is_success_put_s3 = put_user_program_to_s3(job, storage)
         if not is_success_put_s3:
             return InternalServerErrorResponse(
                 message="Failed to upload the user program to S3"

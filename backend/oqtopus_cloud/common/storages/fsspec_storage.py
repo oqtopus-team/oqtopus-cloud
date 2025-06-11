@@ -1,3 +1,4 @@
+import os
 from typing import Iterator, cast
 
 import fsspec
@@ -25,8 +26,12 @@ class FSSpecStorage(AbstractStorage):
     def _get_protocol(self, url: str) -> str:
         return url.split("://")[0]
 
-    def put(self, key: str, data: bytes) -> None:
+    def put(self, key: str, data: bytes, recursive: bool = True) -> None:
         full_path = f"{self.fs_url}/{key}"
+        if recursive:
+            local_path = self.fs._strip_protocol(full_path)
+            parent_dir = os.path.dirname(local_path)
+            self.fs.makedirs(parent_dir, exist_ok=True)
         with self.fs.open(full_path, "wb") as f:
             f.write(data)
 
@@ -40,11 +45,23 @@ class FSSpecStorage(AbstractStorage):
 
     def delete(self, key: str) -> None:
         full_path = f"{self.fs_url}/{key}"
-        if self.fs.exists(full_path):
-            self.fs.rm(full_path)
+        self.fs.rm(full_path)
+
+    def does_exist(self, key: str) -> bool:
+        return cast(bool, self.fs.exists(f"{self.fs_url}/{key}"))
+
+    def is_file(self, key: str) -> bool:
+        path = f"{self.fs_url}/{key}"
+        return self.fs.exists(path) and not self.fs.isdir(path)
+
+    def is_directory(self, key: str) -> bool:
+        path = f"{self.fs_url}/{key}"
+        return self.fs.exists(path) and cast(bool, self.fs.isdir(path))
 
     def prefix(self, prefix: str) -> Iterator[str]:
         full_prefix = f"{self.fs_url}/{prefix}".rstrip("/")
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
-                yield f"{dirpath}/{filename}"
+                full_path = f"{dirpath}/{filename}"
+                relative_path = os.path.relpath(full_path, self.fs_url)
+                yield relative_path
