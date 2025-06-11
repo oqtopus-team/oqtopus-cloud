@@ -19,6 +19,8 @@ paths:
     $ref: ./paths/devices.yaml#/devices.device_id
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
+  /jobs/{job_id}/submit:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.submit
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:

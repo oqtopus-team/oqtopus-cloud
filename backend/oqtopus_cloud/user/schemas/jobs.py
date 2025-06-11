@@ -206,24 +206,6 @@ class RegisterJobResponse(BaseModel):
     presigned_url: JobInfoUploadPresignedURL
 
 
-class SubmittedJob(JobBase):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str, Field(examples=["Bell State Sampling"])]
-    job_type: JobType
-    status: JobStatus
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=0, le=10000000)]
-    """
-    0 is valid only for newly registered job_ids (job status=registered)
-    """
-    job_info: JobInfo
-
-
-class RegisteredJob(JobBase):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    status: JobStatus
-
-
 class SubmitJobType(str, Enum):
     estimation = "estimation"
     sampling = "sampling"
@@ -273,6 +255,24 @@ class SubmitJobRequest(BaseModel):
         Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
+
+
+class SubmittedJob(JobBase):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=0, le=10000000)]
+    """
+    0 is valid only for newly registered job_ids (job status=registered)
+    """
+    job_info: JobInfo
+
+
+class RegisteredJob(JobBase):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    status: JobStatus
 
 
 class GetJobStatusResponse(BaseModel):

@@ -194,6 +194,104 @@ jobs:
             example:
               message: Unauthorized
 
+jobs.job_id.submit:
+  post:
+    tags:
+      - job
+    summary: "Complete submission of a quantum job"
+    description: |-
+      Complete submission of a previously registered quantum job.
+
+      job_id must be created via 'POST /jobs' request.
+
+      Submit job information (`jobs.S3SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
+
+    operationId: submit_job
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        description: Job identifier
+        schema:
+          type: string
+    requestBody:
+      description: "Quantum job to be submitted"
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/jobs.yaml#/jobs.SubmitJobRequest"
+          examples:
+            simulator:
+              description: Simulator example
+              value:
+                {
+                  name: "Bell State Sampling",
+                  description: "Bell State Sampling Example",
+                  device_id: "Kawasaki",
+                  job_type: "sampling",
+                  transpiler_info: {},
+                  simulator_info: {
+                    "n_qubits": 5,
+                    "n_nodes": 12,
+                    "n_per_node": 2,
+                    "seed_simulation": 39058567,
+                    "simulation_opt": {
+                      "optimization_method": "light",
+                      "optimization_block_size": 1,
+                      "optimization_swap_level": 1
+                    }
+                  },
+                  mitigation_info: {},
+                  shots: 1000,
+                }
+            qpu:
+              description: QPU example
+              value:
+                {
+                  name: "Bell State Estimation",
+                  description: "Bell State Estimation Example",
+                  device_id: "Kawasaki",
+                  job_type: "estimation",
+                  transpiler_info: {
+                    "qubit_allocation": {"0": 12, "1": 16},
+                    "skip_transpilation": false,
+                    "seed_transpilation": 873
+                  },
+                  simulator_info: {},
+                  mitigation_info: {
+                    "ro_error_mitigation": "pseudo_inverse"
+                  },
+                  shots: 1000,
+                }
+
+    responses:
+      "200":
+        description: "Job submitted"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
+            example:
+              message: Quantum job submitted
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+
 jobs.job_id:
   get:
     tags:
@@ -310,102 +408,6 @@ jobs.job_id:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
-  patch:
-    tags:
-      - job
-    summary: "Complete submission of a quantum job"
-    description: |-
-      Complete submission of a previously registered quantum job.
-
-      job_id must be created via 'POST /jobs' request.
-
-      Submit job information (`jobs.S3SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
-
-    operationId: submit_job
-    security:
-      - BearerAuth: []
-    parameters:
-      - in: path
-        name: job_id
-        required: true
-        description: Job identifier
-        schema:
-          type: string
-    requestBody:
-      description: "Quantum job to be submitted"
-      content:
-        application/json:
-          schema:
-            $ref: "../schemas/jobs.yaml#/jobs.SubmitJobRequest"
-          examples:
-            simulator:
-              description: Simulator example
-              value:
-                {
-                  name: "Bell State Sampling",
-                  description: "Bell State Sampling Example",
-                  device_id: "Kawasaki",
-                  job_type: "sampling",
-                  transpiler_info: {},
-                  simulator_info: {
-                    "n_qubits": 5,
-                    "n_nodes": 12,
-                    "n_per_node": 2,
-                    "seed_simulation": 39058567,
-                    "simulation_opt": {
-                      "optimization_method": "light",
-                      "optimization_block_size": 1,
-                      "optimization_swap_level": 1
-                    }
-                  },
-                  mitigation_info: {},
-                  shots: 1000,
-                }
-            qpu:
-              description: QPU example
-              value:
-                {
-                  name: "Bell State Estimation",
-                  description: "Bell State Estimation Example",
-                  device_id: "Kawasaki",
-                  job_type: "estimation",
-                  transpiler_info: {
-                    "qubit_allocation": {"0": 12, "1": 16},
-                    "skip_transpilation": false,
-                    "seed_transpilation": 873
-                  },
-                  simulator_info: {},
-                  mitigation_info: {
-                    "ro_error_mitigation": "pseudo_inverse"
-                  },
-                  shots: 1000,
-                }
-
-    responses:
-      "200":
-        description: "Job submitted"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Quantum job submitted
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "401":
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
   delete:
     tags:
       - job

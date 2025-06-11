@@ -11,6 +11,7 @@ import boto3
 import pytz
 from fastapi.testclient import TestClient
 from moto import mock_aws
+from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.schemas.errors import (
@@ -164,7 +165,7 @@ def test_submit_job(
     test_db,
 ):
     """_summary_
-    Complete job submission with PATCH /jobs/{job_id} test
+    Complete job submission with POST /jobs/{job_id}/submit test
     """
     test_db.flush()
     test_db.add(_get_registered_model(1))
@@ -178,7 +179,7 @@ def test_submit_job(
     )
     s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="dummy_job_info")
 
-    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 200
 
     actual = test_db.get(Job, "testjob1id")
@@ -208,9 +209,9 @@ def test_submit_job_404(
     test_db,
 ):
     """_summary_
-    Complete job submission with PATCH /jobs/{job_id} test, job_id not exist
+    Complete job submission with POST /jobs/{job_id}/submit test, job_id not exist
     """
-    response = client.patch("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517", content=json.dumps(_get_submit_body()))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 404
     assert response.json() == {"message": "job not found with the given id"}
 
@@ -220,7 +221,7 @@ def test_submit_job_400_invalid_status(
     test_db,
 ):
     """_summary_
-    Complete job submission with PATCH /jobs/{job_id} test, job already submitted
+    Complete job submission with POST /jobs/{job_id}/submit test, job already submitted
     """
     test_db.flush()
     test_db.add(_get_submitted_model(1))
@@ -233,9 +234,40 @@ def test_submit_job_400_invalid_status(
         CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
     )
 
-    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 400
     assert response.json() == {"message": "testjob1id job is not in valid status for submission (valid status for submission: 'registered')"}
+
+
+@mock_aws
+def test_submit_job_400_invalid_device(
+    test_db,
+):
+    """_summary_
+    Complete job submission with POST /jobs/{job_id}/submit test, invalid device
+    """
+    test_db.flush()
+    test_db.get(Device, "Kawasaki").status = "unavailable"
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    s3client = boto3.client("s3")
+    s3client.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
+    )
+
+    body = _get_submit_body()
+    body["device_id"] = "dummy"
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(body))
+    assert response.status_code == 400
+    assert response.json() == {"message": "device not found"}
+
+    body = _get_submit_body()
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(body))
+    assert response.status_code == 400
+    assert response.json() == {"message": "device Kawasaki is not available"}
 
 
 @mock_aws
@@ -243,7 +275,7 @@ def test_submit_job_400_missing_job_info(
     test_db,
 ):
     """_summary_
-    Complete job submission with PATCH /jobs/{job_id} test, no S3 job_info file
+    Complete job submission with POST /jobs/{job_id}/submit test, no S3 job_info file
     """
     test_db.flush()
     test_db.add(_get_registered_model(1))
@@ -256,7 +288,7 @@ def test_submit_job_400_missing_job_info(
         CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
     )
 
-    response = client.patch("/jobs/testjob1id", content=json.dumps(_get_submit_body()))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 400
     assert response.json() == {"message": "job information input for testjob1id job not found"}
 
@@ -266,7 +298,7 @@ def test_submit_job_422_invalid_input(
     test_db,
 ):
     """_summary_
-    Complete job submission with PATCH /jobs/{job_id} test: try submit values valid only for newly registered jobs
+    Complete job submission with POST /jobs/{job_id}/submit test: try submit values valid only for newly registered jobs
     """
     test_db.flush()
     test_db.add(_get_registered_model(1))
@@ -282,12 +314,12 @@ def test_submit_job_422_invalid_input(
 
     body = _get_submit_body()
     body["job_type"] = "none"
-    response = client.patch("/jobs/testjob1id", content=json.dumps(body))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(body))
     assert response.status_code == 422
 
     body = _get_submit_body()
     body["shots"] = 0
-    response = client.patch("/jobs/testjob1id", content=json.dumps(body))
+    response = client.post("/jobs/testjob1id/submit", content=json.dumps(body))
     assert response.status_code == 422
 
 
@@ -927,7 +959,7 @@ def test_register_submit_get(
     s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
 
     # Submitting
-    sub_response = client.patch(f"/jobs/{job_id}", content=json.dumps(_get_submit_body()))
+    sub_response = client.post(f"/jobs/{job_id}/submit", content=json.dumps(_get_submit_body()))
     assert sub_response.status_code == 200
 
     # Get submitted job
@@ -975,7 +1007,7 @@ def test_register_submit_cancel_delete(test_db):
     s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
 
     # Submitting
-    submit_resp = client.patch(f"/jobs/{job_id}", content=json.dumps(_get_submit_body()))
+    submit_resp = client.post(f"/jobs/{job_id}/submit", content=json.dumps(_get_submit_body()))
     assert submit_resp.status_code == 200
 
     # Deleting the job of returned job_id (Before deleting, canceling is required)

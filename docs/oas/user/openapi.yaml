@@ -211,59 +211,8 @@ paths:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
                 message: Unauthorized
-  /jobs/{job_id}:
-    get:
-      tags:
-        - job
-      summary: Get selected job
-      description: Get selected job
-      operationId: get_job
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      requestBody:
-        required: false
-        content: {}
-      responses:
-        '200':
-          description: Return quantum job
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/jobs.SubmittedJob'
-                  - $ref: '#/components/schemas/jobs.RegisteredJob'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
-    patch:
+  /jobs/{job_id}/submit:
+    post:
       tags:
         - job
       summary: Complete submission of a quantum job
@@ -351,6 +300,58 @@ paths:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
                 message: Unauthorized
+  /jobs/{job_id}:
+    get:
+      tags:
+        - job
+      summary: Get selected job
+      description: Get selected job
+      operationId: get_job
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content: {}
+      responses:
+        '200':
+          description: Return quantum job
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/jobs.SubmittedJob'
+                  - $ref: '#/components/schemas/jobs.RegisteredJob'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
+              example:
+                message: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
     delete:
       tags:
         - job
@@ -1010,47 +1011,6 @@ components:
           type: string
       required:
         - message
-    jobs.SubmittedJob:
-      allOf:
-        - $ref: '#/components/schemas/jobs.JobBase'
-      required:
-        - job_id
-        - name
-        - job_type
-        - status
-        - device_id
-        - shots
-        - job_info
-    jobs.RegisteredJob:
-      allOf:
-        - $ref: '#/components/schemas/jobs.JobBase'
-      required:
-        - job_id
-        - status
-      example:
-        job_id: 06823102-73a0-793c-8000-70ac55fe4811
-        name: ''
-        description: null
-        job_type: none
-        status: registered
-        device_id: null
-        shots: null
-        job_info: null
-        transpiler_info: null
-        simulator_info: null
-        mitigation_info: null
-        execution_time: null
-        submitted_at: null
-        ready_at: null
-        running_at: null
-        ended_at: null
-    success.SuccessResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
     jobs.SubmitJobType:
       type: string
       enum:
@@ -1111,6 +1071,47 @@ components:
         - device_id
         - shots
         - job_type
+    success.SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    jobs.SubmittedJob:
+      allOf:
+        - $ref: '#/components/schemas/jobs.JobBase'
+      required:
+        - job_id
+        - name
+        - job_type
+        - status
+        - device_id
+        - shots
+        - job_info
+    jobs.RegisteredJob:
+      allOf:
+        - $ref: '#/components/schemas/jobs.JobBase'
+      required:
+        - job_id
+        - status
+      example:
+        job_id: 06823102-73a0-793c-8000-70ac55fe4811
+        name: ''
+        description: null
+        job_type: none
+        status: registered
+        device_id: null
+        shots: null
+        job_info: null
+        transpiler_info: null
+        simulator_info: null
+        mitigation_info: null
+        execution_time: null
+        submitted_at: null
+        ready_at: null
+        running_at: null
+        ended_at: null
     jobs.GetJobStatusResponse:
       description: job status
       type: object

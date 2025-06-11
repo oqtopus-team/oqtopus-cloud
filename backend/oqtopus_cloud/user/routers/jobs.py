@@ -121,8 +121,8 @@ def register_job(
         return InternalServerErrorResponse(message=str(e))
 
 
-@router.patch(
-    "/jobs/{job_id}",
+@router.post(
+    "/jobs/{job_id}/submit",
     response_model=SuccessResponse,
     responses={
         400: {"model": Message},
@@ -568,7 +568,7 @@ def model_to_schema(
                 job_type=JobType(model.job_type),
                 status=JobStatus(model.status),
             )
-    elif fields is not None:
+    else:
         dict_schema: dict[str, Any] = {}
         for k in fields:
             if k == "job_id":
@@ -592,5 +592,3 @@ def model_to_schema(
             else:
                 dict_schema[k] = getattr(model, k)
         return JobBase(**dict_schema)
-    else:
-        return None
