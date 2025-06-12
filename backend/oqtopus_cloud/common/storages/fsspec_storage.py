@@ -29,7 +29,7 @@ class FSSpecStorage(AbstractStorage):
     def put(self, key: str, data: bytes, recursive: bool = True) -> None:
         full_path = f"{self.fs_url}/{key}"
         if recursive:
-            local_path = self.fs._strip_protocol(full_path)
+            local_path = cast(str, self.fs._strip_protocol(full_path))
             parent_dir = os.path.dirname(local_path)
             self.fs.makedirs(parent_dir, exist_ok=True)
         with self.fs.open(full_path, "wb") as f:
