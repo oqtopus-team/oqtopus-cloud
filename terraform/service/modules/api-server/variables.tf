@@ -127,6 +127,39 @@ variable "lambda_authorizer_arn" {
   description = "ARN of the Lambda function used for authorizer"
 }
 
+variable "storage_driver" {
+  type        = string
+  default     = "s3"
+  description = "Storage driver. The value should be one of: `s3`, `local`, `local:minio`"
+}
+
+variable "storage_env_vars_s3" {
+  type = object({
+    STORAGE_S3_REGION = string
+  })
+  default     = null
+  description = "The Lambda environment variables for S3 storage drivder."
+}
+
+variable "storage_env_vars_local" {
+  type = object({
+    STORAGE_LOCAL_BASE_PATH = string
+  })
+  default     = null
+  description = "The Lambda environment variables for local filesystem storage drivder."
+}
+
+variable "storage_env_vars_local_minio" {
+  type = object({
+    STORAGE_LOCAL_MINIO_BUCKET_NAME  = string
+    STORAGE_LOCAL_MINIO_USERNAME     = string
+    STORAGE_LOCAL_MINIO_PASSWORD     = string
+    STORAGE_LOCAL_MINIO_ENDPOINT_URL = string
+  })
+  default     = null
+  description = "The Lambda environment variables for local MinIO storage drivder."
+}
+
 variable "sse_bucket" {
   type        = string
   default     = ""
