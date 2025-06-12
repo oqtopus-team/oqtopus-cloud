@@ -95,6 +95,57 @@ jobs.job_id:
             example:
               message: job not found
 
+jobs.job_id.upload:
+  get:
+    summary: Get presigned URLs for upload
+    description: Get presigned URLs for job information items upload
+    operationId: get_upload
+    tags:
+      - jobs
+    parameters:
+      - name: job_id
+        in: path
+        required: true
+        description: Job identifier
+        schema: { type: string, nullable: false }
+      - name: items
+        in: query
+        required: true
+        description: |-
+          A list of job information items to upload
+
+          Available job information items are: `combined_program`, `transpile_result`, `result`, `sse_log`
+        schema:
+          type: string
+          maxLength: 1024
+          example: "result,sse_log"
+    responses:
+      "200":
+        description: |-
+          Return list of presigned URL data for upload
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/jobs.yaml#/jobs.JobInfoUploadPresignedURL"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+
 jobs.job_status:
   patch:
     summary: Update job status
@@ -132,13 +183,13 @@ jobs.job_status:
             example:
               message: Job not found
       "409":
-        description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+        description: Returned when the specified job is not in a status that allows transition to the requested status.
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
-              message: The specified job is not in a status thatt allows transition to the requested status.
+              message: The specified job is not in a status that allows transition to the requested status.
 
 jobs.job_id.transpiler_info:
   put:

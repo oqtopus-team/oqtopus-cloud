@@ -25,6 +25,8 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.job_id
+  /jobs/{job_id}/upload:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.upload
   /jobs/{job_id}/status:
     $ref: ./paths/jobs.yaml#/jobs.job_status
   /jobs/{job_id}/transpiler_info:

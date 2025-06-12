@@ -283,6 +283,57 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /jobs/{job_id}/upload:
+    get:
+      summary: Get presigned URLs for upload
+      description: Get presigned URLs for job information items upload
+      operationId: get_upload
+      tags:
+        - jobs
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+            nullable: false
+        - name: items
+          in: query
+          required: true
+          description: |-
+            A list of job information items to upload
+
+            Available job information items are: `combined_program`, `transpile_result`, `result`, `sse_log`
+          schema:
+            type: string
+            maxLength: 1024
+            example: result,sse_log
+      responses:
+        '200':
+          description: Return list of presigned URL data for upload
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
   /jobs/{job_id}/status:
     patch:
       summary: Update job status
@@ -322,13 +373,13 @@ paths:
               example:
                 message: Job not found
         '409':
-          description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+          description: Returned when the specified job is not in a status that allows transition to the requested status.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                message: The specified job is not in a status thatt allows transition to the requested status.
+                message: The specified job is not in a status that allows transition to the requested status.
   /jobs/{job_id}/transpiler_info:
     put:
       summary: Overwrite selected quantum job's traspiler_info
@@ -545,57 +596,8 @@ components:
     jobs.JobInfoDownloadPresignedURL:
       description: Presigned URL for downloading a file from OCTOPUS cloud.
       type: string
+      nullable: false
       example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-    jobs.JobInfoUploadPresignedURL:
-      description: Presigned URL for uploading file to OCTOPUS cloud.
-      type: object
-      properties:
-        url:
-          type: string
-          example: https://oqtopus-cloud.s3.amazonaws.com/
-        fields:
-          type: object
-          properties:
-            key:
-              type: string
-              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip
-            AWSAccessKeyId:
-              type: string
-            x-amz-security-token:
-              type: string
-            policy:
-              type: string
-            signature:
-              type: string
-    jobs.JobInfo:
-      description: Presigned URLs for downloading/uploading relevant job information .zip files from/to OQTOPUS cloud.
-      type: object
-      properties:
-        input:
-          allOf:
-            - $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
-            - description: Content of the file will match `jobs.S3SubmitJobInfo` schema.
-        combined_program:
-          allOf:
-            - $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
-            - description: For multiprogramming jobs, this file contains the combined circuit.
-        result:
-          allOf:
-            - $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
-            - description: Content of the file should match `jobs.S3JobResult` schema.
-        transpile_result:
-          allOf:
-            - $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
-            - description: Content of the file should match `jobs.S3TranspileResult` schema.
-        sse_log:
-          allOf:
-            - $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
-            - description: File available only for sse jobs.
-      required:
-        - input
-        - combined_program
-        - result
-        - transpile_result
     jobs.JobDef:
       type: object
       properties:
@@ -623,8 +625,8 @@ components:
         job_type:
           $ref: '#/components/schemas/jobs.JobType'
           nullable: false
-        job_info:
-          $ref: '#/components/schemas/jobs.JobInfo'
+        input:
+          $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
           nullable: false
         transpiler_info:
           type: object
@@ -694,7 +696,7 @@ components:
         - job_id
         - device_id
         - job_type
-        - job_info
+        - input
         - shots
         - status
       example:
@@ -703,33 +705,7 @@ components:
         description: Bell State Sampling Example
         device_id: Kawasaki
         job_type: sampling
-        job_info:
-          input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-          combined_program:
-            url: https://oqtopus-cloud.s3.amazonaws.com/
-            fields:
-              key: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip
-              AWSAccessKeyId: string
-              x-amz-security-token: string
-              policy: string
-              signature: string
-          result:
-            url: https://oqtopus-cloud.s3.amazonaws.com/
-            fields:
-              key: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
-              AWSAccessKeyId: string
-              x-amz-security-token: string
-              policy: string
-              signature: string
-          transpile_result:
-            url: https://oqtopus-cloud.s3.amazonaws.com/
-            fields:
-              key: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip
-              AWSAccessKeyId: string
-              x-amz-security-token: string
-              policy: string
-              signature: string
-          sse_log: null
+        input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         transpiler_info:
           qubit_allocation:
             '0': 12
@@ -757,6 +733,27 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
+    jobs.JobInfoUploadPresignedURL:
+      description: Presigned URL for uploading file to OCTOPUS cloud.
+      type: object
+      properties:
+        url:
+          type: string
+          example: https://oqtopus-cloud.s3.amazonaws.com/
+        fields:
+          type: object
+          properties:
+            key:
+              type: string
+              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip
+            AWSAccessKeyId:
+              type: string
+            x-amz-security-token:
+              type: string
+            policy:
+              type: string
+            signature:
+              type: string
     jobs.JobStatusUpdate:
       type: object
       properties:

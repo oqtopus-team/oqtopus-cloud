@@ -48,8 +48,8 @@ jobs.JobDef:
     job_type:
       $ref: "#/jobs.JobType"
       nullable: false
-    job_info:
-      $ref: "#/jobs.JobInfo"
+    input:
+      $ref: "#/jobs.JobInfoDownloadPresignedURL"
       nullable: false
     transpiler_info:
       type: object
@@ -124,7 +124,7 @@ jobs.JobDef:
     - job_id
     - device_id
     - job_type
-    - job_info
+    - input
     - shots
     - status
   example:
@@ -133,40 +133,7 @@ jobs.JobDef:
       description: Bell State Sampling Example
       device_id: Kawasaki
       job_type: sampling
-      job_info: {
-        "input": https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D,
-        "combined_program": {
-          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
-          "fields": {
-            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip",
-            "AWSAccessKeyId": "string",
-            "x-amz-security-token": "string",
-            "policy": "string",
-            "signature": "string"
-          }
-        },
-        "result": {
-          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
-          "fields": {
-            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip",
-            "AWSAccessKeyId": "string",
-            "x-amz-security-token": "string",
-            "policy": "string",
-            "signature": "string"
-          }
-        },
-        "transpile_result": {
-          "url": "https://oqtopus-cloud.s3.amazonaws.com/",
-          "fields": {
-            "key": "jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip",
-            "AWSAccessKeyId": "string",
-            "x-amz-security-token": "string",
-            "policy": "string",
-            "signature": "string"
-          }
-        },
-        "sse_log": null
-      }
+      input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
       transpiler_info: {
         qubit_allocation: {
           "0": 12,
@@ -282,38 +249,8 @@ jobs.JobInfoDownloadPresignedURL:
   description: |-
     Presigned URL for downloading a file from OCTOPUS cloud.
   type: string
+  nullable: false
   example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-
-jobs.JobInfo:
-  description: |-
-    Presigned URLs for downloading/uploading relevant job information .zip files from/to OQTOPUS cloud.
-  type: object
-  properties:
-    input:
-      allOf:
-        - $ref: "#/jobs.JobInfoDownloadPresignedURL"
-        - description: Content of the file will match `jobs.S3SubmitJobInfo` schema.
-    combined_program:
-      allOf:
-        - $ref: "#/jobs.JobInfoUploadPresignedURL"
-        - description: For multiprogramming jobs, this file contains the combined circuit.
-    result:
-      allOf:
-        - $ref: "#/jobs.JobInfoUploadPresignedURL"
-        - description: Content of the file should match `jobs.S3JobResult` schema.
-    transpile_result:
-      allOf:
-        - $ref: "#/jobs.JobInfoUploadPresignedURL"
-        - description: Content of the file should match `jobs.S3TranspileResult` schema.
-    sse_log:
-      allOf:
-        - $ref: "#/jobs.JobInfoUploadPresignedURL"
-        - description: File available only for sse jobs.
-  required:
-    - input
-    - combined_program
-    - result
-    - transpile_result
 
 jobs.S3OperatorItem:
   type: object
