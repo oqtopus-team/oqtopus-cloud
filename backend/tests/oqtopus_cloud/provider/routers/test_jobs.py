@@ -16,7 +16,7 @@ from oqtopus_cloud.common.models.job import (
 from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.schemas.jobs import (
     JobDef,
-    JobInfo,
+    JobInfoUploadPresignedURL,
     JobStatus,
     JobType,
     UpdateJobTranspilerInfoRequest,
@@ -104,30 +104,12 @@ def _get_job_model(
     return Job(**mode_dict)
 
 
-def assert_job_info(actual: JobInfo, bucket_name: str, job_id: str, expect_sse: bool):
-    assert actual is not None
-
-    assert urlparse(actual.input).path == f"/{bucket_name}/{job_id}/input.zip"
-    assert urlparse(actual.combined_program.url).path == f"/{bucket_name}"
-    assert actual.combined_program.fields.key == f"{job_id}/combined_program.zip"
-    assert urlparse(actual.result.url).path == f"/{bucket_name}"
-    assert actual.result.fields.key == f"{job_id}/result.zip"
-    assert urlparse(actual.transpile_result.url).path == f"/{bucket_name}"
-    assert actual.transpile_result.fields.key == f"{job_id}/transpile_result.zip"
-
-    if expect_sse:
-        assert urlparse(actual.sse_log.url).path == f"/{bucket_name}"
-        assert actual.sse_log.fields.key == f"{job_id}/sse_log.zip"
-    else:
-        assert actual.sse_log is None
-
-
 @mock_aws
 def test_get_jobs(test_db: Session):
     test_db.flush()
     test_db.add(_get_registered_job_model(0))
     test_db.add(_get_job_model(1))
-    test_db.add(_get_job_model(2, jt=JobType.sse))
+    test_db.add(_get_job_model(2))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
@@ -141,11 +123,11 @@ def test_get_jobs(test_db: Session):
     assert len(actual) == 2
 
     assert actual[0].job_id == "testjob1id"
-    assert_job_info(actual[0].job_info, bucket_name, "testjob1id", False)
+    assert urlparse(actual[0].input).path == f"/{bucket_name}/testjob1id/input.zip"
     assert actual[0].status == JobStatus.ready
 
     assert actual[1].job_id == "testjob2id"
-    assert_job_info(actual[1].job_info, bucket_name, "testjob2id", True)
+    assert urlparse(actual[1].input).path == f"/{bucket_name}/testjob2id/input.zip"
     assert actual[1].status == JobStatus.ready
 
     # check status update in db
@@ -261,7 +243,6 @@ def test_get_job(test_db: Session):
     test_db.flush()
     test_db.add(_get_registered_job_model(0))
     test_db.add(_get_job_model(1))
-    test_db.add(_get_job_model(2, jt=JobType.sse))
     test_db.commit()
 
     bucket_name = os.environ["OQTOPUS_BUCKET"]
@@ -272,17 +253,84 @@ def test_get_job(test_db: Session):
 
     assert response.status_code == 200
     assert actual.job_id == "testjob1id"
-    assert_job_info(actual.job_info, bucket_name, "testjob1id", False)
+    assert urlparse(actual.input).path == f"/{bucket_name}/testjob1id/input.zip"
+
     assert actual.status == JobStatus.ready
     assert test_db.get(Job, "testjob1id").status == "ready"
 
-    response = client.get("/jobs/testjob2id")
+
+@mock_aws
+def test_job_upload(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1))
+    test_db.add(_get_job_model(2, jt=JobType.multi_manual))
+    test_db.add(_get_job_model(3, jt=JobType.sse))
+    test_db.commit()
+
+    bucket_name = os.environ["OQTOPUS_BUCKET"]
+
+    response = client.get("/jobs/testjob1id/upload?items=transpile_result,result")
+    adapter = TypeAdapter(list[JobInfoUploadPresignedURL])
     actual = adapter.validate_python(response.json())
 
-    assert actual.job_id == "testjob2id"
-    assert_job_info(actual.job_info, bucket_name, "testjob2id", True)
-    assert actual.status == JobStatus.ready
-    assert test_db.get(Job, "testjob2id").status == "ready"
+    assert len(actual) == 2
+    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == f"/{bucket_name}"
+    assert actual[0].fields is not None
+    assert actual[0].fields.key == f"testjob1id/transpile_result.zip"
+    assert actual[1].fields is not None
+    assert actual[1].fields.key == f"testjob1id/result.zip"
+
+    response = client.get("/jobs/testjob2id/upload?items=combined_program,transpile_result,result")
+    actual = adapter.validate_python(response.json())
+
+    assert len(actual) == 3
+    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == urlparse(actual[2].url).path == f"/{bucket_name}"
+    assert actual[0].fields is not None
+    assert actual[0].fields.key == f"testjob2id/combined_program.zip"
+    assert actual[1].fields is not None
+    assert actual[1].fields.key == f"testjob2id/transpile_result.zip"
+    assert actual[2].fields is not None
+    assert actual[2].fields.key == f"testjob2id/result.zip"
+
+    response = client.get("/jobs/testjob3id/upload?items=transpile_result,result,sse_log")
+    actual = adapter.validate_python(response.json())
+
+    assert len(actual) == 3
+    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == urlparse(actual[2].url).path == f"/{bucket_name}"
+    assert actual[0].fields is not None
+    assert actual[0].fields.key == f"testjob3id/transpile_result.zip"
+    assert actual[1].fields is not None
+    assert actual[1].fields.key == f"testjob3id/result.zip"
+    assert actual[2].fields is not None
+    assert actual[2].fields.key == f"testjob3id/sse_log.zip"
+
+
+@mock_aws
+def test_job_upload_404(test_db: Session):
+    test_db.flush()
+
+    response = client.get("/jobs/testjob1id/upload?items=transpile_result,result")
+    assert response.status_code == 404
+    assert response.json()["message"] == "Job not found"
+
+
+@mock_aws
+def test_job_upload_400(test_db: Session):
+    test_db.flush()
+    test_db.add(_get_job_model(1))
+    test_db.commit()
+
+    response = client.get("/jobs/testjob1id/upload?items=transpile_result,xxx,result")
+    assert response.status_code == 400
+    assert response.json()["message"] == "Unsupported item(s) for upload: ['xxx']"
+
+    response = client.get("/jobs/testjob1id/upload?items=combined_program,transpile_result,result")
+    assert response.status_code == 400
+    assert response.json()["message"] == "Unsupported item: combined_program for job type: sampling"
+
+    response = client.get("/jobs/testjob1id/upload?items=transpile_result,result,sse_log")
+    assert response.status_code == 400
+    assert response.json()["message"] == "Unsupported item: sse_log for job type: sampling"
 
 
 @mock_aws

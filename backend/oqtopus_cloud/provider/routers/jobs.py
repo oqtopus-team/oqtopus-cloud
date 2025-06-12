@@ -13,8 +13,8 @@ from oqtopus_cloud.common.s3 import (
     validate_upload,
     JOB_INFO_INPUT_PARAM,
     JOB_INFO_COMBINED_PROGRAM_PARAM,
-    JOB_INFO_RESULT_PARAM,
     JOB_INFO_TRANSPILE_RESULT_PARAM,
+    JOB_INFO_RESULT_PARAM,
     JOB_INFO_SSE_LOG_PARAM,
 )
 from oqtopus_cloud.common.session import get_db
@@ -29,7 +29,6 @@ from oqtopus_cloud.provider.schemas.errors import (
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     JobDef,
-    JobInfo,
     JobInfoUploadPresignedURL,
     JobStatus,
     JobStatusUpdate,
@@ -157,6 +156,64 @@ def get_job(
             return NotFoundErrorResponse("Job not found")
         else:
             return job
+    except Exception as e:
+        return InternalServerErrorResponse(f"Error: {str(e)}")
+
+
+@router.get(
+    "/jobs/{job_id}/upload",
+    response_model=list[JobInfoUploadPresignedURL],
+    responses={
+        404: {"model": Message},
+        400: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_upload(
+    job_id: str,
+    items: str,
+    db: Session = Depends(get_db),
+) -> list[JobInfoUploadPresignedURL] | ErrorResponse:
+    logger.info("invoked get_job")
+    try:
+        model = db.get(Job, job_id)
+        if model is None:
+            return NotFoundErrorResponse("Job not found")
+
+        items_list = items.split(",")
+        diff = set(items_list).difference(
+            {
+                JOB_INFO_COMBINED_PROGRAM_PARAM,
+                JOB_INFO_TRANSPILE_RESULT_PARAM,
+                JOB_INFO_RESULT_PARAM,
+                JOB_INFO_SSE_LOG_PARAM,
+            }
+        )
+        if diff:
+            return BadRequestResponse(f"Unsupported item(s) for upload: {list(diff)}")
+
+        if (
+            JOB_INFO_COMBINED_PROGRAM_PARAM in items_list
+            and model.job_type != "multi_manual"
+        ):
+            return BadRequestResponse(
+                f"Unsupported item: {JOB_INFO_COMBINED_PROGRAM_PARAM} for job type: {model.job_type}"
+            )
+
+        if JOB_INFO_SSE_LOG_PARAM in items_list and model.job_type != "sse":
+            return BadRequestResponse(
+                f"Unsupported item: {JOB_INFO_SSE_LOG_PARAM} for job type: {model.job_type}"
+            )
+
+        bucket_name = os.environ["OQTOPUS_BUCKET"]
+        return [
+            JobInfoUploadPresignedURL(
+                **get_upload_presigned_url_data(bucket_name, f"{model.id}/{item}.zip")
+            )
+            for item in items_list
+        ]
+
     except Exception as e:
         return InternalServerErrorResponse(f"Error: {str(e)}")
 
@@ -364,35 +421,6 @@ def model_to_schema(
     if isinstance(job_type, ValueError):
         return job_type
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    job_info = JobInfo(
-        input=get_download_presigned_url(
-            bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
-        ),
-        combined_program=JobInfoUploadPresignedURL(
-            **get_upload_presigned_url_data(
-                bucket_name, f"{model.id}/{JOB_INFO_COMBINED_PROGRAM_PARAM}.zip"
-            )
-        ),
-        result=JobInfoUploadPresignedURL(
-            **get_upload_presigned_url_data(
-                bucket_name, f"{model.id}/{JOB_INFO_RESULT_PARAM}.zip"
-            )
-        ),
-        transpile_result=JobInfoUploadPresignedURL(
-            **get_upload_presigned_url_data(
-                bucket_name, f"{model.id}/{JOB_INFO_TRANSPILE_RESULT_PARAM}.zip"
-            )
-        ),
-        sse_log=JobInfoUploadPresignedURL(
-            **get_upload_presigned_url_data(
-                bucket_name, f"{model.id}/{JOB_INFO_SSE_LOG_PARAM}.zip"
-            )
-        )
-        if model.job_type == "sse"
-        else None,
-    )
-
     return JobDef(
         job_id=model.id,
         name=model.name,
@@ -400,7 +428,9 @@ def model_to_schema(
         device_id=model.device_id,
         shots=model.shots,
         job_type=job_type,
-        job_info=job_info,
+        input=get_download_presigned_url(
+            os.environ["OQTOPUS_BUCKET"], f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+        ),
         status=status,
         transpiler_info=json.loads(model.transpiler_info),
         mitigation_info=json.loads(model.mitigation_info),

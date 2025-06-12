@@ -39,35 +39,15 @@ class JobType(str, Enum):
     sse = "sse"
 
 
-class Fields(BaseModel):
-    key: Annotated[
-        str | None,
-        Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"]),
+class JobDef(BaseModel):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
+    description: Annotated[
+        str | None, Field(examples=["Bell State Sampling Example"])
     ] = None
-    AWSAccessKeyId: str | None = None
-    x_amz_security_token: Annotated[str | None, Field(alias="x-amz-security-token")] = (
-        None
-    )
-    policy: str | None = None
-    signature: str | None = None
-
-
-class JobInfoUploadPresignedURL(BaseModel):
-    """
-    Presigned URL for uploading file to OCTOPUS cloud.
-    """
-
-    url: Annotated[
-        str | None, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])
-    ] = None
-    fields: Fields | None = None
-
-
-class JobInfo(BaseModel):
-    """
-    Presigned URLs for downloading/uploading relevant job information .zip files from/to OQTOPUS cloud.
-    """
-
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_type: JobType
     input: Annotated[
         str,
         Field(
@@ -79,22 +59,6 @@ class JobInfo(BaseModel):
     """
     Presigned URL for downloading a file from OCTOPUS cloud.
     """
-    combined_program: JobInfoUploadPresignedURL
-    result: JobInfoUploadPresignedURL
-    transpile_result: JobInfoUploadPresignedURL
-    sse_log: JobInfoUploadPresignedURL | None = None
-
-
-class JobDef(BaseModel):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
-    description: Annotated[
-        str | None, Field(examples=["Bell State Sampling Example"])
-    ] = None
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_type: JobType
-    job_info: JobInfo
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(
@@ -143,6 +107,30 @@ class JobDef(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
+
+
+class Fields(BaseModel):
+    key: Annotated[
+        str | None,
+        Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"]),
+    ] = None
+    AWSAccessKeyId: str | None = None
+    x_amz_security_token: Annotated[str | None, Field(alias="x-amz-security-token")] = (
+        None
+    )
+    policy: str | None = None
+    signature: str | None = None
+
+
+class JobInfoUploadPresignedURL(BaseModel):
+    """
+    Presigned URL for uploading file to OCTOPUS cloud.
+    """
+
+    url: Annotated[
+        str | None, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])
+    ] = None
+    fields: Fields | None = None
 
 
 class Status(str, Enum):
