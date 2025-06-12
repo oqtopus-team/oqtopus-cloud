@@ -332,7 +332,8 @@ def update_job_transpiler_info(
 )
 @tracer.capture_method
 def get_ssesrc(
-    job_id: str, storage: AbstractStorage = Depends(get_storage)
+    job_id: str,
+    storage: AbstractStorage = Depends(get_storage),
 ) -> PlainTextResponse | ErrorResponse:
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:

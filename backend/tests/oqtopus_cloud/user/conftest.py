@@ -200,7 +200,6 @@ def test_db() -> (
 
 @pytest.fixture(scope="function")
 def test_storage(fake_os_env) -> Generator[FSSpecStorage, None, None]:
-    # tmp_path 配下に "storage" ディレクトリを作ることで環境変数と整合性を持たせる
     local_storage_path = os.environ["STORAGE_LOCAL_BASE_PATH"]
     os.mkdir(local_storage_path)
     yield FSSpecStorage(fs_url=f"file://{local_storage_path}")

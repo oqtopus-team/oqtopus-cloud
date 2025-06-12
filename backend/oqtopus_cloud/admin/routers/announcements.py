@@ -44,7 +44,7 @@ def get_announcements_list(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
     order: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
         logger.info("invoked get_announcements")
