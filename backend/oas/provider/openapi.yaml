@@ -311,7 +311,7 @@ paths:
             example: result,sse_log
       responses:
         '200':
-          description: Return list of presigned URL data for upload
+          description: Return the list of presigned URL data for upload, arranged in the order specified by the items parameter.
           content:
             application/json:
               schema:
