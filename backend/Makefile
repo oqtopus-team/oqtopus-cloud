@@ -65,6 +65,8 @@ export ENV=local
 export DB_HOST=localhost
 export DB_NAME=main
 export DB_CONNECTOR=mysql+pymysql
+export DB_USER=admin
+export DB_PASS=password
 export ALLOW_ORIGINS=http://127.0.0.1:8000# pass the allowed origins -> http://localhost:3000,http://localhost:3001
 export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
@@ -110,6 +112,12 @@ mig-check:
 
 mig-stamp:
 	@poetry run alembic stamp "$(REV)"
+
+mig-current:
+	@poetry run alembic current
+
+mig-query:
+	@poetry run alembic upgrade head --sql
 
 # db-seed:
 #	 @poetry run
