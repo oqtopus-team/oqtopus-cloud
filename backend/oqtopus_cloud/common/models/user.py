@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, BigInteger, String, func
+from sqlalchemy import TIMESTAMP, BigInteger, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -45,16 +45,15 @@ class User(Base):
     username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     userstatus: Mapped[Optional[UserStatus]] = mapped_column(String(10), nullable=True)
     api_token_secret: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, unique=True
+        String(255), unique=True, nullable=True
     )
     organization: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     group_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-    )
+    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, server_default=func.current_timestamp(), nullable=True
+        TIMESTAMP,
+        server_default=func.current_timestamp(),
+        nullable=True,
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,

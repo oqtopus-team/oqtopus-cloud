@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, BigInteger, Boolean, String, func
+from sqlalchemy import TIMESTAMP, BigInteger, Boolean, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -33,14 +33,19 @@ class WhitelistUser(Base):
         primary_key=True,
         unique=True,
     )
-    group_id: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
     email: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
         unique=True,
+    )
+    group_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    is_signup_completed: Mapped[Boolean] = mapped_column(
+        Boolean,
+        server_default=text("0"),
+        nullable=True,
     )
     username: Mapped[str] = mapped_column(
         String(255),
@@ -50,15 +55,10 @@ class WhitelistUser(Base):
         String(255),
         nullable=True,
     )
-    is_signup_completed: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=True,
-        server_default="0",
-    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
+        server_default=func.current_timestamp(),
         nullable=True,
-        server_default="CURRENT_TIMESTAMP",
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,

@@ -1,7 +1,7 @@
 import datetime
 from typing import Literal, Optional
 
-from sqlalchemy import DECIMAL, DateTime, String, Text, func
+from sqlalchemy import DECIMAL, DateTime, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -49,23 +49,29 @@ class Job(Base):
 
     id: Mapped[JobId] = mapped_column(String(64), primary_key=True)
     owner: Mapped[str] = mapped_column(String(64), nullable=False)
-    name: Mapped[str] = mapped_column(String(256), nullable=False, server_default="''")
+    name: Mapped[str] = mapped_column(
+        String(256),
+        server_default="''",
+        nullable=False,
+    )
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
+    status: Mapped[JobStatus] = mapped_column(
+        String(32), server_default="submitted", nullable=False
+    )
     job_type: Mapped[JobType] = mapped_column(
-        String(32), nullable=False, server_default="sampling"
+        String(32),
+        server_default="sampling",
+        nullable=False,
     )
     device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
-    shots: Mapped[int] = mapped_column(nullable=False, server_default="1000")
-    status: Mapped[JobStatus] = mapped_column(
-        String(32), nullable=False, server_default="submitted"
+    shots: Mapped[int] = mapped_column(server_default=text("1000"), nullable=False)
+    execution_time: Mapped[float] = mapped_column(
+        DECIMAL(precision=65, scale=3), nullable=True
     )
     job_info: Mapped[str] = mapped_column(Text, nullable=True)
     transpiler_info: Mapped[str] = mapped_column(Text, nullable=True)
     simulator_info: Mapped[str] = mapped_column(Text, nullable=True)
     mitigation_info: Mapped[str] = mapped_column(Text, nullable=True)
-    execution_time: Mapped[float] = mapped_column(
-        DECIMAL(precision=65, scale=3), nullable=True
-    )
     submitted_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
     ready_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)

@@ -48,24 +48,24 @@ class Device(Base):
     )
     device_type: Mapped[DeviceType] = mapped_column(
         String(32),
-        nullable=False,
         server_default=DeviceType.QPU.value,
+        nullable=False,
     )
     status: Mapped[DeviceStatus] = mapped_column(
         String(64),
-        nullable=False,
         server_default=DeviceStatus.Available.value,
+        nullable=False,
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
+        server_default=text("0"),
         nullable=False,
-        server_default="0",
     )
     n_qubits: Mapped[int] = mapped_column(
+        server_default=text("1"),
         nullable=False,
-        server_default="1",
     )
     basis_gates: Mapped[str] = mapped_column(
         String(256),
