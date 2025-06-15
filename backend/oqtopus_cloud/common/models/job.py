@@ -1,7 +1,7 @@
 import datetime
 from typing import Literal, Optional
 
-from sqlalchemy import TIMESTAMP, Float, String, Text, func
+from sqlalchemy import DECIMAL, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -49,30 +49,34 @@ class Job(Base):
 
     id: Mapped[JobId] = mapped_column(String(64), primary_key=True)
     owner: Mapped[str] = mapped_column(String(64), nullable=False)
-    name: Mapped[str] = mapped_column(String(256), nullable=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False, server_default="''")
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
-    job_type: Mapped[JobType] = mapped_column(String(32), nullable=False)
-    device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
-    shots: Mapped[int] = mapped_column(nullable=True)
-    status: Mapped[JobStatus] = mapped_column(
-        String(32), nullable=False, default="submitted"
+    job_type: Mapped[JobType] = mapped_column(
+        String(32), nullable=False, server_default="sampling"
     )
-    job_info: Mapped[str] = mapped_column(Text)
-    transpiler_info: Mapped[str] = mapped_column(Text)
-    simulator_info: Mapped[str] = mapped_column(Text)
-    mitigation_info: Mapped[str] = mapped_column(Text)
-    execution_time: Mapped[float] = mapped_column(Float, nullable=True)
-    submitted_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    ready_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    running_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    ended_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    device_id: Mapped[DeviceId] = mapped_column(String(64), nullable=False)
+    shots: Mapped[int] = mapped_column(nullable=False, server_default="1000")
+    status: Mapped[JobStatus] = mapped_column(
+        String(32), nullable=False, server_default="submitted"
+    )
+    job_info: Mapped[str] = mapped_column(Text, nullable=True)
+    transpiler_info: Mapped[str] = mapped_column(Text, nullable=True)
+    simulator_info: Mapped[str] = mapped_column(Text, nullable=True)
+    mitigation_info: Mapped[str] = mapped_column(Text, nullable=True)
+    execution_time: Mapped[float] = mapped_column(
+        DECIMAL(precision=65, scale=3), nullable=True
+    )
+    submitted_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
+    ready_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
+    running_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
+        DateTime, nullable=True, server_default=func.CURRENT_TIMESTAMP()
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
+        DateTime,
         nullable=True,
-        server_onupdate=func.current_timestamp(),
+        server_default="CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     )
 
 

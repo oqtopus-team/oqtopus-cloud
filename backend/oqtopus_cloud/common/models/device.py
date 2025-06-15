@@ -1,8 +1,8 @@
 import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Optional
 
-from sqlalchemy import TIMESTAMP, String, Text, func
+from sqlalchemy import DateTime, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models import Base
@@ -49,21 +49,23 @@ class Device(Base):
     device_type: Mapped[DeviceType] = mapped_column(
         String(32),
         nullable=False,
+        server_default=DeviceType.QPU.value,
     )
     status: Mapped[DeviceStatus] = mapped_column(
         String(64),
         nullable=False,
-        default="unavailable",
+        server_default=DeviceStatus.Available.value,
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
         nullable=False,
-        default=0,
+        server_default="0",
     )
     n_qubits: Mapped[int] = mapped_column(
         nullable=False,
+        server_default="1",
     )
     basis_gates: Mapped[str] = mapped_column(
         String(256),
@@ -73,17 +75,23 @@ class Device(Base):
         String(64),
         nullable=False,
     )
-    device_info: Mapped[str] = mapped_column(Text)
-    calibrated_at: Mapped[datetime.datetime]
+    device_info: Mapped[str] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    calibrated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
+        DateTime, nullable=True, server_default=func.CURRENT_TIMESTAMP()
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
+        DateTime,
         nullable=True,
-        server_onupdate=func.current_timestamp(),
+        server_default="CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     )
