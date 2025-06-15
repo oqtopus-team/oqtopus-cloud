@@ -131,7 +131,13 @@ def get_jobs(
             etime = datetime.fromisoformat(end_time).astimezone(jst)
             stmt = stmt.filter(Job.created_at <= etime)
         if q is not None:
-            stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
+            stmt = stmt.filter(
+                or_(
+                    Job.id.contains(q),
+                    Job.name.contains(q),
+                    Job.description.contains(q),
+                )
+            )
 
         set_params(
             Params(

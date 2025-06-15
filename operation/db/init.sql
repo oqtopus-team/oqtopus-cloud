@@ -44,6 +44,45 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+drop table if exists main.users;
+  CREATE TABLE IF NOT EXISTS users (
+      id                serial PRIMARY KEY,
+      cognito_id        VARCHAR(255) UNIQUE NOT NULL,
+      email             VARCHAR(255)        NOT NULL,
+      username          VARCHAR(100),
+      userstatus        VARCHAR(10),
+      api_token_secret  VARCHAR(255) UNIQUE,
+      organization      VARCHAR(255),
+      group_id          VARCHAR(255),
+      api_token_expiration TIMESTAMP,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+
+drop table if exists main.whitelist_users;
+CREATE TABLE IF NOT EXISTS whitelist_users (
+    id serial PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    group_id VARCHAR(255) NOT NULL,
+    is_signup_completed BOOLEAN DEFAULT FALSE,
+    username VARCHAR(255),
+    organization VARCHAR(255),
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+
+drop table if exists main.announcements;
+CREATE TABLE IF NOT EXISTS announcements (
+    id serial PRIMARY KEY,
+    title VARCHAR(255),
+    content TEXT,
+    start_time DATETIME,
+    end_time DATETIME,
+    publishable BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+
 -- Insert devices
 INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
 SELECT 'SC', 'QPU','available', CURRENT_TIMESTAMP, 9, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
@@ -67,6 +106,5 @@ SELECT '01927422-86d4-73d6-abb4-f2de6a4f5910', 'admin', 'Test job 1', 'Test job 
 WHERE NOT EXISTS (SELECT * FROM main.jobs WHERE owner = 'admin' AND name = 'Test job 1');
 
 INSERT INTO main.jobs (id, owner, name, description, device_id, job_info, transpiler_info, simulator_info, mitigation_info, job_type, shots, status, submitted_at)
-SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP 
+SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT * FROM main.jobs WHERE owner = 'admin' AND name = 'Test job 2');
-

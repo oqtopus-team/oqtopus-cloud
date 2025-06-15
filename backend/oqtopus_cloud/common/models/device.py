@@ -57,6 +57,7 @@ class Device(Base):
         nullable=False,
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(),
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
