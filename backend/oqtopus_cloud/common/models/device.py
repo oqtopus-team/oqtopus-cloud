@@ -88,10 +88,12 @@ class Device(Base):
         nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, nullable=True, server_default=func.CURRENT_TIMESTAMP()
+        DateTime,
+        server_default=func.CURRENT_TIMESTAMP(),
+        nullable=True,
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         nullable=True,
-        server_default="CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     )

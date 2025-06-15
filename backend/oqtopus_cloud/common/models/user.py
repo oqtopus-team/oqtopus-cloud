@@ -57,6 +57,6 @@ class User(Base):
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         nullable=True,
-        server_default="CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     )

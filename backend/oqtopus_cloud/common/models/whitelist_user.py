@@ -62,6 +62,5 @@ class WhitelistUser(Base):
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,
-        nullable=True,
-        server_default="CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
