@@ -11,6 +11,7 @@ __all__ = [
     "JobStatus",
     "User",
 ]
+from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.models.base import Base
 from oqtopus_cloud.common.models.device import Device, DeviceId, DeviceStatus
 from oqtopus_cloud.common.models.job import Job, JobId, JobStatus
