@@ -4,8 +4,6 @@ from typing import Any, Callable, Dict, Type, TypeVar
 
 from sqlalchemy import JSON, String, TypeDecorator
 
-from sqlalchemy.types import DateTime, TypeDecorator
-
 
 def model_to_dict(model: Any) -> Dict[Any, Any]:
     dict_obj: Dict[Any, Any] = model.__dict__
