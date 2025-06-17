@@ -93,7 +93,8 @@ run-user_signup: ## Start the user_signup API
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
 up: ## Start the DB
-	@docker compose up
+	@docker compose up -d db
+	@python scripts/mig-up.py
 
 down: ## Stop the DB
 	@docker compose down
