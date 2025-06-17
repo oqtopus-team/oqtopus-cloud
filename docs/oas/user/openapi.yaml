@@ -316,9 +316,6 @@ paths:
           description: Job identifier
           schema:
             type: string
-      requestBody:
-        required: false
-        content: {}
       responses:
         '200':
           description: Return quantum job
