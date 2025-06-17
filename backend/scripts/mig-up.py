@@ -25,9 +25,26 @@ def wait_for_mysql(uri: str, timeout: int = 60, interval: float = 2) -> None:
             time.sleep(interval)
 
 
+def ensure_revision(alembic_cfg):
+    rev_dir = os.path.join(
+        os.path.dirname(alembic_cfg.config_file_name), "alembic", "versions"
+    )
+
+    has_py_files = os.path.isdir(rev_dir) and any(
+        f.endswith(".py") for f in os.listdir(rev_dir)
+    )
+
+    if not has_py_files:
+        print("Creating initial revision...")
+        command.revision(alembic_cfg, message="Initial", autogenerate=True)
+    else:
+        print("Revision(s) already exist.")
+
+
 def run_migrations():
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+    cfg = Config("alembic.ini")
+    ensure_revision(cfg)
+    command.upgrade(cfg, "head")
 
 
 if __name__ == "__main__":
