@@ -1,7 +1,8 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, BigInteger, Boolean, String, func, text
+from sqlalchemy import TIMESTAMP, Boolean, String, func, text
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -29,7 +30,7 @@ class WhitelistUser(Base):
     __tablename__ = "whitelist_users"
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BIGINT(unsigned=True),
         primary_key=True,
         unique=True,
     )

@@ -2,7 +2,8 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, BigInteger, String, func, text
+from sqlalchemy import TIMESTAMP, String, func, text
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -39,7 +40,11 @@ class User(Base):
     """
 
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, unique=True)
+    id: Mapped[int] = mapped_column(
+        BIGINT(unsigned=True),
+        primary_key=True,
+        unique=True,
+    )
     cognito_id: Mapped[str] = mapped_column(String(255), unique=True)
     email: Mapped[str] = mapped_column(String(255))
     username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

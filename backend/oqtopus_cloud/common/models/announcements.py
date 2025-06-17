@@ -2,7 +2,6 @@ import datetime
 
 from sqlalchemy import (
     TIMESTAMP,
-    BigInteger,
     Boolean,
     DateTime,
     String,
@@ -10,6 +9,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -37,7 +37,7 @@ class Announcement(Base):
     __tablename__ = "announcements"
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BIGINT(unsigned=True),
         primary_key=True,
         unique=True,
     )
