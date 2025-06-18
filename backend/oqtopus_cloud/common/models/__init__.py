@@ -10,6 +10,8 @@ __all__ = [
     "Job",
     "JobStatus",
     "User",
+    "WhitelistUser",
+    "Announcement",
 ]
 from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.models.base import Base
