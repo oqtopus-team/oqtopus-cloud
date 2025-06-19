@@ -118,6 +118,8 @@ module "user_api" {
 | <a name="input_sse_container_log_name"></a> [sse\_container\_log\_name](#input\_sse\_container\_log\_name) | SSE container log name | `string` | `""` | no |
 | <a name="input_sse_user_program_name"></a> [sse\_user\_program\_name](#input\_sse\_user\_program\_name) | SSE user program name | `string` | `""` | no |
 | <a name="input_sse_zip_file_name"></a> [sse\_zip\_file\_name](#input\_sse\_zip\_file\_name) | SSE zip file name | `string` | `""` | no |
+| <a name="input_storage_driver"></a> [storage\_driver](#input\_storage\_driver) | Storage driver. The value should be one of: `s3`, `local`, `local:minio` | `string` | `"s3"` | no |
+
 
 ## Outputs
 
