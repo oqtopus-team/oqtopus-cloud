@@ -14,6 +14,10 @@ whitelist_users.RegisterWhitelistUserRequest:
       type: string
     organization:
       type: string
+    available_devices:
+      type: array
+      items:
+        type: string
 
 whitelist_users.ListWhitelistUserResponse:
   type: object

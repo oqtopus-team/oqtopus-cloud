@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -32,6 +33,7 @@ from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
+    ForbiddenErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
@@ -189,10 +191,18 @@ def submit_jobs(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SubmitJobResponse | ErrorResponse:
     try:
+        owner = event.state.owner
+        if not can_user_access_device(owner, request.device_id, db):
+            logger.error(
+                f"user={owner} is not allowed to create job for device={request.device_id}"
+            )
+            return ForbiddenErrorResponse(
+                message=f"cannot create job for device={request.device_id}"
+            )
+
         device = db.get(Device, request.device_id)  # type: ignore
         if device is None:
             return BadRequestResponse(message="device not found")
-        owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
@@ -634,3 +644,16 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
         return [JobType.estimation]
     else:
         return [JobType.sampling, JobType.multi_manual, JobType.sse]
+
+
+def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
+    try:
+        user = db.scalars(select(User).where(User.username == username)).first()
+        if user is None or user.available_devices is None:
+            return False
+
+        available_devices = json.loads(user.available_devices)
+
+        return isinstance(available_devices, list) and device_id in available_devices
+    except Exception:
+        return False

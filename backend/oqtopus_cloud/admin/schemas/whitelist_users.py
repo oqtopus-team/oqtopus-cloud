@@ -31,6 +31,7 @@ class RegisterWhitelistUserRequest(BaseModel):
     email: str | None = None
     username: str | None = None
     organization: str | None = None
+    available_devices: list[str] | None = None
 
 
 class RegisterWhitelistUsersRequest(BaseModel):

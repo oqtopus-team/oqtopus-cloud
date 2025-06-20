@@ -866,6 +866,10 @@ components:
           type: string
         organization:
           type: string
+        available_devices:
+          type: array
+          items:
+            type: string
     whitelist_users.RegisterWhitelistUsersRequest:
       properties:
         users:

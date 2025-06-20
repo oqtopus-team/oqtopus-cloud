@@ -1,4 +1,5 @@
 import datetime
+import json
 from typing import Optional
 
 from fastapi import (
@@ -61,6 +62,8 @@ def validated_whitelist_user(
         raise FormatError(required_msg.format("email address"))
     if not user.group_id:
         raise FormatError(required_msg.format("group_id"))
+    if not user.available_devices:
+        raise FormatError(required_msg.format("available_devices"))
 
     if len(str(user.email)) > LEN_VARCHAR:
         raise FormatError(too_long_msg.format(user.email, LEN_VARCHAR))
@@ -73,12 +76,15 @@ def validated_whitelist_user(
 
     if not is_unique_email(db, user.email):
         raise FormatError(f"{user.email} is already registered.")
+    if not isinstance(user.available_devices, list):
+        raise FormatError("incorrect format of available devices, expected list")
 
     validated_user = {
         "email": str(user.email),
         "group_id": str(user.group_id),
         "username": str(user.username),
         "organization": str(user.organization),
+        "available_devices": json.dumps(user.available_devices),
     }
 
     return WhitelistUser(**validated_user)
@@ -159,6 +165,7 @@ def register_whitelist_user(
                 username=user.username,
                 organization=user.organization,
                 is_signup_completed=user.is_signup_completed,
+                available_devices=user.available_devices,
                 created_at=datetime.datetime.now(utc),
                 updated_at=datetime.datetime.now(utc),
             )

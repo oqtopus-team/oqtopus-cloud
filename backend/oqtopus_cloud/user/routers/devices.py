@@ -1,11 +1,12 @@
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -18,6 +19,7 @@ from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
+    ForbiddenErrorResponse,
 )
 
 from . import LoggerRouteHandler
@@ -33,11 +35,15 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 )
 @tracer.capture_method
 def get_devices(
+    event: Event,
     db: Session = Depends(get_db),
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked list_devices")
-        devices = db.scalars(select(Device)).all()
+        available_devices = get_user_available_devices(event.state.owner, db)
+        devices = db.scalars(
+            select(Device).where(Device.id.in_(available_devices))
+        ).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
@@ -52,6 +58,7 @@ def get_devices(
 @tracer.capture_method
 def get_device(
     device_id: str,
+    event: Event,
     db: Session = Depends(get_db),
 ) -> DeviceInfo | ErrorResponse:
     """_summary_
@@ -65,6 +72,15 @@ def get_device(
     """
     # TODO implement error handling
     try:
+        username = event.state.owner
+        available_devices = get_user_available_devices(username, db)
+
+        if device_id not in available_devices:
+            logger.error(f"{username} is not allowed to access device_id={device_id}.")
+            return ForbiddenErrorResponse(
+                message=f"Cannot access device_id={device_id}."
+            )
+
         device = db.scalars(select(Device).where(Device.id == device_id)).first()
         logger.info("invoked get_device")
         if device:
@@ -109,3 +125,19 @@ def model_to_schema(model: Device) -> DeviceInfo:
         "description": model.description,
     }
     return DeviceInfo.model_validate(dict)
+
+
+def get_user_available_devices(username: str, db: Session) -> list[str]:
+    try:
+        user = db.scalars(select(User).where(User.username == username)).first()
+        if user is None or user.available_devices is None:
+            return []
+
+        available_devices = json.loads(user.available_devices)
+
+        if isinstance(available_devices, list):
+            return available_devices
+        else:
+            return []
+    except Exception:
+        return []
