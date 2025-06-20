@@ -76,8 +76,6 @@ def validated_whitelist_user(
 
     if not is_unique_email(db, user.email):
         raise FormatError(f"{user.email} is already registered.")
-    if not isinstance(user.available_devices, list):
-        raise FormatError("incorrect format of available devices, expected list")
 
     validated_user = {
         "email": str(user.email),

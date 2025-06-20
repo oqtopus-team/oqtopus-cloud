@@ -161,12 +161,14 @@ def test_post_whitelist_users(test_db):
                 group_id="group_id_3",
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             RegisterWhitelistUserRequest(
                 email="email_4",
                 group_id="group_id_4",
                 username="username_4",
                 organization="organization_4",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -235,6 +237,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="group_id_3",
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -245,6 +248,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id=None,
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -255,6 +259,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="group_id_3",
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -265,6 +270,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="a" * 256,
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -275,6 +281,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="group_id_3",
                 username="a" * 256,
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -285,6 +292,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="group_id_3",
                 username="username_3",
                 organization="a" * 256,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -295,6 +303,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
                 group_id="group_id_3",
                 username="username_3",
                 organization="organization_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
@@ -365,6 +374,32 @@ def test_post_whitelist_users_no_valid_user(test_db):
         json=request_body.model_dump(),
     )
     assert response.status_code == 400
+
+
+def test_post_whitelist_users_no_available_devices(test_db):
+    """_summary_
+    POST /whitelist_users tests 400 error when available_devices were not provided
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.commit()
+    request_body = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_3",
+                group_id="group_id_3",
+                username="username_3",
+                organization="a" * 256,
+            ),
+        ]
+    )
+    response = client.post(
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+    assert response.status_code == 400
+    assert response.json() == {"message": "available_devices is required."}
 
 
 def test_delete_whitelist_users(test_db):

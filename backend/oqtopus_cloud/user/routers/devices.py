@@ -53,7 +53,11 @@ def get_devices(
 @router.get(
     "/devices/{device_id}",
     response_model=DeviceInfo,
-    responses={404: {"model": Message}, 500: {"model": Message}},
+    responses={
+        403: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_device(

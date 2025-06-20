@@ -1,14 +1,20 @@
+import json
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Any
 
 import pytz
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 from oqtopus_cloud.common.models.device import (
     Device,
 )
+from oqtopus_cloud.user.schemas.errors import (
+    ForbiddenErrorResponse
+)
 from oqtopus_cloud.user.lambda_function import app
-from oqtopus_cloud.user.routers.devices import get_device, model_to_schema
+from oqtopus_cloud.user.routers.devices import get_device, model_to_schema, get_devices
 from oqtopus_cloud.user.schemas.devices import DeviceInfo, DeviceType, Status
+from oqtopus_cloud.common.models.user import User, UserStatus
 from zoneinfo import ZoneInfo
 
 utc = ZoneInfo("UTC")
@@ -46,9 +52,37 @@ def _get_calibration_data() -> CalibrationData:
 """
 
 
-def _get_model():
+def _get_user_model(n: int, username: str, available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]) -> User:
+    model_dict = {
+        "id": n,
+        "cognito_id": f"cognito_id_{n}",
+        "email": f"email_{n}",
+        "username": username,
+        "userstatus": UserStatus.approved,
+        "api_token_secret": f"api_token_secret_{n}",
+        "organization": f"organization_{n}",
+        "group_id": f"group_id_{n}",
+        "available_devices": json.dumps(available_devices),
+        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+        "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=utc),
+        "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=utc),
+    }
+    return User(**model_dict)
+
+
+def _create_request(method = "GET") -> Request:
+    scope: Dict[str, Any] = {
+        "type": "http",
+        "method": method,
+        "path": "/test",
+        "headers": [],
+    }
+
+    return Request(scope=scope)
+
+def _get_model(device="SVSim"):
     mode_dict = {
-        "id": "SVSim",
+        "id": device,
         "device_type": "simulator",
         "status": "available",
         "available_at": datetime(2023, 1, 2, 12, 34, 56, tzinfo=pytz.utc),
@@ -66,11 +100,16 @@ def _get_model():
 
 def test_get_device(test_db):
     # Arrange
+    user = "test_user"
+    request = _create_request()
+    request.state.owner = user
+
+    test_db.add(_get_user_model(1, user))
     test_db.add(_get_model())
     test_db.commit()
 
     # Act
-    actual = get_device("SVSim", test_db)
+    actual = get_device("SVSim", request, test_db)
 
     # Assert
     expected = DeviceInfo(
@@ -87,6 +126,76 @@ def test_get_device(test_db):
         calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
         description="State vector-based quantum circuit simulator",
     )
+    assert actual == expected
+
+
+def test_cannot_get_device_without_permission(test_db):
+    # Arrange
+    device = "SC"
+    user = "test_user"
+    request = _create_request()
+    request.state.owner = user
+
+    test_db.add(_get_user_model(1, user, ['Kawasaki', 'SVSim']))
+    test_db.add(_get_model(device=device))
+    test_db.commit()
+
+    # Act
+    response = get_device(device, request, test_db)
+
+    # Assert
+    assert isinstance(response, ForbiddenErrorResponse)
+    assert response.status_code == 403
+    assert json.loads(response.body) =={"message": f"Cannot access device_id={device}."}
+
+
+def test_can_only_get_devices_that_user_can_access(test_db):
+    # Arrange
+    user = "test_user"
+    request = _create_request()
+    request.state.owner = user
+
+    test_db.add(_get_user_model(1, user, ['Test_model', 'SVSim']))
+    test_db.add(_get_model(device="SC"))
+    test_db.add(_get_model(device="SVSim"))
+    test_db.add(_get_model(device="Test_model"))
+    test_db.commit()
+
+    # Act
+    actual = get_devices(request, test_db)
+
+    # Assert
+    expected = [
+        DeviceInfo(
+            device_id="SVSim",
+            device_type=DeviceType.simulator,
+            status=Status.available,
+            available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=pytz.utc),
+            n_pending_jobs=8,
+            n_qubits=39,
+            basis_gates=["x", "sx", "rz", "cx"],
+            supported_instructions=["measure", "barrier", "reset"],
+            # calibrationData=CalibrationData(**_get_calibration_dict()),
+            device_info="{}",
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
+            description="State vector-based quantum circuit simulator",
+        ),
+        DeviceInfo(
+            device_id="Test_model",
+            device_type=DeviceType.simulator,
+            status=Status.available,
+            available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=pytz.utc),
+            n_pending_jobs=8,
+            n_qubits=39,
+            basis_gates=["x", "sx", "rz", "cx"],
+            supported_instructions=["measure", "barrier", "reset"],
+            # calibrationData=CalibrationData(**_get_calibration_dict()),
+            device_info="{}",
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
+            description="State vector-based quantum circuit simulator",
+        ),
+    ]
+
     assert actual == expected
 
 
@@ -117,6 +226,7 @@ def test_model_to_shema():
 
 def test_get_device_handler(test_db):
     # Arrange
+    test_db.add(_get_user_model(1, "admin"))
     test_db.add(_get_model())
     test_db.commit()
 
