@@ -24,6 +24,7 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),

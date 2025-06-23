@@ -23,6 +23,7 @@ def _get_model(n: int, is_completed: bool) -> WhitelistUser:
         "is_signup_completed": is_completed,
         "username": f"username_{n}",
         "organization": f"organization_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
