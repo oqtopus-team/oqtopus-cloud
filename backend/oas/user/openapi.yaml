@@ -69,6 +69,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfo'
+        '403':
+          description: Cannot access device with device_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
         '404':
           description: Device with device_id not found
           content:
@@ -267,6 +273,14 @@ paths:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
                 message: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Forbidden
   /jobs/{job_id}:
     get:
       tags:
@@ -890,6 +904,13 @@ components:
           type: string
       required:
         - message
+    error.ForbiddenError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     error.NotFoundError:
       type: object
       properties:
@@ -1376,13 +1397,6 @@ components:
           format: date-time
           example: '2025-01-09T12:34:56'
           description: The expiration date of the api token
-    error.ForbiddenError:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
     announcements.GetAnnouncementResponse:
       type: object
       properties:

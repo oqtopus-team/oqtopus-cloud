@@ -181,7 +181,11 @@ def validate_description(
 @router.post(
     "/jobs",
     response_model=SubmitJobResponse,
-    responses={400: {"model": Message}, 500: {"model": Message}},
+    responses={
+        400: {"model": Message},
+        403: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def submit_jobs(
