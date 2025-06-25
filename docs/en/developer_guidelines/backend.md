@@ -12,6 +12,7 @@ The following technologies are used in OQTOPUS:
 - Pydantic
 - datamodel-code-generator
 - SQLAlchemy
+- Filesystem Spec
 
 ### FastAPI, Uvicorn & Mangum
 
@@ -31,6 +32,10 @@ datamodel-code-generator is a library that automatically generates Pydantic mode
 ### SQLAlchemy
 
 SQLAlchemy is a Python ORM library that simplifies database operations.
+
+### Filesystem Spec
+
+FileSystem Spec (a.k.a. fsspec) is an abstract filesystem interface over various filesystems including local disk, Amazon S3, Google Cloud Storage, and so on.
 
 ## Code Dependencies
 
