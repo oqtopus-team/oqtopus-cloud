@@ -108,7 +108,7 @@ mig-down: ## Rollback to specific revision
 mig-gen: ## Generatet migration script
 	@poetry run alembic revision --autogenerate -m "$(ARG)"
 
-mig-stamp:
+mig-stamp: ## Stamp the revision
 	@poetry run alembic stamp "$(REV)"
 
 # db-seed:
