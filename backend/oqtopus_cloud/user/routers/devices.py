@@ -41,9 +41,14 @@ def get_devices(
     try:
         logger.info("invoked list_devices")
         available_devices = get_user_available_devices(event.state.owner, db)
-        devices = db.scalars(
-            select(Device).where(Device.id.in_(available_devices))
-        ).all()
+
+        if available_devices == "*":
+            devices = db.scalars(select(Device)).all()
+        else:
+            devices = db.scalars(
+                select(Device).where(Device.id.in_(available_devices))
+            ).all()
+
         return [model_to_schema(device) for device in devices]
     except Exception as e:
         logger.error(f"error: {str(e)}", stack_info=True)
@@ -79,7 +84,7 @@ def get_device(
         username = event.state.owner
         available_devices = get_user_available_devices(username, db)
 
-        if device_id not in available_devices:
+        if available_devices != "*" and device_id not in available_devices:
             logger.error(f"{username} is not allowed to access device_id={device_id}.")
             return ForbiddenErrorResponse(
                 message=f"Cannot access device_id={device_id}."
@@ -131,11 +136,14 @@ def model_to_schema(model: Device) -> DeviceInfo:
     return DeviceInfo.model_validate(dict)
 
 
-def get_user_available_devices(username: str, db: Session) -> list[str]:
+def get_user_available_devices(username: str, db: Session) -> list[str] | str:
     try:
         user = db.scalars(select(User).where(User.username == username)).first()
         if user is None or user.available_devices is None:
             return []
+
+        if user.available_devices == "*":
+            return user.available_devices
 
         available_devices = json.loads(user.available_devices)
 

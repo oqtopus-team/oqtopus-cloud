@@ -77,12 +77,17 @@ def validated_whitelist_user(
     if not is_unique_email(db, user.email):
         raise FormatError(f"{user.email} is already registered.")
 
+    available_devices = (
+        user.available_devices
+        if user.available_devices == "*"
+        else json.dumps(user.available_devices)
+    )
     validated_user = {
         "email": str(user.email),
         "group_id": str(user.group_id),
         "username": str(user.username),
         "organization": str(user.organization),
-        "available_devices": json.dumps(user.available_devices),
+        "available_devices": available_devices,
     }
 
     return WhitelistUser(**validated_user)

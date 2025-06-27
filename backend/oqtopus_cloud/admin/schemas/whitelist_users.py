@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -31,7 +31,7 @@ class RegisterWhitelistUserRequest(BaseModel):
     email: str | None = None
     username: str | None = None
     organization: str | None = None
-    available_devices: list[str] | None = None
+    available_devices: list[str] | Literal["*"] | None = None
 
 
 class RegisterWhitelistUsersRequest(BaseModel):

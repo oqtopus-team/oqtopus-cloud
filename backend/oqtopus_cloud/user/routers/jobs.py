@@ -656,6 +656,9 @@ def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
         if user is None or user.available_devices is None:
             return False
 
+        if user.available_devices == "*":
+            return True
+
         available_devices = json.loads(user.available_devices)
 
         return isinstance(available_devices, list) and device_id in available_devices

@@ -60,7 +60,10 @@ def _get_model(n: int) -> Job:
     return Job(**model_dict)
 
 
-def _get_user_model(n: int, username: str, available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]) -> User:
+def _get_user_model(n: int, username: str, available_devices='*') -> User:
+    if available_devices != '*':
+        available_devices = json.dumps(available_devices)
+
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
@@ -70,7 +73,7 @@ def _get_user_model(n: int, username: str, available_devices=["SC", "SVSim", "Ka
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
-        "available_devices": json.dumps(available_devices),
+        "available_devices": available_devices,
         "api_token_expiration": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
         "created_at": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
         "updated_at": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 58)),
@@ -755,6 +758,47 @@ def test_submit_job_compat_error(test_db):
     # Submitting
     submit_resp = client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 400
+
+
+def test_can_submit_job_for_one_of_available_devices(test_db):
+    """_summary_
+    Test for checking submitting job for device that user is allowed to use
+    """
+    test_db.add(_get_user_model(1, "admin", available_devices=["Kawasaki", "SVSim"]))
+    test_db.commit()
+
+    body = SubmitJobRequest(
+        name="submit-job-test",
+        description="Submit job test",
+        device_id="Kawasaki",
+        job_type=JobType.sampling,
+        job_info=SubmitJobInfo(program=["codecodecode"]),
+        mitigation_info={
+            "field1": "value1",
+            "field2": {
+                "subfield1": "value2",
+                "subfield2": ["value3", 42, True],
+            },
+        },
+        simulator_info={"this_is": "simulator info"},
+        transpiler_info={"this_is": "transpiler info"},
+        shots=1024,
+    )
+
+    # Submitting
+    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    assert submit_resp.status_code == 200
+    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
+    # Getting the job of reteurned job_id
+    get_resp = client.get(f"/jobs/{resp_job_id}")
+    assert get_resp.status_code == 200
+    resp_job = JobDef.model_validate(get_resp.json())
+    # And these jobs should be same.
+    assert resp_job.name == body.name
+    assert resp_job.description == body.description
+    assert resp_job.job_type == body.job_type
+    assert resp_job.job_info.program == body.job_info.program
+    assert resp_job.job_info.result is None
 
 
 def test_job_submit_for_device_user_cannot_access(test_db):

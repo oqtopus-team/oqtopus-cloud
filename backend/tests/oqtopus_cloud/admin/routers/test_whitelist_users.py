@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from fastapi.testclient import TestClient
@@ -11,6 +12,7 @@ from oqtopus_cloud.admin.schemas.whitelist_users import (
 )
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from pydantic.type_adapter import TypeAdapter
+from sqlalchemy import select
 
 client = TestClient(app)
 
@@ -221,6 +223,43 @@ def test_post_whitelist_users(test_db):
     )
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_post_whitelist_users_with_all_available_devices(test_db):
+    """_summary_
+    Simple POST /whitelist_users tests with all available devices 
+    using * for one user and actual list of devices for other
+    """
+    test_db.flush()
+    request_body = RegisterWhitelistUsersRequest(
+        users=[
+            RegisterWhitelistUserRequest(
+                email="email_1",
+                group_id="group_id_1",
+                username="username_1",
+                organization="organization_1",
+                available_devices="*",
+            ),
+            RegisterWhitelistUserRequest(
+                email="email_2",
+                group_id="group_id_2",
+                username="username_2",
+                organization="organization_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+        ]
+    )
+    response = client.post(
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+    assert response.status_code == 200
+
+    whitelist_user_1 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.username == "username_1")).first()
+    whitelist_user_2 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.username == "username_2")).first()
+
+    assert whitelist_user_1.available_devices == '*'
+    assert whitelist_user_2.available_devices == json.dumps(["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"])
 
 
 def test_post_whitelist_users_invalid_request_contents(test_db):
