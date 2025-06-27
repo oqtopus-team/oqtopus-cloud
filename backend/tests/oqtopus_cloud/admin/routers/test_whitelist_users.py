@@ -227,7 +227,7 @@ def test_post_whitelist_users(test_db):
 
 def test_post_whitelist_users_with_all_available_devices(test_db):
     """_summary_
-    Simple POST /whitelist_users tests with all available devices 
+    Simple POST /whitelist_users tests with all available devices
     using * for one user and actual list of devices for other
     """
     test_db.flush()
