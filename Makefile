@@ -23,6 +23,7 @@ doctor: ## Check the environment
 	@printf "\033[0;34mAqua version:\033[0m %s\n" "$$(aqua --version)"
 	@printf "\033[0;34mPython version:\033[0m %s\n" "$$(python --version)"
 	@printf "\033[0;34mPoetry version:\033[0m %s\n" "$$(poetry --version)"
+	@printf "\033[0;34muv version:\033[0m %s\n" "$$(uv --version)"
 	@printf "\033[0;34mDocker version:\033[0m %s\n" "$$(docker --version)"
 
 copy: generate-oas terraform-docs
