@@ -71,3 +71,11 @@ setup-poetry:
 	@poetry env use ~/.pyenv/shims/python
 	@poetry config virtualenvs.in-project true
 	@poetry install
+
+uv-install-all:
+	@$(MAKE) uv-install GROUP=dev
+	@$(MAKE) uv-install GROUP=docs
+
+uv-install:
+	@mkdir -p ./src/oqtopus-cloud/$(GROUP)
+	@uv export --group $(GROUP) --no-hashes --no-emit-project --no-editable --format requirements-txt > ./src/oqtopus-cloud/$(GROUP)/requirements.txt
