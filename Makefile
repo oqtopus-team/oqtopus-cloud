@@ -72,12 +72,13 @@ setup-poetry:
 	@poetry config virtualenvs.in-project true
 	@poetry install
 
-uv-install:
-	@uv install --group dev,docs
+uv-install-all:
+	@$(MAKE) uv-install GROUP=dev
+	@$(MAKE) uv-install GROUP=docs
 
-uv-convert-all:
-	@$(MAKE) uv-convert GROUP=dev
-	@$(MAKE) uv-convert GROUP=docs
+uv-install:
+	@uv-convert
+	@uv pip install -r ./src/oqtopus-cloud/$(GROUP)/requirements.txt
 
 uv-convert:
 	@mkdir -p ./src/oqtopus-cloud/$(GROUP)
