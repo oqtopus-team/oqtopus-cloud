@@ -59,7 +59,7 @@ zip:
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
-	@poetry export -f requirements.txt --output requirements.txt
+	@uv export -f requirements.txt --output requirements.txt
 	@docker run --platform linux/x86_64 --user $(id -u):$(id -g) \
   -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
   -v ./requirements.txt:/requirements.txt \
