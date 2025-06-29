@@ -13,7 +13,7 @@ Before starting development, you need to install the following tools:
 | [Docker Compose](https://docs.docker.com/compose/install/) | -            | Management of multiple Docker containers |
 | [Python](https://www.python.org/downloads/)    | 3.12.3                   | Python programming language           |
 | [Pyenv](https://github.com/pyenv/pyenv) (Optional) | -              | Python version management tool        |
-| [Poetry](https://python-poetry.org/)           | -                        | Python dependency management tool     |
+| [uv](https://docs.astral.sh/uv/)               | -                        | Python lightweight package management tool     |
 
 To start development, clone the repository and install dependencies:
 
@@ -48,7 +48,7 @@ make doctor
 Checking the environment...
 Aqua version: aqua version 2.29.0 (9ff65378f0c6197e3130a20f6d978b8a3042b463)
 Python version: Python 3.12.3
-Poetry version: Poetry (version 1.8.3)
+uv version: uv 0.7.16 (b6b7409d1 2025-06-27)
 Docker version: Docker version 26.1.4, build 5650f9b
 
 ```

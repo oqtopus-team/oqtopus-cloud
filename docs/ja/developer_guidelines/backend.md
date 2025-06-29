@@ -75,13 +75,13 @@ oqtopusでは、以下のリンター・フォーマッタを利用していま�
 ```makefile
 # ./Makefile
 fmt:
- @poetry run black .
+ @uv run black .
 
 lint:
- @poetry run ruff check .
+ @uv run ruff check .
 
 test:fmt lint
- @poetry run pytest -vv --cov
+ @uv run pytest -vv --cov
 ```
 
 ## チュートリアル
