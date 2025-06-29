@@ -77,7 +77,7 @@ uv-install-all:
 	@$(MAKE) uv-install GROUP=docs
 
 uv-install:
-	@uv-convert
+	@$(MAKE) uv-convert
 	@uv pip install -r ./src/oqtopus-cloud/$(GROUP)/requirements.txt
 
 uv-convert:
