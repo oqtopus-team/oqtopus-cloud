@@ -81,12 +81,12 @@ Next, set the Python version to 3.12.3:
 pyenv local 3.12.3
 ```
 
-### Poetry
+### uv
 
-To set up poetry as part of the environment setup, run the following command:
+To set up **uv** as part of the environment setup, run the following command:
 
 ```
-make setup-poetry
+make setup-uv
 ```
 
 This command is required to use the Python version installed with Pyenv, to set up the Python environment, and to install dependencies. This will create a `.venv` in the root directory.
