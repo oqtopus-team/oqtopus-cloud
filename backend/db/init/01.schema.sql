@@ -49,7 +49,7 @@ drop table if exists main.users;
       organization      VARCHAR(255),
       group_id          VARCHAR(255),
       available_devices TEXT,
-      mfa_status        VARCHAR(255) DEFAULT 'inactive',
+      mfa_status        VARCHAR(255) DEFAULT 'disabled',
       api_token_expiration TIMESTAMP,
       created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

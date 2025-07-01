@@ -12,9 +12,15 @@ class MfaResetStartRequest(BaseModel):
     password: str
 
 
+class MfaResetStartResponse(BaseModel):
+    access_token: str | None = None
+    """
+    Access token to access Cognito API
+    """
+
+
 class MfaResetVerifyCodeRequest(BaseModel):
-    email: EmailStr
-    password: str
+    access_token: str
     code: str
 
 
@@ -26,6 +32,5 @@ class MfaResetVerifyCodeResponse(BaseModel):
 
 
 class MfaResetConfirmTotpRequest(BaseModel):
-    email: EmailStr
-    password: str
+    access_token: str
     totp_code: str

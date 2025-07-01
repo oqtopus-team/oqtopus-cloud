@@ -4,7 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -62,6 +62,9 @@ def mfa_reset_request(
         if not user:
             logger.error(f"User not found: {email}")
             return NotFoundErrorResponse(message="User not found")
+        # update user.mfa_status to disabled
+        user.mfa_status = MFAStatus.disabled  # Assuming 'disabled' is the correct value
+        db.commit()
         # reset MFA setting for cognito user
         response = client.admin_set_user_mfa_preference(
             # TOTP MFA setting disabled
@@ -69,6 +72,8 @@ def mfa_reset_request(
             Username=email,
             UserPoolId=pool_id,
         )
+        # login status reset
+        client.admin_user_global_sign_out(UserPoolId=pool_id, Username=email)
         logger.info(f"mfa reset response: {response}")
         return None
     except Exception as e:

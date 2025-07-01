@@ -85,9 +85,9 @@ class FSSpecStorage(AbstractStorage):
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
                 full_path = f"{dirpath}/{filename}"
-                if (full_path.startswith(storage_base)):
-                   relative_path = full_path[len(storage_base):].lstrip("/")
-                   yield relative_path
+                if full_path.startswith(storage_base):
+                    relative_path = full_path[len(storage_base) :].lstrip("/")
+                    yield relative_path
 
     def get_upload_presigned_url_data(
         self, key: str, expires: timedelta = timedelta(hours=1)

@@ -14,8 +14,12 @@ mfa_reset.start:
           schema:
             $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetStartRequest'
     responses:
-      '204':
+      '200':
         description: Sent confirmation email successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetStartResponse'
       '400':
         description: Bad request
         content:

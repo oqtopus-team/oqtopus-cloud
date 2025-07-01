@@ -10,17 +10,20 @@ mfa_reset.MfaResetStartRequest:
     password:
       type: string
 
+mfa_reset.MfaResetStartResponse:
+  type: object
+  properties:
+    access_token:
+      type: string
+      description: Access token to access Cognito API
+
 mfa_reset.MfaResetVerifyCodeRequest:
   type: object
   required:
-    - email
-    - password
+    - access_token
     - code
   properties:
-    email:
-      type: string
-      format: email
-    password:
+    access_token:
       type: string
     code:
       type: string
@@ -35,14 +38,10 @@ mfa_reset.MfaResetVerifyCodeResponse:
 mfa_reset.MfaResetConfirmTotpRequest:
   type: object
   required:
-    - email
-    - password
+    - access_token
     - totp_code
   properties:
-    email:
-      type: string
-      format: email
-    password:
+    access_token:
       type: string
     totp_code:
       type: string
