@@ -37,17 +37,15 @@ jobs:
         with:
           python-version-file: .python-version
 
-      - name: Install Poetry
+      - name: Set up Aqua
         run: |
-          pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt install make
+          make setup-aqua
+          make doctor
 
-      - name: Install poetry dependencies
-        run: poetry install
-
-      - name: Install make
-        run: sudo apt install make
-
+      - name: setup uv
+        run: |
+          make setup-uv
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
