@@ -36,7 +36,7 @@ jobs:
       run: |
         sudo apt install make
         make setup-aqua
-        make doctor
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> $GITHUB_PATH
 
     - name: Update document
       run: make docs
