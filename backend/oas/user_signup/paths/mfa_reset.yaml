@@ -1,0 +1,94 @@
+mfa_reset.start:
+  post:
+    tags:
+      - signup
+    summary: Start MFA reset
+    description: Send a verification code to the user's email for MFA reset.
+    operationId: mfa_reset_start
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetStartRequest'
+    responses:
+      '204':
+        description: Sent confirmation email successfully
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+mfa_reset.verify_code:
+  post:
+    tags:
+      - signup
+    summary: Verify MFA reset code
+    description: Verify the code sent to the user's email for MFA reset.
+    operationId: mfa_reset_verify_code
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetVerifyCodeRequest'
+    responses:
+      '204':
+        description: Code verified
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetVerifyCodeResponse'
+      '400':
+        description: Verification failed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
+mfa_reset.confirm_totp:
+  post:
+    tags:
+      - signup
+    summary: Confirm new TOTP for MFA
+    description: Confirm and enable new TOTP MFA after verification.
+    operationId: mfa_reset_confirm_totp
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/mfa_reset.yaml#/mfa_reset.MfaResetConfirmTotpRequest'
+    responses:
+      '204':
+        description: MFA TOTP confirmed
+      '400':
+        description: Confirmation failed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequest'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'

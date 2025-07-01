@@ -17,6 +17,11 @@ class UserStatus(str, Enum):
     suspended = "suspended"
 
 
+class MFAStatus(str, Enum):
+    active = "active"
+    inactive = "inactive"
+
+
 class User(Base, TimestampMixin):
     """
     Represents a users in the system.
@@ -33,6 +38,7 @@ class User(Base, TimestampMixin):
     organization (str)              Organization of the user.
     group_id  (str)                 Group ID of the user.
     available_devices (str)         List of devices which user has permission to access
+    mfa_status (str)                MFA status of the user 'active' / 'inactive', default is 'inactive'.
     api_token_expiration (datetime) The expiration date of the API token.
     created_at (datetime)           The timestamp when the user was created.
     updated_at (datetime)           The timestamp when the user was last updated.
@@ -48,6 +54,9 @@ class User(Base, TimestampMixin):
     organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     available_devices: Mapped[str] = mapped_column(String, nullable=True)
+    mfa_status: Mapped[MFAStatus] = mapped_column(
+        String, default=MFAStatus.inactive, nullable=False
+    )
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime, default=current_time_utc, nullable=True
     )

@@ -7,12 +7,13 @@ import jwt
 from sqlalchemy import select
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.lambda_auth.conf import logger
 
 jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
+client = boto3.client("cognito-idp")
 
 
 class AuthError(Exception):
@@ -123,6 +124,14 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         # Get a database session
         dbs = get_db()
         db = next(dbs)
+
+        # Get the MFA status from the database
+        stmt_mfa_status = select(User.mfa_status).where(
+            User.api_token_secret == api_token
+        )
+        mfa_status = db.execute(stmt_mfa_status).scalars().first()
+        if mfa_status is MFAStatus.inactive:
+            raise AuthError("MFA is not active for this user")
 
         # Get the API token expiration from the database
         stmt_api_token_expiration = select(User.api_token_expiration).where(

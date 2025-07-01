@@ -1,0 +1,48 @@
+mfa_reset.MfaResetStartRequest:
+  type: object
+  required:
+    - email
+    - password
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+
+mfa_reset.MfaResetVerifyCodeRequest:
+  type: object
+  required:
+    - email
+    - password
+    - code
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+    code:
+      type: string
+
+mfa_reset.MfaResetVerifyCodeResponse:
+  type: object
+  properties:
+    secret:
+      type: string
+      description: Base32 encoded secret for TOTP
+
+mfa_reset.MfaResetConfirmTotpRequest:
+  type: object
+  required:
+    - email
+    - password
+    - totp_code
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+    totp_code:
+      type: string

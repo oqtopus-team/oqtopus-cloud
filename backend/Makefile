@@ -60,6 +60,7 @@ generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
 	@$(MAKE) generate-admin-schema
+	@$(MAKE) generate-user_signup-schema
 
 export ENV=local
 export DB_HOST=localhost
