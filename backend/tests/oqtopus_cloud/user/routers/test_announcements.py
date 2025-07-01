@@ -175,21 +175,21 @@ def test_get_announcements_list_with_current_time(test_db):
         title="title1", 
         content="content1", 
         start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=utc), 
-        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=utc)
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=utc),
     ))
     test_db.add(Announcement(
         id=2, 
         title="title2", 
         content="content2", 
         start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=utc), 
-        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=utc)
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=utc),
     ))
     test_db.add(Announcement(
         id=3, 
         title="title3", 
         content="content3", 
         start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=utc), 
-        end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=utc)
+        end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=utc),
     ))
     test_db.commit()
 

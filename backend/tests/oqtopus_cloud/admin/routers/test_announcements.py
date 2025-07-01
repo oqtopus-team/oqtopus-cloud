@@ -124,7 +124,7 @@ def test_get_announcements_list_with_current_time(test_db):
         content="content1", 
         start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc), 
         end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
-        updated_at=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc)
+        updated_at=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.add(Announcement(
         id=2, 
@@ -132,7 +132,7 @@ def test_get_announcements_list_with_current_time(test_db):
         content="content2", 
         start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
         end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
-        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc)
+        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.add(Announcement(
         id=3, 
@@ -140,7 +140,7 @@ def test_get_announcements_list_with_current_time(test_db):
         content="content3", 
         start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
         end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=timezone.utc), 
-        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc)
+        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.commit()
 
