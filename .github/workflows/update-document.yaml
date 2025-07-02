@@ -3,12 +3,7 @@ name: Update document
 on:
   push:
     branches:
-      - develop
-    paths:
-    - 'backend/oas/provider/**'
-    - 'backend/oas/user/**'
-    - 'terraform/infrastructure/modules/**'
-    - 'terraform/service/modules/**'
+      - 'feature/*'
 
 permissions:
   contents: write
