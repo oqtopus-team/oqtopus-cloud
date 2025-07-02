@@ -1,0 +1,6 @@
+{
+  "Exclude": [
+    ".*\\.md$",
+    "backend/alembic/versions/*\\.py$"
+  ]
+}
