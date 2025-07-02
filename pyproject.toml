@@ -31,6 +31,8 @@ pytz = "^2025.1"
 types-pytz = "^2025.1.0.20250204"
 python-multipart = "^0.0.20"
 slack_sdk = "^3.35.0"
+fsspec = "^2025.5.1"
+s3fs = "^2025.5.1"
 
 
 [tool.poetry.group.dev.dependencies]

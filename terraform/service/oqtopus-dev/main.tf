@@ -57,6 +57,8 @@ module "user_api" {
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
+  storage_driver                = "s3"
+  storage_env_vars_s3           = { STORAGE_S3_REGION = var.region }
   sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   sse_container_log_name        = "ssecontainer.log"
   sse_user_program_name         = "userprogram.py"
@@ -83,6 +85,8 @@ module "provider_api" {
   power_tools_service_name      = "provider-api"
   enable_cors                   = false
   log_level                     = "INFO"
+  storage_driver                = "s3"
+  storage_env_vars_s3           = { STORAGE_S3_REGION = var.region }
   sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   sse_container_log_name        = "ssecontainer.log"
   sse_user_program_name         = "userprogram.py"
@@ -204,13 +208,13 @@ module "vpc_endpoint" {
 module "deployment_roles" {
   source = "../modules/deployment-roles"
 
-  product = var.product
-  org     = var.org
-  env     = var.env
-  region  = var.region
-  profile = var.profile
-  repository = var.repository
-  github_user = var.github_user
-  branch = var.branch
+  product        = var.product
+  org            = var.org
+  env            = var.env
+  region         = var.region
+  profile        = var.profile
+  repository     = var.repository
+  github_user    = var.github_user
+  branch         = var.branch
   aws_account_id = var.aws_account_id
 }
