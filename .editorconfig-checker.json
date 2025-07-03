@@ -5,6 +5,8 @@
   "SpacesAfterTabs": false,
   "NoColor": false,
   "Exclude": [
+    ".*\\.md$",
+    "backend/alembic/versions/.*\\.py$"
   ],
   "AllowedContentTypes": [],
   "PassedFiles": [],
