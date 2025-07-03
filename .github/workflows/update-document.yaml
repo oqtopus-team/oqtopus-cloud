@@ -36,7 +36,7 @@ jobs:
       run: |
         sudo apt install make
         make setup-aqua
-        echo "$HOME/.local/share/aquaproj-aqua/bin" >> $GITHUB_PATH
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
 
     - name: setup uv
       run: make setup-uv
