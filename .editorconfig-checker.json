@@ -1,6 +1,6 @@
 {
-  "Verbose": false,
-  "Debug": false,
+  "Verbose": true,
+  "Debug": true,
   "IgnoreDefaults": false,
   "SpacesAfterTabs": false,
   "NoColor": false,
