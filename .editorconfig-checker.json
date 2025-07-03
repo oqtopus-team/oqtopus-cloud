@@ -1,11 +1,12 @@
 {
-  "Verbose": true,
-  "Debug": true,
+  "Verbose": false,
+  "Debug": false,
   "IgnoreDefaults": false,
   "SpacesAfterTabs": false,
   "NoColor": false,
   "Exclude": [
-    ".*\\.md$"
+    ".*\\.md$",
+    "backend/alembic/versions/.*\\.py$"
   ],
   "AllowedContentTypes": [],
   "PassedFiles": [],
