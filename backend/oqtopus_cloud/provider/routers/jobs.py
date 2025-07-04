@@ -2,8 +2,10 @@ import base64
 import json
 import os
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
+import boto3
+import oqtopus_cloud.common.models as models
 import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
@@ -114,7 +116,7 @@ def get_jobs(
                 continue
             else:
                 # if status is "submitted", then update status to "ready"
-                if decode_job_status(model.status) == JobStatus.submitted:
+                if model.status == JobStatus.submitted:
                     set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
@@ -178,7 +180,7 @@ def update_job_status(
         if model is None:
             return NotFoundErrorResponse("Job not found")
 
-        if decode_job_status(model.status) != JobStatus.ready:
+        if model.status != JobStatus.ready:
             return ConflictErrorResponse(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
@@ -263,7 +265,7 @@ def update_job_info(
                 message="The overwritten status and job_info is inconsistent"
             )
 
-        status0 = decode_job_status(model.status)
+        status0 = model.status
         assert isinstance(status0, JobStatus)
         if status is not None and stage_of_status(status) < stage_of_status(status0):
             return BadRequestResponse(message="Job cannot go back to previous status.")
@@ -471,8 +473,12 @@ def is_datetime_field(fld: str) -> bool:
 def set_job_status(model: Job, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
+        if isinstance(status, ValueError):
+            raise status
 
-    model.status = status
+    (_, to_model) = iso_job_status()
+
+    model.status = to_model(status)
     if status == JobStatus.ready:
         if model.ready_at is None:
             model.ready_at = datetime.now()
@@ -504,7 +510,7 @@ def stage_of_status(st: JobStatus) -> int:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
-    status = decode_job_status(model.status)
+    status = decode_job_status(model.value)
     if isinstance(status, ValueError):
         return status
     job_info = decode_job_info(json.loads(model.job_info))
@@ -531,3 +537,37 @@ def model_to_schema(
         running_at=localize(model.running_at),
         ended_at=localize(model.ended_at),
     )
+
+
+def iso_job_status() -> (
+    tuple[
+        Callable[[models.JobStatus], JobStatus], Callable[[JobStatus], models.JobStatus]
+    ]
+):
+    """_summary_ Isomorphism between schema-generated JobStatus and JobStatus in the model"""
+
+    def to_schema(inp: models.JobStatus) -> JobStatus:
+        if inp == "cancelled":
+            return JobStatus.cancelled
+        if inp == "failed":
+            return JobStatus.failed
+        if inp == "ready":
+            return JobStatus.ready
+        if inp == "running":
+            return JobStatus.running
+        if inp == "submitted":
+            return JobStatus.submitted
+        return JobStatus.succeeded
+
+    def to_model(inp: JobStatus) -> models.JobStatus:
+        if inp == JobStatus.cancelled:
+            return "cancelled"
+        if inp == JobStatus.failed:
+            return "failed"
+        if inp == JobStatus.ready:
+            return "ready"
+        if inp == JobStatus.submitted:
+            return "submitted"
+        return "succeeded"
+
+    return (to_schema, to_model)
