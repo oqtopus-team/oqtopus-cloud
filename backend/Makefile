@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-all-schema run-user run-provider mig-gen mig-up up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -65,13 +65,16 @@ export ENV=local
 export DB_HOST=localhost
 export DB_NAME=main
 export DB_CONNECTOR=mysql+pymysql
-export DB_USER=admin
-export DB_PASS=password
 export ALLOW_ORIGINS=http://127.0.0.1:8000# pass the allowed origins -> http://localhost:3000,http://localhost:3001
 export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
+export STORAGE_DRIVER=local:minio
+export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
+export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
+export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
@@ -93,26 +96,11 @@ run-user_signup: ## Start the user_signup API
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
 up: ## Start the DB
-	@docker compose up -d db
-	@python scripts/mig-up.py
+	@docker compose up
+	@poetry run python storage/init_storage.py
 
 down: ## Stop the DB
 	@docker compose down
-
-mig-up: ## Run migration
-	@poetry run alembic upgrade head
-
-mig-down: ## Rollback to specific revision
-	@poetry run alembic downgrade "$(REV)"
-
-mig-gen: ## Generatet migration script
-	@poetry run alembic revision --autogenerate -m "$(ARG)"
-
-mig-stamp: ## Stamp the revision
-	@poetry run alembic stamp "$(REV)"
-
-# db-seed:
-#	 @poetry run
 
 fmt-common: ## Format common code
 	@poetry run ruff format oqtopus_cloud/common
@@ -123,10 +111,19 @@ fmt-user: ## Format user code
 fmt-provider: ## Format provider code
 	@poetry run ruff format oqtopus_cloud/provider
 
-fmt-migration: ## Format migration script code
-	@poetry run ruff format alembic/versions
+fmt-worker: ## Format worker code
+	@poetry run ruff format oqtopus_cloud/worker
 
-fmt-all: fmt-common fmt-user fmt-provider fmt-migration ## Format all code
+fmt-admin: ## Format admin code
+	@poetry run ruff format oqtopus_cloud/admin
+
+fmt-lambda_auth: ## Format lambda_auth code
+	@poetry run ruff format oqtopus_cloud/lambda_auth
+
+fmt-user_signup: ## Format user_signup code
+	@poetry run ruff format oqtopus_cloud/user_signup
+
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup fmt-worker ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common

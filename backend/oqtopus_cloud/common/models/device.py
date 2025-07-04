@@ -1,23 +1,14 @@
 import datetime
-from enum import Enum
+import enum
 from typing import Optional
 
-from sqlalchemy import DateTime, String, Text, func, text
+from sqlalchemy import TIMESTAMP, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from oqtopus_cloud.common.models import Base
-
-DeviceId = str
-
-
-class DeviceType(Enum):
-    QPU = "QPU"
-    simulator = "simulator"
-
-
-class DeviceStatus(Enum):
-    Available = "available"
-    Unavailable = "unavailable"
+from oqtopus_cloud.common.model_util import DateTimeTz
+from oqtopus_cloud.common.models.base import (
+    Base,
+)
 
 
 class Device(Base):
@@ -42,29 +33,34 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id: Mapped[DeviceId] = mapped_column(
+    id: Mapped[str] = mapped_column(
         String(64),
         primary_key=True,
     )
-    device_type: Mapped[DeviceType] = mapped_column(
-        String(32),
-        server_default=DeviceType.QPU.value,
+    device_type: Mapped[enum.Enum] = mapped_column(
+        Enum(
+            "QPU",
+            "simulator",
+        ),
         nullable=False,
     )
-    status: Mapped[DeviceStatus] = mapped_column(
-        String(64),
-        server_default=DeviceStatus.Available.value,
+    status: Mapped[enum.Enum] = mapped_column(
+        Enum(
+            "available",
+            "unavailable",
+        ),
         nullable=False,
+        default="unavailable",
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(),
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
-        server_default=text("0"),
         nullable=False,
+        default=0,
     )
     n_qubits: Mapped[int] = mapped_column(
-        server_default=text("1"),
         nullable=False,
     )
     basis_gates: Mapped[str] = mapped_column(
@@ -75,25 +71,17 @@ class Device(Base):
         String(64),
         nullable=False,
     )
-    device_info: Mapped[str] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    calibrated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        nullable=True,
-    )
+    device_info: Mapped[str]
+    calibrated_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=func.CURRENT_TIMESTAMP(),
+        TIMESTAMP,
         nullable=True,
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        TIMESTAMP,
         nullable=True,
     )
