@@ -2,8 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, String, func, text
-from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -40,28 +39,20 @@ class User(Base):
     """
 
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
-        primary_key=True,
-        unique=True,
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    cognito_id: Mapped[str] = mapped_column(String, index=True)
+    email: Mapped[str] = mapped_column(String, index=True)
+    username: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    userstatus: Mapped[Optional[UserStatus]] = mapped_column(String, nullable=True)
+    api_token_secret: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, default=default_datetime, nullable=True
     )
-    cognito_id: Mapped[str] = mapped_column(String(255), unique=True)
-    email: Mapped[str] = mapped_column(String(255))
-    username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    userstatus: Mapped[Optional[UserStatus]] = mapped_column(String(10), nullable=True)
-    api_token_secret: Mapped[Optional[str]] = mapped_column(
-        String(255), unique=True, nullable=True
-    )
-    organization: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    group_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        server_default=func.current_timestamp(),
-        nullable=True,
+        DateTime, default=default_datetime
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-        nullable=True,
+        DateTime, default=default_datetime, onupdate=default_datetime
     )

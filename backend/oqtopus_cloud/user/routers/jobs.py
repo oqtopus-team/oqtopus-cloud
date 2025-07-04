@@ -201,11 +201,17 @@ def submit_jobs(
 
         # NOTE: method and operator is validated by pydantic
         shots = request.shots
+        # name is optional
+        name = validate_name(request)
+
+        # description is optional
+        description = validate_description(request)
+
         job = Job(
             id=uuid7(as_type="str"),
             owner=owner,
-            name=request.name or "",
-            description=request.description or "",
+            name=name,
+            description=description,
             device_id=request.device_id,
             job_info=json.dumps(request.job_info.model_dump()),
             transpiler_info=json.dumps(request.transpiler_info),
@@ -374,7 +380,7 @@ def cancel_job(
             logger.info(
                 "job is in submitted or ready or running state, so it will be marked as cancelled"
             )
-            job.status = "cancelled"
+            job.status = JobStatus.cancelled
             db.commit()
         return SuccessResponse(message="cancel request accepted")
     except Exception as e:
@@ -503,7 +509,7 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
 
 
 def set_job_failure(job: Job) -> None:
-    job.status = "failed"
+    job.status = JobStatus.failed
     job.ended_at = datetime.now()
 
 
