@@ -462,62 +462,34 @@ def test_update_job_status(test_db: Session):
 # TODO: add test cases for handler
 
 
-@mock_aws
-def test_get_ssesrc():
+def test_get_ssesrc(test_storage):
     # Arrange
-    bucket_name = os.environ["SSE_BUCKET"]
     program_name = os.environ["SSE_USER_PROGRAM_NAME"]
     job_id = "testjob1id"
     src_body = "program1"
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(
-        Bucket=bucket_name, Key=f"{job_id}/{program_name}", Body=src_body
-    )
+    test_storage.put(key=f"{job_id}/{program_name}", data=b"program1")
 
     resp = client.get(f"/jobs/{job_id}/ssesrc")
     resp.status_code == 200
     decoded = base64.b64decode(resp.content).decode("utf-8")
     assert decoded == src_body
 
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key=f"{job_id}/oqtopus_test_program.py")
 
-
-@mock_aws
 def test_get_ssesrc_no_src():
     # Arrange skip creating object for this test
-    bucket_name = os.environ["SSE_BUCKET"]
     job_id = "testjob1id"
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     resp = client.get(f"/jobs/{job_id}/ssesrc")
     assert resp.status_code == 500
 
 
-@mock_aws
-def test_upload_sselog(test_db: Session):
+def test_upload_sselog(test_db: Session, test_storage):
     # Arrange
     job_model = _get_job_model(1, JobType.sse)
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
     job_id = "testjob1id"
     src_body = "program1"
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
 
@@ -530,28 +502,17 @@ def test_upload_sselog(test_db: Session):
 
     # assert uploaded s3 object
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
-    s3object = s3client.get_object(Bucket=bucket_name, Key=f"{job_id}/{log_name}")
-    assert base64.b64decode(s3object["Body"].read()).decode("utf-8") == src_body
-
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key=f"{job_id}/oqtopus_test_program.py")
+    log_file_data = test_storage.get(key=f"{job_id}/{log_name}")
+    assert base64.b64decode(log_file_data).decode("utf-8") == src_body
 
 
-@mock_aws
 def test_upload_sselog_unknown_jobid(test_db: Session):
     # Arrange
     job_model = _get_job_model(1, JobType.sse)
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
     src_body = "program1"
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
 
@@ -560,22 +521,14 @@ def test_upload_sselog_unknown_jobid(test_db: Session):
     assert resp.status_code == 404
 
 
-@mock_aws
 def test_upload_sselog_invalid_jobtype(test_db: Session):
     # Arrange
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["SSE_BUCKET"]
     job_id = "testjob1id"
     src_body = "program1"
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     encoded = base64.b64encode(src_body.encode())
     form_data = {"file": encoded}
 
@@ -584,7 +537,6 @@ def test_upload_sselog_invalid_jobtype(test_db: Session):
     assert resp.status_code == 400
 
 
-@mock_aws
 def test_update_job_transpiler_info(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(job_model)

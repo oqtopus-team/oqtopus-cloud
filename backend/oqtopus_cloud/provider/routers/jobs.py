@@ -2,14 +2,16 @@ import base64
 import json
 import os
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import boto3
+import oqtopus_cloud.common.models as models
 import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
@@ -114,7 +116,7 @@ def get_jobs(
                 continue
             else:
                 # if status is "submitted", then update status to "ready"
-                if decode_job_status(model.status) == JobStatus.submitted:
+                if model.status == JobStatus.submitted:
                     set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
@@ -178,7 +180,7 @@ def update_job_status(
         if model is None:
             return NotFoundErrorResponse("Job not found")
 
-        if decode_job_status(model.status) != JobStatus.ready:
+        if model.status != JobStatus.ready:
             return ConflictErrorResponse(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
@@ -263,7 +265,7 @@ def update_job_info(
                 message="The overwritten status and job_info is inconsistent"
             )
 
-        status0 = decode_job_status(model.status)
+        status0 = model.status
         assert isinstance(status0, JobStatus)
         if status is not None and stage_of_status(status) < stage_of_status(status0):
             return BadRequestResponse(message="Job cannot go back to previous status.")
@@ -333,18 +335,15 @@ def update_job_transpiler_info(
 @tracer.capture_method
 def get_ssesrc(
     job_id: str,
+    storage: AbstractStorage = Depends(get_storage),
 ) -> PlainTextResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_USER_PROGRAM_NAME"]
     try:
-        # get the program file from the AWS S3 bucket
-        s3_client = boto3.client("s3")
-        program = s3_client.get_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-        )
-        program = program["Body"].read()
-
+        # get the program file from storage
+        key = f"{job_id}/{file_name}"
+        program = storage.get(key)
+        if program is None:
+            return InternalServerErrorResponse(f"SSE user program not found: {key}")
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
         return PlainTextResponse(content=program_base64)
@@ -368,8 +367,8 @@ def upload_sselog(
     job_id: str,
     file: UploadFile = Form(...),
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> UploadSselogResponse | ErrorResponse:
-    bucket_name = os.environ["SSE_BUCKET"]
     file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
 
     try:
@@ -387,13 +386,7 @@ def upload_sselog(
             return BadRequestResponse(message="job is not an SSE job")
 
         binary = file.file.read()
-
-        s3_client = boto3.client("s3")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=f"{job_id}/{file_name}",
-            Body=binary,
-        )
+        storage.put(key=f"{job_id}/{file_name}", data=binary)
         return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
         logger.exception("Failed to upload SSE log file: %s", e)
@@ -480,8 +473,12 @@ def is_datetime_field(fld: str) -> bool:
 def set_job_status(model: Job, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
+        if isinstance(status, ValueError):
+            raise status
 
-    model.status = status
+    (_, to_model) = iso_job_status()
+
+    model.status = to_model(status)
     if status == JobStatus.ready:
         if model.ready_at is None:
             model.ready_at = datetime.now()
@@ -513,7 +510,7 @@ def stage_of_status(st: JobStatus) -> int:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
-    status = decode_job_status(model.status)
+    status = decode_job_status(model.value)
     if isinstance(status, ValueError):
         return status
     job_info = decode_job_info(json.loads(model.job_info))
@@ -540,3 +537,37 @@ def model_to_schema(
         running_at=localize(model.running_at),
         ended_at=localize(model.ended_at),
     )
+
+
+def iso_job_status() -> (
+    tuple[
+        Callable[[models.JobStatus], JobStatus], Callable[[JobStatus], models.JobStatus]
+    ]
+):
+    """_summary_ Isomorphism between schema-generated JobStatus and JobStatus in the model"""
+
+    def to_schema(inp: models.JobStatus) -> JobStatus:
+        if inp == "cancelled":
+            return JobStatus.cancelled
+        if inp == "failed":
+            return JobStatus.failed
+        if inp == "ready":
+            return JobStatus.ready
+        if inp == "running":
+            return JobStatus.running
+        if inp == "submitted":
+            return JobStatus.submitted
+        return JobStatus.succeeded
+
+    def to_model(inp: JobStatus) -> models.JobStatus:
+        if inp == JobStatus.cancelled:
+            return "cancelled"
+        if inp == JobStatus.failed:
+            return "failed"
+        if inp == JobStatus.ready:
+            return "ready"
+        if inp == JobStatus.submitted:
+            return "submitted"
+        return "succeeded"
+
+    return (to_schema, to_model)

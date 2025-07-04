@@ -1,0 +1,90 @@
+announcements.RegisterAnnouncementRequest:
+  description: "register announcement to backend"
+  type: object
+  properties:
+    title:
+      type: string
+    content:
+      type: string
+    start_time:
+      type: string
+      format: date-time
+    end_time:
+      type: string
+      format: date-time
+    publishable:
+      type: boolean
+  required:
+    - title
+    - content
+    - start_time
+    - end_time
+    - publishable
+
+announcements.UpdateAnnouncementRequest:
+  description: "update announcement"
+  type: object
+  properties:
+    title:
+      type: string
+    content:
+      type: string
+    start_time:
+      type: string
+      format: date-time
+    end_time:
+      type: string
+      format: date-time
+    publishable:
+      type: boolean
+
+announcements.GetAnnouncementResponse:
+  type: object
+  properties:
+    id:
+      type: integer
+      example: 0
+    title:
+      type: string
+      example: Example Title
+    content:
+      type: string
+      example: Example Content
+    start_time:
+      type: string
+      format: date-time
+      example: "2022-10-19T11:45:34+09:00"
+    end_time:
+      type: string
+      format: date-time
+      example: "2022-12-19T11:45:34+09:00"
+    publishable:
+      type: boolean
+      example: true
+    updated_at:
+      type: string
+      format: date-time
+      example: "2022-12-19T11:45:34+09:00"
+  required:
+    - id
+    - title
+    - content
+    - start_time
+    - end_time
+    - publishable
+    - updated_at
+
+  example:
+    id: 0
+    title: Example Title
+    content: Example Content
+    start_time: "2022-10-19T11:45:34+09:00"
+    end_time: "2022-12-19T11:45:34+09:00"
+    publishable: true
+
+announcements.GetAnnouncementsListResponse:
+  properties:
+    announcements:
+      type: array
+      items:
+        $ref: "#/announcements.GetAnnouncementResponse"

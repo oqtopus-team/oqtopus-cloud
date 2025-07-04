@@ -73,6 +73,12 @@ resource "aws_lambda_function" "this" {
         AUTH_USER_POOL_ID           = var.client_cognito_user_pool_id
       } : {},
       var.client_cognito_user_pool_web_client_id != "" ? { USER_POOL_WEB_CLIENT_ID = var.client_cognito_user_pool_web_client_id } : {},
+      merge(
+        { STORAGE_DRIVER = var.storage_driver },
+        var.storage_driver == "s3" ? var.storage_env_vars_s3 : {},
+        var.storage_driver == "local" ? var.storage_env_vars_local : {},
+        var.storage_driver == "local:minio" ? var.storage_env_vars_local_minio : {},
+      ),
       var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
       var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},

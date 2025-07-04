@@ -18,6 +18,7 @@ from oqtopus_cloud.common.models.job import (
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.storages import FSSpecStorage
 from oqtopus_cloud.provider.lambda_function import app
 from sqlalchemy import (
     create_engine,
@@ -124,8 +125,18 @@ def test_db() -> (
     close_all_sessions()
     engine.dispose()
 
+
+@pytest.fixture(scope="function")
+def test_storage(fake_os_env) -> Generator[FSSpecStorage, None, None]:
+    local_storage_path = os.environ["STORAGE_LOCAL_BASE_PATH"]
+    os.mkdir(local_storage_path)
+    yield FSSpecStorage(fs_url=f"file://{local_storage_path}")
+
+
 @pytest.fixture(autouse=True)
-def fake_os_env(monkeypatch):
+def fake_os_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("STORAGE_DRIVER", "local")
+    monkeypatch.setenv("STORAGE_LOCAL_BASE_PATH", str(tmp_path / "storage"))
     monkeypatch.setenv("SSE_BUCKET", "oqtopus_test_bucket")
     monkeypatch.setenv("SSE_USER_PROGRAM_NAME", "oqtopus_test_program.py")
     monkeypatch.setenv("SSE_CONTAINER_LOG_NAME", "qtopus_test_sse_log.log")

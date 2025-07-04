@@ -34,3 +34,10 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+generate-env: ## Generate environment configuration
+	@echo "Generating environment configuration..."
+	@cp ./example/oqtopus-dev/infrastructure/oqtopus-dev.tfbackend.txt ./infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/oqtopus-dev/infrastructure/terraform.tfvars.txt ./infrastructure/oqtopus-dev/terraform.tfvars
+	@cp ./example/oqtopus-dev/service/oqtopus-dev.tfbackend.txt ./service/oqtopus-dev/oqtopus-dev.tfbackend
+	@cp ./example/oqtopus-dev/service/terraform.tfvars.txt ./service/oqtopus-dev/terraform.tfvars
+	@echo "Environment configuration generated."

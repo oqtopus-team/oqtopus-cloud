@@ -16,11 +16,6 @@ output "user_cognito" {
   description = "The user cognito information"
 }
 
-output "provider_cognito" {
-  value       = module.provider_cognito
-  description = "The provider cognito information"
-}
-
 output "admin_cognito" {
   value       = module.admin_cognito
   description = "The admin cognito information"
