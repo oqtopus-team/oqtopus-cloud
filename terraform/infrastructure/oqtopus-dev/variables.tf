@@ -1,29 +1,49 @@
-variable "product" {
-  description = "product name"
+variable "vpc_cidr" {
   type        = string
+  description = "VPC CIDR"
+}
+
+variable "availability_zones" {
+  type        = list(string)
+  description = "Availability Zones"
+}
+
+variable "private_subnet_cidrs" {
+  type        = list(string)
+  description = "Private Subnet CIDRs"
+}
+
+variable "public_subnet_cidrs" {
+  type        = list(string)
+  description = "Public Subnet CIDRs"
+}
+
+variable "product" {
+  type        = string
+  description = "Product name"
 }
 
 variable "org" {
-  description = "organization name"
   type        = string
+  description = "Organization name"
 }
 
 variable "env" {
-  description = "environment name"
   type        = string
+  description = "Environment name"
 }
 
 variable "region" {
-  description = "region of the deployment"
   type        = string
-}
-
-variable "db_user_name" {
-  description = "db user name"
-  type        = string
+  description = "AWS Region"
 }
 
 variable "profile" {
-  description = "aws profile"
   type        = string
+  description = "AWS Profile"
+}
+
+variable "db_user_name" {
+  type      = string
+  sensitive = true
 }

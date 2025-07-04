@@ -13,10 +13,12 @@ module "network" {
       az   = "${var.region}${az}"
     }
   }
-  public_subnet = {
-    name = "public-${var.availability_zones[0]}"
-    cidr = var.public_subnet_cidr
-    az   = "${var.region}${var.availability_zones[0]}"
+  public_subnets = {
+    "public-${var.availability_zones[0]}" = {
+      name = "public-${var.availability_zones[0]}",
+      cidr = var.public_subnet_cidr,
+      az   = "${var.region}${var.availability_zones[0]}"
+    }
   }
 }
 
