@@ -1,15 +1,6 @@
 import datetime
 
-from sqlalchemy import (
-    TIMESTAMP,
-    Boolean,
-    DateTime,
-    String,
-    Text,
-    func,
-    text,
-)
-from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy import Boolean, Integer, String, TIMESTAMP, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -37,31 +28,18 @@ class Announcement(Base):
     __tablename__ = "announcements"
 
     id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
+        Integer,
         primary_key=True,
-        unique=True,
     )
     title: Mapped[str] = mapped_column(
         String(255),
-        nullable=False,
     )
-    content: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
-    start_time: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        nullable=False,
-    )
-    end_time: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        nullable=False,
-    )
+    content: Mapped[str]
+    start_time: Mapped[datetime.datetime]
+    end_time: Mapped[datetime.datetime]
     publishable: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
-        server_default=text("0"),
-        nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
@@ -71,5 +49,6 @@ class Announcement(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=True,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
     )

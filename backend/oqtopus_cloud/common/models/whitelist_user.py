@@ -1,8 +1,7 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Boolean, String, func, text
-from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -30,23 +29,16 @@ class WhitelistUser(Base):
     __tablename__ = "whitelist_users"
 
     id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
+        Integer,
         primary_key=True,
-        unique=True,
-    )
-    email: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-        unique=True,
     )
     group_id: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
-    is_signup_completed: Mapped[Boolean] = mapped_column(
-        Boolean,
-        server_default=text("0"),
-        nullable=True,
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
     )
     username: Mapped[str] = mapped_column(
         String(255),
@@ -56,12 +48,15 @@ class WhitelistUser(Base):
         String(255),
         nullable=True,
     )
+    is_signup_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        server_default=func.current_timestamp(),
-        nullable=True,
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         TIMESTAMP,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+        nullable=True,
     )
