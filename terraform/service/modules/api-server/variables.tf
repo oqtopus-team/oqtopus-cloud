@@ -135,7 +135,8 @@ variable "storage_driver" {
 
 variable "storage_env_vars_s3" {
   type = object({
-    STORAGE_S3_REGION = string
+    STORAGE_S3_REGION      = string
+    STORAGE_S3_BUCKET_NAME = string
   })
   default     = null
   description = "The Lambda environment variables for S3 storage drivder."
