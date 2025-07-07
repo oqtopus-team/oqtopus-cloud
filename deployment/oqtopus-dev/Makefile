@@ -60,9 +60,7 @@ zip:
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
-	@uv export \
-	--no-group dev --no-group docs \
-	--no-hashes --no-emit-project --no-editable --format requirements-txt > requirements.txt
+	@uv export --no-dev --no-hashes --no-emit-project --no-editable --format requirements-txt > requirements.txt
 	@docker run --platform linux/x86_64 --user $(id -u):$(id -g) \
   -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
   -v ./requirements.txt:/requirements.txt \
