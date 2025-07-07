@@ -21,6 +21,7 @@ from oqtopus_cloud.admin.schemas.users import (
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.user import UserStatus as UserStatusSchema
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -135,11 +136,18 @@ def delete_user(
         logger.info("invoked delete user")
         # query
         stmt = select(User).where(User.id == user_id)
-        # pageination
+        # pagination
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
+        # check if the user is in whitelist_users
+        stmt_whitelist = select(WhitelistUser).where(
+            WhitelistUser.email == query_result.email
+        )
+        query_result_whitelist = db.execute(stmt_whitelist).scalars().first()
+        if query_result_whitelist:
+            query_result_whitelist.is_signup_completed = False
         # delete from RDS
         db.delete(query_result)
         db.commit()
