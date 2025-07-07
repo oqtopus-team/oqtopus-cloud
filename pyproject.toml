@@ -33,7 +33,6 @@ pyjwt = "^2.10.1"
 pytz = "^2025.1"
 types-pytz = "^2025.1.0.20250204"
 python-multipart = "^0.0.20"
-slack_sdk = "^3.35.0"
 fsspec = "^2025.5.1"
 s3fs = "^2025.5.1"
 
@@ -87,7 +86,8 @@ dev = [
   "pytest-sqlalchemy-mock==0.1.5",
   "coverage==7.6.9",
   "moto==5.1.0",
-  "multidict==6.6.2"
+  "multidict==6.6.2",
+  "slack_sdk==3.35.0"
 ]
 docs = [
   "mkdocs-material==9.5.15",
