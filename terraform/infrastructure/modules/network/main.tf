@@ -229,7 +229,10 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route" "private_default_route" {
-  for_each               = aws_route_table.private
+  for_each = {
+    for k, rt in aws_route_table.private : k => rt
+    if contains(keys(local.nat_gateway_per_az), var.private_subnets[k].az)
+  }
   route_table_id         = each.value.id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = local.nat_gateway_per_az[var.private_subnets[each.key].az]

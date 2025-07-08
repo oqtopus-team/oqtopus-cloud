@@ -1,21 +1,25 @@
 variable "vpc_cidr" {
   type        = string
   description = "VPC CIDR"
+  default     = "10.1.0.0/16"
 }
 
 variable "availability_zones" {
   type        = list(string)
   description = "Availability Zones"
+  default     = ["a", "c", "d"]
 }
 
 variable "private_subnet_cidrs" {
   type        = list(string)
   description = "Private Subnet CIDRs"
+  default     = ["10.1.128.0/20", "10.1.144.0/20", "10.1.160.0/20"]
 }
 
 variable "public_subnet_cidrs" {
   type        = list(string)
   description = "Public Subnet CIDRs"
+  default     = ["10.1.176.0/20"]
 }
 
 variable "product" {

@@ -13,11 +13,11 @@ output "public_subnet_ids" {
 }
 
 output "bastion_subnet_id" {
-  value       = aws_subnet.public["a"].id
+  value       = one(values(aws_subnet.public)).id
   description = "The ID of the bastion subnet"
 }
 
 output "ec2_bastion_route_table_id" {
-  value       = aws_route_table.public["a"].id
+  value       = one(values(aws_route_table.public)).id
   description = "The route table ID for the EC2 instance"
 }
