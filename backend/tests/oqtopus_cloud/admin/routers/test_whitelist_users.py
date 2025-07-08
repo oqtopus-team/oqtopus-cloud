@@ -56,6 +56,7 @@ def test_get_whitelist_users_simple(
                 username="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             ListWhitelistUserResponse(
                 id=2,
@@ -64,6 +65,7 @@ def test_get_whitelist_users_simple(
                 username="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -97,6 +99,7 @@ def test_get_whitelist_users_offset1_limit1(
                 username="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -132,6 +135,7 @@ def test_get_whitelist_users_filtering(
                 username="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -194,6 +198,7 @@ def test_post_whitelist_users(test_db):
                 username="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             ListWhitelistUserResponse(
                 id=2,
@@ -202,6 +207,7 @@ def test_post_whitelist_users(test_db):
                 username="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             ListWhitelistUserResponse(
                 id=3,
@@ -210,6 +216,7 @@ def test_post_whitelist_users(test_db):
                 username="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             ListWhitelistUserResponse(
                 id=4,
@@ -218,6 +225,7 @@ def test_post_whitelist_users(test_db):
                 username="username_4",
                 organization="organization_4",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -474,6 +482,7 @@ def test_delete_whitelist_users(test_db):
                 username="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             ListWhitelistUserResponse(
                 id=3,
@@ -482,6 +491,7 @@ def test_delete_whitelist_users(test_db):
                 username="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )

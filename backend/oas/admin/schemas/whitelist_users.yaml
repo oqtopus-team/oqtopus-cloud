@@ -43,6 +43,14 @@ whitelist_users.ListWhitelistUserResponse:
     is_signup_completed:
       type: boolean
       example: true
+    available_devices:
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: string
+          enum:
+            - '*'
   required:
     - id
     - group_id

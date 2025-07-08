@@ -16,6 +16,7 @@ class ListWhitelistUserResponse(BaseModel):
     username: Annotated[str | None, Field(examples=["exampleuser"])] = None
     organization: Annotated[str | None, Field(examples=["Example Organization"])] = None
     is_signup_completed: Annotated[bool | None, Field(examples=[True])] = None
+    available_devices: list[str] | Literal["*"] | None = None
 
 
 class ListWhitelistUsersResponse(BaseModel):

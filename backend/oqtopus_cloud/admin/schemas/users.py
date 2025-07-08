@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -26,6 +27,7 @@ class GetOneUserResponse(BaseModel):
     organization: str | None = None
     status: UserStatus | None = None
     group_id: str | None = None
+    available_devices: list[str] | Literal["*"] | None = None
 
 
 class GetUsersResponse(BaseModel):

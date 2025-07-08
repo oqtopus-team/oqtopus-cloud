@@ -24,6 +24,7 @@ from oqtopus_cloud.common.models.user import UserStatus as UserStatusSchema
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.available_devices import parse_available_devices_string
 
 from . import LoggerRouteHandler
 
@@ -166,6 +167,9 @@ def model_to_schema(model: User) -> GetOneUserResponse:
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
         status=status,
+        available_devices=parse_available_devices_string(
+            getattr(model, "available_devices", None)
+        ),
     )
 
 

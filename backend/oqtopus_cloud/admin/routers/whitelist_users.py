@@ -31,6 +31,7 @@ from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.available_devices import parse_available_devices_string
 
 from . import LoggerRouteHandler
 
@@ -221,4 +222,7 @@ def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:
         username=getattr(model, "username", None),
         organization=getattr(model, "organization", None),
         is_signup_completed=getattr(model, "is_signup_completed", None),
+        available_devices=parse_available_devices_string(
+            getattr(model, "available_devices", None)
+        ),
     )

@@ -54,6 +54,7 @@ def test_get_users_simple(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="2",
@@ -62,6 +63,7 @@ def test_get_users_simple(
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -93,6 +95,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="3",
@@ -101,6 +104,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -132,6 +136,7 @@ def test_get_user_by_email(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
@@ -164,6 +169,7 @@ def test_get_user_by_name_organization_groupid_status(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
@@ -195,6 +201,7 @@ def test_patch_job_status_to_suspended(
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -217,6 +224,7 @@ def test_patch_job_status_to_unapproved(
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -266,6 +274,7 @@ def test_delete_user(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
