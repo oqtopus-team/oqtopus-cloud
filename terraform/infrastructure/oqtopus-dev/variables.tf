@@ -19,7 +19,7 @@ variable "private_subnet_cidrs" {
 variable "public_subnet_cidrs" {
   type        = list(string)
   description = "Public Subnet CIDRs"
-  default     = ["10.1.176.0/20"]
+  default     = ["10.1.176.0/20", "10.1.192.0/20", "10.1.208.0/20"]
 }
 
 variable "product" {
