@@ -14,10 +14,10 @@ module "network" {
     }
   }
   public_subnets = {
-    for i, az in var.availability_zones : "public-${az}" => {
-      name = "public-${az}",
-      cidr = var.public_subnet_cidrs[i],
-      az   = "${var.region}${az}"
+    "public-${var.availability_zones[0]}" = {
+      name = "public-${var.availability_zones[0]}",
+      cidr = var.public_subnet_cidrs[0],
+      az   = "${var.region}${var.availability_zones[0]}"
     }
   }
 }
