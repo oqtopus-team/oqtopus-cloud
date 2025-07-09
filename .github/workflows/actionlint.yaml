@@ -46,6 +46,13 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} --body "$body"
         shell: bash
 
+      - name: Post PR comment if no matches found
+        if: ${{ steps.scan.outputs.matches == '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment "✅ **No \`pull-request-target\` usage detected**" --body "$body"
+        shell: bash
+
       - uses: reviewdog/action-actionlint@v1.65.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
