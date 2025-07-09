@@ -16,13 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Search for 'pull_request_target'
+      - name: Search for pull_request_target
         id: scan
         run: |
           result=$(grep -rn --include="*.yml" --include="*.yaml" 'pull_request_target' .github/workflows || true)
-          echo "matches<<EOF" >> $GITHUB_OUTPUT
-          echo "$result" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "matches<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Post PR comment if detected
         if: ${{ steps.scan.outputs.matches != '' }}
