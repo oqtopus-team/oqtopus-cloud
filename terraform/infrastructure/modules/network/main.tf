@@ -191,47 +191,43 @@ resource "aws_nat_gateway" "nat_gw" {
 
 ## Public Route Table
 resource "aws_route_table" "public" {
-  for_each = var.public_subnets
-  vpc_id   = aws_vpc.this.id
+  vpc_id = aws_vpc.this.id
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-public-rt-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-public-rt"
     Type = "public"
   }
 }
 resource "aws_route" "public_default_route" {
-  for_each               = var.public_subnets
-  route_table_id         = aws_route_table.public[each.key].id
+  route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this.id
 }
 resource "aws_route_table_association" "public_assoc" {
-  for_each       = var.public_subnets
-  subnet_id      = aws_subnet.public[each.key].id
-  route_table_id = aws_route_table.public[each.key].id
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.public.id
 }
 
 
 ## Private Route Tables
 resource "aws_route_table" "private" {
-  for_each = var.private_subnets
-  vpc_id   = aws_vpc.this.id
+  vpc_id = aws_vpc.this.id
 
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
+    Name = "${var.product}-${var.org}-${var.env}-private-rt"
     Type = "private"
   }
 }
 
 resource "aws_route" "private_default_route" {
-  for_each               = aws_route_table.private
-  route_table_id         = each.value.id
+  route_table_id         = aws_route_table.private.id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.nat_gw.id
 }
 
 ## Route Table Associations
 resource "aws_route_table_association" "private" {
-  for_each       = var.private_subnets
-  subnet_id      = aws_subnet.private[each.key].id
-  route_table_id = aws_route_table.private[each.key].id
+  for_each       = aws_subnet.private
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.private.id
 }
