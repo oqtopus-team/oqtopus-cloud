@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Search for pull-request-target
+      - name: Search for pull_request_target
         id: scan
         run: |
           result=$(grep -rn --include="*.yml" --include="*.yaml" 'on:\s*\n?\s*pull_request_target:' .github/workflows || true)
@@ -32,15 +32,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           body=$(cat << EOF
-          🚫 **Security Warning: \`pull-request-target\` usage detected**
+          🚫 **Security Warning: \`pull_request_target\` usage detected**
 
-          The following lines in \`.github/workflows/\` contain \`pull-request-target\`:
+          The following lines in \`.github/workflows/\` contain \`pull_request_target\`:
 
           \`\`\`
           ${{ steps.scan.outputs.matches }}
           \`\`\`
 
-          Using \`pull-request-target\` can introduce security risks. Please consider using safer alternatives, or ensure its usage is justified and secure.
+          Using \`pull_request_target\` can introduce security risks. Please consider using safer alternatives, or ensure its usage is justified and secure.
           EOF
           )
           gh pr comment ${{ github.event.pull_request.number }} --body "$body"
