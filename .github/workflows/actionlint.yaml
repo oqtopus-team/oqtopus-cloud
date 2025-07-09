@@ -32,9 +32,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           body=$(cat << EOF
-          ⚠️ **Security Warning: \`pull_request_target\` usage detected**
+          🚫 **Security Warning: \`pull-request-target\` usage detected**
 
-          The following lines in \`.github/workflows/\` contain \`pull_request_target\`:
+          The following lines in \`.github/workflows/\` contain \`pull-request-target\`:
 
           \`\`\`
           ${{ steps.scan.outputs.matches }}
