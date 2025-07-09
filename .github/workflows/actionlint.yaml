@@ -15,6 +15,35 @@ jobs:
       pull-requests: "write"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Search for 'pull_request_target'
+        id: scan
+        run: |
+          result=$(grep -rn --include="*.yml" --include="*.yaml" 'pull_request_target' .github/workflows || true)
+          echo "matches<<EOF" >> $GITHUB_OUTPUT
+          echo "$result" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+            - name: Post PR comment if detected
+        if: ${{ steps.scan.outputs.matches != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          body=$(cat << EOF
+          ⚠️ **Security Warning: \`pull_request_target\` usage detected**
+
+          The following lines in \`.github/workflows/\` contain \`pull_request_target\`:
+
+          \`\`\`
+          ${{ steps.scan.outputs.matches }}
+          \`\`\`
+
+          Using \`pull_request_target\` can introduce security risks. Please consider using safer alternatives, or ensure its usage is justified and secure.
+          EOF
+          )
+          gh pr comment ${{ github.event.pull_request.number }} --body "$body"
+        shell: bash
+
       - uses: reviewdog/action-actionlint@v1.65.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
