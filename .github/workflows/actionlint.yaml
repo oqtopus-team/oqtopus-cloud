@@ -50,7 +50,8 @@ jobs:
         if: ${{ steps.scan.outputs.matches == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr comment "✅ **No \`pull-request-target\` usage detected**" --body "$body"
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "✅ **No \`pull-request-target\` usage detected**"
         shell: bash
 
       - uses: reviewdog/action-actionlint@v1.65.2
