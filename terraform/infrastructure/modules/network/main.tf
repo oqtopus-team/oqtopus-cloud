@@ -172,27 +172,21 @@ resource "aws_internet_gateway" "this" {
 
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat_eip" {
-  for_each = var.public_subnets
-  domain   = "vpc"
+  domain = "vpc"
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-eip-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-nat-eip"
   }
 }
 
 ## Nat Gateway
 resource "aws_nat_gateway" "nat_gw" {
-  for_each      = var.public_subnets
-  allocation_id = aws_eip.nat_eip[each.key].id
-  subnet_id     = aws_subnet.public[each.key].id
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.public[keys(var.public_subnets)[0]].id
 
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-gw-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-nat-gw"
   }
   depends_on = [aws_internet_gateway.this]
-}
-
-locals {
-  nat_gateway_per_az = { for k, v in var.public_subnets : v.az => aws_nat_gateway.nat_gw[k].id }
 }
 
 ## Public Route Table
@@ -229,13 +223,10 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route" "private_default_route" {
-  for_each = {
-    for k, rt in aws_route_table.private : k => rt
-    if contains(keys(local.nat_gateway_per_az), var.private_subnets[k].az)
-  }
+  for_each               = aws_route_table.private
   route_table_id         = each.value.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = local.nat_gateway_per_az[var.private_subnets[each.key].az]
+  nat_gateway_id         = aws_nat_gateway.nat_gw.id
 }
 
 ## Route Table Associations
