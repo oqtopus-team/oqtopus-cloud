@@ -19,7 +19,7 @@ jobs:
       - name: Search for pull_request_target
         id: scan
         run: |
-          result=$(grep -rn --include="*.yml" --include="*.yaml" 'on:\s*\n?\s*pull_request_target:' .github/workflows || true)
+          result=$(grep -rPzo --include="*.yml" --include="*.yaml" 'on:\s*\n\s*pull_request_target:' .github/workflows | tr '\0' '\n' || true)
           {
             echo "matches<<EOF"
             echo "$result"
