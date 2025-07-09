@@ -172,10 +172,9 @@ resource "aws_internet_gateway" "this" {
 
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat_eip" {
-  for_each = var.public_subnets
-  domain   = "vpc"
+  domain = "vpc"
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-eip-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-nat-eip"
   }
 }
 
@@ -185,7 +184,7 @@ resource "aws_nat_gateway" "nat_gw" {
   allocation_id = aws_eip.nat_eip[each.key].id
   subnet_id     = aws_subnet.public[each.key].id
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-gw-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-nat-gw"
   }
   depends_on = [aws_internet_gateway.this]
 }
@@ -225,8 +224,8 @@ resource "aws_route" "private_default_route" {
   for_each               = aws_route_table.private
   route_table_id         = each.value.id
   destination_cidr_block = "0.0.0.0/0"
-  # Route all private subnets to the first NAT gateway, losing AZ-level redundancy.
-  nat_gateway_id = values(aws_nat_gateway.nat_gw)[0].id
+  # Route all private subnets to the single NAT gateway.
+  nat_gateway_id = aws_nat_gateway.nat_gw.id
 }
 
 ## Route Table Associations
