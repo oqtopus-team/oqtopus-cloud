@@ -1,0 +1,6 @@
+name: Actionlint
+
+on:
+  pull_request_target:
+    paths:
+      - "path/to/something"
