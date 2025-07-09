@@ -24,7 +24,7 @@ jobs:
           echo "$result" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-            - name: Post PR comment if detected
+      - name: Post PR comment if detected
         if: ${{ steps.scan.outputs.matches != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
