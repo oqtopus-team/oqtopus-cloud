@@ -1,0 +1,13 @@
+name: Actionlint
+
+on:
+  pull_request_target:
+    paths:
+      - "path/to/something"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
