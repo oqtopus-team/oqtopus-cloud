@@ -33,8 +33,8 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           echo "Fetching comments..."
-          COMMENTS=$(gh api repos/$REPO/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .id')
-          for COMMENT_ID in "$COMMENTS"; do
+          COMMENTS=$(gh api repos/"$REPO"/issues/"$PR_NUMBER"/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .id')
+          for COMMENT_ID in $COMMENTS; do
             echo "Deleting comment $COMMENT_ID"
             gh api -X DELETE repos/"$REPO"/issues/comments/"$COMMENT_ID"
           done
