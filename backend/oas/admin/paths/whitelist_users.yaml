@@ -25,6 +25,12 @@ whitelist_users:
           application/json:
             schema:
               $ref: "../schemas/whitelist_users.yaml#/whitelist_users.ListWhitelistUsersResponse"
+      '400':
+        description: "Bad Request"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.BadRequestError'
       "401":
         description: Unauthorized
       "403":

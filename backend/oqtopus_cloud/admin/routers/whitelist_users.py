@@ -7,7 +7,7 @@ from fastapi import (
     Depends,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import (
     Session,
 )
@@ -36,6 +36,15 @@ from oqtopus_cloud.common.available_devices import parse_available_devices_strin
 from . import LoggerRouteHandler
 
 LEN_VARCHAR = 255
+COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
+    "id": WhitelistUser.id,
+    "group_id": WhitelistUser.group_id,
+    "email": WhitelistUser.email,
+    "username": WhitelistUser.username,
+    "organization": WhitelistUser.organization,
+    "is_signup_completed": WhitelistUser.is_signup_completed,
+    "available_devices": WhitelistUser.available_devices,
+}
 
 utc = ZoneInfo("UTC")
 
@@ -107,8 +116,9 @@ def get_whitelist_users(
     username: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
+    sort: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> ListWhitelistUsersResponse | InternalServerErrorResponse:
+) -> ListWhitelistUsersResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked get_whitelist_user")
     try:
         # query
@@ -121,6 +131,36 @@ def get_whitelist_users(
             stmt = stmt.where(WhitelistUser.organization == organization)
         if group_id:
             stmt = stmt.where(WhitelistUser.group_id == group_id)
+        if sort:
+            sort_parts = sort.split(",")
+            if len(sort_parts) != 2:
+                logger.error(f"Invalid sort parameter: {sort}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid sort parameter: {sort}"
+                )
+
+            column_name, order = sort_parts
+            if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
+                logger.error(f"Invalid column name to sort: {column_name}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid column name to sort: {column_name}"
+                )
+
+            match order:
+                case "asc":
+                    stmt = stmt.order_by(
+                        asc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
+                    )
+                case "desc":
+                    stmt = stmt.order_by(
+                        desc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
+                    )
+                case _:
+                    logger.error(f"Invalid order to sort: {order}")
+                    return BadRequestErrorResponse(
+                        message=f"Invalid order to sort: {order}"
+                    )
+
         # pageination
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)

@@ -144,6 +144,139 @@ def test_get_whitelist_users_filtering(
     assert actual == expect
 
 
+def test_get_whitelist_users_ordered_ascending(
+    test_db,
+):
+    """_summary_
+    Simple GET /whitelist_users tests with ascending order
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, False))
+    test_db.add(_get_model(2, False))
+    test_db.add(_get_model(3, False))
+    test_db.commit()
+
+    response = client.get("/whitelist_users?sort=username,asc")
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = ListWhitelistUsersResponse(
+        users=[
+            ListWhitelistUserResponse(
+                id=1,
+                email="email_1",
+                group_id="group_id_1",
+                username="username_1",
+                organization="organization_1",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            ListWhitelistUserResponse(
+                id=2,
+                email="email_2",
+                group_id="group_id_2",
+                username="username_2",
+                organization="organization_2",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            ListWhitelistUserResponse(
+                id=3,
+                email="email_3",
+                group_id="group_id_3",
+                username="username_3",
+                organization="organization_3",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+        ],
+    )
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_whitelist_users_ordered_descending(
+    test_db,
+):
+    """_summary_
+    Simple GET /whitelist_users tests with descending order
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, False))
+    test_db.add(_get_model(2, False))
+    test_db.add(_get_model(3, False))
+    test_db.commit()
+
+    response = client.get("/whitelist_users?sort=email,desc")
+    adapter = TypeAdapter(ListWhitelistUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = ListWhitelistUsersResponse(
+        users=[
+            ListWhitelistUserResponse(
+                id=3,
+                email="email_3",
+                group_id="group_id_3",
+                username="username_3",
+                organization="organization_3",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            ListWhitelistUserResponse(
+                id=2,
+                email="email_2",
+                group_id="group_id_2",
+                username="username_2",
+                organization="organization_2",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            ListWhitelistUserResponse(
+                id=1,
+                email="email_1",
+                group_id="group_id_1",
+                username="username_1",
+                organization="organization_1",
+                is_signup_completed=False,
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+        ],
+    )
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_whitelist_users_invalid_sort_query_parameter():
+    """_summary_
+    Simple GET /whitelist_users 400 tests when invalid sort query parameter
+    """
+    response = client.get("/whitelist_users?sort=username")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: username"}
+
+    response = client.get("/whitelist_users?sort=username,desc,something_else")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: username,desc,something_else"}
+
+
+def test_get_whitelist_users_invalid_column_name():
+    """_summary_
+    Simple GET /whitelist_users 400 tests when invalid column name in sort query parameter
+    """
+    response = client.get("/whitelist_users?sort=no_such_column,desc")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid column name to sort: no_such_column"}
+
+
+def test_get_whitelist_users_invalid_order():
+    """_summary_
+    Simple GET /whitelist_users 400 tests when invalid order in sort query parameter
+    """
+    response = client.get("/whitelist_users?sort=username,invalid_order")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid order to sort: invalid_order"}
+
+
 def test_get_whitelist_users_500():
     """_summary_
     Simple GET /whitelist_users tests 500 error

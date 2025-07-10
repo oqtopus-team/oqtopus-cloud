@@ -3,7 +3,7 @@ from typing import Optional
 import boto3
 from fastapi import APIRouter, Body, Depends, status
 from fastapi import Request as Event
-from sqlalchemy import select
+from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import Session
 
 from oqtopus_cloud.admin.conf import logger, tracer
@@ -28,6 +28,16 @@ from oqtopus_cloud.common.available_devices import parse_available_devices_strin
 
 from . import LoggerRouteHandler
 
+COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
+    "id": User.id,
+    "email": User.email,
+    "name": User.username,
+    "organization": User.organization,
+    "status": User.userstatus,
+    "group_id": User.group_id,
+    "available_devices": User.available_devices,
+}
+
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
@@ -45,6 +55,7 @@ def get_users(
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
     status: Optional[UserStatus] = None,
+    sort: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> GetUsersResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     try:
@@ -65,6 +76,36 @@ def get_users(
                 logger.error(f"Invalid status: {status}")
                 return BadRequestErrorResponse(message=f"Invalid status: {status}")
             stmt = stmt.where(User.userstatus == status_num)
+        if sort:
+            sort_parts = sort.split(",")
+            if len(sort_parts) != 2:
+                logger.error(f"Invalid sort parameter: {sort}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid sort parameter: {sort}"
+                )
+
+            column_name, order = sort_parts
+            if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
+                logger.error(f"Invalid column name to sort: {column_name}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid column name to sort: {column_name}"
+                )
+
+            match order:
+                case "asc":
+                    stmt = stmt.order_by(
+                        asc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
+                    )
+                case "desc":
+                    stmt = stmt.order_by(
+                        desc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
+                    )
+                case _:
+                    logger.error(f"Invalid order to sort: {order}")
+                    return BadRequestErrorResponse(
+                        message=f"Invalid order to sort: {order}"
+                    )
+
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
         scalars = query_result.scalars().all()

@@ -208,6 +208,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/whitelist_users.ListWhitelistUsersResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
         '401':
           description: Unauthorized
         '403':
