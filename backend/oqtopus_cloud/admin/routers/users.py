@@ -148,6 +148,10 @@ def delete_user(
         query_result_whitelist = db.execute(stmt_whitelist).scalars().first()
         if query_result_whitelist:
             query_result_whitelist.is_signup_completed = False
+        else:
+            logger.warning(
+                f"User {query_result.email} is not in whitelist_users. Skipping the change of is_signup_completed."
+            )
         # delete from RDS
         db.delete(query_result)
         db.commit()
