@@ -17,9 +17,9 @@ client = WebClient(token=slack_token)
 
 if args.success:
     if args.env == "":
-        text = f"✅ Deploy successful {args.deploy_target}"
+        text = f'✅ Deploy successful -> "{args.deploy_target}"'
     else:
-        text = f"✅ [{args.env}] Deploy successful {args.deploy_target}"
+        text = f'✅ [{args.env}] Deploy successful -> "{args.deploy_target}"'
 
     if args.message == "":
         message = "Deployed successfully!"
@@ -68,9 +68,9 @@ if args.success:
 
 else:
     if args.env == "":
-        text = f"❌ Deploy failed {args.deploy_target}"
+        text = f'❌ Deploy failed -> "{args.deploy_target}"'
     else:
-        text = f"❌ [{args.env}] Deploy failed {args.deploy_target}"
+        text = f'❌ [{args.env}] Deploy failed -> "{args.deploy_target}"'
 
     if args.message == "":
         message = "Deploy failed!"
