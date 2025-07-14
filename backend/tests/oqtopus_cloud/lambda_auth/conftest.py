@@ -159,7 +159,7 @@ def override_PyJWKClientFailure(monkeypatch):
 
 
 def fake_jwt_decode(*args, **kwargs):
-    return {"cognito:username": "fake_username", "token_use": "id"}
+    return {"cognito:username": "email1@example.com", "token_use": "id"}
 
 
 def fake_jwt_decode_failure(*args, **kwargs):

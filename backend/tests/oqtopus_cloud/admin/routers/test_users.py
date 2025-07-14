@@ -9,6 +9,7 @@ from oqtopus_cloud.admin.schemas.users import (
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from pydantic.type_adapter import TypeAdapter
 
 client = TestClient(app)
@@ -29,6 +30,20 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
     return User(**model_dict)
+
+
+def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
+    model_dict = {
+        "id": n,
+        "email": f"email_{n}",
+        "group_id": f"group_id_{n}",
+        "is_signup_completed": is_completed,
+        "username": f"username_{n}",
+        "organization": f"organization_{n}",
+        "created_at": datetime(2024, 3, 4, 12, 34, 57),
+        "updated_at": datetime(2024, 3, 4, 12, 34, 58),
+    }
+    return WhitelistUser(**model_dict)
 
 
 def test_get_users_simple(
@@ -246,6 +261,9 @@ def test_delete_user(
     test_db.add(_get_model(3))
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
+    test_db.add(_get_model_whitelist(3, is_completed=True))
+    test_db.add(_get_model_whitelist(1, is_completed=True))
+    test_db.add(_get_model_whitelist(2, is_completed=True))
     test_db.commit()
 
     # confirm the user is in the database
@@ -278,6 +296,10 @@ def test_delete_user(
     update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404
+
+    # confirm the is_signup_completed is set to False in whitelist_users
+    whitelist_user = test_db.query(WhitelistUser).filter(WhitelistUser.id == 1).first()
+    assert whitelist_user.is_signup_completed is False
 
 
 def test_delete_user_404(
