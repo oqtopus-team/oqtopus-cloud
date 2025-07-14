@@ -85,7 +85,7 @@ module "admin_cognito" {
   identifier               = "admin"
   username_attributes      = ["email"]
   enable_delete_protection = true
-  enable_mfa               = false
+  enable_mfa               = true
   password_minimum_length  = 12
 }
 

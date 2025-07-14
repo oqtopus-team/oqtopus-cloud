@@ -116,6 +116,63 @@ def test_get_all_announcements_offset1_limit2_desc(
     assert actual == expect
 
 
+def test_get_announcements_list_with_current_time(test_db):
+    test_db.flush()
+    test_db.add(Announcement(
+        id=1, 
+        title="title1", 
+        content="content1", 
+        start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc), 
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
+        updated_at=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
+    ))
+    test_db.add(Announcement(
+        id=2, 
+        title="title2", 
+        content="content2", 
+        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
+        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+    ))
+    test_db.add(Announcement(
+        id=3, 
+        title="title3", 
+        content="content3", 
+        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
+        end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=timezone.utc), 
+        updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+    ))
+    test_db.commit()
+
+    response = client.get("/announcements?current_time=2025-01-05T18:20:26Z")
+    adapter = TypeAdapter(GetAnnouncementsListResponse)
+    actual = adapter.validate_python(response.json())
+
+    expected = GetAnnouncementsListResponse(announcements=[
+        GetAnnouncementResponse(
+            id=2,
+            title="title2",
+            content="content2",
+            publishable=False,
+            start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+            end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc),
+            updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+        ),
+        GetAnnouncementResponse(
+            id=1,
+            title="title1",
+            content="content1",
+            publishable=False,
+            start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
+            end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc),
+            updated_at=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
+        ),
+    ])
+
+    assert response.status_code == 200
+    assert actual == expected
+
+
 def test_get_all_announcements_500():
     """_summary_
     GET /announcements tests 500 error

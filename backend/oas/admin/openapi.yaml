@@ -529,6 +529,14 @@ paths:
               - DESC
               - ASC
             default: ASC
+        - name: current_time
+          in: query
+          description: Allows to filter the list of announcements to fetch by provided time. If specified only announcements with start_time <= current_time and end_time >= current_time are returned.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2022-10-19T11:45:34Z'
       responses:
         '200':
           description: Return announcements
