@@ -84,27 +84,29 @@ def get_users(
                     message=f"Invalid sort parameter: {sort}"
                 )
 
-            column_name, order = sort_parts
+            column_name, order_str = sort_parts
             if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
                 logger.error(f"Invalid column name to sort: {column_name}")
                 return BadRequestErrorResponse(
                     message=f"Invalid column name to sort: {column_name}"
                 )
 
-            match order:
+            match order_str:
                 case "asc":
-                    stmt = stmt.order_by(
-                        asc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
-                    )
+                    order = asc
                 case "desc":
-                    stmt = stmt.order_by(
-                        desc(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])
-                    )
+                    order = desc
                 case _:
-                    logger.error(f"Invalid order to sort: {order}")
+                    logger.error(f"Invalid order to sort: {order_str}")
                     return BadRequestErrorResponse(
-                        message=f"Invalid order to sort: {order}"
+                        message=f"Invalid order to sort: {order_str}"
                     )
+
+            order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
+            if column_name != "id":
+                order_list.append(order(User.id))
+
+            stmt = stmt.order_by(*order_list)
 
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
