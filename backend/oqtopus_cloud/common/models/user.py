@@ -2,10 +2,10 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, String, func, text
-from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy import TIMESTAMP, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models.base import (
     Base,
 )
@@ -41,8 +41,9 @@ class User(Base):
 
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(
-        BIGINT(unsigned=True),
+        Integer,
         primary_key=True,
+        autoincrement=True,
         unique=True,
     )
     cognito_id: Mapped[str] = mapped_column(String(255), unique=True)
@@ -54,14 +55,17 @@ class User(Base):
     )
     organization: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     group_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
+    api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(), default=default_datetime, nullable=True
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        server_default=func.current_timestamp(),
         nullable=True,
+        server_default=func.current_timestamp(),
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
         nullable=True,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
     )

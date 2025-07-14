@@ -62,7 +62,7 @@ def test_get_users_simple(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
+                id=1,
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
@@ -70,7 +70,7 @@ def test_get_users_simple(
                 group_id="group_id_1",
             ),
             GetOneUserResponse(
-                id="2",
+                id=2,
                 email="email_2",
                 name="username_2",
                 status=UserStatus.unapproved,
@@ -101,7 +101,7 @@ def test_get_users_query_limit_offset(
         limit="2",
         users=[
             GetOneUserResponse(
-                id="2",
+                id=2,
                 email="email_2",
                 name="username_2",
                 status=UserStatus.approved,
@@ -109,7 +109,7 @@ def test_get_users_query_limit_offset(
                 group_id="group_id_2",
             ),
             GetOneUserResponse(
-                id="3",
+                id=3,
                 email="email_3",
                 name="username_3",
                 status=UserStatus.approved,
@@ -140,7 +140,7 @@ def test_get_user_by_email(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
+                id=1,
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
@@ -172,7 +172,7 @@ def test_get_user_by_name_organization_groupid_status(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
+                id=1,
                 email="email_1",
                 name="username_1",
                 organization="organization_1",
@@ -203,7 +203,7 @@ def test_patch_job_status_to_suspended(
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id="1",
+        id=1,
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -225,7 +225,7 @@ def test_patch_job_status_to_unapproved(
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id="1",
+        id=1,
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -277,7 +277,7 @@ def test_delete_user(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
+                id=1,
                 email="email_1",
                 name="username_1",
                 organization="organization_1",

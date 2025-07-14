@@ -30,15 +30,18 @@ target_metadata = Base.metadata
 enum_field_max_length = 64
 
 
-def render_enum(type_, obj, autogen_context):
-    if type_ == "type" and isinstance(obj, sa.Enum):
-        # Check for enum's members having name of acceptable length.
-        # (...or, There might be more preferable ways than raising exception?)
-        for member in obj.enums:
-            if len(member) >= enum_field_max_length:
-                raise ValueError(f"Enum field `{member}` is too long.")
-        return f"sa.String(length={enum_field_max_length})"
+def render_item(type_, obj, autogen_context):
+    if type_ == "type":
+        if isinstance(obj, sa.Enum):
+            # Check for enum's members having name of acceptable length.
+            # (...or, There might be more preferable ways than raising exception?)
+            for member in obj.enums:
+                if len(member) >= enum_field_max_length:
+                    raise ValueError(f"Enum field `{member}` is too long.")
+            return f"sa.String(length={enum_field_max_length})"
 
+        if isinstance(obj, TypeDecorator):
+            return f"sa.{obj.impl!r}"
     return False
 
 
@@ -96,7 +99,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_item=render_enum,
+            render_item=render_item,
             compare_server_default=True,
         )
 

@@ -4,9 +4,7 @@ import os
 from datetime import datetime
 from typing import Any, Callable, Optional
 
-import boto3
 import oqtopus_cloud.common.models as models
-import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job
@@ -116,7 +114,7 @@ def get_jobs(
                 continue
             else:
                 # if status is "submitted", then update status to "ready"
-                if model.status == JobStatus.submitted:
+                if decode_job_status(model.status) == JobStatus.submitted:
                     set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
@@ -180,7 +178,7 @@ def update_job_status(
         if model is None:
             return NotFoundErrorResponse("Job not found")
 
-        if model.status != JobStatus.ready:
+        if decode_job_status(model.status) != JobStatus.ready:
             return ConflictErrorResponse(
                 f"The specified job is not a status that allows transition to the status {request.status}"
             )
@@ -265,7 +263,7 @@ def update_job_info(
                 message="The overwritten status and job_info is inconsistent"
             )
 
-        status0 = model.status
+        status0 = decode_job_status(model.status)
         assert isinstance(status0, JobStatus)
         if status is not None and stage_of_status(status) < stage_of_status(status0):
             return BadRequestResponse(message="Job cannot go back to previous status.")
@@ -447,12 +445,6 @@ def parse_job_type(jt: str) -> JobType | ValueError:
         return ValueError(f"{jt} is not a valid JobType")
 
 
-def localize(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return pytz.utc.localize(dt)
-
-
 def is_datetime_field(fld: str) -> bool:
     if fld == "submitted_at":
         return True
@@ -473,12 +465,8 @@ def is_datetime_field(fld: str) -> bool:
 def set_job_status(model: Job, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
-        if isinstance(status, ValueError):
-            raise status
 
-    (_, to_model) = iso_job_status()
-
-    model.status = to_model(status)
+    model.status = status.value
     if status == JobStatus.ready:
         if model.ready_at is None:
             model.ready_at = datetime.now()
@@ -510,7 +498,7 @@ def stage_of_status(st: JobStatus) -> int:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
-    status = decode_job_status(model.value)
+    status = decode_job_status(model.status)
     if isinstance(status, ValueError):
         return status
     job_info = decode_job_info(json.loads(model.job_info))
@@ -532,10 +520,10 @@ def model_to_schema(
         mitigation_info=json.loads(model.mitigation_info),
         simulator_info=json.loads(model.simulator_info),
         execution_time=model.execution_time,
-        submitted_at=localize(model.submitted_at),
-        ready_at=localize(model.ready_at),
-        running_at=localize(model.running_at),
-        ended_at=localize(model.ended_at),
+        submitted_at=model.submitted_at,
+        ready_at=model.ready_at,
+        running_at=model.running_at,
+        ended_at=model.ended_at,
     )
 
 

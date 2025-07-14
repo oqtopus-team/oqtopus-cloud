@@ -2,10 +2,13 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import DateTime, String, Text, func, text
+from sqlalchemy import TIMESTAMP, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from oqtopus_cloud.common.models import Base
+from oqtopus_cloud.common.model_util import DateTimeTz
+from oqtopus_cloud.common.models.base import (
+    Base,
+)
 
 DeviceId = str
 
@@ -42,21 +45,22 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id: Mapped[DeviceId] = mapped_column(
+    id: Mapped[str] = mapped_column(
         String(64),
         primary_key=True,
     )
     device_type: Mapped[DeviceType] = mapped_column(
         String(32),
-        server_default=DeviceType.QPU.value,
+        server_default=f"'{DeviceType.QPU.value}'",
         nullable=False,
     )
     status: Mapped[DeviceStatus] = mapped_column(
         String(64),
-        server_default=DeviceStatus.Available.value,
+        server_default=f"'{DeviceStatus.Available.value}'",
         nullable=False,
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(),
         nullable=True,
     )
     pending_jobs: Mapped[int] = mapped_column(
@@ -64,7 +68,6 @@ class Device(Base):
         nullable=False,
     )
     n_qubits: Mapped[int] = mapped_column(
-        server_default=text("1"),
         nullable=False,
     )
     basis_gates: Mapped[str] = mapped_column(
@@ -80,7 +83,7 @@ class Device(Base):
         nullable=True,
     )
     calibrated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
+        DateTimeTz(),
         nullable=True,
     )
     description: Mapped[str] = mapped_column(
@@ -88,12 +91,13 @@ class Device(Base):
         nullable=False,
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=func.CURRENT_TIMESTAMP(),
+        TIMESTAMP,
         nullable=True,
+        server_default=func.current_timestamp(),
     )
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime,
-        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
         nullable=True,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
     )

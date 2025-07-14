@@ -6,7 +6,6 @@ import zipfile
 from datetime import datetime
 from typing import Any, Optional
 
-import pytz
 from fastapi import (
     APIRouter,
     Depends,
@@ -568,11 +567,6 @@ def model_to_schema(
 
         return False
 
-    def localize(dt: datetime | None) -> datetime | None:
-        if dt is None:
-            return None
-        return pytz.utc.localize(dt)
-
     job_info = decode_job_info(json.loads(model.job_info))
 
     if fields is None:
@@ -592,10 +586,10 @@ def model_to_schema(
             mitigation_info=json.loads(model.mitigation_info),
             simulator_info=json.loads(model.simulator_info),
             execution_time=model.execution_time,
-            submitted_at=localize(model.submitted_at),
-            ready_at=localize(model.ready_at),
-            running_at=localize(model.running_at),
-            ended_at=localize(model.ended_at),
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -615,7 +609,7 @@ def model_to_schema(
             elif is_object_field(k):
                 dict_schema[k] = json.loads(getattr(model, k))
             elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
+                dict_schema[k] = getattr(model, k)
             else:
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)

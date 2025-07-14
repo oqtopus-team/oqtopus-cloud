@@ -1,19 +1,21 @@
 from datetime import datetime
 from typing import Optional
 
-from oqtopus_cloud.user.schemas.announcements import GetAnnouncementResponse
-from oqtopus_cloud.common.models.announcements import Announcement
-from oqtopus_cloud.user.schemas.announcements import GetAnnouncementsListResponse
 import pytz
 from fastapi import APIRouter, Depends
-from sqlalchemy import asc, desc, select, and_
+from sqlalchemy import and_, asc, desc, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
+from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.user.conf import logger, tracer
+from oqtopus_cloud.user.schemas.announcements import (
+    GetAnnouncementResponse,
+    GetAnnouncementsListResponse,
+)
 from oqtopus_cloud.user.schemas.errors import (
     ErrorResponse,
     InternalServerErrorResponse,
@@ -106,8 +108,8 @@ def model_to_schema(model: Announcement) -> GetAnnouncementResponse:
         "id": getattr(model, "id", None),
         "title": getattr(model, "title", None),
         "content": getattr(model, "content", None),
-        "start_time": localize(getattr(model, "start_time", None)),
-        "end_time": localize(getattr(model, "end_time", None)),
+        "start_time": getattr(model, "start_time", None),
+        "end_time": getattr(model, "end_time", None),
         "publishable": getattr(model, "publishable", None),
     }
     return GetAnnouncementResponse.model_validate(dict)
