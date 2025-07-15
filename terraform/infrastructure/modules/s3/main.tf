@@ -19,10 +19,12 @@
 *
 */
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "this" {
-  bucket        = "${var.product}-${var.org}-${var.env}"
+  bucket        = "${var.product}-${var.org}-${var.env}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}"
+    Name = "${var.product}-${var.org}-${var.env}-${data.aws_caller_identity.current.account_id}"
   }
 }
