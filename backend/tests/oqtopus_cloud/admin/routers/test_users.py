@@ -5,7 +5,7 @@ from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
-    UpdateUserStatusRequest,
+    UpdateUserRequest,
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
@@ -321,7 +321,7 @@ def test_patch_job_status_to_suspended(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -344,7 +344,7 @@ def test_patch_job_status_to_unapproved(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.unapproved)
+    update_data = UpdateUserRequest(status=UserStatus.unapproved)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -361,20 +361,69 @@ def test_patch_job_status_to_unapproved(
     assert actual == expect
 
 
+def test_patch_user(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        name="user_name_1",
+        organization="new_organization",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.approved,
+        group_id="group_id_1",
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_patch_user_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
 def test_patch_job_404(
     test_db,
 ):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
     assert response.json() == {"message": "User not found: 2"}
 
 
 def test_patch_job_500():
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 500
 
@@ -419,7 +468,7 @@ def test_delete_user(
     assert response.status_code == 204
 
     # confirm the user is deleted
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404
 

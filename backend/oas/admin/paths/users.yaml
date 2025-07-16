@@ -92,7 +92,7 @@ users.user_id:
       content:
         application/json:
           schema:
-            $ref: "../schemas/users.yaml#/users.UpdateUserStatusRequest"
+            $ref: "../schemas/users.yaml#/users.UpdateUserRequest"
     responses:
       "200":
         description: Success

@@ -36,11 +36,19 @@ users.UserStatus:
     - suspended
   example: approved
 
-users.UpdateUserStatusRequest:
+users.UpdateUserRequest:
   type: object
   properties:
+    email:
+      type: string
+    name:
+      type: string
+    organization:
+      type: string
     status:
       $ref: "#/users.UserStatus"
+    group_id:
+      type: string
 
 users.GetUsersResponse:
   properties:

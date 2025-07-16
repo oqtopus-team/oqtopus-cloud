@@ -16,7 +16,7 @@ from oqtopus_cloud.admin.schemas.errors import (
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
-    UpdateUserStatusRequest,
+    UpdateUserRequest,
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
@@ -132,18 +132,28 @@ def get_users(
 @tracer.capture_method
 def update_user_status(
     user_id: int,
-    status_update: UpdateUserStatusRequest = Body(..., description="new status"),
+    update_user_request: UpdateUserRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     try:
-        logger.info("invoked update userstatus")
+        logger.info("invoked update user")
         # search the user
         stmt = select(User).where(User.id == user_id)
         query = db.execute(stmt).scalars().first()
         if not query:
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
-        query.userstatus = enum_to_status(status_update.status)
+
+        if update_user_request.email:
+            query.email = update_user_request.email
+        if update_user_request.name:
+            query.username = update_user_request.name
+        if update_user_request.organization:
+            query.organization = update_user_request.organization
+        if update_user_request.status:
+            query.userstatus = enum_to_status(update_user_request.status)
+        if update_user_request.group_id:
+            query.group_id = update_user_request.group_id
 
         # commit the transaction
         db.commit()
