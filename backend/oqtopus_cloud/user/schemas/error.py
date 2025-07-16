@@ -15,13 +15,13 @@ class InternalServerError(BaseModel):
     message: str
 
 
+class ForbiddenError(BaseModel):
+    message: str
+
+
 class NotFoundError(BaseModel):
     message: str
 
 
 class BadRequest(BaseModel):
-    message: str
-
-
-class ForbiddenError(BaseModel):
     message: str

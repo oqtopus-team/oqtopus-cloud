@@ -1,4 +1,5 @@
 import datetime
+import json
 from typing import Optional
 
 from fastapi import (
@@ -6,7 +7,7 @@ from fastapi import (
     Depends,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import (
     Session,
 )
@@ -30,10 +31,20 @@ from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.available_devices import parse_available_devices_string
 
 from . import LoggerRouteHandler
 
 LEN_VARCHAR = 255
+COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
+    "id": WhitelistUser.id,
+    "group_id": WhitelistUser.group_id,
+    "email": WhitelistUser.email,
+    "username": WhitelistUser.username,
+    "organization": WhitelistUser.organization,
+    "is_signup_completed": WhitelistUser.is_signup_completed,
+    "available_devices": WhitelistUser.available_devices,
+}
 
 utc = ZoneInfo("UTC")
 
@@ -61,6 +72,8 @@ def validated_whitelist_user(
         raise FormatError(required_msg.format("email address"))
     if not user.group_id:
         raise FormatError(required_msg.format("group_id"))
+    if not user.available_devices:
+        raise FormatError(required_msg.format("available_devices"))
 
     if len(str(user.email)) > LEN_VARCHAR:
         raise FormatError(too_long_msg.format(user.email, LEN_VARCHAR))
@@ -74,11 +87,17 @@ def validated_whitelist_user(
     if not is_unique_email(db, user.email):
         raise FormatError(f"{user.email} is already registered.")
 
+    available_devices = (
+        user.available_devices
+        if user.available_devices == "*"
+        else json.dumps(user.available_devices)
+    )
     validated_user = {
         "email": str(user.email),
         "group_id": str(user.group_id),
         "username": str(user.username),
         "organization": str(user.organization),
+        "available_devices": available_devices,
     }
 
     return WhitelistUser(**validated_user)
@@ -97,8 +116,9 @@ def get_whitelist_users(
     username: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
+    sort: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> ListWhitelistUsersResponse | InternalServerErrorResponse:
+) -> ListWhitelistUsersResponse | BadRequestErrorResponse | InternalServerErrorResponse:
     logger.info("invoked get_whitelist_user")
     try:
         # query
@@ -111,6 +131,38 @@ def get_whitelist_users(
             stmt = stmt.where(WhitelistUser.organization == organization)
         if group_id:
             stmt = stmt.where(WhitelistUser.group_id == group_id)
+        if sort:
+            sort_parts = sort.split(",")
+            if len(sort_parts) != 2:
+                logger.error(f"Invalid sort parameter: {sort}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid sort parameter: {sort}"
+                )
+
+            column_name, order_str = sort_parts
+            if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
+                logger.error(f"Invalid column name to sort: {column_name}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid column name to sort: {column_name}"
+                )
+
+            match order_str:
+                case "asc":
+                    order = asc
+                case "desc":
+                    order = desc
+                case _:
+                    logger.error(f"Invalid order to sort: {order_str}")
+                    return BadRequestErrorResponse(
+                        message=f"Invalid order to sort: {order_str}"
+                    )
+
+            order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
+            if column_name != "id":
+                order_list.append(order(WhitelistUser.id))
+
+            stmt = stmt.order_by(*order_list)
+
         # pageination
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
@@ -159,6 +211,7 @@ def register_whitelist_user(
                 username=user.username,
                 organization=user.organization,
                 is_signup_completed=user.is_signup_completed,
+                available_devices=user.available_devices,
                 created_at=datetime.datetime.now(utc),
                 updated_at=datetime.datetime.now(utc),
             )
@@ -211,4 +264,7 @@ def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:
         username=getattr(model, "username", None),
         organization=getattr(model, "organization", None),
         is_signup_completed=getattr(model, "is_signup_completed", None),
+        available_devices=parse_available_devices_string(
+            getattr(model, "available_devices", None)
+        ),
     )

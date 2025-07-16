@@ -208,6 +208,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/whitelist_users.ListWhitelistUsersResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
         '401':
           description: Unauthorized
         '403':
@@ -782,6 +788,14 @@ components:
           $ref: '#/components/schemas/users.UserStatus'
         group_id:
           type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
       xml:
         name: User
       required:
@@ -845,6 +859,14 @@ components:
         is_signup_completed:
           type: boolean
           example: true
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
       required:
         - id
         - group_id
@@ -874,6 +896,14 @@ components:
           type: string
         organization:
           type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
     whitelist_users.RegisterWhitelistUsersRequest:
       properties:
         users:

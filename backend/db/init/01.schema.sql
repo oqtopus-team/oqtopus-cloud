@@ -48,6 +48,7 @@ drop table if exists main.users;
       api_token_secret  VARCHAR(255) UNIQUE,
       organization      VARCHAR(255),
       group_id          VARCHAR(255),
+      available_devices TEXT,
       api_token_expiration TIMESTAMP,
       created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS whitelist_users (
     is_signup_completed BOOLEAN DEFAULT FALSE,
     username VARCHAR(255),
     organization VARCHAR(255),
+    available_devices TEXT,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   );

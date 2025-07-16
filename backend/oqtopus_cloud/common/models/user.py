@@ -33,6 +33,7 @@ class User(Base):
     api_token_secret (str)          API token secret of the user.
     organization (str)              Organization of the user.
     group_id  (str)                 Group ID of the user.
+    available_devices (str)         List of devices which user has permission to access
     api_token_expiration (datetime) The expiration date of the API token.
     created_at (datetime)           The timestamp when the user was created.
     updated_at (datetime)           The timestamp when the user was last updated.
@@ -47,6 +48,7 @@ class User(Base):
     api_token_secret: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    available_devices: Mapped[str] = mapped_column(String, nullable=True)
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime, default=default_datetime, nullable=True
     )

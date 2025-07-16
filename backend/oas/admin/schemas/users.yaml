@@ -14,6 +14,14 @@ users.GetOneUserResponse:
       $ref: "#/users.UserStatus"
     group_id:
       type: string
+    available_devices:
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: string
+          enum:
+            - '*'
   xml:
     name: User
   required: [

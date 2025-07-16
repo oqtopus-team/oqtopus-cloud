@@ -25,6 +25,7 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -68,6 +69,7 @@ def test_get_users_simple(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="2",
@@ -76,6 +78,7 @@ def test_get_users_simple(
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -107,6 +110,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="3",
@@ -115,6 +119,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -146,6 +151,7 @@ def test_get_user_by_email(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
@@ -178,11 +184,128 @@ def test_get_user_by_name_organization_groupid_status(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_get_users_order_ascending(test_db):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/users?sort=name,asc")
+    adapter = TypeAdapter(GetUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetUsersResponse(
+        offset="0",
+        limit="10",
+        users=[
+            GetOneUserResponse(
+                id=1,
+                email="email_1",
+                name="username_1",
+                organization="organization_1",
+                status=UserStatus.approved,
+                group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=2,
+                email="email_2",
+                name="username_2",
+                organization="organization_2",
+                status=UserStatus.approved,
+                group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=3,
+                email="email_3",
+                name="username_3",
+                organization="organization_3",
+                status=UserStatus.approved,
+                group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            )
+        ],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_users_order_descending(test_db):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/users?sort=email,desc")
+    adapter = TypeAdapter(GetUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetUsersResponse(
+        offset="0",
+        limit="10",
+        users=[
+            GetOneUserResponse(
+                id=3,
+                email="email_3",
+                name="username_3",
+                organization="organization_3",
+                status=UserStatus.approved,
+                group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=2,
+                email="email_2",
+                name="username_2",
+                organization="organization_2",
+                status=UserStatus.approved,
+                group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=1,
+                email="email_1",
+                name="username_1",
+                organization="organization_1",
+                status=UserStatus.approved,
+                group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            )
+        ],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_users_invalid_sort_query_parameter():
+    response = client.get("/users?sort=name")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: name"}
+
+    response = client.get("/users?sort=name,desc,something_else")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: name,desc,something_else"}
+
+
+def test_get_users_invalid_column_name():
+    response = client.get("/users?sort=no_such_column,desc")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid column name to sort: no_such_column"}
+
+
+def test_get_users_invalid_order():
+    response = client.get("/users?sort=name,invalid_order")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid order to sort: invalid_order"}
 
 
 def test_get_user_500():
@@ -209,6 +332,7 @@ def test_patch_job_status_to_suspended(
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -231,6 +355,7 @@ def test_patch_job_status_to_unapproved(
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -283,6 +408,7 @@ def test_delete_user(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
