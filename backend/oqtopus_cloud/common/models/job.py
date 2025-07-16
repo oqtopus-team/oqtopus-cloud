@@ -1,7 +1,7 @@
 import datetime
 from typing import Literal
 
-from sqlalchemy import DECIMAL, TIMESTAMP, String, Text, func, text
+from sqlalchemy import DATETIME, DECIMAL, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -64,12 +64,12 @@ class Job(Base):
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
     status: Mapped[JobStatus] = mapped_column(
         String(32),
-        default="submitted",
+        server_default=text("'submitted'"),
         nullable=False,
     )
     job_type: Mapped[JobType] = mapped_column(
         String(32),
-        default="sampling",
+        server_default=text("'sampling'"),
         nullable=False,
     )
     device_id: Mapped[DeviceId] = mapped_column(
@@ -92,12 +92,12 @@ class Job(Base):
     running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     ended_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
+        DATETIME,
         nullable=True,
-        server_default=func.current_timestamp(),
+        server_default=text("CURRENT_TIMESTAMP"),
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
+        DATETIME,
         nullable=True,
         server_default=func.current_timestamp(),
         onupdate=func.current_timestamp(),

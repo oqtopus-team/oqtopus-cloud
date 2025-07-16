@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, Text, func
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -50,8 +50,7 @@ class Announcement(Base):
         nullable=False,
     )
     publishable: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
+        Boolean, default=False, server_default=text("0")
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,

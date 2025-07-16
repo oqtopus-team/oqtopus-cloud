@@ -105,12 +105,24 @@ down: ## Stop the DB
 	@docker compose down
 
 mig-up: ## Run migration
+	@export DB_USER=admin && \
+	export DB_PASS="$(DB_PASS)" && \
+	export DB_HOST=localhost && \
+	export DB_NAME=main
 	@poetry run alembic upgrade head
 
 mig-down: ## Rollback to specific revision
+	@export DB_USER=admin && \
+	export DB_PASS="$(DB_PASS)" && \
+	export DB_HOST=localhost && \
+	export DB_NAME=main
 	@poetry run alembic downgrade "$(REV)"
 
 mig-gen: ## Generatet migration script
+	@export DB_USER=admin && \
+	export DB_PASS="$(DB_PASS)" && \
+	export DB_HOST=localhost && \
+	export DB_NAME=main
 	@poetry run alembic revision --autogenerate -m "$(ARG)"
 
 mig-stamp: ## Stamp the revision

@@ -50,12 +50,12 @@ class Device(Base):
         primary_key=True,
     )
     device_type: Mapped[DeviceType] = mapped_column(
-        String(32),
+        String(64),
         server_default=f"'{DeviceType.QPU.value}'",
         nullable=False,
     )
     status: Mapped[DeviceStatus] = mapped_column(
-        String(64),
+        String(32),
         server_default=f"'{DeviceStatus.Available.value}'",
         nullable=False,
     )
@@ -68,6 +68,7 @@ class Device(Base):
         nullable=False,
     )
     n_qubits: Mapped[int] = mapped_column(
+        server_default=text("1"),
         nullable=False,
     )
     basis_gates: Mapped[str] = mapped_column(
@@ -80,11 +81,11 @@ class Device(Base):
     )
     device_info: Mapped[str] = mapped_column(
         Text,
-        nullable=True,
+        nullable=False,
     )
     calibrated_at: Mapped[datetime.datetime] = mapped_column(
         DateTimeTz(),
-        nullable=True,
+        nullable=False,
     )
     description: Mapped[str] = mapped_column(
         String(128),
@@ -92,7 +93,7 @@ class Device(Base):
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
-        nullable=True,
+        nullable=False,
         server_default=func.current_timestamp(),
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(

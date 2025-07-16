@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Integer, String, func
+from sqlalchemy import TIMESTAMP, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz

@@ -1,11 +1,15 @@
 from logging.config import fileConfig
 from os import environ
+from typing import Any
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.mysql as mysql
 from alembic import context
 from alembic.autogenerate import renderers
+from alembic.migration import Column, MigrationContext
 from oqtopus_cloud.common.models import Base
 from sqlalchemy import Enum, TypeDecorator, engine_from_config, pool
+from sqlalchemy.types import TypeEngine
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -43,6 +47,29 @@ def render_item(type_, obj, autogen_context):
         if isinstance(obj, TypeDecorator):
             return f"sa.{obj.impl!r}"
     return False
+
+
+def custom_compare_type(
+    context: MigrationContext,
+    inspected_column: Column[Any],
+    metadata_column: Column[Any],
+    inspected_type: TypeEngine[Any],
+    metadata_type: TypeEngine[Any],
+):
+    if isinstance(inspected_type, mysql.BIGINT) and isinstance(
+        metadata_type, sa.Integer
+    ):
+        # Assume BIGINT(unsigned) and Integer are equivalent
+        return False
+
+    if isinstance(inspected_type, mysql.VARCHAR) and isinstance(
+        metadata_type, sa.String
+    ):
+        # Assume MySQL VARCHAR(unsigned) and String are equivalent iff length are identical
+        return False if inspected_type.length == metadata_type.length else True
+
+    # default
+    return None
 
 
 def set_env_var(key: str):
@@ -101,6 +128,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             render_item=render_item,
             compare_server_default=True,
+            compare_type=custom_compare_type,
         )
 
         with context.begin_transaction():
