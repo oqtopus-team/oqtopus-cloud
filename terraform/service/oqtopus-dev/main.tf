@@ -57,10 +57,15 @@ module "user_api" {
   allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
   log_level                     = "INFO"
-  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name        = "ssecontainer.log"
-  sse_user_program_name         = "userprogram.py"
-  sse_zip_file_name             = "sselog_{job_id}.zip"
+  storage_driver                = "s3"
+  storage_env_vars_s3 = {
+    STORAGE_S3_REGION      = var.region
+    STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
+  sse_bucket             = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name = "ssecontainer.log"
+  sse_user_program_name  = "userprogram.py"
+  sse_zip_file_name      = "sselog_{job_id}.zip"
 }
 
 module "provider_api" {
@@ -83,10 +88,15 @@ module "provider_api" {
   power_tools_service_name      = "provider-api"
   enable_cors                   = false
   log_level                     = "INFO"
-  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name        = "ssecontainer.log"
-  sse_user_program_name         = "userprogram.py"
-  sse_zip_file_name             = "sselog_{job_id}.zip"
+  storage_driver                = "s3"
+  storage_env_vars_s3 = {
+    STORAGE_S3_REGION      = var.region
+    STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
+  sse_bucket             = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name = "ssecontainer.log"
+  sse_user_program_name  = "userprogram.py"
+  sse_zip_file_name      = "sselog_{job_id}.zip"
 }
 
 module "admin_api" {
@@ -204,13 +214,13 @@ module "vpc_endpoint" {
 module "deployment_roles" {
   source = "../modules/deployment-roles"
 
-  product = var.product
-  org     = var.org
-  env     = var.env
-  region  = var.region
-  profile = var.profile
-  repository = var.repository
-  github_user = var.github_user
-  branch = var.branch
+  product        = var.product
+  org            = var.org
+  env            = var.env
+  region         = var.region
+  profile        = var.profile
+  repository     = var.repository
+  github_user    = var.github_user
+  branch         = var.branch
   aws_account_id = var.aws_account_id
 }

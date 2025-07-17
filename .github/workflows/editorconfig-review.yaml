@@ -1,0 +1,44 @@
+name: Code review
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out
+        uses: actions/checkout@v4
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Define envs
+        run: |
+          echo "OS=linux" >> "$GITHUB_ENV"
+          echo "ARCH=amd64" >> "$GITHUB_ENV"
+
+      - name: Install editorconfig-checker
+        run: |
+          VERSION="v3.3.0"
+
+          curl -fsSL https://github.com/editorconfig-checker/editorconfig-checker/releases/download/${VERSION}/ec-${{ env.OS }}-${{ env.ARCH }}.tar.gz  -o ec.tar.gz
+          tar -xzf ec.tar.gz
+          chmod -R +x bin
+
+      - name: Run editorconfig-checker with reviewdog
+        run: |
+          bin/ec-${{ env.OS }}-${{ env.ARCH }} -exclude '.*\.md$' > output_ecc.txt || true
+          python3 scripts/ecc_converter.py < output_ecc.txt > result_py.txt
+          reviewdog -efm="%f:%l:%c: %m" -name="editorconfig-checker" -reporter=github-pr-review < result_py.txt
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}

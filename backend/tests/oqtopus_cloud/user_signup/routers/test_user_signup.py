@@ -35,8 +35,8 @@ def test_signup_success(test_db):
     whitelist_user = (
         test_db.query(WhitelistUser).filter(WhitelistUser.email == "email_1").first()
     )
-    assert user.username == "email_1"
     assert user.email == "email_1"
+    assert user.username == "username_1"
     assert user.organization == "organization_1"
     assert user.group_id == "group_id_1"
     assert user.userstatus == "approved"

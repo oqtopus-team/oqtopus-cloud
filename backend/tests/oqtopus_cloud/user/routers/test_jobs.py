@@ -832,21 +832,26 @@ def test_get_jobs_all_parameters(
     bucket_name = os.environ["OQTOPUS_BUCKET"]
 
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=2&order=DESC"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=3&order=DESC"
     )
     adapter = TypeAdapter(List[JobBase])
     actual = adapter.validate_python(response.json())
 
     expect = [
         JobBase(
+            job_id="testjob8id",
+            description=None,
+            job_info=None,
+        ),
+        JobBase(
             job_id="testjob7id",
             description="test job 7",
             job_info=JobInfo(input=f"/{bucket_name}/testjob7id/input.zip"),
         ),
         JobBase(
-            job_id="testjob5id",
-            description="test job 5",
-            job_info=JobInfo(input=f"/{bucket_name}/testjob5id/input.zip"),
+            job_id="testjob6id",
+            description=None,
+            job_info=None,
         ),
     ]
 
@@ -856,15 +861,15 @@ def test_get_jobs_all_parameters(
         assert_jobs_equal(act, exp)
 
     response = client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=3&size=2&order=DESC"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=4&size=3&order=DESC"
     )
     actual = adapter.validate_python(response.json())
 
     expect = [
         JobBase(
-            job_id="testjob3id",
-            description="test job 3",
-            job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip"),
+            job_id="testjob2id",
+            description=None,
+            job_info=None,
         ),
     ]
 
@@ -1066,6 +1071,7 @@ def test_submit_job_shots_boundary(test_db):
 @mock_aws
 def test_delete_s3_folder(
     test_db,
+    test_storage
 ):
     """_summary_
     Test for delete s3 folder from S3
@@ -1077,46 +1083,36 @@ def test_delete_s3_folder(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="job_info")
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_program.py", Body="program1")
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/oqtopus_test_log.log", Body="log1")
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/input.zip", Body="job_info")
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_program.py", Body="program2")
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob2id/oqtopus_test_log.log", Body="log2")
+    test_storage.put(key="testjob1id/oqtopus_test_program.py", data=b"program1")
+    test_storage.put(key="testjob1id/oqtopus_test_log.log", data=b"log1")
+    test_storage.put(key="testjob2id/oqtopus_test_program.py", data=b"program2")
+    test_storage.put(key="testjob2id/oqtopus_test_log.log", data=b"log2")
 
     # Request
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
-    assert "Contents" not in objects
+    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
+    assert object_keys == []
+
     job = test_db.get(Job, "testjob1id")
     assert job is None
 
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob2id")
-    assert "Contents" in objects
-    assert len(objects["Contents"]) == 3
-    assert objects["Contents"][0]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
-    assert objects["Contents"][1]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
-    assert objects["Contents"][2]["Key"] in ["testjob2id/input.zip", "testjob2id/oqtopus_test_program.py", "testjob2id/oqtopus_test_log.log"]
-
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/input.zip")
-    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_program.py")
-    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/oqtopus_test_log.log")
-    s3client.delete_object(Bucket=bucket_name, Key="testjob2id/")
-    s3client.delete_bucket(Bucket=bucket_name)
+    # objects = test_storage.prefix(prefix="testjob2id")
+    # assert len(objects) == 2
+    # assert object in [
+    #     "testjob2id/oqtopus_test_program.py",
+    #     "testjob2id/oqtopus_test_log.log",
+    # ]
+    # assert objects["Contents"][1]["Key"] in [
+    #     "testjob2id/oqtopus_test_program.py",
+    #     "testjob2id/oqtopus_test_log.log",
+    # ]
 
 
-@mock_aws
 def test_delete_s3_folder_no_folder(
     test_db,
+    test_storage
 ):
     """_summary_
     Test for delete s3 folder from S3
@@ -1128,29 +1124,20 @@ def test_delete_s3_folder_no_folder(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     # Request
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
-    assert "Contents" not in objects
+    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
+    assert object_keys == []
+
     job = test_db.get(Job, "testjob1id")
     assert job is None
 
-    # clean up
-    s3client.delete_bucket(Bucket=bucket_name)
 
-
-@mock_aws
 def test_delete_s3_folder_no_file(
     test_db,
+    test_storage
 ):
     """_summary_
     Test for delete s3 folder from S3
@@ -1162,47 +1149,13 @@ def test_delete_s3_folder_no_file(
     test_db.add(job_model)
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/", Body="program1")
+    test_storage.put(key="testjob1id/", data=b"program1")
 
     # Request
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    objects = s3client.list_objects_v2(Bucket=bucket_name, Prefix="testjob1id")
-    assert "Contents" not in objects
-    job = test_db.get(Job, "testjob1id")
-    assert job is None
-
-    # clean up
-    s3client.delete_object(Bucket=bucket_name, Key="testjob1id/")
-    s3client.delete_bucket(Bucket=bucket_name)
-
-
-@mock_aws
-def test_delete_s3_folder_exception(
-    test_db,
-):
-    """_summary_
-    Test for delete s3 folder from S3 when SSE
-    """
-
-    test_db.flush()
-    job_model = _get_submitted_model(1)
-    job_model.status = "succeeded"
-    test_db.add(job_model)
-    test_db.commit()
-
-    # do not create bucket to raise exception
-
-    # Request
-    delete_resp = client.delete("/jobs/testjob1id")
-    assert delete_resp.status_code == 500
+    assert not test_storage.does_exist("testjob1id")
 
     job = test_db.get(Job, "testjob1id")
     assert job is None

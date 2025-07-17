@@ -1,0 +1,24 @@
+name: Actionlint
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**/*.yaml"
+      - ".github/workflows/**/*.yml"
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: "write"
+      contents: "read"
+      pull-requests: "write"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1.65.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_level: error
+          filter_mode: nofilter
+          level: error
+          reporter: github-pr-review

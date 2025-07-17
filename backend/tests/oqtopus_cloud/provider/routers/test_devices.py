@@ -2,10 +2,11 @@ import json
 from datetime import datetime, timezone
 from typing import Dict
 
-import pytz
+from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
 )
+from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.devices import (
     update_device,
     update_device_calibration,
@@ -23,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 # jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
+client = TestClient(app)
 
 
 def _get_calibration_dict() -> Dict:
@@ -138,6 +140,23 @@ def test_update_device_calibration(test_db):
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
+
+
+def test_update_device_info_timezone(test_db):
+    # Arrange
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+
+    req = DeviceInfoUpdate.model_validate_json(
+        '{ "device_info": "{}", "calibrated_at": "2025-04-01T12:34:56.789000+09:00" }'
+    )
+
+    resp = client.patch("/devices/SC/device_info", content=req.model_dump_json())
+    assert resp.status_code == 200
+    device = test_db.get(Device, "SC")
+    assert device.calibrated_at == datetime(
+        2025, 4, 1, 3, 34, 56, 789000, tzinfo=timezone.utc
+    )
 
 
 # TODO: add invalid test cases

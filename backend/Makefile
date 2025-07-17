@@ -70,7 +70,13 @@ export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
+export STORAGE_DRIVER=local:minio
+export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
+export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
+export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
 export OQTOPUS_BUCKET=oqtopus-test-bucket
+
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
@@ -93,6 +99,7 @@ run-user_signup: ## Start the user_signup API
 
 up: ## Start the DB
 	@docker compose up
+	@poetry run python storage/init_storage.py
 
 down: ## Stop the DB
 	@docker compose down

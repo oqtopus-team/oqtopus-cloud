@@ -538,7 +538,6 @@ def test_update_job_status_invalid_execution_time(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
 def test_update_job_transpiler_info(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(job_model)

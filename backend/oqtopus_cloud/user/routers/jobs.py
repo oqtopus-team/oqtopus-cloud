@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from typing import Any, Optional, cast
 
-import boto3
 import pytz
 from fastapi import (
     APIRouter,
@@ -28,6 +27,7 @@ from oqtopus_cloud.common.s3 import (
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
@@ -259,7 +259,13 @@ def get_jobs(
             etime = datetime.fromisoformat(end_time).astimezone(jst)
             stmt = stmt.filter(Job.created_at <= etime)
         if q is not None:
-            stmt = stmt.filter(or_(Job.name.contains(q), Job.description.contains(q)))
+            stmt = stmt.filter(
+                or_(
+                    Job.id.contains(q),
+                    Job.name.contains(q),
+                    Job.description.contains(q),
+                )
+            )
 
         set_params(
             Params(
@@ -334,6 +340,7 @@ def delete_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         owner = event.state.owner
@@ -352,7 +359,7 @@ def delete_job(
         db.commit()
 
         # delete the user program and logs from S3 when SSE
-        is_success_delete_s3 = delete_s3_folder(job)
+        is_success_delete_s3 = delete_storage_folder(job, storage)
         if not is_success_delete_s3:
             return InternalServerErrorResponse(
                 message="job deleted successfully, but failed to delete SSE related resources."
@@ -437,22 +444,22 @@ def cancel_job(
         return InternalServerErrorResponse(message=str(e))
 
 
-def delete_s3_folder(job: Job) -> bool:
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
+    def delete_by_key(key: str) -> bool:
+        try:
+            storage.delete(key)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete {key}: {str(e)}")
+            return False
+
     try:
-        s3 = boto3.resource("s3")
-        bucket = s3.Bucket(bucket_name)
-        deleted_list = bucket.objects.filter(Prefix=f"{job.id}/").delete()
-        for deleted in deleted_list:
-            if deleted.get("Errors") and len(deleted.get("Errors")) > 0:
-                for error in deleted.get("Errors"):
-                    logger.error(
-                        f"Failed to delete the file from S3: {error.get("Message")}"
-                    )
-                return False
-        return True
+        prefix = f"{job.id}/"
+        results = storage.traverse_prefix(prefix, delete_by_key)
+        return all(results)
+
     except Exception as e:
-        logger.exception(f"Failed to delete the folder from S3: {str(e)}")
+        logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
         return False
 
 

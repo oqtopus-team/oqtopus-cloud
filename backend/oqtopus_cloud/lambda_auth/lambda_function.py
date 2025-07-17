@@ -22,7 +22,7 @@ class AuthError(Exception):
 
 
 def _validate_user_status(
-    username: str | None = None, cognito_id: str | None = None
+    email: str | None = None, cognito_id: str | None = None
 ) -> bool:
     try:
         # Get a database session
@@ -31,9 +31,9 @@ def _validate_user_status(
 
         user = None
         # Get the user status from the database
-        if username:
+        if email:
             stmt = select(User).where(
-                User.username == username, User.userstatus == "approved"
+                User.email == email, User.userstatus == "approved"
             )
             user = db.execute(stmt).scalar()
             db.close()
@@ -47,7 +47,7 @@ def _validate_user_status(
             raise AuthError("Username or cognito_id is not given")
 
         if user is None:
-            logger.info(f"User {username} or {cognito_id} is not approved")
+            logger.info(f"User {email} or {cognito_id} is not approved")
             return False
         return True
     except Exception as e:
@@ -101,7 +101,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
             raise AuthError("Invalid token_use")
 
         # verify the user status
-        if not _validate_user_status(username=token["cognito:username"]):
+        if not _validate_user_status(email=token["cognito:username"]):
             raise AuthError("User is not approved")
 
         return token["cognito:username"]

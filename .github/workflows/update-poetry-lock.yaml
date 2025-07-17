@@ -20,7 +20,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Update poetry.lock
         run: |
@@ -44,9 +44,9 @@ jobs:
             exit 0
           fi
           git commit -m "Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" -a
-          git push origin $BRANCH_NAME
+          git push origin "$BRANCH_NAME"
           gh pr create --title "chore: [CI] Auto update poetry.lock $(date +%Y%m%d-%H%M%S)" \
                         --body "This PR was automatically generated: $TRIGGERED_PUSH_URL" \
                         --base develop \
-                        --head $BRANCH_NAME \
+                        --head "$BRANCH_NAME" \
                         --label ci
