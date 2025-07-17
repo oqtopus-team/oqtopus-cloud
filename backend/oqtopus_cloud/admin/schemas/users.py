@@ -42,3 +42,4 @@ class UpdateUserRequest(BaseModel):
     organization: str | None = None
     status: UserStatus | None = None
     group_id: str | None = None
+    available_devices: list[str] | Literal["*"] | None = None

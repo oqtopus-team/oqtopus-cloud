@@ -49,6 +49,14 @@ users.UpdateUserRequest:
       $ref: "#/users.UserStatus"
     group_id:
       type: string
+    available_devices:
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: string
+          enum:
+            - '*'
 
 users.GetUsersResponse:
   properties:

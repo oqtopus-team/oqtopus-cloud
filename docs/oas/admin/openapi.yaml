@@ -844,6 +844,14 @@ components:
           $ref: '#/components/schemas/users.UserStatus'
         group_id:
           type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
     whitelist_users.Email:
       type: string
       example: example@example.com
