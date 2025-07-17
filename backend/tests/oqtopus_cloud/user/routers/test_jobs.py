@@ -1069,12 +1069,12 @@ def test_submit_job_shots_boundary(test_db):
 
 
 @mock_aws
-def test_delete_s3_folder(
+def test_delete_job(
     test_db,
     test_storage
 ):
     """_summary_
-    Test for delete s3 folder from S3
+    Test for delete job and job's resources from storage
     """
 
     test_db.flush()
@@ -1092,11 +1092,11 @@ def test_delete_s3_folder(
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
-    assert object_keys == []
-
     job = test_db.get(Job, "testjob1id")
     assert job is None
+
+    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
+    assert object_keys == []
 
     # objects = test_storage.prefix(prefix="testjob2id")
     # assert len(objects) == 2
@@ -1110,12 +1110,12 @@ def test_delete_s3_folder(
     # ]
 
 
-def test_delete_s3_folder_no_folder(
+def test_delete_job_no_storage_folder(
     test_db,
     test_storage
 ):
     """_summary_
-    Test for delete s3 folder from S3
+    Test for delete job and job's resources from storage
     """
 
     test_db.flush()
@@ -1128,19 +1128,19 @@ def test_delete_s3_folder_no_folder(
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
-    assert object_keys == []
-
     job = test_db.get(Job, "testjob1id")
     assert job is None
 
+    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
+    assert object_keys == []
 
-def test_delete_s3_folder_no_file(
+
+def test_delete_job_empty_storage_folder(
     test_db,
     test_storage
 ):
     """_summary_
-    Test for delete s3 folder from S3
+    Test for delete job and job's resources from storage
     """
 
     test_db.flush()
