@@ -111,7 +111,7 @@ def get_jobs(
                 stmt = (
                     select(Job)
                     .filter(Job.owner == owner)
-                    .order_by(arg_order)
+                    .order_by(arg_order, Job.id)
                     .options(load_only(*arg_select))
                 )
             else:
@@ -123,7 +123,7 @@ def get_jobs(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
-            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
+            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order, Job.id)
 
         # Filtering Jobs
         if start_time is not None:
