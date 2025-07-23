@@ -93,6 +93,44 @@ paths:
               example:
                 message: Internal Server Error
   /users/{user_id}:
+    get:
+      tags:
+        - user
+      summary: "get one user"
+      description: "get one user"
+      operationId: "get_one_user_by_id"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          description: "User ID"
+          required: true
+          schema: 
+            type: integer
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/users.GetOneUserResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error.NotFoundError"
+              example:
+                message: "User not found"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error.InternalServerError"
+              example:
+                message: "Internal Server Error"
     patch:
       tags:
         - user
