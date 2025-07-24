@@ -16,8 +16,15 @@ from oqtopus_cloud.admin.schemas.errors import (
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
-    UpdateUserStatusRequest,
+    UpdateUserRequest,
     UserStatus,
+)
+from oqtopus_cloud.admin.common.validation_utils import (
+    EMAIL_ALREADY_EXISTS_MESSAGE,
+    FIELD_TOO_LONG_MESSAGE,
+    LEN_VARCHAR,
+    is_unique_email,
+    FormatError,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.user import UserStatus as UserStatusSchema
@@ -25,7 +32,10 @@ from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
-from oqtopus_cloud.common.available_devices import parse_available_devices_string
+from oqtopus_cloud.common.available_devices import (
+    convert_available_devices_to_string,
+    parse_available_devices_string,
+)
 
 from . import LoggerRouteHandler
 
@@ -132,18 +142,69 @@ def get_users(
 @tracer.capture_method
 def update_user_status(
     user_id: int,
-    status_update: UpdateUserStatusRequest = Body(..., description="new status"),
+    update_user_request: UpdateUserRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
-) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> (
+    GetOneUserResponse
+    | NotFoundErrorResponse
+    | BadRequestErrorResponse
+    | InternalServerErrorResponse
+):
     try:
-        logger.info("invoked update userstatus")
+        logger.info("invoked update user")
         # search the user
         stmt = select(User).where(User.id == user_id)
         query = db.execute(stmt).scalars().first()
         if not query:
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
-        query.userstatus = enum_to_status(status_update.status)
+
+        if update_user_request.email:
+            if len(update_user_request.email) > LEN_VARCHAR:
+                raise FormatError(
+                    FIELD_TOO_LONG_MESSAGE.format(
+                        update_user_request.email, LEN_VARCHAR
+                    )
+                )
+            if not is_unique_email(db, User, update_user_request.email):
+                raise FormatError(
+                    EMAIL_ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
+                )
+            query.email = update_user_request.email
+
+        if update_user_request.name:
+            if len(update_user_request.name) > LEN_VARCHAR:
+                raise FormatError(
+                    FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
+                )
+            query.username = update_user_request.name
+
+        if update_user_request.organization:
+            if len(update_user_request.organization) > LEN_VARCHAR:
+                raise FormatError(
+                    FIELD_TOO_LONG_MESSAGE.format(
+                        update_user_request.organization, LEN_VARCHAR
+                    )
+                )
+            query.organization = update_user_request.organization
+
+        if update_user_request.group_id:
+            if len(update_user_request.group_id) > LEN_VARCHAR:
+                raise FormatError(
+                    FIELD_TOO_LONG_MESSAGE.format(
+                        update_user_request.group_id, LEN_VARCHAR
+                    )
+                )
+            query.group_id = update_user_request.group_id
+
+        if update_user_request.status:
+            query.userstatus = enum_to_status(update_user_request.status)
+
+        available_devices = convert_available_devices_to_string(
+            update_user_request.available_devices
+        )
+        if available_devices is not None:
+            query.available_devices = available_devices
 
         # commit the transaction
         db.commit()
@@ -152,6 +213,9 @@ def update_user_status(
         user = model_to_schema(query)
 
         return user
+    except FormatError as e:
+        logger.exception(f"error: {str(e)}")
+        return BadRequestErrorResponse(message=str(e))
     except Exception as e:
         tracer.put_annotation("db_error", str(e))
         logger.exception(f"error: {str(e)}")

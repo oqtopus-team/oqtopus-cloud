@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from fastapi.testclient import TestClient
+from oqtopus_cloud.admin.common.validation_utils import LEN_VARCHAR
 from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
-    UpdateUserStatusRequest,
+    UpdateUserRequest,
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
@@ -321,7 +322,7 @@ def test_patch_job_status_to_suspended(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -344,7 +345,7 @@ def test_patch_job_status_to_unapproved(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.unapproved)
+    update_data = UpdateUserRequest(status=UserStatus.unapproved)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -361,20 +362,146 @@ def test_patch_job_status_to_unapproved(
     assert actual == expect
 
 
+def test_patch_user(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        name="user_name_1",
+        organization="new_organization",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.approved,
+        group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_patch_user_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+        available_devices=["SVSim", "Kawasaki"],
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+        available_devices=["SVSim", "Kawasaki"],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
 def test_patch_job_404(
     test_db,
 ):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
     assert response.json() == {"message": "User not found: 2"}
 
 
+def test_patch_job_400_email_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_email = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        email=too_long_email,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_email} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_email_already_exist(test_db):
+    user_1_mail = "email@email.com"
+    user_1 = _get_model(1)
+    user_1.email = user_1_mail
+
+    test_db.flush()
+    test_db.add(user_1)
+    test_db.add(_get_model(2))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        email=user_1_mail,
+    )
+    response = client.patch("/users/2", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"{user_1_mail} is already registered."}
+
+
+def test_patch_job_400_name_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_name = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        name=too_long_name,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_organization_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_organization = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        organization=too_long_organization,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_group_id_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_group_id = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        group_id=too_long_group_id,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
 def test_patch_job_500():
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 500
 
@@ -419,7 +546,7 @@ def test_delete_user(
     assert response.status_code == 204
 
     # confirm the user is deleted
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404
 

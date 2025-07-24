@@ -1,5 +1,4 @@
 import datetime
-import json
 from typing import Optional
 
 from fastapi import (
@@ -31,11 +30,21 @@ from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
 )
-from oqtopus_cloud.common.available_devices import parse_available_devices_string
+from oqtopus_cloud.common.available_devices import (
+    convert_available_devices_to_string,
+    parse_available_devices_string,
+)
+from oqtopus_cloud.admin.common.validation_utils import (
+    EMAIL_ALREADY_EXISTS_MESSAGE,
+    FIELD_REQUIRED_MESSAGE,
+    FIELD_TOO_LONG_MESSAGE,
+    FormatError,
+    LEN_VARCHAR,
+    is_unique_email,
+)
 
 from . import LoggerRouteHandler
 
-LEN_VARCHAR = 255
 COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "id": WhitelistUser.id,
     "group_id": WhitelistUser.group_id,
@@ -51,53 +60,36 @@ utc = ZoneInfo("UTC")
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
-class FormatError(Exception):
-    """Custom exception for formatting errors"""
-
-    pass
-
-
-def is_unique_email(session, email):
-    return session.query(WhitelistUser).filter_by(email=email).first() is None
-
-
 def validated_whitelist_user(
     db: Session, user: RegisterWhitelistUserRequest
 ) -> WhitelistUser:
-    required_msg = "{} is required."
-    too_long_msg = (
-        "The length of {} exceeds the limit. Please enter within {} characters"
-    )
     if not user.email:
-        raise FormatError(required_msg.format("email address"))
+        raise FormatError(FIELD_REQUIRED_MESSAGE.format("email address"))
     if not user.group_id:
-        raise FormatError(required_msg.format("group_id"))
+        raise FormatError(FIELD_REQUIRED_MESSAGE.format("group_id"))
     if not user.available_devices:
-        raise FormatError(required_msg.format("available_devices"))
+        raise FormatError(FIELD_REQUIRED_MESSAGE.format("available_devices"))
 
     if len(str(user.email)) > LEN_VARCHAR:
-        raise FormatError(too_long_msg.format(user.email, LEN_VARCHAR))
+        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.email, LEN_VARCHAR))
     if len(str(user.group_id)) > LEN_VARCHAR:
-        raise FormatError(too_long_msg.format(user.group_id, LEN_VARCHAR))
+        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.group_id, LEN_VARCHAR))
     if user.username and len(str(user.username)) > LEN_VARCHAR:
-        raise FormatError(too_long_msg.format(user.username, LEN_VARCHAR))
+        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.username, LEN_VARCHAR))
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
-        raise FormatError(too_long_msg.format(user.organization, LEN_VARCHAR))
+        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.organization, LEN_VARCHAR))
 
-    if not is_unique_email(db, user.email):
-        raise FormatError(f"{user.email} is already registered.")
+    if not is_unique_email(db, WhitelistUser, user.email):
+        raise FormatError(EMAIL_ALREADY_EXISTS_MESSAGE.format(user.email))
 
-    available_devices = (
-        user.available_devices
-        if user.available_devices == "*"
-        else json.dumps(user.available_devices)
-    )
     validated_user = {
         "email": str(user.email),
         "group_id": str(user.group_id),
         "username": str(user.username),
         "organization": str(user.organization),
-        "available_devices": available_devices,
+        "available_devices": convert_available_devices_to_string(
+            user.available_devices
+        ),
     }
 
     return WhitelistUser(**validated_user)

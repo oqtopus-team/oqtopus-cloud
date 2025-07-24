@@ -113,7 +113,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/users.UpdateUserStatusRequest'
+              $ref: '#/components/schemas/users.UpdateUserRequest'
       responses:
         '200':
           description: Success
@@ -831,11 +831,27 @@ components:
           type: string
       required:
         - message
-    users.UpdateUserStatusRequest:
+    users.UpdateUserRequest:
       type: object
       properties:
+        email:
+          type: string
+        name:
+          type: string
+        organization:
+          type: string
         status:
           $ref: '#/components/schemas/users.UserStatus'
+        group_id:
+          type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
     whitelist_users.Email:
       type: string
       example: example@example.com
