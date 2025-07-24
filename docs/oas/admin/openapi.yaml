@@ -106,7 +106,7 @@ paths:
           in: path
           description: "User ID"
           required: true
-          schema: 
+          schema:
             type: integer
       responses:
         "200":
