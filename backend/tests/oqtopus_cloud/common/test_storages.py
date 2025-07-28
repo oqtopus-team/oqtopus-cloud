@@ -7,7 +7,7 @@ from moto import mock_aws
 from urllib.parse import urlparse, parse_qs
 
 from oqtopus_cloud.common.storages.fsspec_storage import FSSpecStorage
-from oqtopus_cloud.common.storages.presign_strategies import S3PresignStrategy
+from oqtopus_cloud.common.storages.presign_strategies import LocalFilePresignStrategy, S3PresignStrategy
 
 
 @pytest.fixture
@@ -115,41 +115,43 @@ def test_fsspec_storage_s3_download_url_moto(s3_setup_moto):
     assert response.text == file_content
 
 
-def test_fsspec_storage_local_file_upload_url_moto(s3_setup_moto):
+def test_fsspec_storage_local_file_upload_url():
     """
     Tests FSSpecStorage with local filesystem for upload
     """
 
-    bucket_name = test-bucket
-    s3_client_moto = s3_setup_moto["s3_client_moto"]
-
+    storage_base = "/tmp/storage"
     key = "data/test_file.txt"
-    file_content = "test_content"
 
     # create storage
-    fs_url = f"s3://{bucket_name}"
-    storage_options = {"client_kwargs": {"region_name": "us-east-1"}}
-    storage = FSSpecStorage(fs_url=fs_url, **storage_options)
+    fs_url = f"file://{storage_base}"
+    storage = FSSpecStorage(fs_url=fs_url)
 
     # verify strategy
-    assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
+    assert isinstance(storage._presigned_url_strategy, LocalFilePresignStrategy)
 
     # get & check presigned URL
     presigned_url_data = storage.get_upload_presigned_url_data(key)
 
-    assert presigned_url_data["url"] == "https://test-bucket.s3.amazonaws.com/"
-    assert presigned_url_data["fields"]["key"] == "data/test_file.txt"
-    assert "AWSAccessKeyId" in presigned_url_data["fields"]
-    assert "policy" in presigned_url_data["fields"]
-    assert "signature" in presigned_url_data["fields"]
+    assert presigned_url_data["url"] == f"file://{storage_base}/{key}"
+    assert presigned_url_data["fields"] == {}
 
-    # use the presigned URL for upload
-    files = {"file": (key, file_content)}
-    response = requests.post(presigned_url_data["url"], data=presigned_url_data["fields"], files=files)
-    assert response.status_code == 204
 
-    # verify the object was actually created in the mock S3
-    s3_object = s3_client_moto.get_object(Bucket=bucket_name,
-                                          Key=key)
-    assert s3_object["ResponseMetadata"]["HTTPStatusCode"] == 200
-    assert s3_object["Body"].read().decode() == file_content
+def test_fsspec_storage_local_file_download_url():
+    """
+    Tests FSSpecStorage with local filesystem for download
+    """
+
+    storage_base = "/tmp/storage"
+    key = "data/test_file.txt"
+
+    # create storage
+    fs_url = f"file://{storage_base}"
+    storage = FSSpecStorage(fs_url=fs_url)
+
+    # verify strategy
+    assert isinstance(storage._presigned_url_strategy, LocalFilePresignStrategy)
+
+    # get & check presigned URL
+    presigned_url = storage.get_download_presigned_url(key)
+    assert presigned_url == f"file://{storage_base}/{key}"
