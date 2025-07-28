@@ -79,7 +79,7 @@ class S3PresignStrategy(GeneralPresignStrategy):
             self._fs.s3.generate_presigned_url,  # coroutine function
             ClientMethod="get_object",
             Params={"Bucket": self._bucket_name, "Key": key},
-            ExpiresIn=3600,
+            ExpiresIn=expires.total_seconds(),
         )
         return presigned_url
 
@@ -95,8 +95,8 @@ class LocalFilePresignStrategy(GeneralPresignStrategy):
     def get_upload_presigned_url_data(
         self, key: str, expires: timedelta = timedelta(hours=1)
     ) -> dict[str, Any]:
-        # full_path = os.path.join(self._storage_path, key)
-        return {"url": f"file://{self._storage_path}", "fields": {"key": key}}
+        full_path = os.path.join(self._storage_path, key)
+        return {"url": f"file://{full_path}", "fields": {}}
 
     def get_download_presigned_url(
         self, key: str, expires: timedelta = timedelta(hours=1)
