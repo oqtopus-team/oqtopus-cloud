@@ -35,7 +35,6 @@ def s3_setup_moto():
         }
 
 
-@mock_aws
 def test_fsspec_storage_s3_upload_url_moto(s3_setup_moto):
     """
     Tests FSSpecStorage with S3 for upload
@@ -77,7 +76,6 @@ def test_fsspec_storage_s3_upload_url_moto(s3_setup_moto):
     assert s3_object["Body"].read().decode() == file_content
 
 
-@mock_aws
 def test_fsspec_storage_s3_download_url_moto(s3_setup_moto):
     """
     Tests FSSpecStorage with S3 for download
@@ -120,12 +118,12 @@ def test_fsspec_storage_s3_download_url_moto(s3_setup_moto):
     assert response.text == file_content
 
 
-def test_fsspec_storage_local_file_upload_url():
+def test_fsspec_storage_local_file_upload_url(tmp_path):
     """
     Tests FSSpecStorage with local filesystem for upload
     """
 
-    storage_base = "/tmp/storage"
+    storage_base = tmp_path
     key = "data/test_file.txt"
 
     # create storage
@@ -142,12 +140,12 @@ def test_fsspec_storage_local_file_upload_url():
     assert presigned_url_data["fields"] == {}
 
 
-def test_fsspec_storage_local_file_download_url():
+def test_fsspec_storage_local_file_download_url(tmp_path):
     """
     Tests FSSpecStorage with local filesystem for download
     """
 
-    storage_base = "/tmp/storage"
+    storage_base = tmp_path
     key = "data/test_file.txt"
 
     # create storage
