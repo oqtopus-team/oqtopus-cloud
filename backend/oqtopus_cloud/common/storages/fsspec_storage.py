@@ -1,8 +1,8 @@
 import fsspec
 import os
-import s3fs
 
 from datetime import timedelta
+from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from typing import Any, Iterator, cast
 from urllib.parse import urlparse
 
@@ -38,7 +38,7 @@ class FSSpecStorage(AbstractStorage):
     def _init_presign_strategy(self) -> GeneralPresignStrategy:
         if self._parsed_fs_url.scheme == "s3":
             return S3PresignStrategy(
-                s3_fs=cast(s3fs.S3FileSystem, self.fs),
+                s3_fs=cast(S3FileSystem, self.fs),
                 bucket_name=self._parsed_fs_url.netloc,
             )
         elif self._parsed_fs_url.scheme == "file":
