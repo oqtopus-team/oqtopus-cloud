@@ -1,13 +1,18 @@
 import boto3
+import fsspec
 import pytest
 import requests
 
-# from datetime import timedelta
 from moto import mock_aws
+from unittest.mock import MagicMock, patch
 from urllib.parse import urlparse, parse_qs
 
 from oqtopus_cloud.common.storages.fsspec_storage import FSSpecStorage
-from oqtopus_cloud.common.storages.presign_strategies import LocalFilePresignStrategy, S3PresignStrategy
+from oqtopus_cloud.common.storages.presign_strategies import (
+    GeneralPresignStrategy,
+    LocalFilePresignStrategy,
+    S3PresignStrategy
+)
 
 
 @pytest.fixture
@@ -155,3 +160,24 @@ def test_fsspec_storage_local_file_download_url():
     # get & check presigned URL
     presigned_url = storage.get_download_presigned_url(key)
     assert presigned_url == f"file://{storage_base}/{key}"
+
+
+@patch('fsspec.filesystem')
+def test_fsspec_storage_unsupported_protocol(mock_filesystem):
+    """
+    Tests FSSpecStorage with protocol without presigned URL support (ftp)
+    Mock fsspec.filesystem to prevent actual FTP connection attempt
+    """
+
+    mock_generic_fs = MagicMock(spec=fsspec.AbstractFileSystem)
+    mock_filesystem.return_value = mock_generic_fs
+
+    fs_url = "ftp://test_user:test_pass@ftp-server:21/data/test_file.txt"
+    storage = FSSpecStorage(fs_url=fs_url)
+
+    assert isinstance(storage._presigned_url_strategy, GeneralPresignStrategy)
+
+    with pytest.raises(NotImplementedError, match="This storage protocol does not support presigned upload URLs."):
+        storage.get_upload_presigned_url_data("key")
+    with pytest.raises(NotImplementedError, match="This storage protocol does not support presigned download URLs."):
+        storage.get_download_presigned_url("key")
