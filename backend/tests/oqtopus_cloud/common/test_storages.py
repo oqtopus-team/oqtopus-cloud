@@ -11,7 +11,7 @@ from oqtopus_cloud.common.storages.fsspec_storage import FSSpecStorage
 from oqtopus_cloud.common.storages.presign_strategies import (
     GeneralPresignStrategy,
     LocalFilePresignStrategy,
-    S3PresignStrategy
+    S3PresignStrategy,
 )
 
 
@@ -66,12 +66,13 @@ def test_fsspec_storage_s3_upload_url_moto(s3_setup_moto):
 
     # use the presigned URL for upload
     files = {"file": (key, file_content)}
-    response = requests.post(presigned_url_data["url"], data=presigned_url_data["fields"], files=files)
+    response = requests.post(
+        presigned_url_data["url"], data=presigned_url_data["fields"], files=files
+    )
     assert response.status_code == 204
 
     # verify the object was actually created in the mock S3
-    s3_object = s3_client_moto.get_object(Bucket=bucket_name,
-                                          Key=key)
+    s3_object = s3_client_moto.get_object(Bucket=bucket_name, Key=key)
     assert s3_object["ResponseMetadata"]["HTTPStatusCode"] == 200
     assert s3_object["Body"].read().decode() == file_content
 
@@ -160,7 +161,7 @@ def test_fsspec_storage_local_file_download_url(tmp_path):
     assert presigned_url == f"file://{storage_base}/{key}"
 
 
-@patch('fsspec.filesystem')
+@patch("fsspec.filesystem")
 def test_fsspec_storage_unsupported_protocol(mock_filesystem):
     """
     Tests FSSpecStorage with protocol without presigned URL support (ftp)
@@ -175,7 +176,13 @@ def test_fsspec_storage_unsupported_protocol(mock_filesystem):
 
     assert isinstance(storage._presigned_url_strategy, GeneralPresignStrategy)
 
-    with pytest.raises(NotImplementedError, match="This storage protocol does not support presigned upload URLs."):
+    with pytest.raises(
+        NotImplementedError,
+        match="This storage protocol does not support presigned upload URLs.",
+    ):
         storage.get_upload_presigned_url_data("key")
-    with pytest.raises(NotImplementedError, match="This storage protocol does not support presigned download URLs."):
+    with pytest.raises(
+        NotImplementedError,
+        match="This storage protocol does not support presigned download URLs.",
+    ):
         storage.get_download_presigned_url("key")
