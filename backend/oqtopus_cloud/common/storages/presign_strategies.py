@@ -1,9 +1,9 @@
-import fsspec
 import os
-import s3fs
 
 from abc import ABC, abstractmethod
 from datetime import timedelta
+from fsspec.asyn import sync  # type: ignore[import-untyped]
+from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from typing import Any
 
 
@@ -49,8 +49,8 @@ class S3PresignStrategy(GeneralPresignStrategy):
     Presigned URL strategy for AWS S3 compatible storages (S3, minIO) using boto3.
     """
 
-    def __init__(self, s3_fs: s3fs.S3FileSystem, bucket_name: str):
-        if not isinstance(s3_fs, s3fs.S3FileSystem):
+    def __init__(self, s3_fs: S3FileSystem, bucket_name: str):
+        if not isinstance(s3_fs, S3FileSystem):
             raise TypeError("S3PresignStrategy requires an s3fs.S3FileSystem instance.")
         self._fs = s3_fs
         self._bucket_name = bucket_name
@@ -59,7 +59,7 @@ class S3PresignStrategy(GeneralPresignStrategy):
         self, key: str, expires: timedelta = timedelta(hours=1)
     ) -> dict[str, Any]:
         # underlying S3FileSystem's client is async
-        presigned_url_data = fsspec.asyn.sync(
+        presigned_url_data = sync(
             self._fs.loop,  # event-loop owned by s3fs
             self._fs.s3.generate_presigned_post,  # coroutine function
             Bucket=self._bucket_name,
@@ -74,7 +74,7 @@ class S3PresignStrategy(GeneralPresignStrategy):
         self, key: str, expires: timedelta = timedelta(hours=1)
     ) -> str:
         # underlying S3FileSystem's client is async
-        presigned_url = fsspec.asyn.sync(
+        presigned_url = sync(
             self._fs.loop,  # event-loop owned by s3fs
             self._fs.s3.generate_presigned_url,  # coroutine function
             ClientMethod="get_object",
