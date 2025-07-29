@@ -209,7 +209,6 @@ def test_storage(fake_os_env) -> Generator[FSSpecStorage, None, None]:
 def fake_os_env(monkeypatch, tmp_path):
     monkeypatch.setenv("STORAGE_DRIVER", "local")
     monkeypatch.setenv("STORAGE_LOCAL_BASE_PATH", str(tmp_path / "storage"))
-    monkeypatch.setenv("OQTOPUS_BUCKET", "oqtopus_test_bucket")
     monkeypatch.setenv("SSE_USER_PROGRAM_NAME", "oqtopus_test_program.py")
     monkeypatch.setenv("SSE_CONTAINER_LOG_NAME", "qtopus_test_sse_log.log")
     monkeypatch.setenv("SSE_ZIP_FILE_NAME", "oqtopus_test_sse_log_{job_id}.zip")
