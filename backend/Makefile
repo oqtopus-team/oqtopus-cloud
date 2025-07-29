@@ -75,7 +75,6 @@ export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
 export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
-export OQTOPUS_BUCKET=oqtopus-test-bucket
 
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \

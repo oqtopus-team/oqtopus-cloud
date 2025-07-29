@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from datetime import datetime
 from typing import Optional
@@ -7,17 +6,15 @@ from typing import Optional
 import pytz
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.common.s3 import (
-    get_download_presigned_url,
-    get_upload_presigned_url_data,
-    validate_upload,
+from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
     JOB_INFO_INPUT_PARAM,
     JOB_INFO_COMBINED_PROGRAM_PARAM,
     JOB_INFO_TRANSPILE_RESULT_PARAM,
     JOB_INFO_RESULT_PARAM,
     JOB_INFO_SSE_LOG_PARAM,
 )
-from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
@@ -66,6 +63,7 @@ def get_jobs(
     limit: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[JobDef] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
@@ -111,7 +109,7 @@ def get_jobs(
         results: list[JobDef] = []
         # for model, update_status in zip(models, update_statuses):
         for model in models:
-            job = model_to_schema(model, fields_list)
+            job = model_to_schema(model, storage, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
                 # ignore illegal jobs
@@ -144,13 +142,14 @@ def get_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
         model = db.get(Job, job_id)
         if model is None:
             return NotFoundErrorResponse("Job not found")
-        job = model_to_schema(model)
+        job = model_to_schema(model, storage)
         if isinstance(job, ValueError):
             logger.warning(str(job))
             return NotFoundErrorResponse("Job not found")
@@ -174,6 +173,7 @@ def get_upload(
     job_id: str,
     items: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[JobInfoUploadPresignedURL] | ErrorResponse:
     logger.info("invoked get_job")
     try:
@@ -206,10 +206,9 @@ def get_upload(
                 f"Unsupported item: {JOB_INFO_SSE_LOG_PARAM} for job type: {model.job_type}"
             )
 
-        bucket_name = os.environ["OQTOPUS_BUCKET"]
         return [
             JobInfoUploadPresignedURL(
-                **get_upload_presigned_url_data(bucket_name, f"{model.id}/{item}.zip")
+                **storage.get_upload_presigned_url_data(key=f"{model.id}/{item}.zip")
             )
             for item in items_list
         ]
@@ -232,6 +231,7 @@ def update_job_status(
     job_id: str,
     request: JobStatusUpdate,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> JobStatusUpdateResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
@@ -266,7 +266,7 @@ def update_job_status(
                 match = re.match(s3_key_pattern, s3_key)
                 if match:
                     if match.group("id") == job_id:
-                        if validate_upload(os.environ["OQTOPUS_BUCKET"], s3_key):
+                        if storage.does_exist(key=s3_key):
                             output_files.append(match.group("name"))
                         else:
                             return BadRequestResponse(f"{s3_key} not found")
@@ -412,7 +412,7 @@ def set_job_status(model: Job, status: str | JobStatus) -> None:
 
 
 def model_to_schema(
-    model: Job, fields: Optional[list[str]] = None
+    model: Job, storage: AbstractStorage, fields: Optional[list[str]] = None
 ) -> JobDef | ValueError:
     status = parse_job_status(model.status)
     if isinstance(status, ValueError):
@@ -428,8 +428,8 @@ def model_to_schema(
         device_id=model.device_id,
         shots=model.shots,
         job_type=job_type,
-        input=get_download_presigned_url(
-            os.environ["OQTOPUS_BUCKET"], f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+        input=storage.get_download_presigned_url(
+            key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
         ),
         status=status,
         transpiler_info=json.loads(model.transpiler_info),

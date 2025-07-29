@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime
 from typing import Any, Optional, cast
 
@@ -19,16 +18,13 @@ from zoneinfo import ZoneInfo
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.common.s3 import (
-    get_download_presigned_url,
-    get_upload_presigned_url_data,
-    validate_upload,
-    JOB_INFO_INPUT_PARAM,
-)
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
+    JOB_INFO_INPUT_PARAM,
+)
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
@@ -85,6 +81,7 @@ class BadRequest(Exception):
 def register_job(
     event: Event,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> RegisterJobResponse | ErrorResponse:
     try:
         owner = event.state.owner
@@ -112,8 +109,8 @@ def register_job(
         return RegisterJobResponse(
             job_id=job.id,
             presigned_url=JobInfoUploadPresignedURL(
-                **get_upload_presigned_url_data(
-                    os.environ["OQTOPUS_BUCKET"], f"{job_id}/{JOB_INFO_INPUT_PARAM}.zip"
+                **storage.get_upload_presigned_url_data(
+                    key=f"{job_id}/{JOB_INFO_INPUT_PARAM}.zip"
                 )
             ),
         )
@@ -139,6 +136,7 @@ def submit_job(
     job_id: str,
     request: SubmitJobRequest,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         owner = event.state.owner
@@ -181,9 +179,7 @@ def submit_job(
         job.submitted_at = datetime.now()
         job.updated_at = job.submitted_at
 
-        if not validate_upload(
-            os.environ["OQTOPUS_BUCKET"], f"{job_id}/{S3_JOB_INFO_INPUT_FILE}"
-        ):
+        if not storage.does_exist(key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}"):
             return BadRequestResponse(
                 f"job information input for {job_id} job not found"
             )
@@ -212,6 +208,7 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[JobBase | SubmittedJob | RegisteredJob] | ErrorResponse:
     try:
         owner = event.state.owner
@@ -288,7 +285,8 @@ def get_jobs(
 
         results = []
         for model, job in [
-            (model, model_to_schema(model, fields_list)) for model in models.items
+            (model, model_to_schema(model, storage, fields_list))
+            for model in models.items
         ]:
             results.append(job)
         return results
@@ -320,6 +318,7 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SubmittedJob | RegisteredJob | ErrorResponse:
     try:
         owner = event.state.owner
@@ -327,7 +326,7 @@ def get_job(
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
             return NotFoundErrorResponse(message="job not found with the given id")
-        job = model_to_schema(job_model)
+        job = model_to_schema(job_model, storage)
         if not (isinstance(job, (SubmittedJob, RegisteredJob))):
             raise TypeError("invalid job schema type")
         return job
@@ -505,22 +504,22 @@ MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 
 
 def model_to_schema(
-    model: Job, fields: Optional[list[str]] = None
+    model: Job,
+    storage: AbstractStorage,
+    fields: list[str] | None = None,
 ) -> JobBase | RegisteredJob | SubmittedJob:
-    def get_job_info(model: Job) -> JobInfo:
-        bucket_name = os.environ["OQTOPUS_BUCKET"]
-
+    def get_job_info(model: Job, storage: AbstractStorage) -> JobInfo:
         output_dict = {}
         if model.output_files:
             output_files = json.loads(model.output_files)
             output_dict = {
-                file: get_download_presigned_url(bucket_name, f"{model.id}/{file}.zip")
+                file: storage.get_download_presigned_url(key=f"{model.id}/{file}.zip")
                 for file in output_files
             }
 
         return JobInfo(
-            input=get_download_presigned_url(
-                bucket_name, f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+            input=storage.get_download_presigned_url(
+                key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
             ),
             message=model.message,
             **output_dict,
@@ -566,7 +565,7 @@ def model_to_schema(
                 device_id=model.device_id,
                 shots=model.shots,
                 job_type=JobType(model.job_type),
-                job_info=get_job_info(model),
+                job_info=get_job_info(model, storage),
                 status=JobStatus(model.status),
                 transpiler_info=json.loads(model.transpiler_info),
                 mitigation_info=json.loads(model.mitigation_info),
@@ -598,7 +597,9 @@ def model_to_schema(
                 dict_schema[k] = JobType(model.job_type)
             elif k == "job_info":
                 dict_schema[k] = (
-                    get_job_info(model) if model.status != "registered" else None
+                    get_job_info(model, storage)
+                    if model.status != "registered"
+                    else None
                 )
             elif k == "status":
                 dict_schema[k] = JobStatus(model.status)
