@@ -55,7 +55,7 @@ def get_api_token(
     logger.info(f"Get api token: {username}")
     try:
         # save user table
-        stmt = select(User).where(User.username == username)
+        stmt = select(User).where(User.email == username)
         user = db.execute(stmt).scalars().first()
         if not user or user.api_token_secret is None:
             logger.info("User not found")
@@ -105,7 +105,7 @@ def create_api_token(
     ) + timedelta(days=90)
     try:
         # save api token to users table
-        stmt = select(User).where(User.username == username)
+        stmt = select(User).where(User.email == username)
         user = db.execute(stmt).scalars().first()
         if not user:
             logger.info("User not found")
@@ -152,7 +152,7 @@ def delete_api_token(
     logger.info(f"Delete api token: {username}")
     try:
         # save user table
-        stmt = select(User).where(User.username == username)
+        stmt = select(User).where(User.email == username)
         user = db.execute(stmt).scalars().first()
         if not user:
             logger.info("User not found")
