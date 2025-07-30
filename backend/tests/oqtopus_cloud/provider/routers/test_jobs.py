@@ -4,9 +4,7 @@ from datetime import datetime
 from typing import List
 from urllib.parse import urlparse
 
-import boto3
 from fastapi.testclient import TestClient
-from moto import mock_aws
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -104,7 +102,6 @@ def _get_job_model(
     return Job(**mode_dict)
 
 
-@mock_aws
 def test_get_jobs(test_db: Session):
     test_db.flush()
     test_db.add(_get_registered_job_model(0))
@@ -112,7 +109,7 @@ def test_get_jobs(test_db: Session):
     test_db.add(_get_job_model(2))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     # check response
     response = client.get("/jobs?device_id=SC")
@@ -123,11 +120,11 @@ def test_get_jobs(test_db: Session):
     assert len(actual) == 2
 
     assert actual[0].job_id == "testjob1id"
-    assert urlparse(actual[0].input).path == f"/{bucket_name}/testjob1id/input.zip"
+    assert urlparse(actual[0].input).path == f"{storage_base}/testjob1id/input.zip"
     assert actual[0].status == JobStatus.ready
 
     assert actual[1].job_id == "testjob2id"
-    assert urlparse(actual[1].input).path == f"/{bucket_name}/testjob2id/input.zip"
+    assert urlparse(actual[1].input).path == f"{storage_base}/testjob2id/input.zip"
     assert actual[1].status == JobStatus.ready
 
     # check status update in db
@@ -135,7 +132,6 @@ def test_get_jobs(test_db: Session):
     assert test_db.get(Job, "testjob2id").status == "ready"
 
 
-@mock_aws
 def test_get_jobs_ignore_illegal_job(
     test_db,
 ):
@@ -162,7 +158,6 @@ def test_get_jobs_ignore_illegal_job(
     assert actual[1].job_id == "testjob2id"
 
 
-@mock_aws
 def test_get_jobs_with_status(test_db: Session):
     test_db.flush()
     for i in range(1, 4):
@@ -189,7 +184,6 @@ def test_get_jobs_with_status(test_db: Session):
         assert act.job_id == exp_job_id
 
 
-@mock_aws
 def test_get_jobs_with_timestamp(test_db: Session):
     test_db.flush()
     for i in range(1, 10):
@@ -215,7 +209,7 @@ def test_get_jobs_with_timestamp(test_db: Session):
         assert act.job_id == exp_job_id
 
 
-@mock_aws
+
 def test_get_jobs_limit(test_db: Session):
     test_db.flush()
     for i in range(1, 10):
@@ -238,14 +232,13 @@ def test_get_jobs_limit(test_db: Session):
         assert act.job_id == exp_job_id
 
 
-@mock_aws
 def test_get_job(test_db: Session):
     test_db.flush()
     test_db.add(_get_registered_job_model(0))
     test_db.add(_get_job_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs/testjob1id")
     adapter = TypeAdapter(JobDef)
@@ -253,13 +246,12 @@ def test_get_job(test_db: Session):
 
     assert response.status_code == 200
     assert actual.job_id == "testjob1id"
-    assert urlparse(actual.input).path == f"/{bucket_name}/testjob1id/input.zip"
+    assert urlparse(actual.input).path == f"{storage_base}/testjob1id/input.zip"
 
     assert actual.status == JobStatus.ready
     assert test_db.get(Job, "testjob1id").status == "ready"
 
 
-@mock_aws
 def test_job_upload(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1))
@@ -267,45 +259,33 @@ def test_job_upload(test_db: Session):
     test_db.add(_get_job_model(3, jt=JobType.sse))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs/testjob1id/upload?items=transpile_result,result")
     adapter = TypeAdapter(list[JobInfoUploadPresignedURL])
     actual = adapter.validate_python(response.json())
 
     assert len(actual) == 2
-    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == f"/{bucket_name}"
-    assert actual[0].fields is not None
-    assert actual[0].fields.key == f"testjob1id/transpile_result.zip"
-    assert actual[1].fields is not None
-    assert actual[1].fields.key == f"testjob1id/result.zip"
+    assert urlparse(actual[0].url).path == f"{storage_base}/testjob1id/transpile_result.zip"
+    assert urlparse(actual[1].url).path == f"{storage_base}/testjob1id/result.zip"
 
     response = client.get("/jobs/testjob2id/upload?items=combined_program,transpile_result,result")
     actual = adapter.validate_python(response.json())
 
     assert len(actual) == 3
-    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == urlparse(actual[2].url).path == f"/{bucket_name}"
-    assert actual[0].fields is not None
-    assert actual[0].fields.key == f"testjob2id/combined_program.zip"
-    assert actual[1].fields is not None
-    assert actual[1].fields.key == f"testjob2id/transpile_result.zip"
-    assert actual[2].fields is not None
-    assert actual[2].fields.key == f"testjob2id/result.zip"
+    assert urlparse(actual[0].url).path == f"{storage_base}/testjob2id/combined_program.zip"
+    assert urlparse(actual[1].url).path == f"{storage_base}/testjob2id/transpile_result.zip"
+    assert urlparse(actual[2].url).path == f"{storage_base}/testjob2id/result.zip"
 
     response = client.get("/jobs/testjob3id/upload?items=transpile_result,result,sse_log")
     actual = adapter.validate_python(response.json())
 
     assert len(actual) == 3
-    assert urlparse(actual[0].url).path == urlparse(actual[1].url).path == urlparse(actual[2].url).path == f"/{bucket_name}"
-    assert actual[0].fields is not None
-    assert actual[0].fields.key == f"testjob3id/transpile_result.zip"
-    assert actual[1].fields is not None
-    assert actual[1].fields.key == f"testjob3id/result.zip"
-    assert actual[2].fields is not None
-    assert actual[2].fields.key == f"testjob3id/sse_log.zip"
+    assert urlparse(actual[0].url).path == f"{storage_base}/testjob3id/transpile_result.zip"
+    assert urlparse(actual[1].url).path == f"{storage_base}/testjob3id/result.zip"
+    assert urlparse(actual[2].url).path == f"{storage_base}/testjob3id/sse_log.zip"
 
 
-@mock_aws
 def test_job_upload_404(test_db: Session):
     test_db.flush()
 
@@ -314,7 +294,6 @@ def test_job_upload_404(test_db: Session):
     assert response.json()["message"] == "Job not found"
 
 
-@mock_aws
 def test_job_upload_400(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1))
@@ -333,8 +312,10 @@ def test_job_upload_400(test_db: Session):
     assert response.json()["message"] == "Unsupported item: sse_log for job type: sampling"
 
 
-@mock_aws
-def test_update_job_status(test_db: Session):
+def test_update_job_status(
+    test_db,
+    test_storage,
+):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.ready))
     test_db.commit()
@@ -355,14 +336,8 @@ def test_update_job_status(test_db: Session):
     running_at = model.running_at
     assert model.ended_at is None
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key="testjob1id/result.zip", Body="dummy_content")
-    s3client.put_object(Bucket=bucket_name, Key="testjob1id/transpile_result.zip", Body="dummy_content")
+    test_storage.put(key="testjob1id/result.zip", data=b"dummy_content")
+    test_storage.put(key="testjob1id/transpile_result.zip", data=b"dummy_content")
 
     body = {
         "status": "succeeded",
@@ -383,7 +358,6 @@ def test_update_job_status(test_db: Session):
     assert model.ended_at is not None
 
 
-@mock_aws
 def test_update_job_invalid_status_transitions(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.submitted))
@@ -422,7 +396,6 @@ def test_update_job_invalid_status_transitions(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
 def test_update_job_status_invalid_output_files_1(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.running))
@@ -447,7 +420,6 @@ def test_update_job_status_invalid_output_files_1(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
 def test_update_job_status_invalid_output_files_2(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.running))
@@ -472,7 +444,6 @@ def test_update_job_status_invalid_output_files_2(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
 def test_update_job_status_missing_output_file(test_db: Session):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.running))
@@ -480,13 +451,6 @@ def test_update_job_status_missing_output_file(test_db: Session):
 
     model = test_db.get(Job, "testjob1id")
     assert model is not None
-
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
 
     body = {
         "status": "succeeded",
@@ -504,8 +468,10 @@ def test_update_job_status_missing_output_file(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
-def test_update_job_status_invalid_execution_time(test_db: Session):
+def test_update_job_status_invalid_execution_time(
+    test_db,
+    test_storage,
+):
     test_db.flush()
     test_db.add(_get_job_model(1, status=JobStatus.running))
     test_db.commit()
@@ -513,14 +479,8 @@ def test_update_job_status_invalid_execution_time(test_db: Session):
     model = test_db.get(Job, "testjob1id")
     assert model is not None
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key="testjob1id/result.zip", Body="dummy_content")
-    s3client.put_object(Bucket=bucket_name, Key="testjob1id/transpile_result.zip", Body="dummy_content")
+    test_storage.put(key="testjob1id/result.zip", data=b"dummy_content")
+    test_storage.put(key="testjob1id/transpile_result.zip", data=b"dummy_content")
 
     body = {
         "status": "succeeded",
@@ -538,7 +498,6 @@ def test_update_job_status_invalid_execution_time(test_db: Session):
     assert model.execution_time is None
 
 
-@mock_aws
 def test_update_job_transpiler_info(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(job_model)

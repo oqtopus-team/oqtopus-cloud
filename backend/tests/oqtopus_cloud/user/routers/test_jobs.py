@@ -4,9 +4,7 @@ from datetime import datetime
 from typing import List
 from urllib.parse import urlparse
 
-import boto3
 import pytz
-from moto import mock_aws
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.models.user import User, UserStatus
@@ -143,7 +141,6 @@ def assert_jobs_equal(actual: JobBase, expect: JobBase):
                 assert_job_info_equals(getattr(actual, prop), getattr(expect, prop))
 
 
-@mock_aws
 def test_register_job(
     test_client,
     test_db,
@@ -159,10 +156,9 @@ def test_register_job(
 
     new_job_id = actual.job_id
 
-    # basic validation of presign URL data
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    assert urlparse(actual.presigned_url.url).path == f"/{bucket_name}"
-    assert actual.presigned_url.fields.key == f"{new_job_id}/input.zip"
+    # basic validation of presigned URL data
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
+    assert urlparse(actual.presigned_url.url).path == f"{storage_base}/{new_job_id}/input.zip"
 
     # basic validation of DB record
     job_model = test_db.get(Job, new_job_id)
@@ -173,10 +169,10 @@ def test_register_job(
     assert job_model.shots == 0
 
 
-@mock_aws
 def test_submit_job(
     test_client,
     test_db,
+    test_storage,
 ):
     """_summary_
     Complete job submission with POST /jobs/{job_id}/submit test
@@ -186,13 +182,7 @@ def test_submit_job(
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="dummy_job_info")
+    test_storage.put(key=f"testjob1id/input.zip", data=b"dummy_job_info")
 
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 200
@@ -219,7 +209,6 @@ def test_submit_job(
     assert actual.updated_at == actual.submitted_at
 
 
-@mock_aws
 def test_submit_job_404(
     test_client,
     test_db,
@@ -232,7 +221,6 @@ def test_submit_job_404(
     assert response.json() == {"message": "job not found with the given id"}
 
 
-@mock_aws
 def test_submit_job_400_invalid_status(
     test_client,
     test_db,
@@ -245,19 +233,11 @@ def test_submit_job_400_invalid_status(
     test_db.add(_get_submitted_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 400
     assert response.json() == {"message": "testjob1id job is not in valid status for submission (valid status for submission: 'registered')"}
 
 
-@mock_aws
 def test_submit_job_400_invalid_device(
     test_client,
     test_db,
@@ -271,13 +251,6 @@ def test_submit_job_400_invalid_device(
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     body = _get_submit_body()
     body["device_id"] = "dummy"
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(body))
@@ -290,7 +263,6 @@ def test_submit_job_400_invalid_device(
     assert response.json() == {"message": "device Kawasaki is not available"}
 
 
-@mock_aws
 def test_submit_job_403_forbidden_device(
     test_client,
     test_db
@@ -330,22 +302,15 @@ def test_submit_job_400_missing_job_info(
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 400
     assert response.json() == {"message": "job information input for testjob1id job not found"}
 
 
-@mock_aws
 def test_submit_job_422_invalid_input(
     test_client,
     test_db,
+    test_storage,
 ):
     """_summary_
     Complete job submission with POST /jobs/{job_id}/submit test: try submit values valid only for newly registered jobs
@@ -355,13 +320,7 @@ def test_submit_job_422_invalid_input(
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"testjob1id/input.zip", Body="dummy_job_info")
+    test_storage.put(key=f"testjob1id/input.zip", data=b"dummy_job_info")
 
     body = _get_submit_body()
     body["job_type"] = "none"
@@ -374,7 +333,6 @@ def test_submit_job_422_invalid_input(
     assert response.status_code == 422
 
 
-@mock_aws
 def test_get_job_404(
     test_client,
     test_db,
@@ -390,7 +348,6 @@ def test_get_job_404(
     assert response.json() == {"message": "job not found with the given id"}
 
 
-@mock_aws
 def test_get_jobs_simple(
     test_client,
     test_db,
@@ -411,7 +368,7 @@ def test_get_jobs_simple(
 
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get("/jobs")
     adapter = TypeAdapter(List[SubmittedJob | RegisteredJob])
@@ -424,7 +381,7 @@ def test_get_jobs_simple(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -454,9 +411,9 @@ def test_get_jobs_simple(
             description="test job 3",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip",
-                             result=f"/{bucket_name}/testjob3id/result.zip",
-                             transpile_result=f"/{bucket_name}/testjob3id/transpile_result.zip",
+            job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip",
+                             result=f"{storage_base}/testjob3id/result.zip",
+                             transpile_result=f"{storage_base}/testjob3id/transpile_result.zip",
                              message="job completed successfully"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
@@ -481,7 +438,6 @@ def test_get_jobs_simple(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_filtering_fields(
     test_client,
     test_db,
@@ -533,7 +489,6 @@ def test_get_jobs_filtering_fields(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_filtering_job_info(
     test_client,
     test_db,
@@ -548,7 +503,7 @@ def test_get_jobs_filtering_job_info(
     test_db.add(_get_succeeded_model(3))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get("/jobs?fields=job_info&order=ASC")
     adapter = TypeAdapter(List[JobBase])
@@ -556,14 +511,14 @@ def test_get_jobs_filtering_job_info(
 
     expect = [
         JobBase(
-            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
         ),
         JobBase(
             job_info=None,
         ),
-        JobBase(job_info=JobInfo(input=f"/{bucket_name}/testjob3id/input.zip",
-                                 result=f"/{bucket_name}/testjob3id/result.zip",
-                                 transpile_result=f"/{bucket_name}/testjob3id/transpile_result.zip",
+        JobBase(job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip",
+                                 result=f"{storage_base}/testjob3id/result.zip",
+                                 transpile_result=f"{storage_base}/testjob3id/transpile_result.zip",
                                  message="job completed successfully"),
         ),
     ]
@@ -574,7 +529,6 @@ def test_get_jobs_filtering_job_info(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_all_fields(
     test_client,
     test_db,
@@ -594,7 +548,6 @@ def test_get_jobs_all_fields(
     assert len(actual) == 2
 
 
-@mock_aws
 def test_get_jobs_invalid_fields(
     test_client,
     test_db,
@@ -620,7 +573,6 @@ def test_get_jobs_invalid_fields(
     assert actual == expect
 
 
-@mock_aws
 def test_get_jobs_filtering_start_time(
     test_client,
     test_db,
@@ -656,7 +608,6 @@ def test_get_jobs_filtering_start_time(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_filtering_end_time(
     test_client,
     test_db,
@@ -670,7 +621,7 @@ def test_get_jobs_filtering_end_time(
     test_db.add(_get_registered_model(2))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
     adapter = TypeAdapter(List[JobBase])
@@ -683,7 +634,7 @@ def test_get_jobs_filtering_end_time(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -707,7 +658,6 @@ def test_get_jobs_filtering_end_time(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_filtering_search_string(
     test_client,
     test_db,
@@ -721,7 +671,7 @@ def test_get_jobs_filtering_search_string(
     test_db.add(_get_registered_model(3))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get("/jobs?q=1&order=ASC")
     adapter = TypeAdapter(List[JobBase])
@@ -734,7 +684,7 @@ def test_get_jobs_filtering_search_string(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -758,7 +708,6 @@ def test_get_jobs_filtering_search_string(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_desc_order(
     test_client,
     test_db,
@@ -772,7 +721,7 @@ def test_get_jobs_desc_order(
     test_db.add(_get_registered_model(2))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get("/jobs?order=DESC")
     adapter = TypeAdapter(List[JobBase])
@@ -793,7 +742,7 @@ def test_get_jobs_desc_order(
             description="test job 1",
             device_id="Kawasaki",
             job_type=JobType.sampling,
-            job_info=JobInfo(input=f"/{bucket_name}/testjob1id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
             transpiler_info={"this_is": "transpiler_info"},
             simulator_info={"this_is": "simulator_info"},
             mitigation_info={
@@ -817,7 +766,6 @@ def test_get_jobs_desc_order(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_pagination(
     test_client,
     test_db,
@@ -883,7 +831,6 @@ def test_get_jobs_pagination(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_get_jobs_all_parameters(
     test_client,
     test_db,
@@ -900,7 +847,7 @@ def test_get_jobs_all_parameters(
             test_db.add(_get_registered_model(i))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get(
         "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=3&order=DESC"
@@ -917,7 +864,7 @@ def test_get_jobs_all_parameters(
         JobBase(
             job_id="testjob7id",
             description="test job 7",
-            job_info=JobInfo(input=f"/{bucket_name}/testjob7id/input.zip"),
+            job_info=JobInfo(input=f"{storage_base}/testjob7id/input.zip"),
         ),
         JobBase(
             job_id="testjob6id",
@@ -950,7 +897,6 @@ def test_get_jobs_all_parameters(
         assert_jobs_equal(act, exp)
 
 
-@mock_aws
 def test_job_sortedness(
     test_client,
     test_db
@@ -968,7 +914,6 @@ def test_job_sortedness(
     assert is_sorted(job_ids)
 
 
-@mock_aws
 def test_get_get(
     test_client,
     test_db
@@ -1000,10 +945,10 @@ def test_get_get(
         assert bef == aft
 
 
-@mock_aws
 def test_register_submit_get(
     test_client,
     test_db,
+    test_storage,
 ):
     """_summary_
     Test for **the invariance of register, submit and get**:
@@ -1035,13 +980,7 @@ def test_register_submit_get(
     assert get_resp_json.shots == 0
 
     # Upload job info
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
+    test_storage.put(key=f"{job_id}/input.zip", data=b"dummy_job_info")
 
     # Submitting
     sub_response = test_client.post(f"/jobs/{job_id}/submit", content=json.dumps(_get_submit_body()))
@@ -1063,10 +1002,10 @@ def test_register_submit_get(
     assert get_resp_json.shots == 1024
 
 
-@mock_aws
 def test_register_submit_cancel_delete(
     test_client,
-    test_db
+    test_db,
+    test_storage
 ):
     """_summary_
     Test for **the invariance of submit and delete**:
@@ -1090,13 +1029,7 @@ def test_register_submit_cancel_delete(
     job_id = reg_response_json.job_id
 
     # Upload job info
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-    s3client.put_object(Bucket=bucket_name, Key=f"{job_id}/input.zip", Body="dummy_job_info")
+    test_storage.put(key=f"{job_id}/input.zip", data=b"dummy_job_info")
 
     # Submitting
     submit_resp = test_client.post(f"/jobs/{job_id}/submit", content=json.dumps(_get_submit_body()))
@@ -1158,7 +1091,6 @@ def test_submit_job_shots_boundary(
     assert error_title == ""
 
 
-@mock_aws
 def test_delete_job(
     test_client,
     test_db,
