@@ -50,7 +50,12 @@ def get_announcements_list(
             else asc(Announcement.start_time)
         )
 
-        stmt = select(Announcement).offset(offset).limit(limit).order_by(arg_order)
+        stmt = (
+            select(Announcement)
+            .offset(offset)
+            .limit(limit)
+            .order_by(arg_order, Announcement.id)
+        )
 
         if current_time is not None:
             ctime = datetime.fromisoformat(current_time).astimezone(utc)
