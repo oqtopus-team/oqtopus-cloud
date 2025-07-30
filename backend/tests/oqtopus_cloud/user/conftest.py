@@ -6,6 +6,7 @@ from typing import (
 
 import pytest
 import pytz
+from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.base import (
     Base,
 )
@@ -17,6 +18,7 @@ from oqtopus_cloud.common.session import (
 )
 from oqtopus_cloud.common.storages import AbstractStorage, FSSpecStorage
 from oqtopus_cloud.user.lambda_function import app
+from oqtopus_cloud.user.lambda_function import app as real_app
 from sqlalchemy import (
     create_engine,
 )
@@ -30,6 +32,32 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.session import (
     close_all_sessions,
 )
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class TestUserMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        request.state.owner = "email_1"
+        request.state.username = "test_user"
+        response = await call_next(request)
+        return response
+
+
+@pytest.fixture
+def test_client():
+    # Create a FastAPI app instance for testing
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    # Copy routes and dependencies from the real app
+    for route in real_app.routes:
+        app.router.routes.append(route)
+    for key, value in real_app.dependency_overrides.items():
+        app.dependency_overrides[key] = value
+    # Add test middleware
+    app.add_middleware(TestUserMiddleware)
+    client = TestClient(app)
+    return client
 
 
 class TestingSession(Session):
