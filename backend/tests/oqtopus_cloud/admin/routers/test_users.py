@@ -315,6 +315,46 @@ def test_get_user_500():
     )
     assert response.status_code == 500
 
+def test_get_one_user(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.add(_get_model(3))
+    test_db.commit()
+
+    response = client.get("/users/2")
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=2,
+        email="email_2",
+        name="username_2",
+        organization="organization_2",
+        status=UserStatus.approved,
+        group_id="group_id_2",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+    )
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_one_user_404(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.add(_get_model(3))
+    test_db.commit()
+
+    response = client.get("/users/5")
+
+    assert response.status_code == 404
+    assert response.json() == {"message": "user_id=5 is not found."}
+
+
+def test_get_one_user_500():
+    response = client.get("/users/1")
+    assert response.status_code == 500
 
 def test_patch_job_status_to_suspended(
     test_db,
