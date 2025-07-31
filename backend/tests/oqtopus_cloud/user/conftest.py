@@ -17,7 +17,6 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, FSSpecStorage
-from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.lambda_function import app as real_app
 from sqlalchemy import (
     create_engine,
@@ -36,6 +35,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class TestUserMiddleware(BaseHTTPMiddleware):
+    """
+    If "test_client" is used, middleware to send a request with a user with an email address of email_1
+    """
+
     async def dispatch(self, request, call_next):
         request.state.owner = "email_1"
         request.state.username = "test_user"
@@ -43,21 +46,39 @@ class TestUserMiddleware(BaseHTTPMiddleware):
         return response
 
 
-@pytest.fixture
-def test_client():
-    # Create a FastAPI app instance for testing
+@pytest.fixture()
+def test_client(request):
     from fastapi import FastAPI
 
-    app = FastAPI()
-    # Copy routes and dependencies from the real app
+    mode = getattr(request, "param", "with_db")
+
+    test_app = FastAPI()
+    # Add routes from the real app to the test app
     for route in real_app.routes:
-        app.router.routes.append(route)
+        test_app.router.routes.append(route)
     for key, value in real_app.dependency_overrides.items():
-        app.dependency_overrides[key] = value
-    # Add test middleware
-    app.add_middleware(TestUserMiddleware)
-    client = TestClient(app)
-    return client
+        test_app.dependency_overrides[key] = value
+    if mode == "with_db":
+        test_db = request.getfixturevalue("test_db")
+
+        def get_db_for_testing():
+            try:
+                yield test_db
+                test_db.commit()
+            except SQLAlchemyError:
+                test_db.rollback()
+
+        test_app.dependency_overrides[get_db] = get_db_for_testing
+
+    elif mode == "without_db":
+        # DB 依存性を完全に外す
+        test_app.dependency_overrides.pop(get_db, None)
+        real_app.dependency_overrides.pop(get_db, None)  # 念のため
+
+    else:
+        raise ValueError(f"unknown mode: {mode}")
+    test_app.add_middleware(TestUserMiddleware)
+    return TestClient(test_app)
 
 
 class TestingSession(Session):
@@ -215,7 +236,8 @@ def test_db() -> (
             assert e is not None
             db.rollback()
 
-    app.dependency_overrides[get_db] = get_db_for_testing
+    real_app.dependency_overrides[get_db] = get_db_for_testing
+
     insert_initial_data(db)
 
     yield db

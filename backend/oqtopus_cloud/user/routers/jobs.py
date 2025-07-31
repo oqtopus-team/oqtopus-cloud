@@ -30,10 +30,10 @@ from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
     ErrorResponse,
+    ForbiddenErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
-    ForbiddenErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
@@ -652,7 +652,7 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
 
 def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
     try:
-        user = db.scalars(select(User).where(User.username == username)).first()
+        user = db.scalars(select(User).where(User.email == username)).first()
         if user is None or user.available_devices is None:
             return False
 
