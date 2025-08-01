@@ -652,6 +652,7 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
 
 def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
     try:
+        # username here is the email address registered in Cognito
         user = db.scalars(select(User).where(User.email == username)).first()
         if user is None or user.available_devices is None:
             return False

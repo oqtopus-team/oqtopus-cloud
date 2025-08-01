@@ -140,6 +140,7 @@ def model_to_schema(model: Device) -> DeviceInfo:
 
 def get_user_available_devices(username: str, db: Session) -> list[str] | str:
     try:
+        # username here is the email address registered in Cognito
         user = db.scalars(select(User).where(User.email == username)).first()
         if user is None or user.available_devices is None:
             return []
