@@ -151,13 +151,14 @@ resource "aws_subnet" "private" {
 }
 ## Public Subnet
 resource "aws_subnet" "public" {
+  for_each                = var.public_subnets
   vpc_id                  = aws_vpc.this.id
-  cidr_block              = var.public_subnet.cidr
-  availability_zone       = var.public_subnet.az
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${var.public_subnet.name}"
+    Name = "${var.product}-${var.org}-${var.env}-${each.value.name}"
   }
 }
 
@@ -179,16 +180,14 @@ resource "aws_eip" "nat_eip" {
 
 ## Nat Gateway
 resource "aws_nat_gateway" "nat_gw" {
-  allocation_id = element(aws_eip.nat_eip.*.id, 0)
-  # attach nat gateway on the first public subnet
-  subnet_id = aws_subnet.public.id
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = values(aws_subnet.public)[0].id
 
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-nat-gw"
   }
+  depends_on = [aws_internet_gateway.this]
 }
-
-
 
 ## Public Route Table
 resource "aws_route_table" "public" {
@@ -204,7 +203,8 @@ resource "aws_route" "public_default_route" {
   gateway_id             = aws_internet_gateway.this.id
 }
 resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public.id
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -224,7 +224,8 @@ resource "aws_route" "private_default_route" {
   for_each               = aws_route_table.private
   route_table_id         = each.value.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = element(aws_nat_gateway.nat_gw.*.id, 0)
+  # Route all private subnets to the single NAT gateway.
+  nat_gateway_id = aws_nat_gateway.nat_gw.id
 }
 
 ## Route Table Associations

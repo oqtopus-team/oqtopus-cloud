@@ -28,6 +28,15 @@ plan: ## Run terraform plan
 apply: ## Run terraform apply
 	@terraform apply
 
+standby-init: ## Run terraform init for standby
+	@terraform init -backend-config=oqtopus-prod-standby.tfbackend
+
+standby-plan: ## Run terraform plan for standby
+	@terraform plan -var-file=terraform.tfvars.standby > diffs.ansi
+
+standby-apply: ## Run terraform apply for standby
+	@terraform apply -var-file=terraform.tfvars.standby
+
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
@@ -35,4 +44,3 @@ help: ## Show this help message
 	@echo "Available targets:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-

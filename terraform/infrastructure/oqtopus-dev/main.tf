@@ -5,28 +5,20 @@ module "network" {
   org      = var.org
   env      = var.env
   region   = var.region
-  vpc_cidr = "10.2.0.0/16"
+  vpc_cidr = var.vpc_cidr
   private_subnets = {
-    private-a = {
-      name = "private-a",
-      cidr = "10.2.128.0/20",
-      az   = "ap-northeast-1a"
-    },
-    private-c = {
-      name = "private-c",
-      cidr = "10.2.144.0/20",
-      az   = "ap-northeast-1c"
-    },
-    private-d = {
-      name = "private-d",
-      cidr = "10.2.160.0/20",
-      az   = "ap-northeast-1d"
-    },
+    for i, az in var.availability_zones : "private-${az}" => {
+      name = "private-${az}",
+      cidr = var.private_subnet_cidrs[i],
+      az   = "${var.region}${az}"
+    }
   }
-  public_subnet = {
-    name = "public-a"
-    cidr = "10.2.176.0/20"
-    az   = "ap-northeast-1a"
+  public_subnets = {
+    "public-${var.availability_zones[0]}" = {
+      name = "public-${var.availability_zones[0]}",
+      cidr = var.public_subnet_cidrs[0],
+      az   = "${var.region}${var.availability_zones[0]}"
+    }
   }
 }
 
