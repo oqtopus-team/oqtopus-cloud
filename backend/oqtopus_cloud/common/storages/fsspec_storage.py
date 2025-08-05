@@ -63,5 +63,7 @@ class FSSpecStorage(AbstractStorage):
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
                 full_path = f"{dirpath}/{filename}"
-                relative_path = os.path.relpath(full_path, self.fs_url)
+                relative_path = os.path.relpath(
+                    full_path, cast(str, self.fs._strip_protocol(self.fs_url))
+                )
                 yield relative_path
