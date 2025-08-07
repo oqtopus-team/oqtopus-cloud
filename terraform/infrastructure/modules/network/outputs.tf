@@ -18,6 +18,6 @@ output "bastion_subnet_id" {
 }
 
 output "ec2_bastion_route_table_id" {
-  value       = aws_route_table.public.id
+  value       = values(aws_route_table.public)[0].id
   description = "The route table ID for the EC2 instance"
 }

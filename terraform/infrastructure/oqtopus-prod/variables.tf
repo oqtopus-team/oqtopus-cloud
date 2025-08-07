@@ -46,8 +46,8 @@ variable "private_subnet_cidrs" {
   default     = ["10.2.128.0/20", "10.2.144.0/20", "10.2.160.0/20"]
 }
 
-variable "public_subnet_cidr" {
-  description = "CIDR block for public subnet"
-  type        = string
-  default     = "10.2.176.0/20"
+variable "public_subnet_cidrs" {
+  description = "Public Subnet CIDRs"
+  type        = list(string)
+  default     = ["10.2.176.0/20", "10.2.192.0/20", "10.2.208.0/20"]
 }
