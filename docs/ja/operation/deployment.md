@@ -67,7 +67,7 @@ aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-dev --profile oqtopus-d
 standby環境の場合は以下のようにバケットを作成します：
 
 ```bash
-aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-standby --profile oqtopus-standby --region ap-northeast-3 --create-bucket-configuration LocationConstraint=ap-northeast-3
+aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-prod-standby --profile oqtopus-prod --region ap-northeast-3 --create-bucket-configuration LocationConstraint=ap-northeast-3
 ```
 
 次にTerraformのStateフアイルをロックするためのDynamoDBテーブルを作成します。
@@ -79,7 +79,7 @@ aws dynamodb create-table --table-name terraform-lock --attribute-definitions At
 standby環境の場合：
 
 ```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-standby --region ap-northeast-3
+aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-prod --region ap-northeast-3
 ```
 
 次に、terraformの設定ファイルを用意します。以下の2つのファイルを編集します。

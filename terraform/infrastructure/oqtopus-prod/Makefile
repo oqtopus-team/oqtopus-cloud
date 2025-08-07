@@ -15,6 +15,9 @@ endif
 init: ## Run terraform init
 	@terraform init -backend-config=oqtopus-prod.tfbackend
 
+init-standby: ## Run terraform init for standby
+	@terraform init -backend-config=oqtopus-prod-standby.tfbackend
+
 lint: ## Run tflint
 	@tflint --init
 	@tflint --recursive --config $(PWD)/.tflint.hcl --fix
@@ -25,8 +28,14 @@ scan: ## Run trivy
 plan: ## Run terraform plan
 	@terraform plan > diffs.ansi
 
+plan-standby: ## Run terraform plan for standby
+	@terraform plan -var-file=terraform-standby.tfvars > diffs.ansi
+
 apply: ## Run terraform apply
 	@terraform apply
+
+apply-standby: ## Run terraform apply for standby
+	@terraform apply -var-file=terraform-standby.tfvars
 
 standby-init: ## Run terraform init for standby
 	@terraform init -backend-config=oqtopus-prod-standby.tfbackend
