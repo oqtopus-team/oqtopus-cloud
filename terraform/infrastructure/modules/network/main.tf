@@ -184,7 +184,6 @@ resource "aws_nat_gateway" "nat_gw" {
   for_each      = var.public_subnets
   allocation_id = aws_eip.nat_eip[each.key].id
   subnet_id     = aws_subnet.public[each.key].id
-
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-nat-gw-${each.key}"
   }

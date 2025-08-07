@@ -69,6 +69,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfo'
+        '403':
+          description: Cannot access device with device_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
         '404':
           description: Device with device_id not found
           content:
@@ -267,6 +273,14 @@ paths:
                 $ref: '#/components/schemas/error.UnauthorizedError'
               example:
                 message: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Forbidden
   /jobs/{job_id}:
     get:
       tags:
@@ -657,6 +671,14 @@ paths:
               - DESC
               - ASC
             default: ASC
+        - name: current_time
+          in: query
+          description: Allows to filter the list of announcements to fetch by provided time. If specified only announcements with start_time <= current_time and end_time >= current_time are returned.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2022-10-19T11:45:34Z'
       responses:
         '200':
           description: Return announcements
@@ -884,6 +906,13 @@ components:
       required:
         - message
     error.InternalServerError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    error.ForbiddenError:
       type: object
       properties:
         message:
@@ -1376,13 +1405,6 @@ components:
           format: date-time
           example: '2025-01-09T12:34:56'
           description: The expiration date of the api token
-    error.ForbiddenError:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
     announcements.GetAnnouncementResponse:
       type: object
       properties:

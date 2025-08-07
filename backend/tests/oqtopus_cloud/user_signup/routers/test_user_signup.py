@@ -17,6 +17,7 @@ def _get_model(n: int) -> WhitelistUser:
         "is_signup_completed": False,
         "username": f"username_{n}",
         "organization": f"organization_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
@@ -35,11 +36,12 @@ def test_signup_success(test_db):
     whitelist_user = (
         test_db.query(WhitelistUser).filter(WhitelistUser.email == "email_1").first()
     )
-    assert user.username == "email_1"
     assert user.email == "email_1"
+    assert user.username == "username_1"
     assert user.organization == "organization_1"
     assert user.group_id == "group_id_1"
     assert user.userstatus == "approved"
+    assert user.available_devices == '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]'
     assert whitelist_user.is_signup_completed is True
 
 

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,7 @@ class ListWhitelistUserResponse(BaseModel):
     username: Annotated[str | None, Field(examples=["exampleuser"])] = None
     organization: Annotated[str | None, Field(examples=["Example Organization"])] = None
     is_signup_completed: Annotated[bool | None, Field(examples=[True])] = None
+    available_devices: list[str] | Literal["*"] | None = None
 
 
 class ListWhitelistUsersResponse(BaseModel):
@@ -31,6 +32,7 @@ class RegisterWhitelistUserRequest(BaseModel):
     email: str | None = None
     username: str | None = None
     organization: str | None = None
+    available_devices: list[str] | Literal["*"] | None = None
 
 
 class RegisterWhitelistUsersRequest(BaseModel):

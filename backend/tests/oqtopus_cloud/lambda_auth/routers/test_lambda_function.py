@@ -84,7 +84,9 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
     return const
 
 
-def _get_model(n: int, expiration_day=90, username=None, status=UserStatus.approved) -> User:
+def _get_model(
+    n: int, expiration_day=90, username=None, status=UserStatus.approved
+) -> User:
     if username is None:
         username = f"username_{n}"
     model_dict = {
@@ -96,6 +98,7 @@ def _get_model(n: int, expiration_day=90, username=None, status=UserStatus.appro
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }
@@ -112,7 +115,7 @@ def test__verify_id_token(test_session, monkeypatch):
     )
 
     actual = _verify_id_token("id_token")
-    expect = "fake_username"
+    expect = "email1@example.com"
     assert actual == expect
 
 
@@ -167,6 +170,7 @@ def test__verify_suspended(test_session, monkeypatch):
     )
 
     pytest.raises(AuthError, _verify_id_token, "id_token")
+
 
 def test__verify_unapproved(test_session, monkeypatch):
     user = _get_model(1, username="fake_username", status=UserStatus.unapproved)

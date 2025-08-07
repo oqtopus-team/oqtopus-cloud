@@ -93,6 +93,44 @@ paths:
               example:
                 message: Internal Server Error
   /users/{user_id}:
+    get:
+      tags:
+        - user
+      summary: get one user
+      description: get one user
+      operationId: get_one_user_by_id
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/users.GetOneUserResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: User not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal Server Error
     patch:
       tags:
         - user
@@ -113,7 +151,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/users.UpdateUserStatusRequest'
+              $ref: '#/components/schemas/users.UpdateUserRequest'
       responses:
         '200':
           description: Success
@@ -208,6 +246,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/whitelist_users.ListWhitelistUsersResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequestError'
         '401':
           description: Unauthorized
         '403':
@@ -529,6 +573,14 @@ paths:
               - DESC
               - ASC
             default: ASC
+        - name: current_time
+          in: query
+          description: Allows to filter the list of announcements to fetch by provided time. If specified only announcements with start_time <= current_time and end_time >= current_time are returned.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2022-10-19T11:45:34Z'
       responses:
         '200':
           description: Return announcements
@@ -774,6 +826,14 @@ components:
           $ref: '#/components/schemas/users.UserStatus'
         group_id:
           type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
       xml:
         name: User
       required:
@@ -809,11 +869,27 @@ components:
           type: string
       required:
         - message
-    users.UpdateUserStatusRequest:
+    users.UpdateUserRequest:
       type: object
       properties:
+        email:
+          type: string
+        name:
+          type: string
+        organization:
+          type: string
         status:
           $ref: '#/components/schemas/users.UserStatus'
+        group_id:
+          type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
     whitelist_users.Email:
       type: string
       example: example@example.com
@@ -837,6 +913,14 @@ components:
         is_signup_completed:
           type: boolean
           example: true
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
       required:
         - id
         - group_id
@@ -866,6 +950,14 @@ components:
           type: string
         organization:
           type: string
+        available_devices:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+              enum:
+                - '*'
     whitelist_users.RegisterWhitelistUsersRequest:
       properties:
         users:

@@ -6,7 +6,7 @@ from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.user.schemas.announcements import GetAnnouncementsListResponse
 import pytz
 from fastapi import APIRouter, Depends
-from sqlalchemy import asc, desc, select
+from sqlalchemy import asc, desc, select, and_
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -38,6 +38,7 @@ def get_announcements_list(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
     order: Optional[str] = None,
+    current_time: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> GetAnnouncementsListResponse | ErrorResponse:
     try:
@@ -49,10 +50,20 @@ def get_announcements_list(
             else asc(Announcement.start_time)
         )
 
-        announcements_list = db.scalars(
-            select(Announcement).offset(offset).limit(limit).order_by(arg_order)
-        ).all()
+        stmt = (
+            select(Announcement)
+            .offset(offset)
+            .limit(limit)
+            .order_by(arg_order, Announcement.id)
+        )
 
+        if current_time is not None:
+            ctime = datetime.fromisoformat(current_time).astimezone(utc)
+            stmt = stmt.filter(
+                and_(Announcement.start_time <= ctime, Announcement.end_time >= ctime)
+            )
+
+        announcements_list = db.scalars(stmt).all()
         return GetAnnouncementsListResponse(
             announcements=[
                 model_to_schema(announcement) for announcement in announcements_list

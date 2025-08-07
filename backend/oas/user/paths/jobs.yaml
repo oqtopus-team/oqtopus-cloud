@@ -203,6 +203,14 @@ jobs:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               message: Unauthorized
+      '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.ForbiddenError'
+              example:
+                message: Forbidden
 
 jobs.job_id:
   get:

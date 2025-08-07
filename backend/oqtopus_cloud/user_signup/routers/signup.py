@@ -74,10 +74,11 @@ def signup(
         new_user = User(
             cognito_id=cognito_id,
             email=email,
-            username=email,
+            username=whitelist_user.username,
             userstatus=UserStatus.approved,
             organization=whitelist_user.organization,
             group_id=whitelist_user.group_id,
+            available_devices=whitelist_user.available_devices,
         )
         db.add(new_user)
         # update whitelist_user status to completed
