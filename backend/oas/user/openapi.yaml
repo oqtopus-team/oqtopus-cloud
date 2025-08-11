@@ -177,7 +177,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobBase'
+                  $ref: '#/components/schemas/jobs.Job'
         '401':
           description: Unauthorized
           content:
@@ -314,6 +314,14 @@ paths:
                 $ref: '#/components/schemas/error.ForbiddenError'
               example:
                 message: Forbidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
   /jobs/{job_id}:
     get:
       tags:
@@ -336,9 +344,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/jobs.SubmittedJob'
-                  - $ref: '#/components/schemas/jobs.RegisteredJob'
+                $ref: '#/components/schemas/jobs.Job'
         '400':
           description: Bad Request
           content:
@@ -956,9 +962,7 @@ components:
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
     jobs.JobType:
       type: string
-      description: none is valid only for newly registered job_ids (job status=registered)
       enum:
-        - none
         - estimation
         - sampling
         - multi_manual
@@ -1007,7 +1011,22 @@ components:
           type: string
       required:
         - input
-    jobs.JobBase:
+    jobs.Job:
+      description: |-
+        Represents a quantum job.
+
+        Newly registered jobs (status=registered) must provide:
+           - job_id,
+           - status (registered)
+
+        Fully defined jobs must also provide:
+          - name
+          - device_id
+          - job_type,
+          - shots
+          - job_info
+
+        Other properties and optional and depend on job type and status.
       type: object
       properties:
         job_id:
@@ -1026,9 +1045,8 @@ components:
           type: string
           example: Kawasaki
         shots:
-          description: 0 is valid only for newly registered job_ids (job status=registered)
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 10000000
           example: '1000'
         job_info:
@@ -1205,40 +1223,6 @@ components:
           type: string
       required:
         - message
-    jobs.SubmittedJob:
-      allOf:
-        - $ref: '#/components/schemas/jobs.JobBase'
-      required:
-        - job_id
-        - name
-        - job_type
-        - status
-        - device_id
-        - shots
-        - job_info
-    jobs.RegisteredJob:
-      allOf:
-        - $ref: '#/components/schemas/jobs.JobBase'
-      required:
-        - job_id
-        - status
-      example:
-        job_id: 06823102-73a0-793c-8000-70ac55fe4811
-        name: ''
-        description: null
-        job_type: none
-        status: registered
-        device_id: null
-        shots: null
-        job_info: null
-        transpiler_info: null
-        simulator_info: null
-        mitigation_info: null
-        execution_time: null
-        submitted_at: null
-        ready_at: null
-        running_at: null
-        ended_at: null
     jobs.GetJobStatusResponse:
       description: job status
       type: object

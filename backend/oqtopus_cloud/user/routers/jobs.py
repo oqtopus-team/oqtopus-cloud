@@ -16,8 +16,8 @@ from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.session import (
     get_db,
 )
@@ -36,14 +36,12 @@ from oqtopus_cloud.user.schemas.errors import (
 )
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobStatusResponse,
-    JobBase,
+    Job,
     JobInfo,
     JobInfoUploadPresignedURL,
     JobStatus,
     JobType,
-    RegisteredJob,
     RegisterJobResponse,
-    SubmittedJob,
     SubmitJobRequest,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
@@ -89,7 +87,7 @@ def register_job(
 
         job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
 
-        job = Job(
+        job = JobModel(
             id=job_id,
             owner=owner,
             status="registered",
@@ -142,7 +140,11 @@ def submit_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
@@ -194,7 +196,7 @@ def submit_job(
 
 @router.get(
     "/jobs",
-    response_model=list[JobBase | SubmittedJob | RegisteredJob],
+    response_model=list[Job],
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -209,28 +211,30 @@ def get_jobs(
     page: Optional[str] = None,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
-) -> list[JobBase | SubmittedJob | RegisteredJob] | ErrorResponse:
+) -> list[Job] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
         # Order Control
         if order == "ASC" or order is None:
-            arg_order = asc(Job.created_at)
+            arg_order = asc(JobModel.created_at)
         elif order == "DESC":
-            arg_order = desc(Job.created_at)
+            arg_order = desc(JobModel.created_at)
         else:
-            arg_order = asc(Job.created_at)
+            arg_order = asc(JobModel.created_at)
 
-        stmt = select(Job).filter(Job.owner == owner).order_by(arg_order, Job.id)
+        stmt = (
+            select(JobModel)
+            .filter(JobModel.owner == owner)
+            .order_by(arg_order, JobModel.id)
+        )
 
         # Fields Control
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
-            valid_fields_list = [
-                field in SubmittedJob.model_fields for field in fields_list
-            ]
+            valid_fields_list = [field in Job.model_fields for field in fields_list]
             if all(valid_fields_list):
                 # this removes job_info field which doesn't have a relevant model property
                 converted_fields_list = [
@@ -238,7 +242,9 @@ def get_jobs(
                     for field in fields_list
                     if field in MAP_SCHEMA_TO_MODEL
                 ]
-                arg_select = [getattr(Job, field) for field in converted_fields_list]
+                arg_select = [
+                    getattr(JobModel, field) for field in converted_fields_list
+                ]
 
                 # setting up name and job_info in model_to_schema() requires status
                 if "name" in arg_select or "job_info" in arg_select:
@@ -261,16 +267,16 @@ def get_jobs(
         # Filtering Jobs
         if start_time is not None:
             stime = datetime.fromisoformat(start_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at >= stime)
+            stmt = stmt.filter(JobModel.created_at >= stime)
         if end_time is not None:
             etime = datetime.fromisoformat(end_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at <= etime)
+            stmt = stmt.filter(JobModel.created_at <= etime)
         if q is not None:
             stmt = stmt.filter(
                 or_(
-                    Job.id.contains(q),
-                    Job.name.contains(q),
-                    Job.description.contains(q),
+                    JobModel.id.contains(q),
+                    JobModel.name.contains(q),
+                    JobModel.description.contains(q),
                 )
             )
 
@@ -280,7 +286,7 @@ def get_jobs(
                 page=int(page) if page is not None else DEFAULT_PAGE_INDEX,
             )
         )
-        set_page(Page[Job])
+        set_page(Page[JobModel])
         models = paginate(db, stmt)
 
         results = []
@@ -306,7 +312,7 @@ def validate_description(request: SubmitJobRequest) -> str:
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=SubmittedJob | RegisteredJob,
+    response_model=Job,
     responses={
         400: {"model": Message},
         404: {"model": Message},
@@ -319,16 +325,18 @@ def get_job(
     job_id: str,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
-) -> SubmittedJob | RegisteredJob | ErrorResponse:
+) -> Job | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-        job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        job_model = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job_model is None:
             return NotFoundErrorResponse(message="job not found with the given id")
         job = model_to_schema(job_model, storage)
-        if not (isinstance(job, (SubmittedJob, RegisteredJob))):
-            raise TypeError("invalid job schema type")
         return job
     except Exception as e:
         logger.info(f"error: {str(e)}")
@@ -355,7 +363,11 @@ def delete_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
@@ -399,10 +411,10 @@ def get_job_status(
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
     job = (
-        db.query(Job.id, Job.status)
+        db.query(JobModel.id, JobModel.status)
         .filter(
-            Job.id == job_id,
-            Job.owner == owner,
+            JobModel.id == job_id,
+            JobModel.owner == owner,
         )
         .first()
     )
@@ -430,7 +442,11 @@ def cancel_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
@@ -453,7 +469,7 @@ def cancel_job(
         return InternalServerErrorResponse(message=str(e))
 
 
-def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
+def delete_storage_folder(job: JobModel, storage: AbstractStorage) -> bool:
     def delete_by_key(key: str) -> bool:
         try:
             storage.delete(key)
@@ -472,7 +488,7 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
         return False
 
 
-def set_job_failure(job: Job) -> None:
+def set_job_failure(job: JobModel) -> None:
     job.status = JobStatus.failed
     job.ended_at = datetime.now()
 
@@ -504,11 +520,11 @@ MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 
 
 def model_to_schema(
-    model: Job,
+    model: JobModel,
     storage: AbstractStorage,
     fields: list[str] | None = None,
-) -> JobBase | RegisteredJob | SubmittedJob:
-    def get_job_info(model: Job, storage: AbstractStorage) -> JobInfo:
+) -> Job:
+    def get_job_info(model: JobModel, storage: AbstractStorage) -> JobInfo:
         output_dict = {}
         if model.output_files:
             output_files = json.loads(model.output_files)
@@ -557,8 +573,13 @@ def model_to_schema(
         return pytz.utc.localize(dt)
 
     if fields is None:
-        if model.status != "registered":
-            return SubmittedJob(
+        if model.status == "registered":
+            return Job(
+                job_id=model.id,
+                status=JobStatus(model.status),
+            )
+        else:
+            return Job(
                 job_id=model.id,
                 name=model.name,
                 description=model.description,
@@ -576,40 +597,37 @@ def model_to_schema(
                 running_at=localize(model.running_at),
                 ended_at=localize(model.ended_at),
             )
-        else:
-            return RegisteredJob(
-                job_id=model.id,
-                name=model.name,
-                shots=model.shots,
-                job_type=JobType(model.job_type),
-                status=JobStatus(model.status),
-            )
     else:
         dict_schema: dict[str, Any] = {}
         for k in fields:
-            if k == "job_id":
-                dict_schema[k] = model.id
-            elif k == "device_id":
-                dict_schema[k] = (
-                    model.device_id if model.status != "registered" else None
-                )
-            elif k == "job_type":
-                dict_schema[k] = JobType(model.job_type)
-            elif k == "job_info":
-                dict_schema[k] = (
-                    get_job_info(model, storage)
-                    if model.status != "registered"
-                    else None
-                )
-            elif k == "status":
-                dict_schema[k] = JobStatus(model.status)
-            elif is_object_field(k):
-                dict_schema[k] = json.loads(getattr(model, k))
-            elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
+            if model.status == "registered" and k in [
+                "name",
+                "device_id",
+                "transpiler_info",
+                "simulator_info",
+                "mitigation_info",
+                "job_type",
+                "shots",
+                "job_info",
+            ]:
+                # ignore registered job dummy values from DB
+                dict_schema[k] = None
             else:
-                dict_schema[k] = getattr(model, k)
-        return JobBase(**dict_schema)
+                if k == "job_id":
+                    dict_schema[k] = model.id
+                elif k == "job_type":
+                    dict_schema[k] = JobType(model.job_type)
+                elif k == "job_info":
+                    dict_schema[k] = get_job_info(model, storage)
+                elif k == "status":
+                    dict_schema[k] = JobStatus(model.status)
+                elif is_object_field(k):
+                    dict_schema[k] = json.loads(getattr(model, k))
+                elif is_datetime_field(k):
+                    dict_schema[k] = localize(getattr(model, k))
+                else:
+                    dict_schema[k] = getattr(model, k)
+        return Job(**dict_schema)
 
 
 def can_user_access_device(username: str, device_id: str, db: Session) -> bool:

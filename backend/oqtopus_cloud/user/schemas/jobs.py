@@ -24,11 +24,6 @@ class S3TranspileResult(BaseModel):
 
 
 class JobType(str, Enum):
-    """
-    none is valid only for newly registered job_ids (job status=registered)
-    """
-
-    none = "none"
     estimation = "estimation"
     sampling = "sampling"
     multi_manual = "multi_manual"
@@ -108,7 +103,24 @@ class JobInfo(BaseModel):
     message: str | None = None
 
 
-class JobBase(BaseModel):
+class Job(BaseModel):
+    """
+    Represents a quantum job.
+
+    Newly registered jobs (status=registered) must provide:
+       - job_id,
+       - status (registered)
+
+    Fully defined jobs must also provide:
+      - name
+      - device_id
+      - job_type,
+      - shots
+      - job_info
+
+    Other properties and optional and depend on job type and status.
+    """
+
     job_id: Annotated[
         str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
     ] = None
@@ -119,10 +131,7 @@ class JobBase(BaseModel):
     job_type: JobType | None = None
     status: JobStatus | None = None
     device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
-    shots: Annotated[int | None, Field(examples=["1000"], ge=0, le=10000000)] = None
-    """
-    0 is valid only for newly registered job_ids (job status=registered)
-    """
+    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
     job_info: JobInfo | None = None
     transpiler_info: Annotated[
         dict[str, Any] | None,
@@ -255,24 +264,6 @@ class SubmitJobRequest(BaseModel):
         Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
-
-
-class SubmittedJob(JobBase):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str, Field(examples=["Bell State Sampling"])]
-    job_type: JobType
-    status: JobStatus
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=0, le=10000000)]
-    """
-    0 is valid only for newly registered job_ids (job status=registered)
-    """
-    job_info: JobInfo
-
-
-class RegisteredJob(JobBase):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    status: JobStatus
 
 
 class GetJobStatusResponse(BaseModel):
