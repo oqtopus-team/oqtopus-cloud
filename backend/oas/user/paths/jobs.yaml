@@ -92,7 +92,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.JobBase"
+                $ref: "../schemas/jobs.yaml#/jobs.Job"
             # example:
             #   [
             #     {
@@ -137,15 +137,15 @@ jobs:
             #     },
             #     {
             #       "job_id": "0682b528-aef9-7492-8000-d8b69371c5b5",
-            #       "name": "",
+            #       "name": null,
             #       "description": null,
             #       "device_id": null,
-            #       "job_type": "none",
+            #       "job_type": null,
             #       "job_info": null,
             #       "transpiler_info": null,
             #       "simulator_info": null,
             #       "mitigation_info": null,
-            #       "shots": 0,
+            #       "shots": null,
             #       "status": "registered",
             #       "execution_time": null,
             #       "submitted_at": null,
@@ -313,9 +313,12 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              oneOf:
-              - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
-              - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+              # oneOf:
+              # - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              # - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+              # oneOf is not correctly handled by swagger-codegen tool in quri-parts SDK
+              # use base type instead
+              $ref: "../schemas/jobs.yaml#/jobs.Job"
             # examples:
             #   submitted_job:
             #     description: Submitted job example
@@ -365,15 +368,15 @@ jobs.job_id:
             #     value:
             #       {
             #         "job_id": "0682b528-aef9-7492-8000-d8b69371c5b5",
-            #         "name": "",
+            #         "name": null,
             #         "description": null,
             #         "device_id": null,
-            #         "job_type": "none",
+            #         "job_type": null,
             #         "job_info": null,
             #         "transpiler_info": null,
             #         "simulator_info": null,
             #         "mitigation_info": null,
-            #         "shots": 0,
+            #         "shots": null,
             #         "status": "registered",
             #         "execution_time": null,
             #         "submitted_at": null,

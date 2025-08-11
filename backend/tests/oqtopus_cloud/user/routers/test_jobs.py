@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import pytz
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import Device
-from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
@@ -20,15 +20,13 @@ from oqtopus_cloud.user.schemas.errors import (
 #     model_to_schema,
 # )
 from oqtopus_cloud.user.schemas.jobs import (
-    JobBase,
+    Job,
     JobInfo,
     JobStatus,
     JobType,
-    RegisteredJob,
     RegisterJobResponse,
     SubmitJobRequest,
     SubmitJobType,
-    SubmittedJob,
 )
 
 from pydantic import ValidationError
@@ -38,7 +36,7 @@ from sqlalchemy import select
 client = TestClient(app)
 
 
-def _get_registered_model(n: int) -> Job:
+def _get_registered_model(n: int) -> JobModel:
     model_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
@@ -52,7 +50,7 @@ def _get_registered_model(n: int) -> Job:
         "shots": 0,
         "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
     }
-    return Job(**model_dict)
+    return JobModel(**model_dict)
 
 
 def _get_submit_body():
@@ -74,7 +72,7 @@ def _get_submit_body():
     }
 
 
-def _get_submitted_model(n: int) -> Job:
+def _get_submitted_model(n: int) -> JobModel:
     model_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
@@ -92,10 +90,10 @@ def _get_submitted_model(n: int) -> Job:
         "submitted_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
         "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
     }
-    return Job(**model_dict)
+    return JobModel(**model_dict)
 
 
-def _get_succeeded_model(n: int) -> Job:
+def _get_succeeded_model(n: int) -> JobModel:
     job = _get_submitted_model(n)
     job.status = "succeeded"
     job.output_files = json.dumps(["result", "transpile_result"])
@@ -115,7 +113,7 @@ def assert_job_info_equals(actual: JobInfo, expect: JobInfo):
             assert urlparse(getattr(actual, prop)).path == getattr(expect, prop)
 
 
-def assert_jobs_equal(actual: JobBase, expect: JobBase):
+def assert_jobs_equal(actual: Job, expect: Job):
     for prop in vars(expect):
         if getattr(expect, prop) is None:
             assert getattr(actual, prop) is None
@@ -145,7 +143,7 @@ def test_register_job(
     assert urlparse(actual.presigned_url.url).path == f"{storage_base}/{new_job_id}/input.zip"
 
     # basic validation of DB record
-    job_model = test_db.get(Job, new_job_id)
+    job_model = test_db.get(JobModel, new_job_id)
     assert job_model is not None
     assert job_model.name is ""
     assert job_model.status == "registered"
@@ -169,7 +167,7 @@ def test_submit_job(
     response = client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 200
 
-    actual = test_db.get(Job, "testjob1id")
+    actual = test_db.get(JobModel, "testjob1id")
 
     assert actual is not None
     assert actual.owner == "admin"
@@ -309,11 +307,11 @@ def test_get_jobs_simple(
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs")
-    adapter = TypeAdapter(List[SubmittedJob | RegisteredJob])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        SubmittedJob(
+        Job(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -335,15 +333,11 @@ def test_get_jobs_simple(
             running_at=None,
             ended_at=None,
         ),
-        RegisteredJob(
+        Job(
             job_id="testjob2id",
-            name="",
-            job_type=JobType.none,
             status=JobStatus.registered,
-            shots=0,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
-        SubmittedJob(
+        Job(
             job_id="testjob3id",
             name="testjob3",
             description="test job 3",
@@ -390,11 +384,11 @@ def test_get_jobs_filtering_fields(
     test_db.commit()
 
     response = client.get("/jobs?fields=job_id%2Cname%2Cdevice_id%2Cjob_type%2Cshots%2Cstatus&order=ASC")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob1id",
             device_id="Kawasaki",
             name="testjob1",
@@ -402,15 +396,11 @@ def test_get_jobs_filtering_fields(
             shots=1000,
             status=JobStatus.submitted,
         ),
-        JobBase(
+        Job(
             job_id="testjob2id",
-            name="",
-            device_id=None,
-            job_type=JobType.none,
-            shots=0,
             status=JobStatus.registered,
         ),
-        JobBase(
+        Job(
             job_id="testjob3id",
             device_id="Kawasaki",
             name="testjob3",
@@ -442,20 +432,20 @@ def test_get_jobs_filtering_job_info(
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs?fields=job_info&order=ASC")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
         ),
-        JobBase(
+        Job(
             job_info=None,
         ),
-        JobBase(job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip",
-                                 result=f"{storage_base}/testjob3id/result.zip",
-                                 transpile_result=f"{storage_base}/testjob3id/transpile_result.zip",
-                                 message="job completed successfully"),
+        Job(job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip",
+                             result=f"{storage_base}/testjob3id/result.zip",
+                             transpile_result=f"{storage_base}/testjob3id/transpile_result.zip",
+                             message="job completed successfully"),
         ),
     ]
 
@@ -475,7 +465,7 @@ def test_get_jobs_all_fields(test_db):
     response = client.get(
         "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
     )
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
     assert response.status_code == 200
     assert len(actual) == 2
@@ -520,16 +510,12 @@ def test_get_jobs_filtering_start_time(
     response = client.get(
         "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
     )
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
     expect = [
-        JobBase(
+        Job(
             job_id="testjob2id",
-            name="",
-            job_type=JobType.none,
             status=JobStatus.registered,
-            shots=0,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
     ]
 
@@ -554,11 +540,11 @@ def test_get_jobs_filtering_end_time(
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -603,11 +589,11 @@ def test_get_jobs_filtering_search_string(
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs?q=1&order=ASC")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -652,19 +638,15 @@ def test_get_jobs_desc_order(
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get("/jobs?order=DESC")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob2id",
-            name="",
-            job_type=JobType.none,
             status=JobStatus.registered,
-            shots=0,
-            created_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
         ),
-        JobBase(
+        Job(
             job_id="testjob1id",
             name="testjob1",
             description="test job 1",
@@ -710,22 +692,22 @@ def test_get_jobs_pagination(
     test_db.commit()
 
     response = client.get("/jobs?page=1&size=5&fields=job_id")
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
     expect = [
-        JobBase(
+        Job(
             job_id="testjob1id",
         ),
-        JobBase(
+        Job(
             job_id="testjob2id",
         ),
-        JobBase(
+        Job(
             job_id="testjob3id",
         ),
-        JobBase(
+        Job(
             job_id="testjob4id",
         ),
-        JobBase(
+        Job(
             job_id="testjob5id",
         ),
     ]
@@ -738,16 +720,16 @@ def test_get_jobs_pagination(
     response = client.get("/jobs?page=2&size=5&fields=job_id")
     actual = adapter.validate_python(response.json())
     expect = [
-        JobBase(
+        Job(
             job_id="testjob6id",
         ),
-        JobBase(
+        Job(
             job_id="testjob7id",
         ),
-        JobBase(
+        Job(
             job_id="testjob8id",
         ),
-        JobBase(
+        Job(
             job_id="testjob9id",
         ),
     ]
@@ -778,21 +760,21 @@ def test_get_jobs_all_parameters(
     response = client.get(
         "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=3&order=DESC"
     )
-    adapter = TypeAdapter(List[JobBase])
+    adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob8id",
             description=None,
             job_info=None,
         ),
-        JobBase(
+        Job(
             job_id="testjob7id",
             description="test job 7",
             job_info=JobInfo(input=f"{storage_base}/testjob7id/input.zip"),
         ),
-        JobBase(
+        Job(
             job_id="testjob6id",
             description=None,
             job_info=None,
@@ -810,7 +792,7 @@ def test_get_jobs_all_parameters(
     actual = adapter.validate_python(response.json())
 
     expect = [
-        JobBase(
+        Job(
             job_id="testjob2id",
             description=None,
             job_info=None,
@@ -849,7 +831,7 @@ def test_get_get(test_db):
     test_db.add(_get_submitted_model(1))
     test_db.commit()
 
-    sql = select(Job).order_by(Job.created_at)
+    sql = select(JobModel).order_by(JobModel.created_at)
 
     resp1 = client.get(f"/jobs/{_get_submitted_model(1).id}")
     assert resp1.status_code == 200
@@ -889,12 +871,10 @@ def test_register_submit_get(
     # Get newly registered job
     get_resp = client.get(f"/jobs/{job_id}")
     assert get_resp.status_code == 200
-    get_resp_json = RegisteredJob.model_validate(get_resp.json())
+    get_resp_json = Job.model_validate(get_resp.json())
 
-    assert get_resp_json.name is ""
+    assert get_resp_json.job_id == job_id
     assert get_resp_json.status == "registered"
-    assert get_resp_json.job_type == "none"
-    assert get_resp_json.shots == 0
 
     # Upload job info
     test_storage.put(key=f"{job_id}/input.zip", data=b"dummy_job_info")
@@ -906,7 +886,7 @@ def test_register_submit_get(
     # Get submitted job
     get_resp = client.get(f"/jobs/{job_id}")
     assert get_resp.status_code == 200
-    get_resp_json = SubmittedJob.model_validate(get_resp.json())
+    get_resp_json = Job.model_validate(get_resp.json())
 
     # And these job properties should be same as _get_submit_body().
     assert get_resp_json.name == "submit-job-test"
@@ -930,7 +910,7 @@ def test_register_submit_cancel_delete(
     Args:
             test_db (_type_): _description_
     """
-    sql = select(Job).order_by(Job.created_at)
+    sql = select(JobModel).order_by(JobModel.created_at)
     before_db = test_db.execute(sql).scalars().all()
 
     # Registering
@@ -1023,7 +1003,7 @@ def test_delete_job(
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    job = test_db.get(Job, "testjob1id")
+    job = test_db.get(JobModel, "testjob1id")
     assert job is None
 
     object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
@@ -1059,7 +1039,7 @@ def test_delete_job_no_storage_folder(
     delete_resp = client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
-    job = test_db.get(Job, "testjob1id")
+    job = test_db.get(JobModel, "testjob1id")
     assert job is None
 
     object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
@@ -1088,5 +1068,5 @@ def test_delete_job_empty_storage_folder(
 
     assert not test_storage.does_exist("testjob1id")
 
-    job = test_db.get(Job, "testjob1id")
+    job = test_db.get(JobModel, "testjob1id")
     assert job is None

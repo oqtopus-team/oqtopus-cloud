@@ -49,52 +49,12 @@ jobs.SubmitJobType:
 
 jobs.JobType:
   type: string
-  description: |-
-    none is valid only for newly registered job_ids (job status=registered)
   enum:
-    - none
     - estimation
     - sampling
     - multi_manual
     - sse
   example: sampling
-
-jobs.SubmittedJob:
-  allOf:
-     - $ref: "#/jobs.JobBase"
-  required:
-    - job_id
-    - name
-    - job_type
-    - status
-    - device_id
-    - shots
-    - job_info
-
-jobs.RegisteredJob:
-  allOf:
-     - $ref: "#/jobs.JobBase"
-  required:
-    - job_id
-    - status
-  example: {
-      "job_id": "06823102-73a0-793c-8000-70ac55fe4811",
-      "name": "",
-      "description": null,
-      "job_type": "none",
-      "status": "registered",
-      "device_id": null,
-      "shots": null,
-      "job_info": null,
-      "transpiler_info": null,
-      "simulator_info": null,
-      "mitigation_info": null,
-      "execution_time": null,
-      "submitted_at": null,
-      "ready_at": null,
-      "running_at": null,
-      "ended_at": null
-    }
 
 jobs.SubmitJobRequest:
   type: object
@@ -154,7 +114,23 @@ jobs.SubmitJobRequest:
     - shots
     - job_type
 
-jobs.JobBase:
+jobs.Job:
+  description: |-
+    Represents a quantum job.
+
+    Newly registered jobs (status=registered) must provide:
+       - job_id,
+       - status (registered)
+
+    Fully defined jobs must also provide:
+      - name
+      - device_id
+      - job_type,
+      - shots
+      - job_info
+
+    Other properties and optional and depend on job type and status.
+
   type: object
   properties:
     job_id:
@@ -173,10 +149,8 @@ jobs.JobBase:
       type: string
       example: "Kawasaki"
     shots:
-      description: |-
-        0 is valid only for newly registered job_ids (job status=registered)
       type: integer
-      minimum: 0
+      minimum: 1
       maximum: 1e7
       example: "1000"
     job_info:
@@ -256,6 +230,44 @@ jobs.JobBase:
       ready_at: 2022-10-19T11:45:34+09:00
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
+
+# jobs.SubmittedJob:
+#   allOf:
+#      - $ref: "#/jobs.Job"
+#   required:
+#     - job_id
+#     - name
+#     - job_type
+#     - status
+#     - device_id
+#     - shots
+#     - job_info
+
+# jobs.RegisteredJob:
+#   allOf:
+#      - $ref: "#/jobs.Job"
+#   required:
+#     - job_id
+#     - job_type
+#     - status
+#   example: {
+#     "job_id": "06823102-73a0-793c-8000-70ac55fe4811",
+#     "name": "",
+#     "description": null,
+#     "job_type": "none",
+#     "status": "registered",
+#     "device_id": null,
+#     "shots": null,
+#     "job_info": null,
+#     "transpiler_info": null,
+#     "simulator_info": null,
+#     "mitigation_info": null,
+#     "execution_time": null,
+#     "submitted_at": null,
+#     "ready_at": null,
+#     "running_at": null,
+#     "ended_at": null
+#   }
 
 jobs.JobInfoUploadPresignedURL:
   description: |-
