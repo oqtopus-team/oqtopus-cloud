@@ -80,11 +80,14 @@ class FSSpecStorage(AbstractStorage):
 
     def prefix(self, prefix: str) -> Iterator[str]:
         full_prefix = f"{self.fs_url}/{prefix}".rstrip("/")
+        storage_base = cast(str, self.fs._strip_protocol(self.fs_url))
+
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
                 full_path = f"{dirpath}/{filename}"
-                relative_path = os.path.relpath(full_path, self.fs_url)
-                yield relative_path
+                if (full_path.startswith(storage_base)):
+                   relative_path = full_path[len(storage_base):].lstrip("/")
+                   yield relative_path
 
     def get_upload_presigned_url_data(
         self, key: str, expires: timedelta = timedelta(hours=1)
