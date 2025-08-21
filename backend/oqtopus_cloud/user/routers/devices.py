@@ -1,6 +1,7 @@
 import json
 
-from fastapi import APIRouter, Depends, Request as Event
+from fastapi import APIRouter, Depends
+from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -16,10 +17,10 @@ from oqtopus_cloud.user.schemas.devices import (
 )
 from oqtopus_cloud.user.schemas.errors import (
     ErrorResponse,
+    ForbiddenErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
-    ForbiddenErrorResponse,
 )
 
 from . import LoggerRouteHandler
@@ -82,6 +83,7 @@ def get_device(
     # TODO implement error handling
     try:
         username = event.state.owner
+        logger.info(f"User {username} is trying to access device_id={device_id}.")
         available_devices = get_user_available_devices(username, db)
 
         if available_devices != "*" and device_id not in available_devices:
@@ -138,7 +140,8 @@ def model_to_schema(model: Device) -> DeviceInfo:
 
 def get_user_available_devices(username: str, db: Session) -> list[str] | str:
     try:
-        user = db.scalars(select(User).where(User.username == username)).first()
+        # username here is the email address registered in Cognito
+        user = db.scalars(select(User).where(User.email == username)).first()
         if user is None or user.available_devices is None:
             return []
 
