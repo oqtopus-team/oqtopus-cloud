@@ -2,5 +2,7 @@ pre-commit:
   commands:
     credential-scan:
       run: |
-        aqua exec -- trufflehog git file://. --fail
+        aqua exec -- trufflehog git file://. --fail \
+        --branch $(git rev-parse --abbrev-ref HEAD) \
+        --since-commit HEAD
         exit $?
