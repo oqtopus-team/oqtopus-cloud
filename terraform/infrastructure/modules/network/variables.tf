@@ -27,10 +27,11 @@ variable "private_subnets" {
   description = "The CIDR blocks for the private subnets"
   type        = map(any)
 }
-variable "public_subnet" {
-  type = object({
+variable "public_subnets" {
+  description = "A map of public subnets"
+  type = map(object({
+    name = string
     cidr = string
     az   = string
-    name = string
-  })
+  }))
 }

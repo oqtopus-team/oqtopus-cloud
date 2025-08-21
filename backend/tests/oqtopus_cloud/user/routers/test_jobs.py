@@ -7,19 +7,11 @@ from datetime import datetime
 from typing import List
 
 import pytz
-from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.user.lambda_function import app
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
 )
-
-# from oqtopus_cloud.user.routers.jobs import (
-#     get_job,
-#     get_job_status,
-#     get_jobs,
-#     model_to_schema,
-# )
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
     JobDef,
@@ -30,18 +22,15 @@ from oqtopus_cloud.user.schemas.jobs import (
     SubmitJobRequest,
     SubmitJobResponse,
 )
-from oqtopus_cloud.common.models.user import User, UserStatus
 from pydantic import ValidationError
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy import select
 
-client = TestClient(app)
 
-
-def _get_model(n: int) -> Job:
+def _get_model(n: int, should_change_owner_num: bool = False) -> Job:
     model_dict = {
         "id": f"testjob{n}id",
-        "owner": "admin",
+        "owner": f"email_{n}" if should_change_owner_num else "email_1",
         "name": f"testjob{n}",
         "description": f"test job {n}",
         "device_id": "Kawasaki",
@@ -60,8 +49,8 @@ def _get_model(n: int) -> Job:
     return Job(**model_dict)
 
 
-def _get_user_model(n: int, username: str, available_devices='*') -> User:
-    if available_devices != '*':
+def _get_user_model(n: int, username: str, available_devices="*") -> User:
+    if available_devices != "*":
         available_devices = json.dumps(available_devices)
 
     model_dict = {
@@ -82,6 +71,7 @@ def _get_user_model(n: int, username: str, available_devices='*') -> User:
 
 
 def test_get_job_404(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -90,12 +80,13 @@ def test_get_job_404(
             test_db (_type_): _description_
     """
     print(test_db)  # => 1
-    response = client.get("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517")
+    response = test_client.get("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517")
     assert response.status_code == 404
     assert response.json() == {"message": "job not found with the given id"}
 
 
 def test_get_jobs_simple(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -105,9 +96,11 @@ def test_get_jobs_simple(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
+    # job of different owner's
+    test_db.add(_get_model(3, should_change_owner_num=True))
     test_db.commit()
 
-    response = client.get("/jobs")
+    response = test_client.get("/jobs")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
 
@@ -163,6 +156,7 @@ def test_get_jobs_simple(
 
 
 def test_get_jobs_ignore_illegal_job(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -178,7 +172,7 @@ def test_get_jobs_ignore_illegal_job(
     test_db.add(job_3)
     test_db.commit()
 
-    response = client.get("/jobs")
+    response = test_client.get("/jobs")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
 
@@ -189,6 +183,7 @@ def test_get_jobs_ignore_illegal_job(
 
 
 def test_get_jobs_filtering_fields(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -200,7 +195,7 @@ def test_get_jobs_filtering_fields(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
+    response = test_client.get("/jobs?fields=job_id%2Cstatus%2Cname&order=ASC")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -220,14 +215,14 @@ def test_get_jobs_filtering_fields(
     assert actual == expect
 
 
-def test_get_jobs_all_fields(test_db):
+def test_get_jobs_all_fields(test_client, test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.add(_get_model(2))
     test_db.commit()
 
     # This is the request sent from oqtopus-frontend
-    response = client.get(
+    response = test_client.get(
         "jobs?fields=job_id%2Cname%2Cdescription%2Cdevice_id%2Cjob_info%2Ctranspiler_info%2Csimulator_info%2Cmitigation_info%2Cjob_type%2Cshots%2Cstatus&page=1&size=20&order=DESC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
@@ -237,6 +232,7 @@ def test_get_jobs_all_fields(test_db):
 
 
 def test_get_jobs_invalid_fields(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -248,7 +244,7 @@ def test_get_jobs_invalid_fields(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
+    response = test_client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
     actual = response.json()
     expect = json.loads(
         InternalServerErrorResponse(
@@ -261,6 +257,7 @@ def test_get_jobs_invalid_fields(
 
 
 def test_get_jobs_filtering_start_time(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -272,7 +269,7 @@ def test_get_jobs_filtering_start_time(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get(
+    response = test_client.get(
         "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
@@ -307,6 +304,7 @@ def test_get_jobs_filtering_start_time(
 
 
 def test_get_jobs_filtering_end_time(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -318,7 +316,9 @@ def test_get_jobs_filtering_end_time(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC")
+    response = test_client.get(
+        "/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+    )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -351,6 +351,7 @@ def test_get_jobs_filtering_end_time(
 
 
 def test_get_jobs_filtering_search_string(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -362,7 +363,7 @@ def test_get_jobs_filtering_search_string(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?q=1&order=ASC")
+    response = test_client.get("/jobs?q=1&order=ASC")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -395,6 +396,7 @@ def test_get_jobs_filtering_search_string(
 
 
 def test_get_jobs_desc_order(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -406,7 +408,7 @@ def test_get_jobs_desc_order(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/jobs?order=DESC")
+    response = test_client.get("/jobs?order=DESC")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -461,6 +463,7 @@ def test_get_jobs_desc_order(
 
 
 def test_get_jobs_pagination(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -472,7 +475,7 @@ def test_get_jobs_pagination(
         test_db.add(_get_model(i))
     test_db.commit()
 
-    response = client.get("/jobs?page=3&size=3&fields=job_id")
+    response = test_client.get("/jobs?page=3&size=3&fields=job_id")
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
     expect = [
@@ -492,6 +495,7 @@ def test_get_jobs_pagination(
 
 
 def test_get_jobs_all_parameters(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -503,7 +507,7 @@ def test_get_jobs_all_parameters(
         test_db.add(_get_model(i))
     test_db.commit()
 
-    response = client.get(
+    response = test_client.get(
         "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
@@ -525,7 +529,7 @@ def test_get_jobs_all_parameters(
     assert actual == expect
 
 
-def test_job_sortedness(test_db):
+def test_job_sortedness(test_client, test_db):
     def mk_job(n: int) -> SubmitJobRequest:
         return SubmitJobRequest(
             name=f"test-job-{n}",
@@ -546,7 +550,7 @@ def test_job_sortedness(test_db):
     test_db.commit()
     job_ids: list[str] = []
     for n in range(1, 10):
-        submit_resp = client.post("/jobs", content=mk_job(n).model_dump_json())
+        submit_resp = test_client.post("/jobs", content=mk_job(n).model_dump_json())
         print(f"submit_resp={submit_resp.json()}")
         job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
         job_ids.append(job_id)
@@ -555,6 +559,7 @@ def test_job_sortedness(test_db):
 
 
 def test_get_jobs_handler(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -567,7 +572,7 @@ def test_get_jobs_handler(
     test_db.add(_get_model(1))
     test_db.commit()
 
-    response = client.get("/jobs")
+    response = test_client.get("/jobs")
     assert response.status_code == 200
 
     adapter = TypeAdapter(List[JobDef])
@@ -594,7 +599,7 @@ def test_get_jobs_handler(
     assert jobs[0] == expected
 
 
-def test_get_get(test_db):
+def test_get_get(test_client, test_db):
     """_summary_
     Test for **the invariance of get and get**:
     retrieving jobs twice should have the same effect on the
@@ -608,11 +613,11 @@ def test_get_get(test_db):
 
     sql = select(Job).order_by(Job.created_at)
 
-    resp1 = client.get(f"/jobs/{_get_model(1).id}")
+    resp1 = test_client.get(f"/jobs/{_get_model(1).id}")
     assert resp1.status_code == 200
     before_db = test_db.execute(sql).scalars().all()
 
-    resp2 = client.get(f"/jobs/{_get_model(1).id}")
+    resp2 = test_client.get(f"/jobs/{_get_model(1).id}")
     assert resp2.status_code == 200
     after_db = test_db.execute(sql).scalars().all()
 
@@ -623,6 +628,7 @@ def test_get_get(test_db):
 
 
 def test_submit_get(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -656,11 +662,11 @@ def test_submit_get(
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 200
     resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
     # Getting the job of reteurned job_id
-    get_resp = client.get(f"/jobs/{resp_job_id}")
+    get_resp = test_client.get(f"/jobs/{resp_job_id}")
     assert get_resp.status_code == 200
     resp_job = JobDef.model_validate(get_resp.json())
     # And these jobs should be same.
@@ -671,7 +677,7 @@ def test_submit_get(
     assert resp_job.job_info.result is None
 
 
-def test_submit_cancel_delete(test_db):
+def test_submit_cancel_delete(test_client, test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -703,19 +709,19 @@ def test_submit_cancel_delete(test_db):
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 200
     resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
 
     # Deleting the job of reteurned job_id (Before deleting, canceling is required)
-    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    cancel_resp = test_client.post(f"/jobs/{resp_job_id}/cancel")
     assert cancel_resp.status_code == 200
 
     # After cancelling, the same cancel request returs 200
-    cancel_resp = client.post(f"/jobs/{resp_job_id}/cancel")
+    cancel_resp = test_client.post(f"/jobs/{resp_job_id}/cancel")
     assert cancel_resp.status_code == 200
 
-    delete_resp = client.delete(f"/jobs/{resp_job_id}")
+    delete_resp = test_client.delete(f"/jobs/{resp_job_id}")
     assert delete_resp.status_code == 200
 
     after_db = test_db.execute(sql).scalars().all()
@@ -726,7 +732,7 @@ def test_submit_cancel_delete(test_db):
         assert bef == aft
 
 
-def test_submit_job_compat_error(test_db):
+def test_submit_job_compat_error(test_client, test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
     submitting a job and then sequentially deleting it should result in no remaining effects."
@@ -756,11 +762,11 @@ def test_submit_job_compat_error(test_db):
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 400
 
 
-def test_can_submit_job_for_one_of_available_devices(test_db):
+def test_can_submit_job_for_one_of_available_devices(test_client, test_db):
     """_summary_
     Test for checking submitting job for device that user is allowed to use
     """
@@ -786,11 +792,11 @@ def test_can_submit_job_for_one_of_available_devices(test_db):
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 200
     resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
     # Getting the job of reteurned job_id
-    get_resp = client.get(f"/jobs/{resp_job_id}")
+    get_resp = test_client.get(f"/jobs/{resp_job_id}")
     assert get_resp.status_code == 200
     resp_job = JobDef.model_validate(get_resp.json())
     # And these jobs should be same.
@@ -801,7 +807,7 @@ def test_can_submit_job_for_one_of_available_devices(test_db):
     assert resp_job.job_info.result is None
 
 
-def test_job_submit_for_device_user_cannot_access(test_db):
+def test_job_submit_for_device_user_cannot_access(test_client, test_db):
     """_summary_
     Test for checking submitting job for device that user is not allowed to use
     """
@@ -827,9 +833,9 @@ def test_job_submit_for_device_user_cannot_access(test_db):
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 403
-    assert submit_resp.json() == { "message":f"cannot create job for device=Kawasaki" }
+    assert submit_resp.json() == {"message": "cannot create job for device=Kawasaki"}
 
 
 def test_submit_job_shots_boundary(test_db):
@@ -867,7 +873,7 @@ def test_submit_job_shots_boundary(test_db):
     assert error_title == ""
 
 
-def test_get_sselog(test_db, test_storage):
+def test_get_sselog(test_client, test_db, test_storage):
     """_summary_
     Test for get sselog
     """
@@ -891,7 +897,7 @@ def test_get_sselog(test_db, test_storage):
     zip_bin = zip_stream.read()
     zip_base64 = base64.b64encode(zip_bin).decode("utf-8")
 
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     actual = adapter.validate_python(response.json())
 
@@ -905,6 +911,7 @@ def test_get_sselog(test_db, test_storage):
 
 
 def test_get_sselog_invalid_owner(
+    test_client,
     test_db,
     test_storage,
 ):
@@ -924,7 +931,7 @@ def test_get_sselog_invalid_owner(
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
 
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     adapter.validate_python(response.json())
 
@@ -934,7 +941,7 @@ def test_get_sselog_invalid_owner(
     test_storage.delete(key=f"testjob1id/{log_name}")
 
 
-def test_get_sselog_unknown_jobid(test_db, test_storage):
+def test_get_sselog_unknown_jobid(test_client, test_db, test_storage):
     """_summary_
     Test for get sselog when the job_id is invalid
     """
@@ -950,7 +957,7 @@ def test_get_sselog_unknown_jobid(test_db, test_storage):
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     adapter.validate_python(response.json())
 
@@ -960,7 +967,7 @@ def test_get_sselog_unknown_jobid(test_db, test_storage):
     test_storage.delete(key=f"testjob1id/{log_name}")
 
 
-def test_get_sselog_invalid_jobtype(test_db, test_storage):
+def test_get_sselog_invalid_jobtype(test_client, test_db, test_storage):
     """_summary_
     Test for get sselog when the job_type is not sse
     """
@@ -976,7 +983,7 @@ def test_get_sselog_invalid_jobtype(test_db, test_storage):
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
 
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     adapter.validate_python(response.json())
 
@@ -986,7 +993,7 @@ def test_get_sselog_invalid_jobtype(test_db, test_storage):
     test_storage.delete(key=f"testjob1id/{log_name}")
 
 
-def test_get_sselog_running_job(test_db, test_storage):
+def test_get_sselog_running_job(test_client, test_db, test_storage):
     """_summary_
     Test for get sselog when the job status is neighter succeeded nor failed
     """
@@ -1001,7 +1008,7 @@ def test_get_sselog_running_job(test_db, test_storage):
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     adapter.validate_python(response.json())
 
@@ -1011,7 +1018,7 @@ def test_get_sselog_running_job(test_db, test_storage):
     test_storage.delete(key=f"testjob1id/{log_name}")
 
 
-def test_get_sselog_no_log(test_db, test_storage):
+def test_get_sselog_no_log(test_client, test_db, test_storage):
     """_summary_
     Test for get sselog when the job failed and there is no log file in S3
     """
@@ -1022,13 +1029,14 @@ def test_get_sselog_no_log(test_db, test_storage):
     job_model.status = "failed"
     test_db.add(job_model)
     test_db.commit()
-    response = client.get("/jobs/testjob1id/sselog")
+    response = test_client.get("/jobs/testjob1id/sselog")
     adapter = TypeAdapter(dict[str, str])
     adapter.validate_python(response.json())
     assert response.status_code == 404
 
 
 def test_put_user_program_to_s3(
+    test_client,
     test_db,
     test_storage,
 ):
@@ -1054,11 +1062,11 @@ def test_put_user_program_to_s3(
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 200
     resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
     # Getting the job of reteurned job_id
-    get_resp = client.get(f"/jobs/{resp_job_id}")
+    get_resp = test_client.get(f"/jobs/{resp_job_id}")
     assert get_resp.status_code == 200
     resp_job = JobDef.model_validate(get_resp.json())
     # And these jobs should be same.
@@ -1072,7 +1080,7 @@ def test_put_user_program_to_s3(
     assert program_data.decode() == "program1"
 
 
-def test_put_user_program_to_s3_invalid_program(test_db):
+def test_put_user_program_to_s3_invalid_program(test_client, test_db):
     """_summary_
     Test for put user program to S3 when SSE
     """
@@ -1096,11 +1104,12 @@ def test_put_user_program_to_s3_invalid_program(test_db):
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 500
 
 
 def test_put_user_program_to_s3_no_program(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -1124,11 +1133,11 @@ def test_put_user_program_to_s3_no_program(
     )
 
     # Submitting
-    submit_resp = client.post("/jobs", content=body.model_dump_json())
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 500
 
 
-def test_delete_s3_folder(test_db, test_storage):
+def test_delete_s3_folder(test_client, test_db, test_storage):
     """_summary_
     Test for delete s3 folder from S3 when SSE
     """
@@ -1146,7 +1155,7 @@ def test_delete_s3_folder(test_db, test_storage):
     test_storage.put(key="testjob2id/oqtopus_test_log.log", data=b"log2")
 
     # Request
-    delete_resp = client.delete("/jobs/testjob1id")
+    delete_resp = test_client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
     object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
@@ -1165,7 +1174,7 @@ def test_delete_s3_folder(test_db, test_storage):
     assert job is None
 
 
-def test_delete_s3_folder_no_folder(test_db, test_storage):
+def test_delete_s3_folder_no_folder(test_client, test_db, test_storage):
     """_summary_
     Test for delete s3 folder from S3 when SSE
     """
@@ -1178,7 +1187,7 @@ def test_delete_s3_folder_no_folder(test_db, test_storage):
     test_db.commit()
 
     # Request
-    delete_resp = client.delete("/jobs/testjob1id")
+    delete_resp = test_client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
     object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
@@ -1187,7 +1196,7 @@ def test_delete_s3_folder_no_folder(test_db, test_storage):
     assert job is None
 
 
-def test_delete_s3_folder_no_file(test_db, test_storage):
+def test_delete_s3_folder_no_file(test_client, test_db, test_storage):
     """_summary_
     Test for delete s3 folder from S3 when SSE
     """
@@ -1201,7 +1210,7 @@ def test_delete_s3_folder_no_file(test_db, test_storage):
 
     test_storage.put(key="testjob1id/", data=b"program1")
     # Request
-    delete_resp = client.delete("/jobs/testjob1id")
+    delete_resp = test_client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
     assert not test_storage.does_exist("testjob1id")
@@ -1210,6 +1219,7 @@ def test_delete_s3_folder_no_file(test_db, test_storage):
 
 
 def test_delete_s3_folder_folder_only(
+    test_client,
     test_db,
     test_storage,
 ):
@@ -1227,7 +1237,7 @@ def test_delete_s3_folder_folder_only(
     test_storage.put(key="testjob1id/", data=b"program1")
 
     # Request
-    delete_resp = client.delete("/jobs/testjob1id")
+    delete_resp = test_client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
     objects = test_storage.prefix(prefix="testjob1id")
@@ -1237,6 +1247,7 @@ def test_delete_s3_folder_folder_only(
 
 
 def test_delete_s3_not_sse_job(
+    test_client,
     test_db,
 ):
     """_summary_
@@ -1251,7 +1262,7 @@ def test_delete_s3_not_sse_job(
     test_db.commit()
 
     # Request
-    delete_resp = client.delete("/jobs/testjob1id")
+    delete_resp = test_client.delete("/jobs/testjob1id")
     assert delete_resp.status_code == 200
 
     job = test_db.get(Job, "testjob1id")

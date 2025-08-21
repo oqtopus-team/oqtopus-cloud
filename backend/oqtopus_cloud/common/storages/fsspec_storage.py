@@ -1,9 +1,17 @@
-import os
-from typing import Iterator, cast
-
 import fsspec
+import os
+
+from datetime import timedelta
+from s3fs import S3FileSystem  # type: ignore[import-untyped]
+from typing import Any, Iterator, cast
+from urllib.parse import urlparse
 
 from oqtopus_cloud.common.storages.abstract_storage import AbstractStorage
+from oqtopus_cloud.common.storages.presign_strategies import (
+    GeneralPresignStrategy,
+    S3PresignStrategy,
+    LocalFilePresignStrategy,
+)
 
 
 class FSSpecStorage(AbstractStorage):
@@ -21,10 +29,22 @@ class FSSpecStorage(AbstractStorage):
         :param storage_options: options for specific storage driver (AWS credentials for s3 driver, etc)
         """
         self.fs_url = fs_url.rstrip("/")
-        self.fs = fsspec.filesystem(self._get_protocol(fs_url), **storage_options)
+        self._parsed_fs_url = urlparse(self.fs_url)
+        self.fs = fsspec.filesystem(self._parsed_fs_url.scheme, **storage_options)
+        self._presigned_url_strategy: GeneralPresignStrategy = (
+            self._init_presign_strategy()
+        )
 
-    def _get_protocol(self, url: str) -> str:
-        return url.split("://")[0]
+    def _init_presign_strategy(self) -> GeneralPresignStrategy:
+        if self._parsed_fs_url.scheme == "s3":
+            return S3PresignStrategy(
+                s3_fs=cast(S3FileSystem, self.fs),
+                bucket_name=self._parsed_fs_url.netloc,
+            )
+        elif self._parsed_fs_url.scheme == "file":
+            return LocalFilePresignStrategy(storage_path=self._parsed_fs_url.path)
+        else:
+            return GeneralPresignStrategy()
 
     def put(self, key: str, data: bytes, recursive: bool = True) -> None:
         full_path = f"{self.fs_url}/{key}"
@@ -68,3 +88,13 @@ class FSSpecStorage(AbstractStorage):
                 if (full_path.startswith(storage_base)):
                    relative_path = full_path[len(storage_base):].lstrip("/")
                    yield relative_path
+
+    def get_upload_presigned_url_data(
+        self, key: str, expires: timedelta = timedelta(hours=1)
+    ) -> dict[str, Any]:
+        return self._presigned_url_strategy.get_upload_presigned_url_data(key, expires)
+
+    def get_download_presigned_url(
+        self, key: str, expires: timedelta = timedelta(hours=1)
+    ) -> str:
+        return self._presigned_url_strategy.get_download_presigned_url(key, expires)

@@ -131,6 +131,32 @@ def get_users(
         return InternalServerErrorResponse(message=str(e))
 
 
+@router.get(
+    "/users/{user_id}",
+    response_model=GetOneUserResponse,
+    responses={404: {"model": Message}, 500: {"model": Message}},
+)
+@tracer.capture_method
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+    logger.info("invoked get user")
+    try:
+        user = db.scalars(select(User).where(User.id == user_id)).first()
+
+        if user is None:
+            message = f"user_id={user_id} is not found."
+            logger.info(message)
+            return NotFoundErrorResponse(message=message)
+
+        return model_to_schema(user)
+    except Exception as e:
+        tracer.put_annotation("db_error", str(e))
+        logger.exception(f"error: {str(e)}")
+        return InternalServerErrorResponse(message=str(e))
+
+
 @router.patch(
     "/users/{user_id}",
     response_model=GetOneUserResponse,
