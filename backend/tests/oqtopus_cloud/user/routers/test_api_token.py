@@ -24,6 +24,7 @@ def _get_model(n: int) -> User:
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=utc),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=utc),
@@ -46,7 +47,7 @@ def test_get_api_token(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -77,7 +78,7 @@ def test_get_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_2"
+    request.state.owner = "email_2"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -105,7 +106,7 @@ def test_get_api_token_no_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     new_user = _get_model(1)
@@ -135,7 +136,7 @@ def test_get_api_token_500(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     new_user = _get_model(1)
@@ -165,7 +166,7 @@ def test_create_api_token(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -204,7 +205,7 @@ def test_create_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_2"
+    request.state.owner = "email_2"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -233,7 +234,7 @@ def test_create_api_token_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     new_user = _get_model(1)
@@ -264,7 +265,7 @@ def test_create_api_token_500(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -293,7 +294,7 @@ def test_delete_api_token(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -338,7 +339,7 @@ def test_delete_api_token_500(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     response = delete_api_token(
         request,
@@ -362,7 +363,7 @@ def test_delete_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_2"
+    request.state.owner = "email_2"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -407,7 +408,7 @@ def test_delete_api_token_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.owner = "username_1"
+    request.state.owner = "email_1"
 
     test_db.flush()
     new_user = _get_model(1)

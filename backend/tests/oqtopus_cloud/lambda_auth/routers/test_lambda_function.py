@@ -98,6 +98,7 @@ def _get_model(
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }

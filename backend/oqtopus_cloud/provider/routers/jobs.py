@@ -63,7 +63,7 @@ def get_jobs(
     device_id: str,
     fields: Optional[str] = None,
     status: Optional[str] = None,
-    max_results: Optional[int] = None,
+    limit: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> list[JobDef] | ErrorResponse:
@@ -103,8 +103,8 @@ def get_jobs(
         if timestamp is not None:
             time = datetime.fromisoformat(timestamp).astimezone(jst)
             select_stmt = select_stmt.filter(Job.created_at > time)
-        if max_results is not None:
-            select_stmt = select_stmt.limit(max_results)
+        if limit is not None:
+            select_stmt = select_stmt.limit(limit)
 
         models = db.scalars(select_stmt).all()
 

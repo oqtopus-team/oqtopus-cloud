@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from fastapi.testclient import TestClient
+from oqtopus_cloud.admin.common.validation_utils import LEN_VARCHAR
 from oqtopus_cloud.admin.lambda_function import app
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
     GetUsersResponse,
-    UpdateUserStatusRequest,
+    UpdateUserRequest,
     UserStatus,
 )
 from oqtopus_cloud.common.models.user import User
@@ -25,6 +26,7 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
         "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
+        "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -68,6 +70,7 @@ def test_get_users_simple(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="2",
@@ -76,6 +79,7 @@ def test_get_users_simple(
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -107,6 +111,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             GetOneUserResponse(
                 id="3",
@@ -115,6 +120,7 @@ def test_get_users_query_limit_offset(
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ],
     )
@@ -146,6 +152,7 @@ def test_get_user_by_email(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
@@ -178,11 +185,128 @@ def test_get_user_by_name_organization_groupid_status(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_get_users_order_ascending(test_db):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/users?sort=name,asc")
+    adapter = TypeAdapter(GetUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetUsersResponse(
+        offset="0",
+        limit="10",
+        users=[
+            GetOneUserResponse(
+                id=1,
+                email="email_1",
+                name="username_1",
+                organization="organization_1",
+                status=UserStatus.approved,
+                group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=2,
+                email="email_2",
+                name="username_2",
+                organization="organization_2",
+                status=UserStatus.approved,
+                group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=3,
+                email="email_3",
+                name="username_3",
+                organization="organization_3",
+                status=UserStatus.approved,
+                group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            )
+        ],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_users_order_descending(test_db):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/users?sort=email,desc")
+    adapter = TypeAdapter(GetUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetUsersResponse(
+        offset="0",
+        limit="10",
+        users=[
+            GetOneUserResponse(
+                id=3,
+                email="email_3",
+                name="username_3",
+                organization="organization_3",
+                status=UserStatus.approved,
+                group_id="group_id_3",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=2,
+                email="email_2",
+                name="username_2",
+                organization="organization_2",
+                status=UserStatus.approved,
+                group_id="group_id_2",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            ),
+            GetOneUserResponse(
+                id=1,
+                email="email_1",
+                name="username_1",
+                organization="organization_1",
+                status=UserStatus.approved,
+                group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            )
+        ],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_users_invalid_sort_query_parameter():
+    response = client.get("/users?sort=name")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: name"}
+
+    response = client.get("/users?sort=name,desc,something_else")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid sort parameter: name,desc,something_else"}
+
+
+def test_get_users_invalid_column_name():
+    response = client.get("/users?sort=no_such_column,desc")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid column name to sort: no_such_column"}
+
+
+def test_get_users_invalid_order():
+    response = client.get("/users?sort=name,invalid_order")
+    assert response.status_code == 400
+    assert response.json() == {"message": "Invalid order to sort: invalid_order"}
 
 
 def test_get_user_500():
@@ -191,6 +315,46 @@ def test_get_user_500():
     )
     assert response.status_code == 500
 
+def test_get_one_user(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.add(_get_model(3))
+    test_db.commit()
+
+    response = client.get("/users/2")
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=2,
+        email="email_2",
+        name="username_2",
+        organization="organization_2",
+        status=UserStatus.approved,
+        group_id="group_id_2",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+    )
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_one_user_404(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.add(_get_model(3))
+    test_db.commit()
+
+    response = client.get("/users/5")
+
+    assert response.status_code == 404
+    assert response.json() == {"message": "user_id=5 is not found."}
+
+
+def test_get_one_user_500():
+    response = client.get("/users/1")
+    assert response.status_code == 500
 
 def test_patch_job_status_to_suspended(
     test_db,
@@ -198,7 +362,7 @@ def test_patch_job_status_to_suspended(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -209,6 +373,7 @@ def test_patch_job_status_to_suspended(
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -220,7 +385,7 @@ def test_patch_job_status_to_unapproved(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.unapproved)
+    update_data = UpdateUserRequest(status=UserStatus.unapproved)
     response = client.patch("/users/1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
@@ -231,6 +396,59 @@ def test_patch_job_status_to_unapproved(
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_patch_user(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        name="user_name_1",
+        organization="new_organization",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.approved,
+        group_id="group_id_1",
+        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+    )
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_patch_user_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+        available_devices=["SVSim", "Kawasaki"],
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id=1,
+        email="email@email.com",
+        name="user_name_1",
+        organization="new_organization",
+        status=UserStatus.unapproved,
+        group_id="new_group_id",
+        available_devices=["SVSim", "Kawasaki"],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -242,14 +460,88 @@ def test_patch_job_404(
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
     assert response.json() == {"message": "User not found: 2"}
 
 
+def test_patch_job_400_email_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_email = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        email=too_long_email,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_email} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_email_already_exist(test_db):
+    user_1_mail = "email@email.com"
+    user_1 = _get_model(1)
+    user_1.email = user_1_mail
+
+    test_db.flush()
+    test_db.add(user_1)
+    test_db.add(_get_model(2))
+    test_db.commit()
+    update_data = UpdateUserRequest(
+        email=user_1_mail,
+    )
+    response = client.patch("/users/2", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"{user_1_mail} is already registered."}
+
+
+def test_patch_job_400_name_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_name = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        name=too_long_name,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_organization_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_organization = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        organization=too_long_organization,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
+def test_patch_job_400_group_id_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long_group_id = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        group_id=too_long_group_id,
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+
+    assert response.status_code == 400
+    assert response.json() == {"message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+
+
 def test_patch_job_500():
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 500
 
@@ -283,6 +575,7 @@ def test_delete_user(
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             )
         ],
     )
@@ -293,7 +586,7 @@ def test_delete_user(
     assert response.status_code == 204
 
     # confirm the user is deleted
-    update_data = UpdateUserStatusRequest(status=UserStatus.suspended)
+    update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/1", json=update_data.model_dump())
     assert response.status_code == 404
 

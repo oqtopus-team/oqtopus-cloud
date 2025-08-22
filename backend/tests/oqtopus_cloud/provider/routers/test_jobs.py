@@ -216,14 +216,15 @@ def test_get_jobs_with_timestamp(test_db: Session):
 
 
 @mock_aws
-def test_get_jobs_with_max_results(test_db: Session):
+def test_get_jobs_limit(test_db: Session):
+    # Arrange
     test_db.flush()
     for i in range(1, 10):
         test_db.add(_get_job_model(i))
     test_db.add(_get_device_model())
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC&max_results=3")
+    response = client.get("/jobs?device_id=SC&limit=3")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
 

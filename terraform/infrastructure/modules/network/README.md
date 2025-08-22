@@ -81,7 +81,7 @@ module "network" {
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | The CIDR blocks for the private subnets | `map(any)` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
-| <a name="input_public_subnet"></a> [public\_subnet](#input\_public\_subnet) | n/a | <pre>object({<br>    cidr = string<br>    az   = string<br>    name = string<br>  })</pre> | n/a | yes |
+| <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | A map of public subnets | <pre>map(object({<br>    name = string<br>    cidr = string<br>    az   = string<br>  }))</pre> | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region name | `string` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | The CIDR block for the VPC | `string` | n/a | yes |
 
@@ -92,5 +92,6 @@ module "network" {
 | <a name="output_bastion_subnet_id"></a> [bastion\_subnet\_id](#output\_bastion\_subnet\_id) | The ID of the bastion subnet |
 | <a name="output_ec2_bastion_route_table_id"></a> [ec2\_bastion\_route\_table\_id](#output\_ec2\_bastion\_route\_table\_id) | The route table ID for the EC2 instance |
 | <a name="output_private_subnet_ids"></a> [private\_subnet\_ids](#output\_private\_subnet\_ids) | The IDs of the private subnets |
+| <a name="output_public_subnet_ids"></a> [public\_subnet\_ids](#output\_public\_subnet\_ids) | The IDs of the public subnets |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | The ID of the VPC |
 <!-- END_TF_DOCS -->
