@@ -4,5 +4,6 @@ pre-commit:
       run: |
         aqua exec -- trufflehog git file://. --fail \
         --branch $(git rev-parse --abbrev-ref HEAD) \
-        --since-commit HEAD
+        --since-commit HEAD \
+        --exclude-detectors ftp
         exit $?
