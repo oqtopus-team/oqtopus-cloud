@@ -211,7 +211,6 @@ def test_submit_job(
 
 def test_submit_job_404(
     test_client,
-    test_db,
 ):
     """_summary_
     Complete job submission with POST /jobs/{job_id}/submit test, job_id not exist
@@ -276,20 +275,12 @@ def test_submit_job_403_forbidden_device(
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
-    bucket_name = os.environ["OQTOPUS_BUCKET"]
-    s3client = boto3.client("s3")
-    s3client.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "ap-northeast-1"},
-    )
-
     body = _get_submit_body()
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(body))
     assert response.status_code == 403
     assert response.json() == {"message": "cannot create job for device=Kawasaki"}
 
 
-@mock_aws
 def test_submit_job_400_missing_job_info(
     test_client,
     test_db,
@@ -1054,10 +1045,7 @@ def test_register_submit_cancel_delete(
         assert bef == aft
 
 
-def test_submit_job_shots_boundary(
-    test_client,
-    test_db
-):
+def test_submit_job_shots_boundary():
     """_summary_
     Test for checking out of range shots
     """
