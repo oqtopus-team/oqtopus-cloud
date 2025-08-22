@@ -217,7 +217,6 @@ def test_get_jobs_with_timestamp(test_db: Session):
 
 @mock_aws
 def test_get_jobs_limit(test_db: Session):
-    # Arrange
     test_db.flush()
     for i in range(1, 10):
         test_db.add(_get_job_model(i))

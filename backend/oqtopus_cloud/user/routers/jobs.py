@@ -17,6 +17,7 @@ from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.s3 import (
     get_download_presigned_url,
@@ -32,6 +33,7 @@ from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
     ErrorResponse,
+    ForbiddenErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
@@ -126,6 +128,7 @@ def register_job(
     response_model=SuccessResponse,
     responses={
         400: {"model": Message},
+        403: {"model": Message},
         404: {"model": Message},
         500: {"model": Message},
     },
@@ -160,6 +163,13 @@ def submit_job(
             return BadRequestResponse(message="device not found")
         if device.status != "available":
             return BadRequestResponse(f"device {device.id} is not available")
+        if not can_user_access_device(owner, request.device_id, db):
+            logger.error(
+                f"user={owner} is not allowed to create job for device={request.device_id}"
+            )
+            return ForbiddenErrorResponse(
+                message=f"cannot create job for device={request.device_id}"
+            )
         job.device_id = request.device_id
 
         job.transpiler_info = json.dumps(request.transpiler_info)
@@ -215,7 +225,7 @@ def get_jobs(
         else:
             arg_order = asc(Job.created_at)
 
-        stmt = select(Job).filter(Job.owner == owner).order_by(arg_order)
+        stmt = select(Job).filter(Job.owner == owner).order_by(arg_order, Job.id)
 
         # Fields Control
         fields_list = None
@@ -599,3 +609,20 @@ def model_to_schema(
             else:
                 dict_schema[k] = getattr(model, k)
         return JobBase(**dict_schema)
+
+
+def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
+    try:
+        # username here is the email address registered in Cognito
+        user = db.scalars(select(User).where(User.email == username)).first()
+        if user is None or user.available_devices is None:
+            return False
+
+        if user.available_devices == "*":
+            return True
+
+        available_devices = json.loads(user.available_devices)
+
+        return isinstance(available_devices, list) and device_id in available_devices
+    except Exception:
+        return False

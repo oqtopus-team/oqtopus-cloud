@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pytest
-from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.schemas.announcements import (
