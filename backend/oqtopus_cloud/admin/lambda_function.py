@@ -16,6 +16,9 @@ from starlette.middleware.cors import CORSMiddleware
 from oqtopus_cloud.admin.conf import logger, metrics, tracer
 from oqtopus_cloud.admin.middleware import CustomMiddleware
 from oqtopus_cloud.admin.routers import (
+    announcements as announcements_router,
+)
+from oqtopus_cloud.admin.routers import (
     devices as devices_router,
 )
 from oqtopus_cloud.admin.routers import (
@@ -23,9 +26,6 @@ from oqtopus_cloud.admin.routers import (
 )
 from oqtopus_cloud.admin.routers import (
     whitelist_users as whitelist_router,
-)
-from oqtopus_cloud.admin.routers import (
-    announcements as announcements_router,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -54,7 +54,7 @@ app.include_router(
 
 app.include_router(
     whitelist_router.router,
-    tags=["whitelist"],
+    tags=["whitelist_users"],
 )
 
 app.include_router(

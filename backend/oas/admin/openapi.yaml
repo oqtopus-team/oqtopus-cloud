@@ -217,7 +217,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal Server Error
-  /whitelist:
+  /whitelist_users:
     get:
       tags:
         - WhitelistUsers

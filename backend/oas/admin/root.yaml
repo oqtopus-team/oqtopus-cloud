@@ -17,7 +17,7 @@ paths:
     $ref: ./paths/users.yaml#/users
   /users/{user_id}:
     $ref: ./paths/users.yaml#/users.user_id
-  /whitelist:
+  /whitelist_users:
     $ref: ./paths/whitelist_users.yaml#/whitelist_users
   /devices:
     $ref: ./paths/devices.yaml#/devices
