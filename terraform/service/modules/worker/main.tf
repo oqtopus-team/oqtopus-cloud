@@ -209,19 +209,14 @@ resource "aws_iam_role_policy_attachment" "event_bridge" {
 
 resource "aws_iam_policy" "event_bridge" {
   name   = "${var.product}-${var.org}-${var.env}-${var.identifier}-evnet_bridge"
-  policy = data.aws_iam_policy_document.event_bridge.json
-}
-
-data "aws_iam_policy_document" "event_bridge" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "lambda:InvokeFunction",
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["lambda:InvokeFunction"]
+        Resource = [aws_lambda_function.this.arn]
+      }
     ]
-
-    resources = [
-      aws_lambda_function.this.arn,
-    ]
-  }
+  })
 }
