@@ -217,7 +217,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal Server Error
-  /whitelist:
+  /whitelist_users:
     get:
       tags:
         - WhitelistUsers
@@ -306,13 +306,12 @@ paths:
       operationId: delete_whitelist_user
       security:
         - BearerAuth: []
-      parameters:
-        - name: user_emails
-          in: query
-          description: email of the user to be deleted
-          required: true
-          schema:
-            $ref: '#/components/schemas/whitelist_users.WhitelistUsersDeleteRequest'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/whitelist_users.WhitelistUsersDeleteRequest'
       responses:
         '204':
           description: Delete success
