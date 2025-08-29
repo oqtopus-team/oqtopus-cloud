@@ -33,7 +33,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     UpdateJobTranspilerInfoResponse,
     UploadSselogResponse,
 )
-from sqlalchemy import select
+from sqlalchemy import asc, select
 from sqlalchemy.orm import Session, load_only
 from zoneinfo import ZoneInfo
 
@@ -81,6 +81,7 @@ def get_jobs(
                     select(Job)
                     .filter(Job.device_id == device_id)
                     .options(load_only(*arg_select))
+                    .order_by(asc(Job.submitted_at), asc(Job.id))
                 )
             else:
                 invalid_indices = [
@@ -91,7 +92,11 @@ def get_jobs(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
-            select_stmt = select(Job).filter(Job.device_id == device_id)
+            select_stmt = (
+                select(Job)
+                .filter(Job.device_id == device_id)
+                .order_by(asc(Job.submitted_at), asc(Job.id))
+            )
 
         # Filtering Jobs
         if status is not None:
