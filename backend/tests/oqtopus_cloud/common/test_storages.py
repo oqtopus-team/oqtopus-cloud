@@ -138,7 +138,7 @@ def test_fsspec_storage_local_file_upload_url(tmp_path):
     presigned_url_data = storage.get_upload_presigned_url_data(key)
 
     assert presigned_url_data["url"] == f"file://{storage_base}/{key}"
-    assert presigned_url_data["fields"] == {}
+    assert presigned_url_data["fields"]["key"] == f"file://{storage_base}/{key}"
 
 
 def test_fsspec_storage_local_file_download_url(tmp_path):

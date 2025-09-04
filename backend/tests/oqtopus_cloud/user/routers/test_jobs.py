@@ -18,7 +18,6 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobType,
     RegisterJobResponse,
     SubmitJobRequest,
-    SubmitJobType,
 )
 
 from pydantic import ValidationError
@@ -1035,7 +1034,7 @@ def test_submit_job_shots_boundary():
         SubmitJobRequest(
             name="submit-job-test",
             device_id="Kawasaki",
-            job_type=SubmitJobType.sampling,
+            job_type=JobType.sampling,
             shots=int(1e7) + 1,
         )
     except ValidationError as e:
@@ -1049,7 +1048,7 @@ def test_submit_job_shots_boundary():
         SubmitJobRequest(
             name="submit-job-test",
             device_id="Kawasaki",
-            job_type=SubmitJobType.sampling,
+            job_type=JobType.sampling,
             shots=int(1e7),
         )
     except ValidationError as e:
