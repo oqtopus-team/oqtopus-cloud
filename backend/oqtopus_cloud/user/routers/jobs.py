@@ -41,7 +41,9 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobInfoUploadPresignedURL,
     JobStatus,
     JobType,
+    RegisteredJob,
     RegisterJobResponse,
+    SubmittedJob,
     SubmitJobRequest,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
@@ -291,7 +293,7 @@ def get_jobs(
 
         results = []
         for model, job in [
-            (model, model_to_schema(model, storage, fields_list))
+            (model, model_to_filtered_schema(model, storage, fields_list))
             for model in models.items
         ]:
             results.append(job)
@@ -325,7 +327,7 @@ def get_job(
     job_id: str,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
-) -> Job | ErrorResponse:
+) -> RegisteredJob | SubmittedJob | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
@@ -519,28 +521,65 @@ MAP_MODEL_TO_SCHEMA = {
 MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 
 
+def get_job_info(model: JobModel, storage: AbstractStorage) -> JobInfo:
+    output_dict = {}
+    if model.output_files:
+        output_files = json.loads(model.output_files)
+        output_dict = {
+            file: storage.get_download_presigned_url(key=f"{model.id}/{file}.zip")
+            for file in output_files
+        }
+
+    return JobInfo(
+        input=storage.get_download_presigned_url(
+            key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+        ),
+        message=model.message,
+        **output_dict,
+    )
+
+
+def localize(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return pytz.utc.localize(dt)
+
+
 def model_to_schema(
+    model: JobModel,
+    storage: AbstractStorage,
+) -> RegisteredJob | SubmittedJob:
+    if model.status == "registered":
+        return RegisteredJob(
+            job_id=model.id,
+            status=JobStatus(model.status),
+        )
+    else:
+        return SubmittedJob(
+            job_id=model.id,
+            name=model.name,
+            description=model.description,
+            device_id=model.device_id,
+            shots=model.shots,
+            job_type=JobType(model.job_type),
+            job_info=get_job_info(model, storage),
+            status=JobStatus(model.status),
+            transpiler_info=json.loads(model.transpiler_info),
+            mitigation_info=json.loads(model.mitigation_info),
+            simulator_info=json.loads(model.simulator_info),
+            execution_time=model.execution_time,
+            submitted_at=pytz.utc.localize(model.submitted_at),
+            ready_at=localize(model.ready_at),
+            running_at=localize(model.running_at),
+            ended_at=localize(model.ended_at),
+        )
+
+
+def model_to_filtered_schema(
     model: JobModel,
     storage: AbstractStorage,
     fields: list[str] | None = None,
 ) -> Job:
-    def get_job_info(model: JobModel, storage: AbstractStorage) -> JobInfo:
-        output_dict = {}
-        if model.output_files:
-            output_files = json.loads(model.output_files)
-            output_dict = {
-                file: storage.get_download_presigned_url(key=f"{model.id}/{file}.zip")
-                for file in output_files
-            }
-
-        return JobInfo(
-            input=storage.get_download_presigned_url(
-                key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
-            ),
-            message=model.message,
-            **output_dict,
-        )
-
     def is_datetime_field(fld: str) -> bool:
         if fld == "submitted_at":
             return True
@@ -567,36 +606,8 @@ def model_to_schema(
 
         return False
 
-    def localize(dt: datetime | None) -> datetime | None:
-        if dt is None:
-            return None
-        return pytz.utc.localize(dt)
-
     if fields is None:
-        if model.status == "registered":
-            return Job(
-                job_id=model.id,
-                status=JobStatus(model.status),
-            )
-        else:
-            return Job(
-                job_id=model.id,
-                name=model.name,
-                description=model.description,
-                device_id=model.device_id,
-                shots=model.shots,
-                job_type=JobType(model.job_type),
-                job_info=get_job_info(model, storage),
-                status=JobStatus(model.status),
-                transpiler_info=json.loads(model.transpiler_info),
-                mitigation_info=json.loads(model.mitigation_info),
-                simulator_info=json.loads(model.simulator_info),
-                execution_time=model.execution_time,
-                submitted_at=localize(model.submitted_at),
-                ready_at=localize(model.ready_at),
-                running_at=localize(model.running_at),
-                ended_at=localize(model.ended_at),
-            )
+        return model_to_schema(model, storage)
     else:
         dict_schema: dict[str, Any] = {}
         for k in fields:
