@@ -255,7 +255,7 @@ jobs.JobInfoUploadPresignedURL:
         signature:
           type: string
       required:
-       - key
+        - key
   required:
     - url
     - fields
