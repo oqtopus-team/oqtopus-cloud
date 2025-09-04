@@ -38,15 +38,6 @@ jobs.JobStatus:
     - cancelled
   example: submitted
 
-jobs.SubmitJobType:
-  type: string
-  enum:
-    - estimation
-    - sampling
-    - multi_manual
-    - sse
-  example: sampling
-
 jobs.JobType:
   type: string
   enum:
@@ -69,7 +60,7 @@ jobs.SubmitJobRequest:
       type: string
       example: Kawasaki
     job_type:
-      $ref: "#/jobs.SubmitJobType"
+      $ref: "#/jobs.JobType"
     transpiler_info:
       type: object
       properties: {}
@@ -117,20 +108,6 @@ jobs.SubmitJobRequest:
 jobs.Job:
   description: |-
     Represents a quantum job.
-
-    Newly registered jobs (status=registered) must provide:
-       - job_id,
-       - status (registered)
-
-    Fully defined jobs must also provide:
-      - name
-      - device_id
-      - job_type,
-      - shots
-      - job_info
-
-    Other properties and optional and depend on job type and status.
-
   type: object
   properties:
     job_id:
@@ -231,43 +208,29 @@ jobs.Job:
       running_at: 2022-10-19T11:45:34+09:00
       ended_at: 2022-10-19T11:45:34+09:00
 
-# jobs.SubmittedJob:
-#   allOf:
-#     - $ref: "#/jobs.Job"
-#   required:
-#     - job_id
-#     - name
-#     - job_type
-#     - status
-#     - device_id
-#     - shots
-#     - job_info
+jobs.SubmittedJob:
+  description: |-
+    Represents a fully submitted quantum job.
+  allOf:
+    - $ref: "#/jobs.Job"
+  required:
+    - job_id
+    - name
+    - job_type
+    - status
+    - device_id
+    - shots
+    - job_info
+    - submitted_at
 
-# jobs.RegisteredJob:
-#   allOf:
-#     - $ref: "#/jobs.Job"
-#   required:
-#     - job_id
-#     - job_type
-#     - status
-#   example: {
-#     "job_id": "06823102-73a0-793c-8000-70ac55fe4811",
-#     "name": "",
-#     "description": null,
-#     "job_type": "none",
-#     "status": "registered",
-#     "device_id": null,
-#     "shots": null,
-#     "job_info": null,
-#     "transpiler_info": null,
-#     "simulator_info": null,
-#     "mitigation_info": null,
-#     "execution_time": null,
-#     "submitted_at": null,
-#     "ready_at": null,
-#     "running_at": null,
-#     "ended_at": null
-#   }
+jobs.RegisteredJob:
+  description: |-
+    Represents a newly registered quantum job.
+  allOf:
+    - $ref: "#/jobs.Job"
+  required:
+    - job_id
+    - status
 
 jobs.JobInfoUploadPresignedURL:
   description: |-
@@ -291,6 +254,11 @@ jobs.JobInfoUploadPresignedURL:
           type: string
         signature:
           type: string
+      required:
+       - key
+  required:
+    - url
+    - fields
 
 jobs.JobInfoDownloadPresignedURL:
   description: |-

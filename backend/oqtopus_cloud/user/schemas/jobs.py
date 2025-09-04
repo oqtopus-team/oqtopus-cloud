@@ -106,19 +106,6 @@ class JobInfo(BaseModel):
 class Job(BaseModel):
     """
     Represents a quantum job.
-
-    Newly registered jobs (status=registered) must provide:
-       - job_id,
-       - status (registered)
-
-    Fully defined jobs must also provide:
-      - name
-      - device_id
-      - job_type,
-      - shots
-      - job_info
-
-    Other properties and optional and depend on job type and status.
     """
 
     job_id: Annotated[
@@ -184,9 +171,8 @@ class Job(BaseModel):
 
 class Fields(BaseModel):
     key: Annotated[
-        str | None,
-        Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"]),
-    ] = None
+        str, Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"])
+    ]
     AWSAccessKeyId: str | None = None
     x_amz_security_token: Annotated[str | None, Field(alias="x-amz-security-token")] = (
         None
@@ -200,10 +186,8 @@ class JobInfoUploadPresignedURL(BaseModel):
     Presigned URL for uploading file to OCTOPUS cloud.
     """
 
-    url: Annotated[
-        str | None, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])
-    ] = None
-    fields: Fields | None = None
+    url: Annotated[str, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])]
+    fields: Fields
 
 
 class RegisterJobResponse(BaseModel):
@@ -215,20 +199,13 @@ class RegisterJobResponse(BaseModel):
     presigned_url: JobInfoUploadPresignedURL
 
 
-class SubmitJobType(str, Enum):
-    estimation = "estimation"
-    sampling = "sampling"
-    multi_manual = "multi_manual"
-    sse = "sse"
-
-
 class SubmitJobRequest(BaseModel):
     name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
     device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    job_type: SubmitJobType
+    job_type: JobType
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(
@@ -264,6 +241,32 @@ class SubmitJobRequest(BaseModel):
         Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
+
+
+class SubmittedJob(Job):
+    """
+    Represents a fully submitted quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_info: JobInfo
+    submitted_at: Annotated[
+        AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ]
+
+
+class RegisteredJob(Job):
+    """
+    Represents a newly registered quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    status: JobStatus
 
 
 class GetJobStatusResponse(BaseModel):

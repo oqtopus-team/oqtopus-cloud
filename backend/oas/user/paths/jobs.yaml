@@ -329,12 +329,18 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              # oneOf:
-              # - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
-              # - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
-              # oneOf is not correctly handled by swagger-codegen tool in quri-parts SDK
-              # use base type instead
-              $ref: "../schemas/jobs.yaml#/jobs.Job"
+              oneOf:
+                - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+                - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+              # discriminator:
+              #   propertyName: status
+              #   mapping:
+              #     submitted: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     running: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     succeeded: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     failed: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     cancelled: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     registered: "../schemas/jobs.yaml#/jobs.RegisteredJob"
             # examples:
             #   submitted_job:
             #     description: Submitted job example
