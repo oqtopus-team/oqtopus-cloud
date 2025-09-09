@@ -20,6 +20,19 @@ jobs:
         description: "Additional search parameter:<br/> Search jobs with specified status only"
         schema:
           $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
+      - name: fields
+        in: query
+        description: |-
+          Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
+
+          If parameter is specified and requested job field is not defined for a job null is returned.
+
+          If parameter is omitted all available job properties are returned.
+        required: false
+        schema:
+          type: string
+          maxLength: 1024
+          example: "job_id,status,name"
       - in: query
         name: limit
         required: false
@@ -40,7 +53,7 @@ jobs:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+                $ref: "../schemas/jobs.yaml#/jobs.Job"
       "400":
         description: Bad Request
         content:
