@@ -2,16 +2,17 @@ import datetime
 import enum
 from typing import Optional
 
-from sqlalchemy import TIMESTAMP, Enum, String
+from sqlalchemy import Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models.base import (
     Base,
 )
+from oqtopus_cloud.common.models.common import TimestampMixin
 
 
-class Device(Base):
+class Device(Base, TimestampMixin):
     """
     Represents a device in the system.
 
@@ -76,12 +77,4 @@ class Device(Base):
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
-    )
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-    )
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
     )
