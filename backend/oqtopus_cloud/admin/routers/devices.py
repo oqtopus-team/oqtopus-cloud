@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy import select
@@ -232,7 +232,6 @@ def model_to_schema(model: Device) -> DeviceInfo:
 
 def schema_to_model(device_id: str, schema: DeviceBase) -> Device | None:
     try:
-        date_registration = datetime.now(utc)
         model = Device(
             id=device_id,
             device_type=schema.device_type,
@@ -244,8 +243,6 @@ def schema_to_model(device_id: str, schema: DeviceBase) -> Device | None:
             device_info=schema.device_info,
             calibrated_at=ensure_timezone(schema.calibrated_at),
             description=schema.description,
-            created_at=ensure_timezone(date_registration),
-            updated_at=ensure_timezone(date_registration),
         )
         return model
     except Exception:
