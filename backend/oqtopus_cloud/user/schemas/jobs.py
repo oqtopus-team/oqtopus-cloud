@@ -106,6 +106,19 @@ class JobInfo(BaseModel):
 class Job(BaseModel):
     """
     Represents a quantum job.
+
+    Newly registered jobs (status=registered) must provide:
+       - job_id,
+       - status (registered)
+
+    Fully defined jobs must also provide:
+      - name
+      - device_id
+      - job_type,
+      - shots
+      - job_info
+
+    Other properties and optional and depend on job type and status.
     """
 
     job_id: Annotated[
@@ -243,32 +256,6 @@ class SubmitJobRequest(BaseModel):
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
 
 
-class SubmittedJob(Job):
-    """
-    Represents a fully submitted quantum job.
-    """
-
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str, Field(examples=["Bell State Sampling"])]
-    job_type: JobType
-    status: JobStatus
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_info: JobInfo
-    submitted_at: Annotated[
-        AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])
-    ]
-
-
-class RegisteredJob(Job):
-    """
-    Represents a newly registered quantum job.
-    """
-
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    status: JobStatus
-
-
 class GetJobStatusResponse(BaseModel):
     """
     job status
@@ -326,6 +313,32 @@ class S3EstimationResult(BaseModel):
     """
     The standard deviation value
     """
+
+
+class SubmittedJob(Job):
+    """
+    Represents a fully submitted quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_info: JobInfo
+    submitted_at: Annotated[
+        AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ]
+
+
+class RegisteredJob(Job):
+    """
+    Represents a newly registered quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    status: JobStatus
 
 
 class S3SubmitJobInfo(BaseModel):

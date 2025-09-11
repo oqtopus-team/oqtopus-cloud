@@ -38,6 +38,12 @@ components:
     BearerAuth:
       $ref: './schemas/security.yaml#/BearerAuth'
   schemas:
+    # below schemas are not used directly in OAS definitions,
+    # but the generated classed definitions are use in API and SDK implementation
+    jobs.SubmittedJob:
+      $ref: './schemas/jobs.yaml#/jobs.SubmittedJob'
+    jobs.RegisteredJob:
+      $ref: './schemas/jobs.yaml#/jobs.RegisteredJob'
     jobs.S3SubmitJobInfo:
       $ref: './schemas/jobs.yaml#/jobs.S3SubmitJobInfo'
     jobs.S3JobResult:

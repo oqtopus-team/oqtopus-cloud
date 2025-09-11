@@ -108,6 +108,19 @@ jobs.SubmitJobRequest:
 jobs.Job:
   description: |-
     Represents a quantum job.
+
+    Newly registered jobs (status=registered) must provide:
+       - job_id,
+       - status (registered)
+
+    Fully defined jobs must also provide:
+      - name
+      - device_id
+      - job_type,
+      - shots
+      - job_info
+
+    Other properties and optional and depend on job type and status.
   type: object
   properties:
     job_id:

@@ -329,9 +329,10 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
-                - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+              $ref: "../schemas/jobs.yaml#/jobs.Job"
+              # oneOf:
+              #   - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #   - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
               # discriminator:
               #   propertyName: status
               #   mapping:

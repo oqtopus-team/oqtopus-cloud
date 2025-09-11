@@ -344,9 +344,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/jobs.SubmittedJob'
-                  - $ref: '#/components/schemas/jobs.RegisteredJob'
+                $ref: '#/components/schemas/jobs.Job'
         '400':
           description: Bad Request
           content:
@@ -743,6 +741,26 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    jobs.SubmittedJob:
+      description: Represents a fully submitted quantum job.
+      allOf:
+        - $ref: '#/components/schemas/jobs.Job'
+      required:
+        - job_id
+        - name
+        - job_type
+        - status
+        - device_id
+        - shots
+        - job_info
+        - submitted_at
+    jobs.RegisteredJob:
+      description: Represents a newly registered quantum job.
+      allOf:
+        - $ref: '#/components/schemas/jobs.Job'
+      required:
+        - job_id
+        - status
     jobs.S3SubmitJobInfo:
       type: object
       properties:
@@ -1014,7 +1032,21 @@ components:
       required:
         - input
     jobs.Job:
-      description: Represents a quantum job.
+      description: |-
+        Represents a quantum job.
+
+        Newly registered jobs (status=registered) must provide:
+           - job_id,
+           - status (registered)
+
+        Fully defined jobs must also provide:
+          - name
+          - device_id
+          - job_type,
+          - shots
+          - job_info
+
+        Other properties and optional and depend on job type and status.
       type: object
       properties:
         job_id:
@@ -1208,26 +1240,6 @@ components:
           type: string
       required:
         - message
-    jobs.SubmittedJob:
-      description: Represents a fully submitted quantum job.
-      allOf:
-        - $ref: '#/components/schemas/jobs.Job'
-      required:
-        - job_id
-        - name
-        - job_type
-        - status
-        - device_id
-        - shots
-        - job_info
-        - submitted_at
-    jobs.RegisteredJob:
-      description: Represents a newly registered quantum job.
-      allOf:
-        - $ref: '#/components/schemas/jobs.Job'
-      required:
-        - job_id
-        - status
     jobs.GetJobStatusResponse:
       description: job status
       type: object
