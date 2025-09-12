@@ -85,13 +85,12 @@ whitelist_users:
     operationId: delete_whitelist_user
     security:
       - BearerAuth: []
-    parameters:
-      - name: user_emails
-        in: query
-        description: "email of the user to be deleted"
-        required: true
-        schema:
-          $ref: "../schemas/whitelist_users.yaml#/whitelist_users.WhitelistUsersDeleteRequest"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/whitelist_users.yaml#/whitelist_users.WhitelistUsersDeleteRequest"
     responses:
       "204":
         description: "Delete success"
