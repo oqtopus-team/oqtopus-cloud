@@ -73,6 +73,43 @@ users:
               message: "Internal Server Error"
 
 users.user_id:
+  get:
+    tags:
+      - user
+    summary: "get one user"
+    description: "get one user"
+    operationId: "get_one_user_by_id"
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: user_id
+        in: path
+        description: "User ID"
+        required: true
+        schema: {type: integer}
+    responses:
+      "200":
+        description: Success
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/users.yaml#/users.GetOneUserResponse"
+      "404":
+        description: "Not found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "User not found"
+      "500":
+        description: "Internal Server Error"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: "Internal Server Error"
   patch:
     tags:
       - user
@@ -92,7 +129,7 @@ users.user_id:
       content:
         application/json:
           schema:
-            $ref: "../schemas/users.yaml#/users.UpdateUserStatusRequest"
+            $ref: "../schemas/users.yaml#/users.UpdateUserRequest"
     responses:
       "200":
         description: Success

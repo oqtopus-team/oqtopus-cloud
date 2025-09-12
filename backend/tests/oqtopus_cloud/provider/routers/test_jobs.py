@@ -210,7 +210,7 @@ def test_get_jobs_timestamp(test_db: Session):
         assert act.job_id == exp_job_id
 
 
-def test_get_jobs_max_results(test_db: Session):
+def test_get_jobs_limit(test_db: Session):
     # Arrange
     test_db.flush()
     for i in range(1, 10):
@@ -218,7 +218,7 @@ def test_get_jobs_max_results(test_db: Session):
     test_db.add(_get_device_model())
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&max_results=3")
+    response = client.get("/jobs?device_id=SC2&limit=3")
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
     expect_job_ids = [

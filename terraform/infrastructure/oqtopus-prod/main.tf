@@ -5,28 +5,20 @@ module "network" {
   org      = var.org
   env      = var.env
   region   = var.region
-  vpc_cidr = "10.2.0.0/16"
+  vpc_cidr = var.vpc_cidr
   private_subnets = {
-    private-a = {
-      name = "private-a",
-      cidr = "10.2.128.0/20",
-      az   = "ap-northeast-1a"
-    },
-    private-c = {
-      name = "private-c",
-      cidr = "10.2.144.0/20",
-      az   = "ap-northeast-1c"
-    },
-    private-d = {
-      name = "private-d",
-      cidr = "10.2.160.0/20",
-      az   = "ap-northeast-1d"
-    },
+    for i, az in var.availability_zones : "private-${az}" => {
+      name = "private-${az}",
+      cidr = var.private_subnet_cidrs[i],
+      az   = "${var.region}${az}"
+    }
   }
-  public_subnet = {
-    name = "public-a"
-    cidr = "10.2.176.0/20"
-    az   = "ap-northeast-1a"
+  public_subnets = {
+    for i, az in var.availability_zones : "public-${az}" => {
+      name = "public-${az}",
+      cidr = var.public_subnet_cidrs[i],
+      az   = "${var.region}${az}"
+    }
   }
 }
 
@@ -85,7 +77,7 @@ module "admin_cognito" {
   identifier               = "admin"
   username_attributes      = ["email"]
   enable_delete_protection = true
-  enable_mfa               = false
+  enable_mfa               = true
   password_minimum_length  = 12
 }
 

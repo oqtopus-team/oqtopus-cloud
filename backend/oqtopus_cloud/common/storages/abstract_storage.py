@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Iterator, List, TypeVar
+from datetime import timedelta
+from typing import Any, Callable, Iterator, List, TypeVar
 
 R = TypeVar("R")
 
@@ -32,3 +33,13 @@ class AbstractStorage(ABC):
             result = action(path)
             results.append(result)
         return results
+
+    @abstractmethod
+    def get_upload_presigned_url_data(
+        self, key: str, expires: timedelta = timedelta(hours=1)
+    ) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def get_download_presigned_url(
+        self, key: str, expires: timedelta = timedelta(hours=1)
+    ) -> str: ...

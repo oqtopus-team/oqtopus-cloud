@@ -22,6 +22,7 @@ class WhitelistUser(Base):
         username (str): The username of the whitelist user.
         organization (str): The organization name to which the whitelist user belongs.
         is_signup_completed (bool): Whether or not the whitelist user signup is completed.
+        available_devices (string): List of devices allowed for the user.
         created_at (datetime): The timestamp when the whitelist user was created.
         updated_at (datetime): The timestamp when the whitelist user was last updated.
     """
@@ -53,6 +54,7 @@ class WhitelistUser(Base):
         nullable=True,
         default=False,
     )
+    available_devices: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
     )

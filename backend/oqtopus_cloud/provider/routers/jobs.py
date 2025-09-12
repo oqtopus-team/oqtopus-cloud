@@ -33,7 +33,7 @@ from oqtopus_cloud.provider.schemas.jobs import (
     UpdateJobTranspilerInfoResponse,
     UploadSselogResponse,
 )
-from sqlalchemy import select
+from sqlalchemy import asc, select
 from sqlalchemy.orm import Session, load_only
 from zoneinfo import ZoneInfo
 
@@ -57,7 +57,7 @@ def get_jobs(
     device_id: str,
     fields: Optional[str] = None,
     status: Optional[str] = None,
-    max_results: Optional[int] = None,
+    limit: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
 ) -> list[JobDef] | ErrorResponse:
@@ -81,6 +81,7 @@ def get_jobs(
                     select(Job)
                     .filter(Job.device_id == device_id)
                     .options(load_only(*arg_select))
+                    .order_by(asc(Job.submitted_at), asc(Job.id))
                 )
             else:
                 invalid_indices = [
@@ -91,7 +92,11 @@ def get_jobs(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
-            select_stmt = select(Job).filter(Job.device_id == device_id)
+            select_stmt = (
+                select(Job)
+                .filter(Job.device_id == device_id)
+                .order_by(asc(Job.submitted_at), asc(Job.id))
+            )
 
         # Filtering Jobs
         if status is not None:
@@ -99,8 +104,8 @@ def get_jobs(
         if timestamp is not None:
             time = datetime.fromisoformat(timestamp).astimezone(jst)
             select_stmt = select_stmt.filter(Job.created_at > time)
-        if max_results is not None:
-            select_stmt = select_stmt.limit(max_results)
+        if limit is not None:
+            select_stmt = select_stmt.limit(limit)
 
         models = db.scalars(select_stmt).all()
 

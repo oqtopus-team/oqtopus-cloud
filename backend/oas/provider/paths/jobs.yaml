@@ -21,7 +21,7 @@ jobs:
         schema:
           $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
       - in: query
-        name: max_results
+        name: limit
         required: false
         description: "Additional search parameter:<br/> Set max number of quantum jobs to return in single request"
         schema:
