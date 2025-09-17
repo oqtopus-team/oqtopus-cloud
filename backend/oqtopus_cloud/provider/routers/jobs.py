@@ -51,6 +51,7 @@ JobId = str
 @router.get(
     "/jobs",
     response_model=list[Job],
+    response_model_exclude_none=True,
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
