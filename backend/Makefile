@@ -95,6 +95,18 @@ run-user_signup: ## Start the user_signup API
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
+build-minio:
+	@export MINIO_SOURCE_PATH=./minio-for-build && \
+	export MINIO_VERSION="RELEASE.2025-10-15T17-29-55Z" && \
+	git clone https://github.com/minio/minio.git $${MINIO_SOURCE_PATH} && \
+	cd $${MINIO_SOURCE_PATH} && \
+	git checkout tags/$${MINIO_VERSION} && \
+	aqua exec go install github.com/minio/minio@latest && \
+	cp $$(aqua exec go env GOPATH)/bin/minio . && \
+	docker build -t oqtopus-minio . && \
+	cd .. && \
+	rm -rf $${MINIO_SOURCE_PATH}
+
 up: ## Start the DB
 	@docker compose up
 	@poetry run python storage/init_storage.py
