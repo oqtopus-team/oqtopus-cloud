@@ -101,8 +101,9 @@ build-minio:
 	git clone https://github.com/minio/minio.git $${MINIO_SOURCE_PATH} && \
 	cd $${MINIO_SOURCE_PATH} && \
 	git checkout tags/$${MINIO_VERSION} && \
-	aqua exec go install github.com/minio/minio@latest && \
-	cp $$(aqua exec go env GOPATH)/bin/minio . && \
+	docker run --rm -v $$(pwd):/out golang:1.25.3 bash -c "\
+  go install github.com/minio/minio@latest && \
+  cp /go/bin/minio /out" && \
 	docker build -t oqtopus-minio . && \
 	cd .. && \
 	rm -rf $${MINIO_SOURCE_PATH}
