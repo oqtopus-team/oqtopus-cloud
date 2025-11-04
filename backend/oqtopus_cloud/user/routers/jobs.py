@@ -68,6 +68,7 @@ class BadRequest(Exception):
 @router.get(
     "/jobs",
     response_model=list[GetJobsResponse | JobDef],
+    response_model_exclude_none=True,
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -255,6 +256,7 @@ def submit_jobs(
 @router.get(
     "/jobs/{job_id}",
     response_model=JobDef,
+    response_model_exclude_none=True,
     responses={
         400: {"model": Message},
         404: {"model": Message},

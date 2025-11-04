@@ -137,6 +137,7 @@ def get_jobs(
 @router.get(
     "/jobs/{job_id}",
     response_model=JobDef,
+    response_model_exclude_none=True,
     responses={
         404: {"model": Message},
         400: {"model": Message},
