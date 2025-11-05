@@ -1,3 +1,4 @@
+-- Create table (only for new DB setup)
 CREATE TABLE IF NOT EXISTS main.devices (
   id VARCHAR(64) PRIMARY KEY,
   device_type VARCHAR(32) DEFAULT 'QPU' NOT NULL,
@@ -14,26 +15,21 @@ CREATE TABLE IF NOT EXISTS main.devices (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Update column type datetime->timestamp (for old/already operational DB setup)
 ALTER TABLE main.devices MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE main.devices MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
--- Insert devices
+-- Insert devices (only into new/empty table)
 INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
-SELECT 'SC', 'QPU','available', CURRENT_TIMESTAMP, 9, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
-WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = 'SC');
+SELECT * FROM (
+  SELECT 'SC', 'QPU', 'available', CURRENT_TIMESTAMP AS available_at, 9, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP AS calibrated_at, 'Superconducting quantum computer' UNION ALL
+  SELECT 'SVSim', 'simulator','available', CURRENT_TIMESTAMP, 0, 39, '["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]', '["measure", "barrier", "reset"]', '', CURRENT_TIMESTAMP, 'State vector-based quantum circuit simulator' UNION ALL
+  SELECT 'Kawasaki', 'QPU','available', CURRENT_TIMESTAMP, 2, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer' UNION ALL
+  SELECT '01927422-86d4-7597-b724-b08a5e7781fc', 'QPU','unavailable', CURRENT_TIMESTAMP, 0, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
+) AS SampleData
+WHERE NOT EXISTS (SELECT 1 FROM main.devices LIMIT 1);
 
-INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
-SELECT 'SVSim', 'simulator','available', CURRENT_TIMESTAMP, 0, 39, '["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]', '["measure", "barrier", "reset"]', '', CURRENT_TIMESTAMP, 'State vector-based quantum circuit simulator'
-WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = 'SVSim');
-
-INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
-SELECT 'Kawasaki', 'QPU','available', CURRENT_TIMESTAMP, 2, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
-WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = 'Kawasaki');
-
-INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
-SELECT '01927422-86d4-7597-b724-b08a5e7781fc', 'QPU','unavailable', CURRENT_TIMESTAMP, 0, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
-WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = '01927422-86d4-7597-b724-b08a5e7781fc');
-
+-- Create table (only for new DB setup)
 CREATE TABLE IF NOT EXISTS main.jobs (
   id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
@@ -56,17 +52,17 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Update column type datetime->timestamp (for old/already operational DB setup)
 ALTER TABLE main.jobs MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE main.jobs MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
--- Insert jobs
+-- Insert jobs (only into new/empty table)
 INSERT INTO main.jobs (id, owner, name, description, device_id, job_info, transpiler_info, simulator_info, mitigation_info, job_type, shots, status, submitted_at)
-SELECT '01927422-86d4-73d6-abb4-f2de6a4f5910', 'admin', 'Test job 1', 'Test job 1 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT * FROM main.jobs WHERE owner = 'admin' AND name = 'Test job 1');
-
-INSERT INTO main.jobs (id, owner, name, description, device_id, job_info, transpiler_info, simulator_info, mitigation_info, job_type, shots, status, submitted_at)
-SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT * FROM main.jobs WHERE owner = 'admin' AND name = 'Test job 2');
+SELECT * FROM (
+  SELECT '01927422-86d4-73d6-abb4-f2de6a4f5910', 'admin', 'Test job 1', 'Test job 1 description', 'Kawasaki', '{\'code\': \'todo\'}', '' AS transpiler_info, '' AS simulator_info, '' AS mitigation_info, 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP UNION ALL
+  SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
+) AS SampleData
+WHERE NOT EXISTS (SELECT 1 FROM main.jobs LIMIT 1);
 
 CREATE TABLE IF NOT EXISTS users (
     id                serial PRIMARY KEY,
