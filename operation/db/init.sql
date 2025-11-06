@@ -1,4 +1,4 @@
--- Create table (only for new DB setup)
+-- Create table
 CREATE TABLE IF NOT EXISTS main.devices (
   id VARCHAR(64) PRIMARY KEY,
   device_type VARCHAR(32) DEFAULT 'QPU' NOT NULL,
@@ -15,10 +15,6 @@ CREATE TABLE IF NOT EXISTS main.devices (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Update column type datetime->timestamp (for old/already operational DB setup)
-ALTER TABLE main.devices MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE main.devices MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
 -- Insert devices (only into new/empty table)
 INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
 SELECT * FROM (
@@ -29,7 +25,7 @@ SELECT * FROM (
 ) AS SampleData
 WHERE NOT EXISTS (SELECT 1 FROM main.devices LIMIT 1);
 
--- Create table (only for new DB setup)
+-- Create table
 CREATE TABLE IF NOT EXISTS main.jobs (
   id VARCHAR(64) PRIMARY KEY,
   owner VARCHAR(64) NOT NULL,
@@ -51,10 +47,6 @@ CREATE TABLE IF NOT EXISTS main.jobs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-
--- Update column type datetime->timestamp (for old/already operational DB setup)
-ALTER TABLE main.jobs MODIFY COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE main.jobs MODIFY COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 -- Insert jobs (only into new/empty table)
 INSERT INTO main.jobs (id, owner, name, description, device_id, job_info, transpiler_info, simulator_info, mitigation_info, job_type, shots, status, submitted_at)
