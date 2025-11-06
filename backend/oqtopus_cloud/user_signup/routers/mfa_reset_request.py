@@ -72,5 +72,6 @@ def mfa_reset_request(
         logger.info(f"mfa reset response: {response}")
         return None
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")

@@ -44,8 +44,9 @@ def get_devices(
         devices = db.scalars(select(Device)).all()
         return [model_to_schema(device) for device in devices]
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -72,8 +73,9 @@ def get_device(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.post(
@@ -108,8 +110,9 @@ def register_devices(
         db.commit()
         return SuccessResponse(message="Device registered successfully")
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -155,7 +158,7 @@ def update_device_data(
         # refresh the object to get the updated value
         return SuccessResponse(message="Device updated successfully")
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
@@ -188,7 +191,7 @@ def delete_device(
         db.commit()
         return SuccessResponse(message="Device deleted successfully")
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 

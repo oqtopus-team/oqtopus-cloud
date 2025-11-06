@@ -52,8 +52,9 @@ def get_devices(
 
         return [model_to_schema(device) for device in devices]
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -102,8 +103,9 @@ def get_device(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 MAP_MODEL_TO_SCHEMA = {

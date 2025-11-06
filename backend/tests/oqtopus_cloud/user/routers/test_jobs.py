@@ -10,7 +10,7 @@ import pytz
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.user.schemas.errors import (
-    InternalServerErrorResponse,
+    BadRequestResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
     GetJobsResponse,
@@ -247,12 +247,12 @@ def test_get_jobs_invalid_fields(
     response = test_client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
     actual = response.json()
     expect = json.loads(
-        InternalServerErrorResponse(
+        BadRequestResponse(
             message=f"fields {["XXX", "YYY"]} is invalid"
         ).body.decode()
     )
 
-    assert response.status_code == 500
+    assert response.status_code == 400
     assert actual == expect
 
 

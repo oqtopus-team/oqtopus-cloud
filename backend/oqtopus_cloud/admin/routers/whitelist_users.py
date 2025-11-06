@@ -164,8 +164,9 @@ def get_whitelist_users(
 
         return ListWhitelistUsersResponse(users=whitelist_users)
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.post(
@@ -211,8 +212,9 @@ def register_whitelist_user(
             db.commit()
         return SuccessResponse(message="Successfully registered")
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.delete(
@@ -244,8 +246,9 @@ def delete_whitelist_user(
         db.commit()
         return None
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:
