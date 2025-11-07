@@ -1,3 +1,5 @@
+import bcrypt
+
 from datetime import datetime, timedelta
 from secrets import token_urlsafe
 
@@ -100,7 +102,12 @@ def create_api_token(
     username = event.state.owner
     logger.info(f"Get api token for {username}")
     # generate api token
-    api_token_secret = token_urlsafe(15)
+    api_token_secret_plain = token_urlsafe(16)
+    api_token_secret_hash_bytes = bcrypt.hashpw(
+        api_token_secret_plain.encode('utf-8'),
+        bcrypt.gensalt()
+    )
+    api_token_secret_hash = api_token_secret_hash_bytes.decode('utf-8')
     api_token_expiration = datetime.now(utc).replace(
         second=0, microsecond=0
     ) + timedelta(days=90)
@@ -117,12 +124,12 @@ def create_api_token(
                 message="this operation is currently unavailable because the status of user is [suspended]"
             )
         else:
-            user.api_token_secret = api_token_secret
+            user.api_token_secret = api_token_secret_hash
             user.api_token_expiration = api_token_expiration
             db.commit()
             logger.info("API token created")
             return ApiToken(
-                api_token_secret=api_token_secret,
+                api_token_secret=api_token_secret_plain,
                 api_token_expiration=api_token_expiration,
             )
     except Exception as e:
