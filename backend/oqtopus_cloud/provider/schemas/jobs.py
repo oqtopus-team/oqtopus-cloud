@@ -124,16 +124,18 @@ class JobInfo(BaseModel):
     """
 
 
-class JobDef(BaseModel):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+class Job(BaseModel):
+    job_id: Annotated[
+        str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
+    ] = None
     name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
     description: Annotated[
         str | None, Field(examples=["Bell State Sampling Example"])
     ] = None
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_type: JobType
-    job_info: JobInfo
+    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    job_type: JobType | None = None
+    job_info: JobInfo | None = None
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(
@@ -168,7 +170,7 @@ class JobDef(BaseModel):
         dict[str, Any] | None,
         Field(examples=[{'ro_error_mitigation"': "pseudo_inverse"}]),
     ] = None
-    status: JobStatus
+    status: JobStatus | None = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
@@ -180,6 +182,19 @@ class JobDef(BaseModel):
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
     ended_at: Annotated[
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+    ] = None
+
+
+class JobDef(Job):
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str | None, Field(examples=["Bell State Sampling"])] = None
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
+    job_info: JobInfo
+    submitted_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
 
