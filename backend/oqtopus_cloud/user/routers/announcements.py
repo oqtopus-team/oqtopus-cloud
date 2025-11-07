@@ -72,8 +72,9 @@ def get_announcements_list(
             ]
         )
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -98,8 +99,9 @@ def get_announcement(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
-        logger.error(f"error: {str(e)}", stack_info=True)
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 def localize(dt: datetime | None) -> datetime | None:

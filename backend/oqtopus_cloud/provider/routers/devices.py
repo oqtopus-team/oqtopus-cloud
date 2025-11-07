@@ -76,10 +76,9 @@ def update_device(
         db.commit()
         return UpdateDeviceResponse()
     except Exception as e:
-        logger.error(
-            f"An error occurred during updating device(device_id={device_id}):\n {e}"
-        )
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -118,7 +117,9 @@ def update_device_status(
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -170,4 +171,6 @@ def update_device_calibration(
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")

@@ -120,7 +120,7 @@ def get_jobs(
                     i for i, field in enumerate(valid_fields_list) if field is False
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
-                return InternalServerErrorResponse(
+                return BadRequestResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
@@ -163,8 +163,9 @@ def get_jobs(
                 results.append(job)
         return results
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 def validate_name(request: JobDef) -> str | None:
@@ -241,16 +242,15 @@ def submit_jobs(
         # put the user program to S3 when SSE
         is_success_put_s3 = put_user_program_to_s3(job, storage)
         if not is_success_put_s3:
-            return InternalServerErrorResponse(
-                message="Failed to upload the user program to S3"
-            )
-
+            # error already logged in put_user_program_to_s3
+            return InternalServerErrorResponse(message="Internal Server Error")
         db.add(job)
         db.commit()
         return SubmitJobResponse(job_id=job.id)
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -281,8 +281,9 @@ def get_job(
             return NotFoundErrorResponse(message="job not found with the given id")
         return job
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.delete(
@@ -320,14 +321,13 @@ def delete_job(
         # delete the user program and logs from S3 when SSE
         is_success_delete_s3 = delete_storage_folder(job, storage)
         if not is_success_delete_s3:
-            return InternalServerErrorResponse(
-                message="job deleted successfully, but failed to delete SSE related resources."
-            )
-
+            # error already logged in delete_storage_folder
+            return InternalServerErrorResponse(message="Internal Server Error")
         return SuccessResponse(message="job deleted")
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -400,8 +400,9 @@ def cancel_job(
             db.commit()
         return SuccessResponse(message="cancel request accepted")
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -469,8 +470,9 @@ def get_sselog(
         return GetSselogResponse(file=zip_base64, file_name=file_name)
 
     except Exception as e:
-        logger.exception(f"Failed to get the log file: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 def put_user_program_to_s3(job: Job, storage: AbstractStorage) -> bool:
@@ -498,6 +500,7 @@ def put_user_program_to_s3(job: Job, storage: AbstractStorage) -> bool:
 
         return True
     except Exception as e:
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Failed to upload the user program to S3: {str(e)}")
         return False
 
@@ -520,6 +523,7 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
         return all(results)
 
     except Exception as e:
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
         return False
 

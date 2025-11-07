@@ -90,7 +90,7 @@ def get_jobs(
                     i for i, field in enumerate(valid_fields_list) if field is False
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
-                return InternalServerErrorResponse(
+                return BadRequestResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
@@ -130,8 +130,9 @@ def get_jobs(
         db.commit()
         return results
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -161,7 +162,9 @@ def get_job(
         else:
             return job
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -195,7 +198,9 @@ def update_job_status(
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -290,7 +295,9 @@ def update_job_info(
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.put(
@@ -326,8 +333,9 @@ def update_job_transpiler_info(
         )
 
     except Exception as e:
-        logger.error(e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -349,14 +357,18 @@ def get_ssesrc(
         key = f"{job_id}/{file_name}"
         program = storage.get(key)
         if program is None:
-            return InternalServerErrorResponse(f"SSE user program not found: {key}")
+            e = f"SSE user program not found: {key}"
+            tracer.put_annotation("error", str(e))
+            logger.exception(f"Internal Server Error: {e}")
+            return InternalServerErrorResponse(message="Internal Server Error")
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
         return PlainTextResponse(content=program_base64)
 
     except Exception as e:
-        logger.exception("Failed to get SSE user program file: %s", e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -395,8 +407,9 @@ def upload_sselog(
         storage.put(key=f"{job_id}/{file_name}", data=binary)
         return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
-        logger.exception("Failed to upload SSE log file: %s", e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 # TODO: match parameter names of model and schema

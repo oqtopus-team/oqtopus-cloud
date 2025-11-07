@@ -76,8 +76,9 @@ def get_announcements_list(
         return GetAnnouncementsListResponse(announcements=announcements_list)
 
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -108,8 +109,9 @@ def get_announcement(
             return NotFoundErrorResponse(message=message)
 
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.post(
@@ -142,8 +144,9 @@ def register_announcements(
         return BadRequestErrorResponse(message=str(e))
 
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -185,7 +188,7 @@ def update_announcements_data(
         return BadRequestErrorResponse(message=str(e))
 
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
@@ -223,7 +226,7 @@ def delete_announcement(
         return SuccessResponse(message="Announcement deleted successfully")
 
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
+        tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 

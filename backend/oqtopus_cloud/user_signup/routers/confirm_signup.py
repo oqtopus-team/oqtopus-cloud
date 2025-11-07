@@ -82,6 +82,7 @@ def confirm_signup(
         cleanup_user(db, cognito_client, email, user_pool_id)
         return BadRequestResponse(message=str(e))
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         cleanup_user(db, cognito_client, email, user_pool_id)
-        return InternalServerErrorResponse(message=str(e))
+        return InternalServerErrorResponse(message="Internal Server Error")
