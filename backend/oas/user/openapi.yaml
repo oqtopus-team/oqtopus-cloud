@@ -528,45 +528,6 @@ paths:
               example:
                 message: Internal server error
   /api-token:
-    get:
-      tags:
-        - api-token
-      summary: get api token
-      description: Get api token
-      operationId: get_api_token
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Return api token
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/api-token.ApiToken'
-        '403':
-          description: Frobidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Frobidden
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Not found the specified user
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
     post:
       tags:
         - api-token
@@ -1397,6 +1358,9 @@ components:
     api-token.ApiToken:
       type: object
       properties:
+        api_token_id:
+          type: string
+          description: The api token id
         api_token_secret:
           type: string
           description: The api token secret

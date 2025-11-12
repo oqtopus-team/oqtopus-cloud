@@ -1,6 +1,9 @@
 api-token.ApiToken:
   type: object
   properties:
+    api_token_id:
+      type: string
+      description: "The api token id"
     api_token_secret:
       type: string
       description: "The api token secret"
