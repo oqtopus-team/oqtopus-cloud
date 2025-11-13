@@ -103,8 +103,8 @@ build-minio:
 	cd $${MINIO_SOURCE_PATH} && \
 	git checkout tags/$${MINIO_VERSION} && \
 	docker run --rm -v $$(pwd):/out golang:1.25.3 bash -c "\
-  go install github.com/minio/minio@latest && \
-  cp /go/bin/minio /out" && \
+		go install github.com/minio/minio@$${MINIO_VERSION} && \
+		cp /go/bin/minio /out" && \
 	docker build -t oqtopus-minio . && \
 	cd .. && \
 	rm -rf $${MINIO_SOURCE_PATH}
