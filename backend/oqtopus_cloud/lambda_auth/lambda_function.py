@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import bcrypt
 import boto3
 import jwt
 from sqlalchemy import select
@@ -113,6 +114,11 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     if api_token is None or api_token == "":
         raise AuthError("API token is None")
 
+    try:
+        api_token_id, api_token_secret = api_token.split(".")
+    except ValueError:
+        raise AuthError("API token is malformed")
+
     # Get environment variables
     try:
         USER_POOL_ID = os.environ["AUTH_USER_POOL_ID"]
@@ -124,11 +130,24 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         dbs = get_db()
         db = next(dbs)
 
-        # Get the API token expiration from the database
-        stmt_api_token_expiration = select(User.api_token_expiration).where(
-            User.api_token_secret == api_token
-        )
-        api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
+        stmt = select(
+            User.api_token_hash,
+            User.api_token_expiration,
+            User.cognito_id,
+        ).where(User.api_token_id == api_token_id)
+        verification_data = db.execute(stmt).first()
+        if verification_data is None:
+            raise AuthError("Invalid API token")
+
+        api_token_hash, api_token_expiration, cognito_id = verification_data
+
+        # Check the API token hash
+        if (api_token_hash is None) or (
+            not bcrypt.checkpw(
+                api_token_secret.encode("utf-8"), api_token_hash.encode("utf-8")
+            )
+        ):
+            raise AuthError("Invalid API token")
 
         # Check the API token expiration
         if (api_token_expiration is None) or (
@@ -136,12 +155,8 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         ):
             raise AuthError("API token is expired")
 
-        # Get the Cognito ID from the database
-        stmt_cognito_id = select(User.cognito_id).where(
-            User.api_token_secret == api_token
-        )
-        cognito_id = db.execute(stmt_cognito_id).scalars().first()
         db.close()
+
     except Exception as e:
         raise AuthError(f"Database error {e}")
 
