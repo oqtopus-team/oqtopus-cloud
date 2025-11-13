@@ -126,7 +126,8 @@ def delete_api_token(
             logger.info("Forbidden")
             return ForbiddenErrorResponse(message="Forbidden")
         else:
-            user.api_token_secret = None
+            user.api_token_id = None
+            user.api_token_hash = None
             user.api_token_expiration = None
             db.commit()
             logger.info("API token deleted")
