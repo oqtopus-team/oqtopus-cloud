@@ -79,8 +79,10 @@ def test_create_api_token(
 
     user = test_db.query(User).filter(User.username == "username_1").first()
     assert user.api_token_id == actual.api_token_id
-    assert bcrypt.checkpw(actual.api_token_secret.encode("utf-8"), user.api_token_hash.encode("utf-8"))
-    assert pytz.utc.localize(user.api_token_expiration) ==  actual.api_token_expiration
+    assert bcrypt.checkpw(
+        actual.api_token_secret.encode("utf-8"), user.api_token_hash.encode("utf-8")
+    )
+    assert pytz.utc.localize(user.api_token_expiration) == actual.api_token_expiration
 
 
 def test_create_api_token_no_user_found(
@@ -195,10 +197,7 @@ def test_delete_api_token(
 
     # check if user has api token
     assert (
-        test_db.query(User)
-        .filter(User.username == "username_1")
-        .first()
-        .api_token_id
+        test_db.query(User).filter(User.username == "username_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -260,10 +259,7 @@ def test_delete_api_token_no_user_found(
 
     # check if user has api token
     assert (
-        test_db.query(User)
-        .filter(User.username == "username_1")
-        .first()
-        .api_token_id
+        test_db.query(User).filter(User.username == "username_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -276,10 +272,7 @@ def test_delete_api_token_no_user_found(
 
     # check if api token is NOT deleted
     assert (
-        test_db.query(User)
-        .filter(User.username == "username_1")
-        .first()
-        .api_token_id
+        test_db.query(User).filter(User.username == "username_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -309,10 +302,7 @@ def test_delete_api_token_user_status_suspended(
 
     # check if user has api token
     assert (
-        test_db.query(User)
-        .filter(User.username == "username_1")
-        .first()
-        .api_token_id
+        test_db.query(User).filter(User.username == "username_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -323,9 +313,6 @@ def test_delete_api_token_user_status_suspended(
     assert response.status_code == 403
     # check if api token is NOT deleted
     assert (
-        test_db.query(User)
-        .filter(User.username == "username_1")
-        .first()
-        .api_token_id
+        test_db.query(User).filter(User.username == "username_1").first().api_token_id
         == "api_token_id_1"
     )
