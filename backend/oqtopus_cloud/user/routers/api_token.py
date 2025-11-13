@@ -34,52 +34,6 @@ utc = ZoneInfo("UTC")
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 
-@router.get(
-    "/api-token",
-    response_model=ApiToken,
-    responses={
-        403: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def get_api_token(
-    event: Event,
-    db: Session = Depends(get_db),
-) -> (
-    ApiToken
-    | ForbiddenErrorResponse
-    | NotFoundErrorResponse
-    | InternalServerErrorResponse
-):
-    username = event.state.owner
-    logger.info(f"Get api token: {username}")
-    try:
-        # save user table (username here is the email address registered in Cognito)
-        stmt = select(User).where(User.email == username)
-        user = db.execute(stmt).scalars().first()
-        if not user or user.api_token_secret is None:
-            logger.info("User not found")
-            return NotFoundErrorResponse(message="User not found")
-        if user.userstatus == UserStatus.suspended:  # suspended status
-            logger.info("Forbidden")
-            return ForbiddenErrorResponse(message="Forbidden")
-        else:
-            logger.info("API token found")
-            apitoken_expiration = user.api_token_expiration
-            if apitoken_expiration is not None:
-                apitoken_expiration = apitoken_expiration.replace(tzinfo=utc)
-            return ApiToken(
-                api_token_secret=user.api_token_secret,
-                api_token_expiration=apitoken_expiration,
-            )
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
-
-
 @router.post(
     "/api-token",
     response_model=ApiToken,
@@ -102,12 +56,12 @@ def create_api_token(
     username = event.state.owner
     logger.info(f"Get api token for {username}")
     # generate api token
-    api_token_secret_plain = token_urlsafe(16)
+    api_token_id = token_urlsafe(16)
+    api_token_secret = token_urlsafe(16)
     api_token_secret_hash_bytes = bcrypt.hashpw(
-        api_token_secret_plain.encode('utf-8'),
-        bcrypt.gensalt()
+        api_token_secret.encode("utf-8"), bcrypt.gensalt()
     )
-    api_token_secret_hash = api_token_secret_hash_bytes.decode('utf-8')
+    api_token_secret_hash = api_token_secret_hash_bytes.decode("utf-8")
     api_token_expiration = datetime.now(utc).replace(
         second=0, microsecond=0
     ) + timedelta(days=90)
@@ -124,12 +78,14 @@ def create_api_token(
                 message="this operation is currently unavailable because the status of user is [suspended]"
             )
         else:
-            user.api_token_secret = api_token_secret_hash
+            user.api_token_id = api_token_id
+            user.api_token_hash = api_token_secret_hash
             user.api_token_expiration = api_token_expiration
             db.commit()
             logger.info("API token created")
             return ApiToken(
-                api_token_secret=api_token_secret_plain,
+                api_token_id=api_token_id,
+                api_token_secret=api_token_secret,
                 api_token_expiration=api_token_expiration,
             )
     except Exception as e:

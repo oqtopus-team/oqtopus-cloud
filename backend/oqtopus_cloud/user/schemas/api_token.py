@@ -10,6 +10,10 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class ApiToken(BaseModel):
+    api_token_id: str | None = None
+    """
+    The api token id
+    """
     api_token_secret: str | None = None
     """
     The api token secret
