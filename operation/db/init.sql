@@ -45,20 +45,21 @@ CREATE TABLE IF NOT EXISTS main.jobs (
 );
 
 drop table if exists main.users;
-  CREATE TABLE IF NOT EXISTS users (
-      id                serial PRIMARY KEY,
-      cognito_id        VARCHAR(255) UNIQUE NOT NULL,
-      email             VARCHAR(255)        NOT NULL,
-      username          VARCHAR(100),
-      userstatus        VARCHAR(10),
-      api_token_secret  VARCHAR(255) UNIQUE,
-      organization      VARCHAR(255),
-      group_id          VARCHAR(255),
-      available_devices TEXT,
-      api_token_expiration TIMESTAMP,
-      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  );
+CREATE TABLE IF NOT EXISTS users (
+    id                serial PRIMARY KEY,
+    cognito_id        VARCHAR(255) UNIQUE NOT NULL,
+    email             VARCHAR(255)        NOT NULL,
+    username          VARCHAR(100),
+    userstatus        VARCHAR(10),
+    organization      VARCHAR(255),
+    group_id          VARCHAR(255),
+    available_devices TEXT,
+    api_token_id      VARCHAR(255) UNIQUE,
+    api_token_hash    VARCHAR(255),
+    api_token_expiration TIMESTAMP,
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
 drop table if exists main.whitelist_users;
 CREATE TABLE IF NOT EXISTS whitelist_users (
