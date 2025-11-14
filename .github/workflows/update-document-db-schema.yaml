@@ -39,5 +39,8 @@ jobs:
         make build-minio
         docker compose up -d
 
+    - name: Update document DB schema
+      run: make tbls-docs
+
     - name: Output git diff
       run: git diff
