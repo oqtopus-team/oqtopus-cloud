@@ -1,0 +1,49 @@
+name: Update document DB schema
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+    - 'backend/oas/*/schemas/*'
+    - 'backend/oqtopus_cloud/*/schemas/*'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-document:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Install make
+      run: sudo apt install make
+
+    - name: Set up Aqua
+      run: |
+        make setup-aqua
+        make doctor
+
+    - name: Install Docker Compose v2
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose-plugin
+        docker compose version
+
+    - name: Docker Compose Up
+      run: |
+        cd backend
+        make build-minio
+        docker compose up -d
+
+    - name: Output git diff
+      run: git diff
