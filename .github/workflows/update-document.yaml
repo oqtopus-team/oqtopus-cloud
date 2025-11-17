@@ -66,10 +66,5 @@ jobs:
           echo "No changes to commit."
           exit 0
         fi
-        git commit -m "Auto update document $(date +%Y%m%d-%H%M%S)" -a
+        git commit -am "Auto update DB schema docs $(date +%Y%m%d-%H%M%S)"
         git push origin "$BRANCH_NAME"
-        gh pr create --title "chore: [CI] Auto update document $(date +%Y%m%d-%H%M%S)" \
-                      --body "This PR was automatically generated.$TRIGGERED_PUSH_URL" \
-                      --base develop \
-                      --head "$BRANCH_NAME" \
-                      --label documentation
