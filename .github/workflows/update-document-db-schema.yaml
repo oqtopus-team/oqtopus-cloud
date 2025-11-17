@@ -54,5 +54,14 @@ jobs:
         done
         make tbls-docs
 
-    - name: Output git diff
-      run: git diff
+    - name: Auto PR
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+      run: |
+        if git diff --quiet; then
+          echo "No changes to commit."
+          exit 0
+        fi
+        git commit -am "Auto update DB schema docs $(date +%Y%m%d-%H%M%S)"
+        git push origin "$BRANCH_NAME"
