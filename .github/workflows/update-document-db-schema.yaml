@@ -40,7 +40,19 @@ jobs:
         docker compose up -d
 
     - name: Update document DB schema
-      run: make tbls-docs
+      run: |
+        TIMEOUT=60
+        until docker exec backend-db-1 \
+          mysql -h127.0.0.1 -uroot -proot -e "SELECT 1;" >/dev/null 2>&1; do
+          echo "Waiting for MySQL to become ready..."
+          sleep 2
+          TIMEOUT=$((TIMEOUT - 2))
+          if [ $TIMEOUT -le 0 ]; then
+            echo "MySQL did not become ready in time."
+            exit 1
+          fi
+        done
+        make tbls-docs
 
     - name: Output git diff
       run: git diff
