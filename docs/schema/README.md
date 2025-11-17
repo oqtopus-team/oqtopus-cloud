@@ -4,62 +4,88 @@
 
 | Name | Columns | Comment | Type |
 | ---- | ------- | ------- | ---- |
-| [devices](devices.md) | 12 |  | BASE TABLE |
-| [results](results.md) | 6 |  | BASE TABLE |
-| [tasks](tasks.md) | 21 |  | BASE TABLE |
+| [announcements](announcements.md) | 8 |  | BASE TABLE |
+| [devices](devices.md) | 13 |  | BASE TABLE |
+| [jobs](jobs.md) | 19 |  | BASE TABLE |
+| [users](users.md) | 12 |  | BASE TABLE |
+| [whitelist_users](whitelist_users.md) | 9 |  | BASE TABLE |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"results" |o--|| "tasks" : "FOREIGN KEY (task_id) REFERENCES tasks (id)"
-"tasks" }o--|| "devices" : "FOREIGN KEY (device) REFERENCES devices (id)"
 
+"announcements" {
+  bigint_unsigned id PK
+  varchar_255_ title
+  text content
+  datetime start_time
+  datetime end_time
+  tinyint_1_ publishable
+  timestamp created_at
+  timestamp updated_at
+}
 "devices" {
   varchar_64_ id PK
-  enum__QPU___simulator__ device_type
-  enum__AVAILABLE___NOT_AVAILABLE__ status
-  datetime restart_at
-  int pending_tasks
+  varchar_32_ device_type
+  varchar_64_ status
+  datetime available_at
+  int pending_jobs
   int n_qubits
-  int n_nodes
   varchar_256_ basis_gates
   varchar_64_ instructions
-  text calibration_data
+  text device_info
   datetime calibrated_at
   varchar_128_ description
+  datetime created_at
+  datetime updated_at
 }
-"results" {
-  varbinary_16_ task_id PK
-  enum__succeeded___failed___cancelled__ status
-  text result
-  text reason
-  text transpiled_code
-  text qubit_allocation
-}
-"tasks" {
-  varbinary_16_ id PK
+"jobs" {
+  varchar_64_ id PK
   varchar_64_ owner
   varchar_256_ name
-  varchar_64_ device FK
-  int n_qubits
-  int n_nodes
-  text code
-  enum__sampling___estimation__ action
-  enum__state_vector___sampling__ method
+  varchar_1024_ description
+  varchar_32_ status
+  varchar_32_ job_type
+  varchar_64_ device_id
   int shots
-  varchar_1024_ operator
-  text qubit_allocation
-  tinyint_1_ skip_transpilation
-  int seed_transpilation
-  int seed_simulation
-  int_unsigned n_per_node
-  text simulation_opt
-  enum__none___pseudo_inverse___least_square__ ro_error_mitigation
-  varchar_1024_ note
-  enum__submitted___ready___running___succeeded___failed___cancelled__ status
+  decimal_65_3_ execution_time
+  text job_info
+  text transpiler_info
+  text simulator_info
+  text mitigation_info
+  datetime submitted_at
+  datetime ready_at
+  datetime running_at
+  datetime ended_at
+  datetime created_at
+  datetime updated_at
+}
+"users" {
+  bigint_unsigned id PK
+  varchar_255_ cognito_id
+  varchar_255_ email
+  varchar_100_ username
+  varchar_10_ userstatus
+  varchar_255_ api_token_secret
+  varchar_255_ organization
+  varchar_255_ group_id
+  text available_devices
+  timestamp api_token_expiration
   timestamp created_at
+  timestamp updated_at
+}
+"whitelist_users" {
+  bigint_unsigned id PK
+  varchar_255_ email
+  varchar_255_ group_id
+  tinyint_1_ is_signup_completed
+  varchar_255_ username
+  varchar_255_ organization
+  text available_devices
+  timestamp created_at
+  timestamp updated_at
 }
 ```
 

@@ -8,17 +8,18 @@
 ```sql
 CREATE TABLE `devices` (
   `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `device_type` enum('QPU','simulator') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `status` enum('AVAILABLE','NOT_AVAILABLE') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NOT_AVAILABLE',
-  `restart_at` datetime DEFAULT NULL,
-  `pending_tasks` int NOT NULL DEFAULT '0',
-  `n_qubits` int NOT NULL,
-  `n_nodes` int DEFAULT NULL,
+  `device_type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QPU',
+  `status` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'available',
+  `available_at` datetime DEFAULT NULL,
+  `pending_jobs` int NOT NULL DEFAULT '0',
+  `n_qubits` int NOT NULL DEFAULT '1',
   `basis_gates` varchar(256) COLLATE utf8mb4_unicode_ci NOT NULL,
   `instructions` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `calibration_data` text COLLATE utf8mb4_unicode_ci,
+  `device_info` text COLLATE utf8mb4_unicode_ci,
   `calibrated_at` datetime DEFAULT NULL,
   `description` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ```
@@ -27,20 +28,21 @@ CREATE TABLE `devices` (
 
 ## Columns
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | varchar(64) |  | false | [tasks](tasks.md) |  |  |
-| device_type | enum('QPU','simulator') |  | false |  |  |  |
-| status | enum('AVAILABLE','NOT_AVAILABLE') | NOT_AVAILABLE | false |  |  |  |
-| restart_at | datetime |  | true |  |  |  |
-| pending_tasks | int | 0 | false |  |  |  |
-| n_qubits | int |  | false |  |  |  |
-| n_nodes | int |  | true |  |  |  |
-| basis_gates | varchar(256) |  | false |  |  |  |
-| instructions | varchar(64) |  | false |  |  |  |
-| calibration_data | text |  | true |  |  |  |
-| calibrated_at | datetime |  | true |  |  |  |
-| description | varchar(128) |  | false |  |  |  |
+| Name | Type | Default | Nullable | Extra Definition | Children | Parents | Comment |
+| ---- | ---- | ------- | -------- | ---------------- | -------- | ------- | ------- |
+| id | varchar(64) |  | false |  |  |  |  |
+| device_type | varchar(32) | QPU | false |  |  |  |  |
+| status | varchar(64) | available | false |  |  |  |  |
+| available_at | datetime |  | true |  |  |  |  |
+| pending_jobs | int | 0 | false |  |  |  |  |
+| n_qubits | int | 1 | false |  |  |  |  |
+| basis_gates | varchar(256) |  | false |  |  |  |  |
+| instructions | varchar(64) |  | false |  |  |  |  |
+| device_info | text |  | true |  |  |  |  |
+| calibrated_at | datetime |  | true |  |  |  |  |
+| description | varchar(128) |  | false |  |  |  |  |
+| created_at | datetime | CURRENT_TIMESTAMP | true | DEFAULT_GENERATED |  |  |  |
+| updated_at | datetime | CURRENT_TIMESTAMP | true | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |  |  |  |
 
 ## Constraints
 
@@ -59,44 +61,21 @@ CREATE TABLE `devices` (
 ```mermaid
 erDiagram
 
-"tasks" }o--|| "devices" : "FOREIGN KEY (device) REFERENCES devices (id)"
 
 "devices" {
   varchar_64_ id PK
-  enum__QPU___simulator__ device_type
-  enum__AVAILABLE___NOT_AVAILABLE__ status
-  datetime restart_at
-  int pending_tasks
+  varchar_32_ device_type
+  varchar_64_ status
+  datetime available_at
+  int pending_jobs
   int n_qubits
-  int n_nodes
   varchar_256_ basis_gates
   varchar_64_ instructions
-  text calibration_data
+  text device_info
   datetime calibrated_at
   varchar_128_ description
-}
-"tasks" {
-  varbinary_16_ id PK
-  varchar_64_ owner
-  varchar_256_ name
-  varchar_64_ device FK
-  int n_qubits
-  int n_nodes
-  text code
-  enum__sampling___estimation__ action
-  enum__state_vector___sampling__ method
-  int shots
-  varchar_1024_ operator
-  text qubit_allocation
-  tinyint_1_ skip_transpilation
-  int seed_transpilation
-  int seed_simulation
-  int_unsigned n_per_node
-  text simulation_opt
-  enum__none___pseudo_inverse___least_square__ ro_error_mitigation
-  varchar_1024_ note
-  enum__submitted___ready___running___succeeded___failed___cancelled__ status
-  timestamp created_at
+  datetime created_at
+  datetime updated_at
 }
 ```
 
