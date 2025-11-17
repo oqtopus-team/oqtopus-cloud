@@ -1,12 +1,6 @@
 name: Update document DB schema
 
-on:
-  push:
-    branches:
-      - develop
-    paths:
-    - 'backend/oas/*/schemas/*'
-    - 'backend/oqtopus_cloud/*/schemas/*'
+on: [push]
 
 permissions:
   contents: write
