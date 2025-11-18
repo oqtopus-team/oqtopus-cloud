@@ -198,7 +198,9 @@ def test_get_jobs_filtering_fields(
     test_db.add(_get_job_model(2, JobType.sampling))
     test_db.commit()
 
-    response = client.get("/jobs?device_id=SC2&fields=job_id,name,job_type,status,job_info,transpiler_info")
+    response = client.get(
+        "/jobs?device_id=SC2&fields=job_id,name,job_type,status,job_info,transpiler_info"
+    )
     adapter = TypeAdapter(List[Job])
     actual = adapter.validate_python(response.json())
 
@@ -208,7 +210,7 @@ def test_get_jobs_filtering_fields(
             name="testjob1",
             job_type=JobType.sampling,
             status=JobStatus.ready,
-            job_info = JobInfo(program=["code"]),
+            job_info=JobInfo(program=["code"]),
             transpiler_info={"this_is": "transpiler_info"},
         ),
         Job(
@@ -216,7 +218,7 @@ def test_get_jobs_filtering_fields(
             name="testjob2",
             job_type=JobType.sampling,
             status=JobStatus.ready,
-            job_info = JobInfo(program=["code"]),
+            job_info=JobInfo(program=["code"]),
             transpiler_info={"this_is": "transpiler_info"},
         ),
     ]
@@ -261,7 +263,7 @@ def test_get_jobs_invalid_fields(
         ).body.decode()
     )
 
-    assert response.status_code == 500
+    assert response.status_code == 400
     assert actual == expect
 
 
