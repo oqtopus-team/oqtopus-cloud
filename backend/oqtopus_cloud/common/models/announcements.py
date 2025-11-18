@@ -1,14 +1,15 @@
 import datetime
 
-from sqlalchemy import Boolean, Integer, String, TIMESTAMP, func
+from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
     Base,
 )
+from oqtopus_cloud.common.models.common import TimestampMixin
 
 
-class Announcement(Base):
+class Announcement(Base, TimestampMixin):
     """
     Represents an announcement in the system.
 
@@ -40,15 +41,4 @@ class Announcement(Base):
     publishable: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
-    )
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-        server_default=func.current_timestamp(),
-    )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
     )

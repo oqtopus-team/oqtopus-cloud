@@ -236,7 +236,6 @@ def submit_jobs(
             job_type=request.job_type,
             shots=shots,
             submitted_at=datetime.now(),
-            created_at=datetime.now(),
         )
 
         # put the user program to S3 when SSE
