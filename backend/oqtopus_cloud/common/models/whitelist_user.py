@@ -1,15 +1,13 @@
-import datetime
-from typing import Optional
-
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String
+from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
     Base,
 )
+from oqtopus_cloud.common.models.common import TimestampMixin
 
 
-class WhitelistUser(Base):
+class WhitelistUser(Base, TimestampMixin):
     """
     Represents a whitelist_users in the system.
 
@@ -55,10 +53,3 @@ class WhitelistUser(Base):
         default=False,
     )
     available_devices: Mapped[str] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-    )
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP,
-        nullable=True,
-    )

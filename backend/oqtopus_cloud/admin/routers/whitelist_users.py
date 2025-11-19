@@ -1,4 +1,3 @@
-import datetime
 from typing import Optional
 
 from fastapi import (
@@ -10,7 +9,6 @@ from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import (
     Session,
 )
-from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.errors import (
@@ -54,8 +52,6 @@ COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "is_signup_completed": WhitelistUser.is_signup_completed,
     "available_devices": WhitelistUser.available_devices,
 }
-
-utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
@@ -205,8 +201,6 @@ def register_whitelist_user(
                 organization=user.organization,
                 is_signup_completed=user.is_signup_completed,
                 available_devices=user.available_devices,
-                created_at=datetime.datetime.now(utc),
-                updated_at=datetime.datetime.now(utc),
             )
             db.add(new_whitelist_user)
             db.commit()

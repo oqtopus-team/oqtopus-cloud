@@ -1,6 +1,5 @@
 import datetime
 import enum
-from typing import Optional
 
 from sqlalchemy import TIMESTAMP, Enum, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -8,9 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from oqtopus_cloud.common.models.base import (
     Base,
 )
+from oqtopus_cloud.common.models.common import TimestampMixin
 
 
-class Job(Base):
+class Job(Base, TimestampMixin):
     """
     Represents a job in the system.
 
@@ -84,12 +84,6 @@ class Job(Base):
     ready_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
     ended_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP,
-    )
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        TIMESTAMP, nullable=True
-    )
 
 
 class Error(Exception):

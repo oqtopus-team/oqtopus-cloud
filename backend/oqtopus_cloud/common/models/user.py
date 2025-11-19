@@ -8,8 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from oqtopus_cloud.common.models.base import (
     Base,
 )
-
-default_datetime = datetime.datetime.now(datetime.timezone.utc)
+from oqtopus_cloud.common.models.common import TimestampMixin, current_time_utc
 
 
 class UserStatus(str, Enum):
@@ -18,7 +17,7 @@ class UserStatus(str, Enum):
     suspended = "suspended"
 
 
-class User(Base):
+class User(Base, TimestampMixin):
     """
     Represents a users in the system.
 
@@ -52,11 +51,5 @@ class User(Base):
     api_token_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     api_token_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime, default=default_datetime, nullable=True
-    )
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, default=default_datetime
-    )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, default=default_datetime, onupdate=default_datetime
+        DateTime, default=current_time_utc, nullable=True
     )
