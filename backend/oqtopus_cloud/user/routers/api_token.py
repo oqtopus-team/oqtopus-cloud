@@ -73,7 +73,8 @@ def get_api_token(
                 api_token_expiration=apitoken_expiration,
             )
     except Exception as e:
-        logger.info(f"error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
@@ -125,7 +126,8 @@ def create_api_token(
                 api_token_expiration=api_token_expiration,
             )
     except Exception as e:
-        logger.info(f"error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
@@ -167,5 +169,6 @@ def delete_api_token(
             logger.info("API token deleted")
             return Response(status_code=status.HTTP_200_OK)
     except Exception as e:
-        logger.info(f"error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")

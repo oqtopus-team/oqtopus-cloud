@@ -206,6 +206,19 @@ paths:
           description: Additional search parameter:<br/> Search jobs with specified status only
           schema:
             $ref: '#/components/schemas/jobs.JobStatus'
+        - name: fields
+          in: query
+          description: |-
+            Allows to specify an exact list of job properties to fetch for a single job. Each element of the list must be a valid name of job property.
+
+            If parameter is specified and requested job field is not defined for a job null is returned.
+
+            If parameter is omitted all available job properties are returned.
+          required: false
+          schema:
+            type: string
+            maxLength: 1024
+            example: job_id,status,name
         - in: query
           name: limit
           required: false
@@ -228,7 +241,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobDef'
+                  $ref: '#/components/schemas/jobs.Job'
         '400':
           description: Bad Request
           content:
@@ -774,7 +787,7 @@ components:
           default: null
       required:
         - program
-    jobs.JobDef:
+    jobs.Job:
       type: object
       properties:
         job_id:
@@ -868,13 +881,7 @@ components:
           example: '2022-10-19T11:45:34+09:00'
           nullable: true
           default: null
-      required:
-        - job_id
-        - device_id
-        - job_type
-        - job_info
-        - shots
-        - status
+      required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
@@ -914,6 +921,18 @@ components:
         ready_at: '2022-10-19T11:45:34+09:00'
         running_at: '2022-10-19T11:45:34+09:00'
         ended_at: '2022-10-19T11:45:34+09:00'
+    jobs.JobDef:
+      allOf:
+        - $ref: '#/components/schemas/jobs.Job'
+      required:
+        - job_id
+        - name
+        - job_type
+        - status
+        - device_id
+        - shots
+        - job_info
+        - submitted_at
     jobs.JobStatusUpdate:
       type: object
       properties:

@@ -1,18 +1,15 @@
 import base64
-import io
 import json
 import os
 from datetime import datetime
 from typing import List
 
-import boto3
 from fastapi.testclient import TestClient
-from moto import mock_aws
 from oqtopus_cloud.common.models.device import (
     Device,
 )
 from oqtopus_cloud.common.models.job import (
-    Job,
+    Job as JobModel,
 )
 from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.jobs import (
@@ -21,8 +18,12 @@ from oqtopus_cloud.provider.routers.jobs import (
     jobtype_of_result,
     update_job_status,
 )
+from oqtopus_cloud.provider.schemas.errors import (
+    InternalServerErrorResponse,
+)
 from oqtopus_cloud.provider.schemas.jobs import (
     EstimationResult,
+    Job,
     JobDef,
     JobInfo,
     JobResult,
@@ -90,7 +91,7 @@ def _get_job_info(jt: JobType) -> JobInfo:
     )
 
 
-def _get_job_model(n: int, jt: JobType) -> Job:
+def _get_job_model(n: int, jt: JobType) -> JobModel:
     mode_dict = {
         "id": f"testjob{n}id",
         "owner": "admin",
@@ -109,10 +110,10 @@ def _get_job_model(n: int, jt: JobType) -> Job:
         "submitted_at": datetime(2024, 3, 4 + n, 12, 34, 56),
         "created_at": datetime(2024, 3, 4 + n, 12, 34, 56),
     }
-    return Job(**mode_dict)
+    return JobModel(**mode_dict)
 
 
-def _get_job_model_2() -> Job:
+def _get_job_model_2() -> JobModel:
     mode_dict = {
         "id": "testjob2id",
         "owner": "admin",
@@ -131,7 +132,7 @@ def _get_job_model_2() -> Job:
         "submitted_at": datetime(2024, 3, 4, 12, 34, 56),
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
     }
-    return Job(**mode_dict)
+    return JobModel(**mode_dict)
 
 
 def test_get_jobs(test_db: Session):
@@ -183,6 +184,87 @@ def test_get_jobs_ignore_illegal_job(
     assert len(actual) == 2
     assert actual[0].job_id == "testjob1id"
     assert actual[1].job_id == "testjob2id"
+
+
+def test_get_jobs_filtering_fields(
+    test_db,
+):
+    """_summary_
+    GET /jobs with filtering test
+    """
+
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    test_db.commit()
+
+    response = client.get(
+        "/jobs?device_id=SC2&fields=job_id,name,job_type,status,job_info,transpiler_info"
+    )
+    adapter = TypeAdapter(List[Job])
+    actual = adapter.validate_python(response.json())
+
+    expect = [
+        Job(
+            job_id="testjob1id",
+            name="testjob1",
+            job_type=JobType.sampling,
+            status=JobStatus.ready,
+            job_info=JobInfo(program=["code"]),
+            transpiler_info={"this_is": "transpiler_info"},
+        ),
+        Job(
+            job_id="testjob2id",
+            name="testjob2",
+            job_type=JobType.sampling,
+            status=JobStatus.ready,
+            job_info=JobInfo(program=["code"]),
+            transpiler_info={"this_is": "transpiler_info"},
+        ),
+    ]
+
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_jobs_all_fields(test_db):
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    test_db.commit()
+
+    # This is the request sent from oqtopus-frontend
+    response = client.get(
+        "jobs?device_id=SC2&fields=job_id,name,description,device_id,job_info,transpiler_info,simulator_info,mitigation_info,job_type,shots,status"
+    )
+    adapter = TypeAdapter(List[Job])
+    actual = adapter.validate_python(response.json())
+    assert response.status_code == 200
+    assert len(actual) == 2
+
+
+def test_get_jobs_invalid_fields(
+    test_db,
+):
+    """_summary_
+    GET job_id, status and name by ASC order
+    """
+
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    test_db.commit()
+
+    response = client.get("/jobs?device_id=SC2&fields=XXX,status,YYY")
+    actual = response.json()
+    expect = json.loads(
+        InternalServerErrorResponse(
+            message=f"fields {["XXX", "YYY"]} is invalid"
+        ).body.decode()
+    )
+
+    assert response.status_code == 400
+    assert actual == expect
 
 
 def test_get_jobs_timestamp(test_db: Session):
@@ -442,7 +524,7 @@ def test_update_job_status(test_db: Session):
         f"/jobs/{job_model.id}/status",
         content=JobStatusUpdate(status="running").model_dump_json(),
     )
-    model = test_db.get(Job, job_model.id)
+    model = test_db.get(JobModel, job_model.id)
     assert model is not None
     assert model.status == JobStatus.running
     assert model.running_at is not None

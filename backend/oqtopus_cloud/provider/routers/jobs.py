@@ -7,7 +7,7 @@ from typing import Any, Optional
 import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
-from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -20,6 +20,7 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
+    Job,
     JobDef,
     JobInfo,
     JobResult,
@@ -49,7 +50,8 @@ JobId = str
 
 @router.get(
     "/jobs",
-    response_model=list[JobDef],
+    response_model=list[Job],
+    response_model_exclude_none=True,
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
@@ -60,59 +62,59 @@ def get_jobs(
     limit: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[JobDef] | ErrorResponse:
+) -> list[Job] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
         # Fields Control
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
-            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            valid_fields_list = [field in Job.model_fields for field in fields_list]
             if all(valid_fields_list):
                 MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
                 converted_fields_list = [
                     MAP_SCHEMA_TO_MODEL[field] for field in fields_list
                 ]
-                columns = [getattr(Job, field) for field in converted_fields_list]
+                columns = [getattr(JobModel, field) for field in converted_fields_list]
 
                 # remove duplicated fields
                 arg_select = list(dict.fromkeys(columns))
                 select_stmt = (
-                    select(Job)
-                    .filter(Job.device_id == device_id)
+                    select(JobModel)
+                    .filter(JobModel.device_id == device_id)
                     .options(load_only(*arg_select))
-                    .order_by(asc(Job.submitted_at), asc(Job.id))
+                    .order_by(asc(JobModel.submitted_at), asc(JobModel.id))
                 )
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
-                return InternalServerErrorResponse(
+                return BadRequestResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
         else:
             select_stmt = (
-                select(Job)
-                .filter(Job.device_id == device_id)
-                .order_by(asc(Job.submitted_at), asc(Job.id))
+                select(JobModel)
+                .filter(JobModel.device_id == device_id)
+                .order_by(asc(JobModel.submitted_at), asc(JobModel.id))
             )
 
         # Filtering Jobs
         if status is not None:
-            select_stmt = select_stmt.filter(Job.status == status)
+            select_stmt = select_stmt.filter(JobModel.status == status)
         if timestamp is not None:
             time = datetime.fromisoformat(timestamp).astimezone(jst)
-            select_stmt = select_stmt.filter(Job.created_at > time)
+            select_stmt = select_stmt.filter(JobModel.created_at > time)
         if limit is not None:
             select_stmt = select_stmt.limit(limit)
 
         models = db.scalars(select_stmt).all()
 
-        results: list[JobDef] = []
+        results: list[Job] = []
         # for model, update_status in zip(models, update_statuses):
         for model in models:
-            job = model_to_schema(model, fields_list)
+            job = model_to_filtered_schema(model, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
                 # ignore illegal jobs
@@ -128,13 +130,15 @@ def get_jobs(
         db.commit()
         return results
     except Exception as e:
-        logger.info(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
     "/jobs/{job_id}",
     response_model=JobDef,
+    response_model_exclude_none=True,
     responses={
         404: {"model": Message},
         400: {"model": Message},
@@ -148,7 +152,7 @@ def get_job(
 ) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        model = db.get(Job, job_id)
+        model = db.get(JobModel, job_id)
         if model is None:
             return NotFoundErrorResponse("Job not found")
         job = model_to_schema(model)
@@ -158,7 +162,9 @@ def get_job(
         else:
             return job
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -178,7 +184,7 @@ def update_job_status(
 ) -> JobStatusUpdateResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
-        stmt = select(Job).where(Job.id == job_id)
+        stmt = select(JobModel).where(JobModel.id == job_id)
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
@@ -192,7 +198,9 @@ def update_job_status(
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -238,7 +246,7 @@ def update_job_info(
         return (status, job_info)
 
     try:
-        stmt = select(Job).where(Job.id == job_id)
+        stmt = select(JobModel).where(JobModel.id == job_id)
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
@@ -287,7 +295,9 @@ def update_job_info(
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
     except Exception as e:
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.put(
@@ -311,7 +321,7 @@ def update_job_transpiler_info(
     )
 
     try:
-        stmt = select(Job).where(Job.id == job_id)
+        stmt = select(JobModel).where(JobModel.id == job_id)
         model = db.execute(stmt).scalar_one_or_none()
         if model is None:
             return NotFoundErrorResponse("Job not found")
@@ -323,8 +333,9 @@ def update_job_transpiler_info(
         )
 
     except Exception as e:
-        logger.error(e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -346,14 +357,18 @@ def get_ssesrc(
         key = f"{job_id}/{file_name}"
         program = storage.get(key)
         if program is None:
-            return InternalServerErrorResponse(f"SSE user program not found: {key}")
+            e = f"SSE user program not found: {key}"
+            tracer.put_annotation("error", str(e))
+            logger.exception(f"Internal Server Error: {e}")
+            return InternalServerErrorResponse(message="Internal Server Error")
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
         return PlainTextResponse(content=program_base64)
 
     except Exception as e:
-        logger.exception("Failed to get SSE user program file: %s", e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -376,7 +391,7 @@ def upload_sselog(
 
     try:
         # Check that the job exists
-        job_model = db.query(Job).filter(Job.id == job_id).first()
+        job_model = db.query(JobModel).filter(JobModel.id == job_id).first()
         if job_model is None:
             logger.info("job not found with the given id")
             return NotFoundErrorResponse(message="job not found with the given id")
@@ -392,8 +407,9 @@ def upload_sselog(
         storage.put(key=f"{job_id}/{file_name}", data=binary)
         return UploadSselogResponse(message="SSE log uploaded")
     except Exception as e:
-        logger.exception("Failed to upload SSE log file: %s", e)
-        return InternalServerErrorResponse(f"Error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 # TODO: match parameter names of model and schema
@@ -450,6 +466,17 @@ def parse_job_type(jt: str) -> JobType | ValueError:
         return ValueError(f"{jt} is not a valid JobType")
 
 
+def is_object_field(fld: str) -> bool:
+    if fld == "transpiler_info":
+        return True
+    elif fld == "mitigation_info":
+        return True
+    elif fld == "simulator_info":
+        return True
+
+    return False
+
+
 def localize(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
@@ -473,7 +500,7 @@ def is_datetime_field(fld: str) -> bool:
     return False
 
 
-def set_job_status(model: Job, status: str | JobStatus) -> None:
+def set_job_status(model: JobModel, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
 
@@ -507,7 +534,7 @@ def stage_of_status(st: JobStatus) -> int:
 
 
 def model_to_schema(
-    model: Job, fields: Optional[list[str]] = None
+    model: JobModel,
 ) -> JobDef | ValueError:
     status = decode_job_status(model.status)
     if isinstance(status, ValueError):
@@ -536,3 +563,40 @@ def model_to_schema(
         running_at=localize(model.running_at),
         ended_at=localize(model.ended_at),
     )
+
+
+def model_to_filtered_schema(
+    model: JobModel, fields: Optional[list[str]] = None
+) -> Job | ValueError:
+    if fields is None:
+        return model_to_schema(model)
+    else:
+        dict_schema: dict[str, Any] = {}
+        for k in fields:
+            if k == "job_id":
+                dict_schema["job_id"] = model.id
+            elif k == "job_type":
+                job_type = parse_job_type(str(model.job_type))
+                if isinstance(job_type, ValueError):
+                    return job_type
+                else:
+                    dict_schema[k] = job_type
+            elif k == "job_info":
+                job_info = decode_job_info(json.loads(model.job_info))
+                if isinstance(job_info, ValueError):
+                    return job_info
+                else:
+                    dict_schema[k] = job_info
+            elif k == "status":
+                status = decode_job_status(model.status)
+                if isinstance(status, ValueError):
+                    return status
+                else:
+                    dict_schema[k] = status
+            elif is_object_field(k):
+                dict_schema[k] = json.loads(getattr(model, k))
+            elif is_datetime_field(k):
+                dict_schema[k] = localize(getattr(model, k))
+            else:
+                dict_schema[k] = getattr(model, k)
+        return Job(**dict_schema)

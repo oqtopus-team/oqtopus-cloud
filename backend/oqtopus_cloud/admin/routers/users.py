@@ -126,9 +126,9 @@ def get_users(
 
         return GetUsersResponse(offset=str(offset), limit=str(limit), users=users)
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.get(
@@ -152,9 +152,9 @@ def get_user(
 
         return model_to_schema(user)
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.patch(
@@ -243,9 +243,9 @@ def update_user_status(
         logger.exception(f"error: {str(e)}")
         return BadRequestErrorResponse(message=str(e))
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
-        logger.exception(f"error: {str(e)}")
-        return InternalServerErrorResponse(message=str(e))
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
 
 
 @router.delete(
@@ -298,8 +298,8 @@ def delete_user(
 
         return None
     except Exception as e:
-        tracer.put_annotation("db_error", str(e))
-        logger.exception(f"error: {str(e)}")
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
