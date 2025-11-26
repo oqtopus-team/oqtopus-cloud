@@ -4,6 +4,7 @@ from typing import (
     Generator,
 )
 
+import boto3
 import pytest
 import pytz
 from fastapi.testclient import TestClient
@@ -79,6 +80,32 @@ def test_client(request):
         raise ValueError(f"unknown mode: {mode}")
     test_app.add_middleware(TestUserMiddleware)
     return TestClient(test_app)
+
+
+class FakeCognitoClient:
+    def __init__(self):
+        self.confirm_sign_up_exception = None
+
+    def delete_user(self, AccessToken=None):
+        return {"Response": "Ok"}
+
+
+def fake_boto3_client(service, region_name=None, **kwargs):
+    if service == "cognito-idp":
+        return fake_cognito_client
+    raise ValueError(f"Unsupported service: {service}")
+
+
+@pytest.fixture
+def fake_cognito_client_fixture():
+    return FakeCognitoClient()
+
+
+@pytest.fixture(autouse=True)
+def override_boto3_client(monkeypatch, fake_cognito_client_fixture):
+    global fake_cognito_client
+    fake_cognito_client = fake_cognito_client_fixture
+    monkeypatch.setattr(boto3, "client", fake_boto3_client)
 
 
 class TestingSession(Session):

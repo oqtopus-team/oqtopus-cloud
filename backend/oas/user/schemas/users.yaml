@@ -1,0 +1,26 @@
+users.GetOneUserResponse:
+  description: detail of user response
+  type: object
+  properties:
+    id:
+      type: integer
+    email:
+      type: string
+    name:
+      type: string
+    organization:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+  required:
+    - id
+
+users.UpdateUserRequest:
+  description: user update data
+  type: object
+  properties:
+    name:
+      type: string
+    organization:
+      type: string

@@ -33,6 +33,8 @@ paths:
     $ref: ./paths/announcements.yaml#/announcements
   /announcements/{announcement_id}:
     $ref: ./paths/announcements.yaml#/announcements.announcement_id
+  /users/me:
+    $ref: ./paths/users.yaml#/users.me
 components:
   securitySchemes:
     BearerAuth:
