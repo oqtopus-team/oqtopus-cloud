@@ -56,7 +56,7 @@ def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
 
 
 def _create_request(
-        method="GET", 
+        method="GET",
         headers=[("Authorization".lower().encode(), "Bearer some_access_token".encode())]
 ) -> Request:
     scope: Dict[str, Any] = {
@@ -79,7 +79,7 @@ def test_get_user(test_db):
     request = _create_request()
     request.state.owner = f"email_{n}"
     actual = get_user(request, test_db)
-    
+
     expected = GetOneUserResponse(
         id=1,
         email="email_1",
@@ -87,7 +87,7 @@ def test_get_user(test_db):
         organization="organization_1",
         created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57))
     )
-    
+
     assert actual == expected
 
 
@@ -200,7 +200,7 @@ def test_update_user_name_too_long(test_db):
     too_long_name = "a" * (LEN_VARCHAR + 1)
     request_body = UpdateUserRequest(name=too_long_name, organization="new_organization")
     response = update_user(request, request_body, test_db)
-    
+
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
     assert json.loads(response.body) == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
@@ -218,7 +218,7 @@ def test_update_user_organization_too_long(test_db):
     too_long_organization = "a" * (LEN_VARCHAR + 1)
     request_body = UpdateUserRequest(name="new_name", organization=too_long_organization)
     response = update_user(request, request_body, test_db)
-    
+
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
     assert json.loads(response.body) == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
