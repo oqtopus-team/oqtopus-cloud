@@ -90,6 +90,7 @@ resource "aws_lambda_function" "this" {
     size = "512"
   }
   filename                       = "./bin/${var.identifier}/lambda.zip"
+  source_code_hash               = filebase64sha256("./bin/${var.identifier}/lambda.zip")
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -113,10 +114,17 @@ resource "aws_lambda_function" "this" {
   snap_start {
     apply_on = "PublishedVersions"
   }
+  publish                       = true
 
   lifecycle {
     ignore_changes = [tags["github-sha"]]
   }
+}
+
+resource "aws_lambda_alias" "snapstart_alias" {
+  name             = "snapstart"
+  function_name    = aws_lambda_function.this.function_name
+  function_version = aws_lambda_function.this.version
 }
 
 resource "aws_iam_role" "lambda" {
@@ -409,13 +417,14 @@ resource "aws_api_gateway_integration" "this" {
   http_method             = aws_api_gateway_method.this.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.this.invoke_arn
+  uri                     = aws_lambda_alias.snapstart_alias.invoke_arn
 }
 
 resource "aws_lambda_permission" "api_lambda_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.this.function_name
+  qualifier     = aws_lambda_alias.snapstart_alias.name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
