@@ -18,7 +18,7 @@ from oqtopus_cloud.user.schemas.errors import (
     UnauthorizedResponse,
 )
 from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user
+from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize
 from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 
 client = TestClient(app)
@@ -265,6 +265,24 @@ def test_delete_user(test_db):
     assert whitelist_user.is_signup_completed is False
 
 
+def test_delete_user_with_no_whitelist_user(test_db):
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model(n))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    response = delete_user(request, test_db)
+
+    assert response is None
+
+    get_response = get_user(request, test_db)
+
+    assert type(get_response) is NotFoundErrorResponse
+    assert get_response.status_code == 404
+
+
 def test_delete_user_no_auth_header(test_db):
     request = _create_request(headers=[])
     request.state.owner = f"email_{1}"
@@ -331,3 +349,13 @@ def test_delete_user_500(test_db):
     assert json.loads(response.body) == {
         "message": "Internal Server Error"
     }
+
+
+def test_localize():
+    date = datetime(2024, 3, 4, 12, 34, 57)
+    actual = localize(date)
+    assert pytz.utc.localize(date) == actual
+
+
+def test_localize_none():
+    assert localize(None) is None
