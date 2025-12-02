@@ -114,14 +114,14 @@ resource "aws_lambda_function" "this" {
   snap_start {
     apply_on = "PublishedVersions"
   }
-  publish                       = true
+  publish = true
 
   lifecycle {
     ignore_changes = [tags["github-sha"]]
   }
 }
 
-resource "aws_lambda_alias" "snapstart_alias" {
+resource "aws_lambda_alias" "this" {
   name             = "snapstart"
   function_name    = aws_lambda_function.this.function_name
   function_version = aws_lambda_function.this.version
@@ -417,14 +417,14 @@ resource "aws_api_gateway_integration" "this" {
   http_method             = aws_api_gateway_method.this.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_alias.snapstart_alias.invoke_arn
+  uri                     = aws_lambda_alias.this.invoke_arn
 }
 
 resource "aws_lambda_permission" "api_lambda_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.this.function_name
-  qualifier     = aws_lambda_alias.snapstart_alias.name
+  qualifier     = aws_lambda_alias.this.name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
@@ -444,14 +444,14 @@ resource "aws_api_gateway_authorizer" "lambda" {
   type                             = "REQUEST"
   identity_source                  = ""
   authorizer_result_ttl_in_seconds = 0
-  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
+  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}/invocations"
 }
 
 resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
   count         = var.authorizer_type == "LAMBDA" ? 1 : 0
   statement_id  = "AllowAPIGatewayInvokeForLambdaAuth"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_authorizer_arn
+  function_name = "${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}"
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
 }
