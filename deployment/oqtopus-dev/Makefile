@@ -12,7 +12,7 @@ OPENAPI_DESCRIPTION ?= "Local server url"
 
 upload-openapi-user: ## Generate and Push User API OpenAPI Specification to S3
 	@TARGET_DIR=$(shell cd ../../backend/oas/user && pwd) \
-	TARGET_KEY="user" \
+	TARGET_NAME="user" \
 	$(MAKE) upload-openapi
 
 upload-openapi: ## Generate and Push OpenAPI Specification to S3
@@ -25,7 +25,7 @@ upload-openapi: ## Generate and Push OpenAPI Specification to S3
 	@echo "✅ Generating Completed"
 	@echo ""
 	@echo "▶️ Pushing OpenAPI Specification to S3 Bucket ..."
-	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/$(TARGET_KEY)/openapi.yaml --profile $(PROFILE)
+	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/$(TARGET_NAME).yaml --profile $(PROFILE)
 	@rm ./openapi.yaml
 	@echo "✅ Pushing Completed"
 	@echo ""
