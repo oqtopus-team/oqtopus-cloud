@@ -9,20 +9,26 @@ export
 
 OPENAPI_URL ?= "http://localhost:8080"
 OPENAPI_DESCRIPTION ?= "Local server url"
-USER_API_DIR := $(shell cd ../../backend/oas/user && pwd)
+
+upload-openapi-user: ## Generate and Push User API OpenAPI Specification to S3
+	@TARGET_DIR=$(shell cd ../../backend/oas/user && pwd) \
+	TARGET_KEY="user" \
+	$(MAKE) upload-openapi
 
 upload-openapi: ## Generate and Push OpenAPI Specification to S3
+	@echo ""
 	@echo "▶️ Generating OpenAPI Specification ..."
-	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(USER_API_DIR)/root.yaml > $(USER_API_DIR)/root_dummy.yaml
-	@docker run --rm -v $(USER_API_DIR):/spec redocly/cli bundle /spec/root_dummy.yaml -o /spec/openapi_dummy.yaml
-	@rm $(USER_API_DIR)/root_dummy.yaml
-	@mv $(USER_API_DIR)/openapi_dummy.yaml ./openapi.yaml
+	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(TARGET_DIR)/root.yaml > $(TARGET_DIR)/root_dummy.yaml
+	@docker run --rm -v $(TARGET_DIR):/spec redocly/cli bundle /spec/root_dummy.yaml -o /spec/openapi_dummy.yaml
+	@rm $(TARGET_DIR)/root_dummy.yaml
+	@mv $(TARGET_DIR)/openapi_dummy.yaml ./openapi.yaml
 	@echo "✅ Generating Completed"
 	@echo ""
 	@echo "▶️ Pushing OpenAPI Specification to S3 Bucket ..."
-	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/openapi.yaml --profile $(PROFILE)
+	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/$(TARGET_KEY)/openapi.yaml --profile $(PROFILE)
 	@rm ./openapi.yaml
 	@echo "✅ Pushing Completed"
+	@echo ""
 
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
