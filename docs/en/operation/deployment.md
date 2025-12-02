@@ -207,6 +207,11 @@ SERVER_COGNITO_USER_POOL_ID=ap-northeast-1_bazqux
 SERVER_COGNITO_CLIENT_ID=bazqux
 SERVER_COGNITO_USER_NAME=bazqux
 SERVER_COGNITO_USER_PASSWORD=BazQux@123
+
+OPENAPI_URL=https://hoge-hoge.execute-api.ap-northeast-1.amazonaws.com
+OPENAPI_DESCRIPTION="your url description"
+OPENAPI_S3_BUCKET="bucket name of s3 for uploading openapi.yaml"
+OPENAPI_S3_KEY="key name of s3 for uploading openapi.yaml"
 ```
 
 The directory structure is as follows:
