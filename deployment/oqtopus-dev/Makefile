@@ -11,12 +11,18 @@ OPENAPI_URL ?= "http://localhost:8080"
 OPENAPI_DESCRIPTION ?= "Local server url"
 USER_API_DIR := $(shell cd ../../backend/oas/user && pwd)
 
-put-openapi: ## Generate and Push OpenAPI Specification to S3
-	@echo "Generating OpenAPI Specification ..."
+upload-openapi: ## Generate and Push OpenAPI Specification to S3
+	@echo "▶️ Generating OpenAPI Specification ..."
 	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(USER_API_DIR)/root.yaml > $(USER_API_DIR)/root_dummy.yaml
 	@docker run --rm -v $(USER_API_DIR):/spec redocly/cli bundle /spec/root_dummy.yaml -o /spec/openapi_dummy.yaml
+	@rm $(USER_API_DIR)/root_dummy.yaml
 	@mv $(USER_API_DIR)/openapi_dummy.yaml ./openapi.yaml
-	@rm $(USER_API_DIR)/root_dummy.yaml openapi.yaml
+	@echo "✅ Generating Completed"
+	@echo ""
+	@echo "▶️ Pushing OpenAPI Specification to S3 Bucket ..."
+	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/openapi.yaml --profile $(PROFILE)
+	@rm ./openapi.yaml
+	@echo "✅ Pushing Completed"
 
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
