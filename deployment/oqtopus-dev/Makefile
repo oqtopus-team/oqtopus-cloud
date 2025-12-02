@@ -2,11 +2,21 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-
 .PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
 export
+
+OPENAPI_URL ?= "http://localhost:8080"
+OPENAPI_DESCRIPTION ?= "Local server url"
+USER_API_DIR := $(shell cd ../../backend/oas/user && pwd)
+
+put-openapi: ## Generate and Push OpenAPI Specification to S3
+	@echo "Generating OpenAPI Specification ..."
+	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(USER_API_DIR)/root.yaml > $(USER_API_DIR)/root_dummy.yaml
+	@docker run --rm -v $(USER_API_DIR):/spec redocly/cli bundle /spec/root_dummy.yaml -o /spec/openapi_dummy.yaml
+	@mv $(USER_API_DIR)/openapi_dummy.yaml ./openapi.yaml
+	@rm $(USER_API_DIR)/root_dummy.yaml openapi.yaml
 
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \

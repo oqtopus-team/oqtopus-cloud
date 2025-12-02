@@ -4,6 +4,9 @@ SHELL := bash
 
 .PHONY: lint-user lint-provider lint-admin lint-admin lint-user_signup lint-all generate-user generate-provider generate-admin generate-admin generate-user_signup generate-all help
 
+OPENAPI_URL ?= "http://localhost:8080"
+OPENAPI_DESCRIPTION ?= "Local server url"
+
 lint-user: ## Lint user openapi.yaml
 	@docker run --rm -v $(PWD):/spec redocly/cli lint user/openapi.yaml
 
@@ -20,7 +23,9 @@ lint-all: lint-user lint-provider lint-admin lint-user_signup ## Lint user, prov
 
 generate-user: ## Generate user openapi.yaml
 	@docker pull redocly/cli
-	@docker run --rm -v $(PWD):/spec redocly/cli bundle /spec/user/root.yaml -o /spec/user/openapi.yaml
+	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(PWD)/user/root.yaml > $(PWD)/user/root_dummy.yaml
+	@docker run --rm -v $(PWD):/spec redocly/cli bundle /spec/user/root_dummy.yaml -o /spec/user/openapi.yaml
+	@rm $(PWD)/user/root_dummy.yaml
 	@$(MAKE) lint-user
 
 generate-provider: ## Generate provider openapi.yaml
