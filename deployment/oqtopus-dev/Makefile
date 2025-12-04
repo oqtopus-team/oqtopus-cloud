@@ -25,7 +25,7 @@ upload-openapi: ## Generate and Push OpenAPI Specification to S3
 	@echo "✅ Generating Completed"
 	@echo ""
 	@echo "▶️ Pushing OpenAPI Specification to S3 Bucket ..."
-	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(OPENAPI_S3_KEY)/$(TARGET_NAME).yaml --profile $(PROFILE)
+	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(TARGET_NAME).yaml --profile $(PROFILE)
 	@rm ./openapi.yaml
 	@echo "✅ Pushing Completed"
 	@echo ""
