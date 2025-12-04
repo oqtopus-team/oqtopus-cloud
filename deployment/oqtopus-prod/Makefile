@@ -166,29 +166,34 @@ set-alias: ## Set Alias to Lambda Version
 	fi
 
 deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions: \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
-	BIN=./bin/user
+	BIN=./bin/user \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-provider-via-actions: zip-provider	## Deploy Provider API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions: \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
-	BIN=./bin/provider
+	BIN=./bin/provider \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-admin-via-actions: zip-admin	## Deploy Admin API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions: \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
-	BIN=./bin/admin
+	BIN=./bin/admin \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-lambda_auth-via-actions: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions: \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
-	BIN=./bin/lambda_auth
+	BIN=./bin/lambda_auth \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions: \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
-	BIN=./bin/user_signup
+	BIN=./bin/user_signup \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-via-actions: ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
@@ -198,6 +203,43 @@ deploy-via-actions: ## Deploy Lambda Package via Github Actions
 	--zip-file fileb://${BIN}/lambda.zip
 	@echo "Deploy Completed"
 
+deploy-aliased-version-via-actions: ## Deploy Lambda Package as New Aliased Version via Github Actions
+	@echo "Deploy ${FUNCTION_NAME} ..."
+	@export AWS_PAGER="" && \
+	VERSION=$$(aws lambda update-function-code \
+		--function-name ${FUNCTION_NAME} \
+		--zip-file fileb://${BIN}/lambda.zip \
+		--publish \
+		--query 'Version' \
+		--output text) && \
+	if [ -z "$$VERSION" ]; then \
+		echo "Error: Failed to get version number" && exit 1; \
+	fi && \
+	echo "Published version: ${FUNCTION_NAME}:$$VERSION" && \
+	$(MAKE) set-alias-via-actions \
+		ALIAS_NAME=$(ALIAS_NAME) \
+		FUNCTION_NAME=$(FUNCTION_NAME) \
+		VERSION=$$VERSION
+	@echo "Deploy Completed."
+
+set-alias-via-actions: ## Set Alias to Lambda Version via Github Actions
+	@echo "Setting alias '${ALIAS_NAME}' to ${FUNCTION_NAME}:${VERSION} ..."
+	@export AWS_PAGER="" && \
+	if aws lambda get-alias \
+		--function-name ${FUNCTION_NAME} \
+		--name ${ALIAS_NAME} >/dev/null 2>&1; then \
+		aws lambda update-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} && \
+		echo "Updated alias '${ALIAS_NAME}' to version ${FUNCTION_NAME}:${VERSION}"; \
+	else \
+		aws lambda create-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} && \
+		echo "Created alias '${ALIAS_NAME}' pointing to version ${FUNCTION_NAME}:${VERSION}"; \
+	fi
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \
