@@ -93,6 +93,8 @@ class FakeCognitoClient:
 def fake_boto3_client(service, region_name=None, **kwargs):
     if service == "cognito-idp":
         return fake_cognito_client
+    if service == "cloudtrail":
+        return fake_cloud_trails_client
     raise ValueError(f"Unsupported service: {service}")
 
 
@@ -102,10 +104,34 @@ def fake_cognito_client_fixture():
 
 
 @pytest.fixture(autouse=True)
-def override_boto3_client(monkeypatch, fake_cognito_client_fixture):
+def override_boto3_client(monkeypatch, fake_cognito_client_fixture, fake_cloud_trails_client_fixture):
     global fake_cognito_client
     fake_cognito_client = fake_cognito_client_fixture
+    global fake_cloud_trails_client
+    fake_cloud_trails_client = fake_cloud_trails_client_fixture
     monkeypatch.setattr(boto3, "client", fake_boto3_client)
+
+
+class FakeCloudTrailsClient:
+    def __init__(self):
+        self.events = []
+
+    def get_paginator(self, method):
+        return FakeCloudTrailsPaginator(events=self.events)
+
+
+class FakeCloudTrailsPaginator:
+    def __init__(self, events):
+        self.events = events
+
+    def paginate(self, **kwargs):
+        for page in self.events:
+            yield page
+
+
+@pytest.fixture
+def fake_cloud_trails_client_fixture():
+    return FakeCloudTrailsClient()
 
 
 class TestingSession(Session):

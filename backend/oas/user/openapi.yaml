@@ -1543,6 +1543,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/announcements.GetAnnouncementResponse'
+    users.LoginEvent:
+      description: details of login event
+      type: object
+      properties:
+        event_date:
+          type: string
+          format: date-time
+        user_agent:
+          type: string
+        ip:
+          type: string
     users.GetOneUserResponse:
       description: detail of user response
       type: object
@@ -1558,6 +1569,10 @@ components:
         created_at:
           type: string
           format: date-time
+        login_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/users.LoginEvent'
       required:
         - id
     users.UpdateUserRequest:

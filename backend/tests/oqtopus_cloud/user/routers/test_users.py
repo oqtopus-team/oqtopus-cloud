@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import pytz
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from starlette.requests import Request
@@ -8,6 +9,7 @@ from typing import Any, Dict
 from fastapi.testclient import TestClient
 from oqtopus_cloud.user.lambda_function import app
 from oqtopus_cloud.user.schemas.users import (
+    LoginEvent,
     GetOneUserResponse,
     UpdateUserRequest,
 )
@@ -70,6 +72,23 @@ def _create_request(
     return Request(scope=scope)
 
 
+def _create_cloud_trail_event(
+    cognito_id: str, 
+    event_name: str = "InitiateAuth",
+    user_agent: str = "test_user_agent"
+):
+    return {
+        "CloudTrailEvent": json.dumps({
+            "eventName": event_name,
+            "additionalEventData": {
+                "sub": cognito_id
+            },
+            "eventTime": pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)).isoformat(),
+            "userAgent": user_agent,
+            "sourceIPAddress": "127.0.0.1"
+        })
+    }
+
 def test_get_user(test_db):
     n = 1
     test_db.flush()
@@ -85,7 +104,151 @@ def test_get_user(test_db):
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57))
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=[]
+    )
+
+    assert actual == expected
+
+
+def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
+    n = 1
+    user_cognito_id = "test_cognito_id"
+    test_db.flush()
+    user = _get_model(n)
+    user.cognito_id = user_cognito_id
+    test_db.add(user)
+    test_db.commit()
+
+    fake_cloud_trails_client_fixture.events = [{ 
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id),
+        ]}, {
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3")
+        ]
+    }]
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    actual = get_user(request, test_db)
+
+    expected = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="username_1",
+        organization="organization_1",
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=[
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="test_user_agent",
+                ip="127.0.0.1"
+            ),
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="user_agent_2",
+                ip="127.0.0.1"
+            ),
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="user_agent_3",
+                ip="127.0.0.1"
+            ),
+        ]
+    )
+
+    assert actual == expected
+
+
+def test_get_user_should_include_login_events_only_from_given_user(test_db, fake_cloud_trails_client_fixture):
+    n = 1
+    user_cognito_id = "test_cognito_id"
+    test_db.flush()
+    user = _get_model(n)
+    user.cognito_id = user_cognito_id
+    test_db.add(user)
+    test_db.commit()
+
+    fake_cloud_trails_client_fixture.events = [{ 
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id),
+        ]}, {
+        "Events": [
+            _create_cloud_trail_event("different_user_cognito_id", user_agent="different_user_agent"),
+            _create_cloud_trail_event(user_cognito_id)
+        ]
+    }]
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    actual = get_user(request, test_db)
+
+    expected = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="username_1",
+        organization="organization_1",
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=[
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="test_user_agent",
+                ip="127.0.0.1"
+            ),
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="test_user_agent",
+                ip="127.0.0.1"
+            ),
+        ]
+    )
+
+    assert actual == expected
+
+
+def test_get_user_should_include_only_auth_login_events(test_db, fake_cloud_trails_client_fixture):
+    n = 1
+    user_cognito_id = "test_cognito_id"
+    test_db.flush()
+    user = _get_model(n)
+    user.cognito_id = user_cognito_id
+    test_db.add(user)
+    test_db.commit()
+
+    fake_cloud_trails_client_fixture.events = [{ 
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id, event_name="different_event"),
+        ]}, {
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2")
+        ]
+    }]
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    actual = get_user(request, test_db)
+
+    expected = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="username_1",
+        organization="organization_1",
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=[
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="user_agent_1",
+                ip="127.0.0.1"
+            ),
+            LoginEvent(
+                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                user_agent="user_agent_2",
+                ip="127.0.0.1"
+            ),
+        ]
     )
 
     assert actual == expected

@@ -1,3 +1,15 @@
+users.LoginEvent:
+  description: details of login event
+  type: object
+  properties:
+    event_date:
+      type: string
+      format: date-time
+    user_agent:
+      type: string
+    ip:
+      type: string
+
 users.GetOneUserResponse:
   description: detail of user response
   type: object
@@ -13,6 +25,10 @@ users.GetOneUserResponse:
     created_at:
       type: string
       format: date-time
+    login_events:
+      type: array
+      items:
+        $ref: '#/users.LoginEvent'
   required:
     - id
 

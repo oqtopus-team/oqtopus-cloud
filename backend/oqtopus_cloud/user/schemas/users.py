@@ -7,6 +7,16 @@ from __future__ import annotations
 from pydantic import AwareDatetime, BaseModel
 
 
+class LoginEvent(BaseModel):
+    """
+    details of login event
+    """
+
+    event_date: AwareDatetime | None = None
+    user_agent: str | None = None
+    ip: str | None = None
+
+
 class GetOneUserResponse(BaseModel):
     """
     detail of user response
@@ -17,6 +27,7 @@ class GetOneUserResponse(BaseModel):
     name: str | None = None
     organization: str | None = None
     created_at: AwareDatetime | None = None
+    login_events: list[LoginEvent] | None = None
 
 
 class UpdateUserRequest(BaseModel):

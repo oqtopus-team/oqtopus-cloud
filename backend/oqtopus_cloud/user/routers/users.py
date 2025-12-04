@@ -1,4 +1,5 @@
-from datetime import datetime
+import json
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request as Event, Body, status
 import boto3
 import pytz
@@ -24,6 +25,7 @@ from oqtopus_cloud.common.session import (
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.user.schemas.users import (
+    LoginEvent,
     GetOneUserResponse,
     UpdateUserRequest,
 )
@@ -50,7 +52,9 @@ def get_user(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
 
-        return model_to_schema(user)
+        login_events = retrieve_user_login_history(user.cognito_id, event.state.region)
+
+        return model_to_schema(user, login_events)
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -192,19 +196,52 @@ def delete_user(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
+def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent]:
+    client = boto3.client("cloudtrail", region_name=region)
+    paginator = client.get_paginator("lookup_events")
+    filter_attributes = [
+        {"AttributeKey": "EventSource", "AttributeValue": "cognito-idp.amazonaws.com"}
+    ]
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(days=3)
+
+    event_list: list[LoginEvent] = []
+    for page in paginator.paginate(
+        LookupAttributes=filter_attributes, StartTime=start_time, EndTime=end_time
+    ):
+        for raw_event in page["Events"]:
+            event = json.loads(raw_event["CloudTrailEvent"])
+            if event["eventName"] != "InitiateAuth":
+                continue
+            if (
+                event["additionalEventData"]["sub"]
+                != cognito_id
+            ):
+                continue
+
+            event_list.append(LoginEvent(
+                event_date=event["eventTime"], # eventTime is in UTC by default, no need to localize
+                user_agent=event["userAgent"],
+                ip=event["sourceIPAddress"]
+            ))
+
+    return event_list
+
+
 def localize(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     return pytz.utc.localize(dt)
 
 
-def model_to_schema(model: User) -> GetOneUserResponse:
+def model_to_schema(model: User, login_events: list[LoginEvent] | None = None) -> GetOneUserResponse:
     dict = {
         "id": model.id,
         "email": getattr(model, "email", None),
         "name": getattr(model, "username", None),
         "organization": getattr(model, "organization", None),
         "created_at": localize(getattr(model, "created_at", None)),
+        "login_events": login_events
     }
 
     return GetOneUserResponse.model_validate(dict)
