@@ -73,7 +73,7 @@ def _create_request(
 
 
 def _create_cloud_trail_event(
-    cognito_id: str, 
+    cognito_id: str,
     event_name: str = "InitiateAuth",
     user_agent: str = "test_user_agent"
 ):
@@ -120,7 +120,7 @@ def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{ 
+    fake_cloud_trails_client_fixture.events = [{
         "Events": [
             _create_cloud_trail_event(user_cognito_id),
         ]}, {
@@ -171,7 +171,7 @@ def test_get_user_should_include_login_events_only_from_given_user(test_db, fake
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{ 
+    fake_cloud_trails_client_fixture.events = [{
         "Events": [
             _create_cloud_trail_event(user_cognito_id),
         ]}, {
@@ -217,7 +217,7 @@ def test_get_user_should_include_only_auth_login_events(test_db, fake_cloud_trai
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{ 
+    fake_cloud_trails_client_fixture.events = [{
         "Events": [
             _create_cloud_trail_event(user_cognito_id, event_name="different_event"),
         ]}, {
