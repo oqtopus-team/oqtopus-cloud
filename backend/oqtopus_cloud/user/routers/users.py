@@ -213,7 +213,15 @@ def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent
             event = json.loads(raw_event["CloudTrailEvent"])
             if event["eventName"] != "InitiateAuth":
                 continue
-            if event["additionalEventData"]["sub"] != cognito_id:
+            if (
+                "requestParameters" not in event
+                or event["requestParameters"]["authFlow"] != "USER_SRP_AUTH"
+            ):
+                continue
+            if (
+                "additionalEventData" not in event
+                or event["additionalEventData"]["sub"] != cognito_id
+            ):
                 continue
 
             event_list.append(
