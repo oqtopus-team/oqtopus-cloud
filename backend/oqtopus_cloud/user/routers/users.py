@@ -211,13 +211,17 @@ def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent
     ):
         for raw_event in page["Events"]:
             event = json.loads(raw_event["CloudTrailEvent"])
-            if event["eventName"] != "InitiateAuth":
+            if event["eventName"] != "RespondToAuthChallenge":
                 continue
+
+            response_elements = event["responseElements"]
             if (
-                "requestParameters" not in event
-                or event["requestParameters"]["authFlow"] != "USER_SRP_AUTH"
+                response_elements is None
+                or response_elements.get("authenticationResult", {}).get("accessToken")
+                is None
             ):
                 continue
+
             if (
                 "additionalEventData" not in event
                 or event["additionalEventData"]["sub"] != cognito_id
