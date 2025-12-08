@@ -1,5 +1,5 @@
-import bcrypt
 import pytest
+from argon2 import PasswordHasher
 from datetime import datetime, timedelta
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
@@ -100,9 +100,7 @@ def _get_model(
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "api_token_id": f"api_token_id_{n}",
-        "api_token_hash": bcrypt.hashpw(
-            f"api_token_secret_{n}".encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8"),
+        "api_token_hash": PasswordHasher().hash(f"api_token_secret_{n}"),
         "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }

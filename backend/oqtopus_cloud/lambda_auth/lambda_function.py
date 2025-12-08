@@ -2,10 +2,11 @@ import os
 from datetime import datetime
 from typing import Optional
 
-import bcrypt
 import boto3
 import jwt
-from sqlalchemy import select
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHash
+from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.user import User
@@ -14,6 +15,8 @@ from oqtopus_cloud.lambda_auth.conf import logger
 
 jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
+
+ph = PasswordHasher()
 
 
 class AuthError(Exception):
@@ -130,24 +133,33 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         dbs = get_db()
         db = next(dbs)
 
-        stmt = select(
+        select_stmt = select(
             User.api_token_hash,
             User.api_token_expiration,
             User.cognito_id,
         ).where(User.api_token_id == api_token_id)
-        verification_data = db.execute(stmt).first()
+        verification_data = db.execute(select_stmt).first()
         if verification_data is None:
             raise AuthError("Invalid API token")
 
         api_token_hash, api_token_expiration, cognito_id = verification_data
 
         # Check the API token hash
-        if (api_token_hash is None) or (
-            not bcrypt.checkpw(
-                api_token_secret.encode("utf-8"), api_token_hash.encode("utf-8")
-            )
-        ):
+        try:
+            ph.verify(api_token_hash, api_token_secret)
+        except VerifyMismatchError:
             raise AuthError("Invalid API token")
+        except (VerificationError, InvalidHash):
+            raise AuthError("API token verification error")
+
+        if ph.check_needs_rehash(api_token_hash):
+            update_stmt = (
+                update(User)
+                .where(User.api_token_id == api_token_id)
+                .values(api_token_hash=ph.hash(api_token_secret))
+            )
+            db.execute(update_stmt)
+            db.commit()
 
         # Check the API token expiration
         if (api_token_expiration is None) or (

@@ -1,6 +1,6 @@
-import bcrypt
 import pytz
 
+from argon2 import PasswordHasher
 from datetime import datetime
 from pydantic.type_adapter import TypeAdapter
 from typing import Any, Dict
@@ -79,9 +79,7 @@ def test_create_api_token(
 
     user = test_db.query(User).filter(User.username == "username_1").first()
     assert user.api_token_id == actual.api_token_id
-    assert bcrypt.checkpw(
-        actual.api_token_secret.encode("utf-8"), user.api_token_hash.encode("utf-8")
-    )
+    assert PasswordHasher().verify(user.api_token_hash, actual.api_token_secret)
     assert pytz.utc.localize(user.api_token_expiration) == actual.api_token_expiration
 
 

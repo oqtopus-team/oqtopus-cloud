@@ -1,5 +1,4 @@
-import bcrypt
-
+from argon2 import PasswordHasher
 from datetime import datetime, timedelta
 from secrets import token_urlsafe
 
@@ -33,6 +32,8 @@ utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
+ph = PasswordHasher()
+
 
 @router.post(
     "/api-token",
@@ -55,17 +56,16 @@ def create_api_token(
 ):
     username = event.state.owner
     logger.info(f"Get api token for {username}")
-    # generate api token
-    api_token_id = token_urlsafe(16)
-    api_token_secret = token_urlsafe(16)
-    api_token_secret_hash_bytes = bcrypt.hashpw(
-        api_token_secret.encode("utf-8"), bcrypt.gensalt()
-    )
-    api_token_secret_hash = api_token_secret_hash_bytes.decode("utf-8")
-    api_token_expiration = datetime.now(utc).replace(
-        second=0, microsecond=0
-    ) + timedelta(days=90)
+
     try:
+        # generate api token
+        api_token_id = token_urlsafe(16)
+        api_token_secret = token_urlsafe(16)
+        api_token_secret_hash = ph.hash(api_token_secret)
+        api_token_expiration = datetime.now(utc).replace(
+            second=0, microsecond=0
+        ) + timedelta(days=90)
+
         # save api token to users table (username here is the email address registered in Cognito)
         stmt = select(User).where(User.email == username)
         user = db.execute(stmt).scalars().first()
