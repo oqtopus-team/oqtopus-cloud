@@ -18,9 +18,7 @@ api-token:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: "../schemas/api-token.yaml#/api-token.ApiToken"
+              $ref: "../schemas/api-token.yaml#/api-token.ApiToken"
       "403":
         description: Frobidden
         content:
@@ -57,9 +55,7 @@ api-token:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: "../schemas/api-token.yaml#/api-token.ApiToken"
+              $ref: "../schemas/api-token.yaml#/api-token.ApiToken"
       "403":
         description: Frobidden
         content:
