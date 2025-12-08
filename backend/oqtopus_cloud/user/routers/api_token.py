@@ -18,7 +18,7 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.user.conf import logger, tracer
-from oqtopus_cloud.user.schemas.api_token import ApiToken
+from oqtopus_cloud.user.schemas.api_token import ApiToken, ApiTokenStatus
 from oqtopus_cloud.user.schemas.errors import (
     ForbiddenErrorResponse,
     InternalServerErrorResponse,
@@ -132,6 +132,51 @@ def delete_api_token(
             db.commit()
             logger.info("API token deleted")
             return Response(status_code=status.HTTP_200_OK)
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/api-token/status",
+    response_model=ApiTokenStatus,
+    responses={
+        403: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_api_token_status(
+    event: Event,
+    db: Session = Depends(get_db),
+) -> (
+    ApiTokenStatus
+    | ForbiddenErrorResponse
+    | NotFoundErrorResponse
+    | InternalServerErrorResponse
+):
+    username = event.state.owner
+    logger.info(f"Get api token: {username}")
+    try:
+        # save user table (username here is the email address registered in Cognito)
+        stmt = select(User).where(User.email == username)
+        user = db.execute(stmt).scalars().first()
+        if not user or user.api_token_hash is None:
+            logger.info("User not found")
+            return NotFoundErrorResponse(message="User not found")
+        if user.userstatus == UserStatus.suspended:  # suspended status
+            logger.info("Forbidden")
+            return ForbiddenErrorResponse(message="Forbidden")
+        else:
+            logger.info("API token found")
+            api_token_expiration = user.api_token_expiration
+            if api_token_expiration is not None:
+                api_token_expiration = api_token_expiration.replace(tzinfo=utc)
+            return ApiTokenStatus(
+                api_token_expiration=api_token_expiration,
+            )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

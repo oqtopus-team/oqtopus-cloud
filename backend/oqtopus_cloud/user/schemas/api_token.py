@@ -24,3 +24,12 @@ class ApiToken(BaseModel):
     """
     The expiration date of the api token
     """
+
+
+class ApiTokenStatus(BaseModel):
+    api_token_expiration: Annotated[
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56"])
+    ] = None
+    """
+    The expiration date of the api token
+    """
