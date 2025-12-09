@@ -36,3 +36,4 @@ jobs:
         with:
           base: openapi_base.yaml
           revision: backend/oas/user/openapi.yaml
+          fail-on: WARN
