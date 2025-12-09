@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - 'test/#335-auto-detect-oas-breaking-changes'
-
+    paths:
+      - '.github/workflows/**'
+      - 'backend/oas/**'
+      # - 'backend/oas/admin/**'
+      # - 'backend/oas/provider/**'
+      # - 'backend/oas/user/**'
+      # - 'backend/oas/user_signup/**'
 jobs:
   test:
     runs-on: ubuntu-latest
