@@ -29,10 +29,10 @@ jobs:
           git fetch origin develop
 
           # Extract the OpenAPI spec from base into a temp file
-          git show origin/develop:oas/openapi.yaml > openapi_base.yaml
+          git show origin/develop:backend/oas/user/openapi.yaml > openapi_base.yaml
 
       - name: Run oasdiff
         uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: openapi_base.yaml
-          revision: oas/openapi.yaml
+          revision: backend/oas/user/openapi.yaml
