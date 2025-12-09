@@ -1,4 +1,4 @@
-name: OpenAPI Check
+name: Detect OpenAPI breaking changes
 
 on:
   push:
@@ -12,13 +12,27 @@ on:
       # - 'backend/oas/user/**'
       # - 'backend/oas/user_signup/**'
 jobs:
-  test:
+  detect-openapi-breaking-changes:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout current branch
         uses: actions/checkout@v4
 
-      - name: HelloWorld
+      # - name: HelloWorld
+      #   run: |
+      #     echo "Branch: ${{ github.ref_name }}"
+      #     echo "Commit: ${{ github.sha }}"
+
+      - name: Fetch base OpenAPI spec
         run: |
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
+          # Make sure we have the latest base ref
+          git fetch origin develop
+
+          # Extract the OpenAPI spec from base into a temp file
+          git show origin/develop:oas/openapi.yaml > openapi_base.yaml
+
+      - name: Run oasdiff
+        uses: oasdiff/oasdiff-action/breaking@main
+        with:
+          base: openapi_base.yaml
+          revision: oas/openapi.yaml
