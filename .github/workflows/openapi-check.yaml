@@ -6,11 +6,10 @@ on:
       - 'test/#335-auto-detect-oas-breaking-changes'
     paths:
       - '.github/workflows/**'
-      - 'backend/oas/**'
-      # - 'backend/oas/admin/**'
-      # - 'backend/oas/provider/**'
-      # - 'backend/oas/user/**'
-      # - 'backend/oas/user_signup/**'
+      - 'backend/oas/admin/**'
+      - 'backend/oas/provider/**'
+      - 'backend/oas/user/**'
+      - 'backend/oas/user_signup/**'
 jobs:
   detect-openapi-breaking-changes:
     runs-on: ubuntu-latest
@@ -34,7 +33,6 @@ jobs:
           git show origin/develop:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
 
       - name: Run oasdiff
-        if: steps.fetch-base.outcome == 'success'
         uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: openapi_base.yaml
