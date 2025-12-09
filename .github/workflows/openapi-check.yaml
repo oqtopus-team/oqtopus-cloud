@@ -1,0 +1,39 @@
+name: OpenAPI check
+
+on:
+  push:
+    branches:
+      - 'test/#335-auto-detect-oas-breaking-changes'
+    paths:
+      - '.github/workflows/**'
+      - 'backend/oas/admin/**'
+      - 'backend/oas/provider/**'
+      - 'backend/oas/user/**'
+      - 'backend/oas/user_signup/**'
+jobs:
+  detect-openapi-breaking-changes:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [admin, provider, user, user_signup]
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+
+      - name: Fetch base OpenAPI spec
+        run: |
+          # Make sure we have the latest base ref
+          git fetch --depth=1 origin develop
+
+          # Extract the OpenAPI spec from base into a temp file
+          git show origin/develop:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
+
+      - name: Run oasdiff
+        uses: oasdiff/oasdiff-action/breaking@main
+        with:
+          base: openapi_base.yaml
+          revision: backend/oas/${{ matrix.api }}/openapi.yaml
+          fail-on: WARN
