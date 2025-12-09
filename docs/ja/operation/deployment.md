@@ -213,6 +213,7 @@ SERVER_COGNITO_USER_PASSWORD=BazQux@123
 
 OPENAPI_URL=https://hoge-hoge.execute-api.ap-northeast-1.amazonaws.com
 OPENAPI_DESCRIPTION="your url description"
+OPENAPI_S3_BUCKET="your s3 bucket"
 ```
 
 ディレクトリ構成は以下のようになります:
