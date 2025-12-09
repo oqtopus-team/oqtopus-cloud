@@ -83,6 +83,7 @@ resource "aws_lambda_function" "this" {
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
       var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
       var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
+      var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
   }
 
