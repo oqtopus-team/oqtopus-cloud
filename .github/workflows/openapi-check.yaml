@@ -1,7 +1,7 @@
 name: OpenAPI check
 
 on:
-  push:
+  pull_request:
     branches:
       - 'test/#335-auto-detect-oas-breaking-changes'
     paths:
@@ -10,6 +10,11 @@ on:
       - 'backend/oas/provider/**'
       - 'backend/oas/user/**'
       - 'backend/oas/user_signup/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   detect-openapi-breaking-changes:
     runs-on: ubuntu-latest
@@ -27,10 +32,10 @@ jobs:
         id: fetch-base
         run: |
           # Make sure we have the latest base ref
-          git fetch --depth=1 origin develop
+          git fetch --depth=1 origin ${{ github.base_ref }}
 
           # Extract the OpenAPI spec from base into a temp file
-          git show origin/develop:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
+          git show origin/${{ github.base_ref }}:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
 
       - name: Run oasdiff
         id: oasdiff
@@ -40,8 +45,36 @@ jobs:
           revision: backend/oas/${{ matrix.api }}/openapi.yaml
           fail-on: WARN
 
-      - name: Post PR comment
-        if: failure() && steps.oasdiff.outcome == 'failure'
-        run: |
-          echo "🚨 Breaking changes detected in the ${{ matrix.api }} OpenAPI spec. Please review the changes."
-          echo "${{ steps.oasdiff.outputs.breaking }}"
+      - name: Post PR comment if breaking changes detected
+        if: failure() && steps.breaking_check.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          API_NAME: ${{ matrix.api }}
+          REPORT: ${{ steps.oasdiff.outputs.breaking }}
+        with:
+          script: |
+            const report = process.env.REPORT;
+            const apiName = process.env.API_NAME;
+
+            // Generate link to the specific workflow run logs
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = `### 🚨 Breaking Changes Detected: ${apiName}
+
+            <details>
+            <summary>View Breaking Changes</summary>
+
+            \`\`\`text
+            ${report}
+            \`\`\`
+
+            </details>
+
+            [🔍 View Detailed GitHub Action Log](${runUrl})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
