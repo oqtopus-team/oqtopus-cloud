@@ -97,6 +97,8 @@ module "provider_api" {
   sse_container_log_name = "ssecontainer.log"
   sse_user_program_name  = "userprogram.py"
   sse_zip_file_name      = "sselog_{job_id}.zip"
+  allow_deletion         = "false"
+  editable_fields        = "[]"
 }
 
 module "admin_api" {
