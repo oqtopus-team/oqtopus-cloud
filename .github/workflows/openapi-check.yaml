@@ -38,3 +38,9 @@ jobs:
           base: openapi_base.yaml
           revision: backend/oas/${{ matrix.api }}/openapi.yaml
           fail-on: WARN
+
+      - name: Post PR comment
+        if: failure() && steps.breaking_check.outcome == 'failure'
+        run: |
+          echo "🚨 Breaking changes detected in the ${{ matrix.api }} OpenAPI spec. Please review the changes."
+          echo ${{ steps.breaking_check.outputs.breaking }}
