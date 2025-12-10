@@ -2,6 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+
 .PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
