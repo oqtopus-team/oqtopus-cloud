@@ -83,6 +83,8 @@ resource "aws_lambda_function" "this" {
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
       var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
       var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
+      var.allow_deletion != "" ? { ALLOW_DELETION = var.allow_deletion } : {},
+      var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
     )
   }
 
@@ -238,6 +240,14 @@ data "aws_iam_policy_document" "secret_manager" {
 data "aws_iam_policy_document" "lambda_tag_resource" {
   statement {
     actions   = ["lambda:TagResource"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cloudtrail_permission" {
+  statement {
+    actions   = ["cloudtrail:LookupEvents"]
     effect    = "Allow"
     resources = ["*"]
   }

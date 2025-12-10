@@ -839,6 +839,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+  /system/settings:
+    get:
+      tags:
+        - Settings
+      summary: Get current settings
+      description: Get current settings
+      operationId: get_current_settings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return current settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/settings.GetSettingsResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -1579,3 +1603,19 @@ components:
           type: string
         organization:
           type: string
+    settings.GetSettingsResponse:
+      description: detail of settings response
+      type: object
+      properties:
+        editable_fields:
+          type: array
+          items:
+            type: string
+            enum:
+              - name
+              - organization
+        allow_deletion:
+          type: boolean
+      required:
+        - editable_fields
+        - allow_deletion

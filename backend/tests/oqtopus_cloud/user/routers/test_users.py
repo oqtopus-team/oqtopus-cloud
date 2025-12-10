@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from zoneinfo import ZoneInfo
+from oqtopus_cloud.user.schemas.settings import EditableField
 import pytz
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from starlette.requests import Request
@@ -20,7 +20,7 @@ from oqtopus_cloud.user.schemas.errors import (
     UnauthorizedResponse,
 )
 from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize
+from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize, get_editable_fields
 from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 
 client = TestClient(app)
@@ -550,6 +550,44 @@ def test_update_user_name_too_long(test_db):
     assert json.loads(response.body) == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
 
 
+def test_update_user_name_update_disabled(test_db, monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", '["organization"]')
+
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model(n))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+
+    request_body = UpdateUserRequest(name="new_name", organization="new_organization")
+    response = update_user(request, request_body, test_db)
+
+    assert type(response) is UnauthorizedResponse
+    assert response.status_code == 401
+    assert json.loads(response.body) == {"message": "name field is disabled for updates"}
+
+
+def test_update_user_organization_update_disabled(test_db, monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", '["name"]')
+
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model(n))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+
+    request_body = UpdateUserRequest(name="new_name", organization="new_organization")
+    response = update_user(request, request_body, test_db)
+
+    assert type(response) is UnauthorizedResponse
+    assert response.status_code == 401
+    assert json.loads(response.body) == {"message": "organization field is disabled for updates"}
+
+
 def test_update_user_organization_too_long(test_db):
     n = 1
     test_db.flush()
@@ -695,6 +733,26 @@ def test_delete_user_500(test_db):
     }
 
 
+def test_delete_user_user_deletion_disabled(test_db, monkeypatch):
+    monkeypatch.setenv("ALLOW_DELETION", "false")
+
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model_whitelist(n, is_completed=True))
+    test_db.add(_get_model(n))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    response = delete_user(request, test_db)
+
+    assert type(response) is UnauthorizedResponse
+    assert response.status_code == 401
+    assert json.loads(response.body) == {
+        "message": "user deletion is disabled"
+    }
+
+
 def test_localize():
     date = datetime(2024, 3, 4, 12, 34, 57)
     actual = localize(date)
@@ -703,3 +761,30 @@ def test_localize():
 
 def test_localize_none():
     assert localize(None) is None
+
+
+def test_get_editable_fields(monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", '["name", "organization"]')
+    actual = get_editable_fields()
+    expected = [EditableField("name"), EditableField("organization")]
+    assert actual == expected
+
+
+def test_get_editable_fields_empty_by_default(monkeypatch):
+    monkeypatch.delenv("EDITABLE_FIELDS")
+    assert get_editable_fields() == []
+
+
+def test_get_editable_fields_empty_when_invalid_json(monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", 'invalid json')
+    assert get_editable_fields() == []
+
+
+def test_get_editable_fields_empty_when_not_a_list(monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", '"not-a-list"')
+    assert get_editable_fields() == []
+
+
+def test_get_editable_fields_empty_when_unexpected_fields(monkeypatch):
+    monkeypatch.setenv("EDITABLE_FIELDS", '["name", "differentName"]')
+    assert get_editable_fields() == []

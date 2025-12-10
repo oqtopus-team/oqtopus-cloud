@@ -1,7 +1,9 @@
 import json
+from os import environ
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request as Event, Body, status
 import boto3
+from oqtopus_cloud.user.schemas.settings import EditableField
 import pytz
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -78,6 +80,7 @@ def update_user(
 ) -> (
     GetOneUserResponse
     | NotFoundErrorResponse
+    | UnauthorizedResponse
     | BadRequestResponse
     | InternalServerErrorResponse
 ):
@@ -90,7 +93,14 @@ def update_user(
             logger.error("user not found")
             return NotFoundErrorResponse(message="user not found")
 
+        editable_fields = get_editable_fields()
+
         if update_user_request.name:
+            if "name" not in editable_fields:
+                logger.error("name field is disabled for updates")
+                return UnauthorizedResponse(
+                    message="name field is disabled for updates"
+                )
             if len(update_user_request.name) > LEN_VARCHAR:
                 raise FormatError(
                     FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
@@ -98,6 +108,11 @@ def update_user(
             query.username = update_user_request.name
 
         if update_user_request.organization:
+            if "organization" not in editable_fields:
+                logger.error("organization field is disabled for updates")
+                return UnauthorizedResponse(
+                    message="organization field is disabled for updates"
+                )
             if len(update_user_request.organization) > LEN_VARCHAR:
                 raise FormatError(
                     FIELD_TOO_LONG_MESSAGE.format(
@@ -142,6 +157,10 @@ def delete_user(
 
     try:
         logger.info("invoked delete user")
+
+        if environ.get("ALLOW_DELETION", "false").upper() != "TRUE":
+            logger.error("user deletion is disabled")
+            return UnauthorizedResponse(message="user deletion is disabled")
 
         auth_header = event.headers.get("Authorization")
         if not auth_header:
@@ -238,6 +257,17 @@ def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent
             )
 
     return event_list
+
+
+def get_editable_fields() -> list[EditableField]:
+    try:
+        editable_fields = json.loads(environ.get("EDITABLE_FIELDS", "[]"))
+        if not isinstance(editable_fields, list):
+            editable_fields = []
+
+        return [EditableField(v) for v in editable_fields]
+    except Exception:
+        return []
 
 
 def localize(dt: datetime | None) -> datetime | None:

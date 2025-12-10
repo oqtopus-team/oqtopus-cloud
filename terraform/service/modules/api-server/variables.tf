@@ -185,6 +185,18 @@ variable "sse_zip_file_name" {
   description = "SSE zip file name"
 }
 
+variable "allow_deletion" {
+  type        = string
+  default     = "false"
+  description = "Allow user deletion"
+}
+
+variable "editable_fields" {
+  type        = string
+  default     = "[]"
+  description = "List of user editable fields"
+}
+
 variable "lambda_timeout" {
   type        = number
   default     = 15

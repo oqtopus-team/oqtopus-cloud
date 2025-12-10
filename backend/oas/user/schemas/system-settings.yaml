@@ -1,0 +1,16 @@
+settings.GetSettingsResponse:
+  description: detail of settings response
+  type: object
+  properties:
+    editable_fields:
+      type: array
+      items:
+        type: string
+        enum:
+          - 'name'
+          - 'organization'
+    allow_deletion:
+      type: boolean
+  required:
+    - editable_fields
+    - allow_deletion
