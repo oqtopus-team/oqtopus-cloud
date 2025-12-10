@@ -46,7 +46,7 @@ jobs:
           fail-on: WARN
 
       - name: Post PR comment if breaking changes detected
-        if: failure() && steps.breaking_check.outcome == 'failure'
+        if: failure() && steps.oasdiff.outcome == 'failure'
         uses: actions/github-script@v7
         env:
           API_NAME: ${{ matrix.api }}
