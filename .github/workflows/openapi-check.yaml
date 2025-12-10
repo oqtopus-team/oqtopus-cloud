@@ -44,4 +44,4 @@ jobs:
         if: failure() && steps.oasdiff.outcome == 'failure'
         run: |
           echo "🚨 Breaking changes detected in the ${{ matrix.api }} OpenAPI spec. Please review the changes."
-          echo ${{ steps.breaking_check.outputs.breaking }}
+          echo "${{ steps.breaking_check.outputs.breaking }}"
