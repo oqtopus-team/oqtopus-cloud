@@ -10,6 +10,13 @@ devices.DeviceInfo:
         - QPU
         - simulator
       example: "simulator"
+    status:
+      type:
+        string
+      enum:
+        - available
+        - unavailable
+      example: "available"
     available_at:
       description: "Parameter mandatory and valid for 'unavailable' devices"
       type: string

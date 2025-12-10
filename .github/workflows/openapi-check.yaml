@@ -45,7 +45,7 @@ jobs:
           revision: backend/oas/${{ matrix.api }}/openapi.yaml
 
       - name: Post PR comment if breaking changes detected
-        if: steps.oasdiff.outcome != 'No breaking changes'
+        if: steps.oasdiff.outputs.breaking != 'No breaking changes'
         uses: actions/github-script@v7
         env:
           API_NAME: ${{ matrix.api }}
