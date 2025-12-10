@@ -1,5 +1,6 @@
 from oqtopus_cloud.user.schemas.settings import EditableField, GetSettingsResponse
 from pydantic import TypeAdapter
+from unittest import mock
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.user.lambda_function import app
@@ -74,5 +75,7 @@ def test_get_settings_should_send_defaults_incorrect_fields_format(test_client, 
 
 def test_get_settings_500(test_client, monkeypatch):
     monkeypatch.setenv("EDITABLE_FIELDS", 'invalid json')
-    response = test_client.get("/system/settings")
+    response = None
+    with mock.patch("oqtopus_cloud.user.routers.settings.get_editable_fields", side_effect=Exception("error")):
+        response = test_client.get("/system/settings")
     assert response.status_code == 500

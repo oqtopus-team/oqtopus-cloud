@@ -1,7 +1,7 @@
-import json
 from os import environ
 from fastapi import APIRouter
 
+from oqtopus_cloud.user.common.settings import get_editable_fields
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
@@ -20,15 +20,12 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
     responses={500: {"model": Message}},
 )
 @tracer.capture_method
-def get_user() -> GetSettingsResponse | InternalServerErrorResponse:
+def get_settings() -> GetSettingsResponse | InternalServerErrorResponse:
     logger.info("invoked get system settings")
 
     try:
         allow_deletion = environ.get("ALLOW_DELETION", "false").upper() == "TRUE"
-        editable_fields = json.loads(environ.get("EDITABLE_FIELDS", "[]"))
-
-        if not isinstance(editable_fields, list):
-            editable_fields = []
+        editable_fields = get_editable_fields()
 
         return GetSettingsResponse(
             allow_deletion=allow_deletion, editable_fields=editable_fields

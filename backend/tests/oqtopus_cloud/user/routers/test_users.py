@@ -20,7 +20,7 @@ from oqtopus_cloud.user.schemas.errors import (
     UnauthorizedResponse,
 )
 from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize, get_editable_fields
+from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize
 from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 
 client = TestClient(app)
@@ -761,30 +761,3 @@ def test_localize():
 
 def test_localize_none():
     assert localize(None) is None
-
-
-def test_get_editable_fields(monkeypatch):
-    monkeypatch.setenv("EDITABLE_FIELDS", '["name", "organization"]')
-    actual = get_editable_fields()
-    expected = [EditableField("name"), EditableField("organization")]
-    assert actual == expected
-
-
-def test_get_editable_fields_empty_by_default(monkeypatch):
-    monkeypatch.delenv("EDITABLE_FIELDS")
-    assert get_editable_fields() == []
-
-
-def test_get_editable_fields_empty_when_invalid_json(monkeypatch):
-    monkeypatch.setenv("EDITABLE_FIELDS", 'invalid json')
-    assert get_editable_fields() == []
-
-
-def test_get_editable_fields_empty_when_not_a_list(monkeypatch):
-    monkeypatch.setenv("EDITABLE_FIELDS", '"not-a-list"')
-    assert get_editable_fields() == []
-
-
-def test_get_editable_fields_empty_when_unexpected_fields(monkeypatch):
-    monkeypatch.setenv("EDITABLE_FIELDS", '["name", "differentName"]')
-    assert get_editable_fields() == []
