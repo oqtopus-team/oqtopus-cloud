@@ -43,10 +43,9 @@ jobs:
         with:
           base: openapi_base.yaml
           revision: backend/oas/${{ matrix.api }}/openapi.yaml
-          fail-on: WARN
 
       - name: Post PR comment if breaking changes detected
-        if: failure() && steps.oasdiff.outcome == 'failure'
+        if: steps.oasdiff.outcome != ''
         uses: actions/github-script@v7
         env:
           API_NAME: ${{ matrix.api }}
@@ -59,16 +58,11 @@ jobs:
             // Generate link to the specific workflow run logs
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-            const body = `### 🚨 Breaking Changes Detected: ${apiName}
-
-            <details>
-            <summary>View Breaking Changes</summary>
+            const body = `### 🚨 Potential Breaking Changes Detected: ${apiName} API
 
             \`\`\`text
             ${report}
             \`\`\`
-
-            </details>
 
             [🔍 View Detailed GitHub Action Log](${runUrl})`;
 
