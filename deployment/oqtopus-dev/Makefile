@@ -7,29 +7,6 @@ SHELL := bash
 -include .env
 export
 
-OPENAPI_URL ?= "http://localhost:8080"
-OPENAPI_DESCRIPTION ?= "Local server url"
-
-upload-openapi-user: ## Generate and Push User API OpenAPI Specification to S3
-	@TARGET_DIR=$(shell cd ../../backend/oas/user && pwd) \
-	TARGET_NAME="user" \
-	$(MAKE) upload-openapi
-
-upload-openapi: ## Generate and Push OpenAPI Specification to S3
-	@echo ""
-	@echo "▶️ Generating OpenAPI Specification ..."
-	@OPENAPI_URL=$(OPENAPI_URL) OPENAPI_DESCRIPTION=$(OPENAPI_DESCRIPTION) envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < $(TARGET_DIR)/root.yaml > $(TARGET_DIR)/root_dummy.yaml
-	@docker run --rm -v $(TARGET_DIR):/spec redocly/cli bundle /spec/root_dummy.yaml -o /spec/openapi_dummy.yaml
-	@rm $(TARGET_DIR)/root_dummy.yaml
-	@mv $(TARGET_DIR)/openapi_dummy.yaml ./openapi.yaml
-	@echo "✅ Generating Completed"
-	@echo ""
-	@echo "▶️ Pushing OpenAPI Specification to S3 Bucket ..."
-	@aws s3 cp ./openapi.yaml s3://$(OPENAPI_S3_BUCKET)/$(TARGET_NAME).yaml --profile $(PROFILE)
-	@rm ./openapi.yaml
-	@echo "✅ Pushing Completed"
-	@echo ""
-
 zip-user: ## Build User API Lambda Package
 	@$(MAKE) zip \
 	WORKSPACE=../../backend \
