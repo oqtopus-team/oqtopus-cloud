@@ -33,6 +33,7 @@ jobs:
           git show origin/develop:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
 
       - name: Run oasdiff
+        id: oasdiff
         uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: openapi_base.yaml
@@ -40,7 +41,7 @@ jobs:
           fail-on: WARN
 
       - name: Post PR comment
-        if: failure() && steps.breaking_check.outcome == 'failure'
+        if: failure() && steps.oasdiff.outcome == 'failure'
         run: |
           echo "🚨 Breaking changes detected in the ${{ matrix.api }} OpenAPI spec. Please review the changes."
           echo ${{ steps.breaking_check.outputs.breaking }}
