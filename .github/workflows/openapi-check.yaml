@@ -2,10 +2,7 @@ name: OpenAPI check
 
 on:
   pull_request:
-    branches:
-      - 'test/#335-auto-detect-oas-breaking-changes'
     paths:
-      - '.github/workflows/**'
       - 'backend/oas/admin/**'
       - 'backend/oas/provider/**'
       - 'backend/oas/user/**'
