@@ -44,35 +44,18 @@ jobs:
           base: openapi_base.yaml
           revision: backend/oas/${{ matrix.api }}/openapi.yaml
 
-      - name: Post PR comment if breaking changes detected
-        if: steps.oasdiff.outputs.breaking != 'No breaking changes'
+      - name: Manage PR comments on breaking changes
         uses: actions/github-script@v7
         env:
           API_NAME: ${{ matrix.api }}
           REPORT: ${{ steps.oasdiff.outputs.breaking }}
         with:
           script: |
-            const report = process.env.REPORT;
+            const report = process.env.REPORT || '';
             const apiName = process.env.API_NAME;
 
             // Stable identifier for this API’s comment:
             const marker = `<!-- oasdiff-breaking-${apiName} -->`;
-
-            const header = `### 🚨 Potential Breaking Changes Detected: ${apiName} API 🚨`;
-
-            // Generate link to the specific workflow run logs
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
-            const body = `${marker}
-            ${header}
-
-            \`\`\`text
-            ${report}
-            \`\`\`
-
-            [🔍 View Detailed GitHub Action Log](${runUrl})
-
-            *Last updated: ${new Date().toUTCString()}*`;
 
             // 1. Fetch ALL existing comments
             const comments = await github.paginate(github.rest.issues.listComments, {
@@ -88,7 +71,7 @@ jobs:
               comment.body.includes(marker)
             );
 
-            // 3. Delete the old one if it exists
+            // 3. Delete old
             if (botComment) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
@@ -97,10 +80,28 @@ jobs:
               });
             }
 
-            // 4. Create the new one (always at the bottom)
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
+            // 4. Create the new one if breaking change found (always at the bottom)
+            if (report.trim().length > 0) {
+              const header = `### 🚨 Potential Breaking Changes Detected: ${apiName} API 🚨`;
+
+              // Generate link to the specific workflow run logs
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+              const body = `${marker}
+              ${header}
+
+              \`\`\`text
+              ${report}
+              \`\`\`
+
+              [🔍 View Detailed GitHub Action Log](${runUrl})
+
+              *Last updated: ${new Date().toUTCString()}*`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
