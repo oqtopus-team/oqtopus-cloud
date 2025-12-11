@@ -35,7 +35,7 @@ devices.DeviceStatusUpdate:
       type: string
       enum:
         - available
-        - not-available
+        - unavailable
       nullable: false
   required:
     - status
