@@ -1113,12 +1113,6 @@ components:
         device_info:
           type: string
           example: '{"device_id": "Kawasaki", "qubits": []}'
-        device_type:
-          type: string
-          enum:
-            - QPU
-            - simulator
-          example: simulator
         status:
           type: string
           enum:
