@@ -52,6 +52,15 @@ zip-user_signup: ## Build user_signup API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/user_signup
 
+zip-openapi: ## Build OpenAPI yaml Lambda Package
+	@mkdir -p ./deploy-packages
+	@envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < ../../backend/oas/user/root.yaml > ./deploy-packages/openapi.yaml
+	@$(MAKE) zip WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/openapi \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/openapi
+
 zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker## Build All Lambda Packages
 
 zip:
@@ -104,6 +113,11 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 	@$(MAKE) deploy \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
 	BIN=./bin/pending-jobs-updater
+
+deploy-openapi: ## Deploy OpenAPI yaml Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-openapi \
+	BIN=./bin/openapi
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
 
