@@ -51,7 +51,7 @@ jobs:
           REPORT: ${{ steps.oasdiff.outputs.breaking }}
         with:
           script: |
-            const report = process.env.REPORT || '';
+            const report = process.env.REPORT;
             const apiName = process.env.API_NAME;
 
             // Stable identifier for this API’s comment:
@@ -81,7 +81,7 @@ jobs:
             }
 
             // 4. Create the new one if breaking change found (always at the bottom)
-            if (report.trim().length > 0) {
+            if (report != 'No breaking changes') {
               const header = `### 🚨 Potential Breaking Changes Detected: ${apiName} API 🚨`;
 
               // Generate link to the specific workflow run logs
