@@ -86,7 +86,7 @@ class FakeCognitoClient:
     def __init__(self):
         self.confirm_sign_up_exception = None
 
-    def delete_user(self, AccessToken=None):
+    def admin_delete_user(self, UserPoolId=None, Username=None):
         return {"Response": "Ok"}
 
 

@@ -152,6 +152,7 @@ def delete_user(
     event: Event,
     db: Session = Depends(get_db),
 ) -> None | UnauthorizedResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+    user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)
 
@@ -161,25 +162,6 @@ def delete_user(
         if environ.get("ALLOW_DELETION", "false").upper() != "TRUE":
             logger.error("user deletion is disabled")
             return UnauthorizedResponse(message="user deletion is disabled")
-
-        auth_header = event.headers.get("Authorization")
-        if not auth_header:
-            logger.error("authorization header not found")
-            return UnauthorizedResponse(message="authorization header not found")
-
-        token_parts = auth_header.split(" ")
-        if len(token_parts) != 2:
-            logger.error("authorization header provided with invalid format")
-            return UnauthorizedResponse(
-                message="authorization header provided with invalid format"
-            )
-
-        bearer_prefix, user_access_token = token_parts
-        if bearer_prefix.lower() != "bearer":
-            logger.error("authorization header provided with invalid format")
-            return UnauthorizedResponse(
-                message="authorization header provided with invalid format"
-            )
 
         # query
         stmt = select(User).where(User.email == event.state.owner)
@@ -206,7 +188,10 @@ def delete_user(
         db.commit()
 
         # delete from cognito
-        client.delete_user(AccessToken=user_access_token)
+        client.admin_delete_user(
+            UserPoolId=user_pool_id,
+            Username=query_result.email,
+        )
 
         return None
     except Exception as e:

@@ -69,7 +69,10 @@ def _create_request(
         "state": { "region": "test_region" }
     }
 
-    return Request(scope=scope)
+    request = Request(scope=scope)
+    request.state.user_pool_id = "dummy_user_pool_id"
+
+    return request
 
 
 def _create_cloud_trail_event(
@@ -663,42 +666,6 @@ def test_delete_user_with_no_whitelist_user(test_db):
 
     assert type(get_response) is NotFoundErrorResponse
     assert get_response.status_code == 404
-
-
-def test_delete_user_no_auth_header(test_db):
-    request = _create_request(headers=[])
-    request.state.owner = f"email_{1}"
-    response = delete_user(request, test_db)
-
-    assert type(response) is UnauthorizedResponse
-    assert response.status_code == 401
-    assert json.loads(response.body) == {
-        "message": "authorization header not found"
-    }
-
-
-def test_delete_user_no_bearer_in_auth_header(test_db):
-    request = _create_request(headers=[("Authorization".lower().encode(), "some_access_token".encode())])
-    request.state.owner = f"email_{1}"
-    response = delete_user(request, test_db)
-
-    assert type(response) is UnauthorizedResponse
-    assert response.status_code == 401
-    assert json.loads(response.body) == {
-        "message": "authorization header provided with invalid format"
-    }
-
-
-def test_delete_user_invalid_auth_header(test_db):
-    request = _create_request(headers=[("Authorization".lower().encode(), "not_a_bearer some_access_token".encode())])
-    request.state.owner = f"email_{1}"
-    response = delete_user(request, test_db)
-
-    assert type(response) is UnauthorizedResponse
-    assert response.status_code == 401
-    assert json.loads(response.body) == {
-        "message": "authorization header provided with invalid format"
-    }
 
 
 def test_delete_user_no_user(test_db):
