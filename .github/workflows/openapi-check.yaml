@@ -1,0 +1,104 @@
+name: OpenAPI check
+
+on:
+  pull_request:
+    paths:
+      - 'backend/oas/admin/**'
+      - 'backend/oas/provider/**'
+      - 'backend/oas/user/**'
+      - 'backend/oas/user_signup/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect-openapi-breaking-changes:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [admin, provider, user, user_signup]
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+
+      - name: Fetch base OpenAPI spec
+        id: fetch-base
+        run: |
+          # Make sure we have the latest base ref
+          git fetch --depth=1 origin ${{ github.base_ref }}
+
+          # Extract the OpenAPI spec from base into a temp file
+          git show origin/${{ github.base_ref }}:backend/oas/${{ matrix.api }}/openapi.yaml > openapi_base.yaml
+
+      - name: Run oasdiff
+        id: oasdiff
+        uses: oasdiff/oasdiff-action/breaking@main
+        with:
+          base: openapi_base.yaml
+          revision: backend/oas/${{ matrix.api }}/openapi.yaml
+
+      - name: Manage PR comments on breaking changes
+        uses: actions/github-script@v7
+        env:
+          API_NAME: ${{ matrix.api }}
+          REPORT: ${{ steps.oasdiff.outputs.breaking }}
+        with:
+          script: |
+            const report = process.env.REPORT;
+            const apiName = process.env.API_NAME;
+
+            // Stable identifier for this API’s comment:
+            const marker = `<!-- oasdiff-breaking-${apiName} -->`;
+
+            // 1. Fetch ALL existing comments
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            // 2. Find the old comment from this bot for this specific API
+            const botComment = comments.find(comment =>
+              comment.user?.login === 'github-actions[bot]' &&
+              typeof comment.body === 'string' &&
+              comment.body.includes(marker)
+            );
+
+            // 3. Delete old
+            if (botComment) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+              });
+            }
+
+            // 4. Create the new one if breaking change found (always at the bottom)
+            if (report != 'No breaking changes') {
+              const header = `### 🚨 Potential Breaking Changes Detected: ${apiName} API 🚨`;
+
+              // Generate link to the specific workflow run logs
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+              const body = `${marker}
+              ${header}
+
+              \`\`\`text
+              ${report}
+              \`\`\`
+
+              [🔍 View Detailed GitHub Action Log](${runUrl})
+
+              *Last updated: ${new Date().toUTCString()}*`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
