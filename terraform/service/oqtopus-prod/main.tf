@@ -45,7 +45,7 @@ module "user_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "LAMBDA"
   lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
