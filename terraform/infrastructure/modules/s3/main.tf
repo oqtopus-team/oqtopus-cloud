@@ -105,3 +105,31 @@ resource "aws_s3_bucket_logging" "this" {
   target_bucket = aws_s3_bucket.logs.id
   target_prefix = "s3-access-logs/"
 }
+
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    id     = "manage-old-logs"
+    status = "Enabled"
+
+    expiration {
+      days = 365
+    }
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER_IR"
+    }
+
+    transition {
+      days          = 180
+      storage_class = "DEEP_ARCHIVE"
+    }
+  }
+}
