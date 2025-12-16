@@ -21,7 +21,7 @@
 
 resource "aws_s3_bucket" "this" {
   bucket        = "${var.product}-${var.org}-${var.env}"
-  force_destroy = true
+  force_destroy = var.force_destroy_bucket
   tags = {
     Name = "${var.product}-${var.org}-${var.env}"
   }
@@ -73,7 +73,7 @@ resource "aws_s3_bucket_policy" "this" {
 
 resource "aws_s3_bucket" "logs" {
   bucket        = "${var.product}-${var.org}-${var.env}-logs"
-  force_destroy = true
+  force_destroy = var.force_destroy_bucket
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-logs"
   }
