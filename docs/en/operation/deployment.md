@@ -208,7 +208,7 @@ SERVER_COGNITO_CLIENT_ID=bazqux
 SERVER_COGNITO_USER_NAME=bazqux
 SERVER_COGNITO_USER_PASSWORD=BazQux@123
 
-OPENAPI_URL=https://hoge-hoge.execute-api.ap-northeast-1.amazonaws.com
+OPENAPI_URL=https://foo-bar.execute-api.ap-northeast-1.amazonaws.com
 OPENAPI_DESCRIPTION="your url description"
 ```
 
