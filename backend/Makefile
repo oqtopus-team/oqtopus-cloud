@@ -95,13 +95,6 @@ run-user_signup: ## Start the user_signup API
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
 
-run-openapi: ## Start the OpenAPI yaml API
-	@cp oas/user/openapi.yaml oqtopus_cloud/openapi/openapi.yaml
-	@trap "rm oqtopus_cloud/openapi/openapi.yaml" EXIT; \
-	export POWERTOOLS_METRICS_NAMESPACE=openapi && \
-	export POWERTOOLS_SERVICE_NAME=openapi && \
-	poetry run uvicorn oqtopus_cloud.openapi.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
-
 up: ## Start the DB
 	@docker compose up
 	@poetry run python storage/init_storage.py
