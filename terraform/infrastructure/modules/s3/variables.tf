@@ -19,7 +19,8 @@ variable "force_destroy_bucket" {
   default = false;
 }
 
-variable "env" {
-  description = "environment name"
-  type        = string
+variable "access_logs_expiration_in_days" {
+  description = "Number of days after which objects in the log bucket expire"
+  type        = number
+  default     = 365
 }
