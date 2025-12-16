@@ -14,9 +14,9 @@ variable "env" {
 }
 
 variable "force_destroy_bucket" {
-  description = "Should allow S3 bucket to be destroyed even if it contains objects?";
-  type = bool;
-  default = false;
+  description = "Should allow S3 bucket to be destroyed even if it contains objects?"
+  type        = bool
+  default     = false
 }
 
 variable "access_logs_expiration_in_days" {

@@ -99,7 +99,7 @@ resource "aws_s3_bucket_public_access_block" "logs" {
 }
 
 resource "aws_s3_bucket_policy" "logs" {
-  bucket     = aws_s3_bucket.logs.id
+  bucket = aws_s3_bucket.logs.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -125,7 +125,7 @@ resource "aws_s3_bucket_policy" "logs" {
         Principal = {
           Service = "logging.s3.amazonaws.com"
         }
-        Action = "s3:PutObject"
+        Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.logs.arn}/*"
         Condition = {
           ArnLike = {
