@@ -88,3 +88,13 @@ module "s3" {
   org     = var.org
   env     = var.env
 }
+
+module "cloudtrail" {
+  source = "../modules/cloudtrail"
+
+  product                        = var.product
+  org                            = var.org
+  env                            = var.env
+  s3_target_bucket_arn           = module.s3.s3_bucket_arn
+  s3_log_bucket_id               = module.s3.s3_log_bucket_id
+}

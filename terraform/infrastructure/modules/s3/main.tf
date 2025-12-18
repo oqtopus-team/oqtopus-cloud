@@ -19,7 +19,13 @@
 *
 */
 
+data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
+
+locals {
+  trail_name = "s3-api-trail"
+  trail_arn = "arn:aws:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
+}
 
 resource "aws_s3_bucket" "this" {
   bucket        = "${var.product}-${var.org}-${var.env}"
@@ -122,7 +128,7 @@ resource "aws_s3_bucket_policy" "logs" {
         }
       },
       {
-        Sid    = "S3ServerAccessLogsPolicy"
+        Sid    = "AllowS3ServerAccessLogging"
         Effect = "Allow"
         Principal = {
           Service = "logging.s3.amazonaws.com"
@@ -135,6 +141,35 @@ resource "aws_s3_bucket_policy" "logs" {
           }
           StringEquals = {
             "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      },
+      {
+        Sid    = "AllowCloudTrailAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.logs.arn
+        Condition = {
+          StringEquals = {
+            "aws:SourceArn" = local.trail_arn
+          }
+        }
+      },
+      {
+        Sid    = "AllowCloudTrailWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "s3:PutObject"
+        Resource = "${aws_s3_bucket.logs.arn}/s3-api-trail/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+            "aws:SourceArn" = local.trail_arn
           }
         }
       }
