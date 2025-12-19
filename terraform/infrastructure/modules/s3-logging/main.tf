@@ -24,7 +24,7 @@ data "aws_caller_identity" "current" {}
 
 locals {
   trail_name = "s3-api-trail"
-  trail_arn = "arn:aws:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
+  trail_arn  = "arn:aws:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
 }
 
 resource "aws_s3_bucket" "logs" {
@@ -98,7 +98,7 @@ resource "aws_s3_bucket_policy" "logs" {
         Principal = {
           Service = "cloudtrail.amazonaws.com"
         }
-        Action = "s3:GetBucketAcl"
+        Action   = "s3:GetBucketAcl"
         Resource = aws_s3_bucket.logs.arn
         Condition = {
           StringEquals = {
@@ -112,11 +112,11 @@ resource "aws_s3_bucket_policy" "logs" {
         Principal = {
           Service = "cloudtrail.amazonaws.com"
         }
-        Action = "s3:PutObject"
+        Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.logs.arn}/s3-api-trail/*"
         Condition = {
           StringEquals = {
-            "s3:x-amz-acl" = "bucket-owner-full-control"
+            "s3:x-amz-acl"  = "bucket-owner-full-control"
             "aws:SourceArn" = local.trail_arn
           }
         }
@@ -161,9 +161,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
 }
 
 resource "aws_cloudtrail" "s3_api_trail" {
-  name                      = "${local.trail_name}"
-  s3_bucket_name            = aws_s3_bucket.logs.id
-  s3_key_prefix             = "${local.trail_name}"
+  name           = local.trail_name
+  s3_bucket_name = aws_s3_bucket.logs.id
+  s3_key_prefix  = local.trail_name
 
   include_global_service_events = false
 
