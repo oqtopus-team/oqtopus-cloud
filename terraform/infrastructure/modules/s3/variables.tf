@@ -18,9 +18,3 @@ variable "force_destroy_bucket" {
   type        = bool
   default     = false
 }
-
-variable "access_logs_expiration_in_days" {
-  description = "Number of days after which objects in the log bucket expire"
-  type        = number
-  default     = 365
-}
