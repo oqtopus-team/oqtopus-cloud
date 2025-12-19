@@ -35,9 +35,12 @@ module "s3-logging" {
 | Name | Type |
 |------|------|
 | [aws_cloudtrail.s3_api_trail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudtrail) | resource |
+| [aws_cloudwatch_log_group.s3_api_trail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_iam_role.s3_api_trail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.s3_api_trail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_s3_bucket.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket_lifecycle_configuration.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_lifecycle_configuration) | resource |
-| [aws_s3_bucket_logging.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_logging) | resource |
+| [aws_s3_bucket_logging.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_logging) | resource |
 | [aws_s3_bucket_policy.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_public_access_block.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
@@ -48,11 +51,12 @@ module "s3-logging" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_access_logs_expiration_in_days"></a> [access\_logs\_expiration\_in\_days](#input\_access\_logs\_expiration\_in\_days) | Number of days after which objects in the log bucket expire | `number` | `365` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_force_destroy_bucket"></a> [force\_destroy\_bucket](#input\_force\_destroy\_bucket) | Should allow S3 log bucket to be destroyed even if it contains objects? | `bool` | `false` | no |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
+| <a name="input_s3_api_trail_cloudwatch_retention_in_days"></a> [s3\_api\_trail\_cloudwatch\_retention\_in\_days](#input\_s3\_api\_trail\_cloudwatch\_retention\_in\_days) | Number of days to retain S3 API CloudTrail events in CloudWatch | `number` | `30` | no |
+| <a name="input_s3_logs_expiration_in_days"></a> [s3\_logs\_expiration\_in\_days](#input\_s3\_logs\_expiration\_in\_days) | Number of days after which objects in the log bucket expire | `number` | `365` | no |
 | <a name="input_s3_target_bucket_arn"></a> [s3\_target\_bucket\_arn](#input\_s3\_target\_bucket\_arn) | ARN of the S3 target bucket to be monitored by the trail | `string` | n/a | yes |
 | <a name="input_s3_target_bucket_name"></a> [s3\_target\_bucket\_name](#input\_s3\_target\_bucket\_name) | name of the S3 target bucket to be monitored by the trail | `string` | n/a | yes |
 <!-- END_TF_DOCS -->

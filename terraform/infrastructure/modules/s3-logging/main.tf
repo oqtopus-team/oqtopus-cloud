@@ -125,7 +125,7 @@ resource "aws_s3_bucket_policy" "logs" {
   })
 }
 
-resource "aws_s3_bucket_logging" "this" {
+resource "aws_s3_bucket_logging" "logs" {
   bucket = var.s3_target_bucket_name
 
   target_bucket = aws_s3_bucket.logs.id
@@ -140,7 +140,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     status = "Enabled"
 
     expiration {
-      days = var.access_logs_expiration_in_days
+      days = var.s3_logs_expiration_in_days
     }
 
     transition {
@@ -160,6 +160,51 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "s3_api_trail" {
+  name              = "/aws/cloudtrail/${local.trail_name}"
+  retention_in_days = var.s3_api_trail_cloudwatch_retention_in_days
+
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-${local.trail_name}-cloudwatch-logs"
+  }
+}
+
+resource "aws_iam_role" "s3_api_trail" {
+  name = "${var.product}-${var.org}-${var.env}-cloudwatch-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "s3_api_trail" {
+  name = "${var.product}-${var.org}-${var.env}-${local.trail_name}-cloudwatch-policy"
+  role = aws_iam_role.s3_api_trail.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "${aws_cloudwatch_log_group.s3_api_trail.arn}:*"
+      }
+    ]
+  })
+}
+
 resource "aws_cloudtrail" "s3_api_trail" {
   name           = local.trail_name
   s3_bucket_name = aws_s3_bucket.logs.id
@@ -176,6 +221,9 @@ resource "aws_cloudtrail" "s3_api_trail" {
       values = ["${var.s3_target_bucket_arn}/*"]
     }
   }
+
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.s3_api_trail.arn}:*"
+  cloud_watch_logs_role_arn  = aws_iam_role.s3_api_trail.arn
 
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-${local.trail_name}"

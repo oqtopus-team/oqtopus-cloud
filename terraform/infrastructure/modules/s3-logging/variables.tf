@@ -29,8 +29,14 @@ variable "force_destroy_bucket" {
   default     = false
 }
 
-variable "access_logs_expiration_in_days" {
+variable "s3_logs_expiration_in_days" {
   description = "Number of days after which objects in the log bucket expire"
   type        = number
   default     = 365
+}
+
+variable "s3_api_trail_cloudwatch_retention_in_days" {
+  description = "Number of days to retain S3 API CloudTrail events in CloudWatch"
+  type        = number
+  default     = 30
 }
