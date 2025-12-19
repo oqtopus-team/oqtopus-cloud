@@ -87,6 +87,7 @@ module "s3" {
   product = var.product
   org     = var.org
   env     = var.env
+  force_destroy_bucket           = true
 }
 
 module "s3-logging" {
