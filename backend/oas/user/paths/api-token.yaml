@@ -4,43 +4,6 @@ components:
       $ref: './schemas/security.yaml#/BearerAuth'
 
 api-token:
-  get:
-    tags:
-      - api-token
-    summary: "get api token"
-    description: "Get api token"
-    operationId: get_api_token
-    security:
-      - BearerAuth: []
-    responses:
-      "200":
-        description: "Return api token"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/api-token.yaml#/api-token.ApiToken"
-      "403":
-        description: Frobidden
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.ForbiddenError"
-            example:
-              message: Frobidden
-      "404":
-        description: "Not Found"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: "Not found the specified user"
-      "500":
-        description: "Internal Server Error"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
   post:
     tags:
       - api-token
@@ -89,6 +52,45 @@ api-token:
     responses:
       "200":
         description: "Delete api token"
+      "403":
+        description: Frobidden
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.ForbiddenError"
+            example:
+              message: Frobidden
+      "404":
+        description: "Not Found"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: "Not found the specified user"
+      "500":
+        description: "Internal Server Error"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+
+api-token.status:
+  get:
+    tags:
+      - api-token
+    summary: "get api token status"
+    description: "Get api token status"
+    operationId: get_api_token_status
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: "Return api token status"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/api-token.yaml#/api-token.ApiTokenStatus"
       "403":
         description: Frobidden
         content:

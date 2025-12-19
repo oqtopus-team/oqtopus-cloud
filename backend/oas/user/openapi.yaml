@@ -528,43 +528,6 @@ paths:
               example:
                 message: Internal server error
   /api-token:
-    get:
-      tags:
-        - api-token
-      summary: get api token
-      description: Get api token
-      operationId: get_api_token
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Return api token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/api-token.ApiToken'
-        '403':
-          description: Frobidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Frobidden
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Not found the specified user
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
     post:
       tags:
         - api-token
@@ -613,6 +576,44 @@ paths:
       responses:
         '200':
           description: Delete api token
+        '403':
+          description: Frobidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+              example:
+                message: Frobidden
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Not found the specified user
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /api-token/status:
+    get:
+      tags:
+        - api-token
+      summary: get api token status
+      description: Get api token status
+      operationId: get_api_token_status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return api token status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api-token.ApiTokenStatus'
         '403':
           description: Frobidden
           content:
@@ -1509,17 +1510,27 @@ components:
           type: string
           example: sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip
       required: []
+    api-token.Expiration:
+      type: string
+      format: date-time
+      example: '2025-01-09T12:34:56'
+      description: The expiration date of the api token
     api-token.ApiToken:
       type: object
       properties:
+        api_token_id:
+          type: string
+          description: The api token id
         api_token_secret:
           type: string
           description: The api token secret
         api_token_expiration:
-          type: string
-          format: date-time
-          example: '2025-01-09T12:34:56'
-          description: The expiration date of the api token
+          $ref: '#/components/schemas/api-token.Expiration'
+    api-token.ApiTokenStatus:
+      type: object
+      properties:
+        api_token_expiration:
+          $ref: '#/components/schemas/api-token.Expiration'
     announcements.GetAnnouncementResponse:
       type: object
       properties:

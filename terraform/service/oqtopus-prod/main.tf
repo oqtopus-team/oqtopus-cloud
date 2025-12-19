@@ -45,10 +45,11 @@ module "user_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "LAMBDA"
   lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
+  lambda_authorizer_alias                = module.lambda_auth.lambda_auth_alias_name
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
@@ -63,8 +64,6 @@ module "user_api" {
   sse_container_log_name                 = "ssecontainer.log"
   sse_user_program_name                  = "userprogram.py"
   sse_zip_file_name                      = "sselog_{job_id}.zip"
-  allow_deletion                         = "false"
-  editable_fields                        = "[\"name\", \"organization\"]"
 }
 
 module "provider_api" {

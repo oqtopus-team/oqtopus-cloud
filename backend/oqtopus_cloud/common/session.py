@@ -72,9 +72,11 @@ def get_db() -> Generator:
     SQLALCHEMY_DATABASE_URL = (
         f"{connector}://{secret['username']}:{secret['password']}@{host}/{db_name}"
     )
-
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
+        connect_args={
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+        },
     )
     SessionLocal = sessionmaker(
         autoflush=False,
