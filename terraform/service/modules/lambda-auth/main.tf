@@ -59,6 +59,7 @@ resource "aws_lambda_function" "this" {
     size = "512"
   }
   filename                       = "${path.module}/bin/${var.identifier}/lambda.zip"
+  source_code_hash               = filebase64sha256("${path.module}/bin/${var.identifier}/lambda.zip")
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -82,10 +83,17 @@ resource "aws_lambda_function" "this" {
   snap_start {
     apply_on = "PublishedVersions"
   }
+  publish = true
 
   lifecycle {
     ignore_changes = [tags["github-sha"]]
   }
+}
+
+resource "aws_lambda_alias" "this" {
+  name             = "snapstart"
+  function_name    = aws_lambda_function.this.function_name
+  function_version = aws_lambda_function.this.version
 }
 
 resource "aws_iam_role" "lambda" {
