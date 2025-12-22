@@ -25,3 +25,7 @@ output "s3" {
   value       = module.s3
   description = "The s3 information"
 }
+
+output "aws_account_id" {
+  value = data.aws_caller_identity.current.account_id
+}

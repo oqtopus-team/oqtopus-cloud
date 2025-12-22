@@ -1,3 +1,4 @@
+data "aws_caller_identity" "current" {}
 
 module "network" {
   source   = "../modules/network"

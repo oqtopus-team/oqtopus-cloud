@@ -172,7 +172,7 @@ resource "aws_internet_gateway" "this" {
 
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat_eip" {
-  for_each = var.public_subnets
+  for_each = aws_subnet.public
   domain   = "vpc"
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-nat-eip-${each.key}"
@@ -190,29 +190,23 @@ resource "aws_nat_gateway" "nat_gw" {
   depends_on = [aws_internet_gateway.this]
 }
 
-locals {
-  nat_gateway_per_az = { for k, v in var.public_subnets : v.az => aws_nat_gateway.nat_gw[k].id }
-}
-
 ## Public Route Table
 resource "aws_route_table" "public" {
-  for_each = var.public_subnets
-  vpc_id   = aws_vpc.this.id
+  vpc_id = aws_vpc.this.id
   tags = {
-    Name = "${var.product}-${var.org}-${var.env}-public-rt-${each.key}"
+    Name = "${var.product}-${var.org}-${var.env}-public-rt"
     Type = "public"
   }
 }
 resource "aws_route" "public_default_route" {
-  for_each               = var.public_subnets
-  route_table_id         = aws_route_table.public[each.key].id
+  route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this.id
 }
 resource "aws_route_table_association" "public_assoc" {
-  for_each       = var.public_subnets
-  subnet_id      = aws_subnet.public[each.key].id
-  route_table_id = aws_route_table.public[each.key].id
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.public.id
 }
 
 
@@ -228,13 +222,11 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route" "private_default_route" {
-  for_each = {
-    for k, rt in aws_route_table.private : k => rt
-    if contains(keys(local.nat_gateway_per_az), var.private_subnets[k].az)
-  }
+  for_each               = aws_route_table.private
   route_table_id         = each.value.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = local.nat_gateway_per_az[var.private_subnets[each.key].az]
+  # Route private subnets to the NAT gateway in the same AZ.
+  nat_gateway_id = aws_nat_gateway.nat_gw["public-${substr(aws_subnet.private[each.key].availability_zone, length(var.region), 1)}"].id
 }
 
 ## Route Table Associations
