@@ -189,6 +189,11 @@ resource "aws_iam_role_policy_attachment" "cloudtrail_access" {
   policy_arn = aws_iam_policy.cloudtrail_access.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cognito_admin_delete_user" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cognito_admin_delete_user.arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -218,6 +223,11 @@ resource "aws_iam_policy" "lambda_tag_resource" {
 resource "aws_iam_policy" "cloudtrail_access" {
   name   = "${var.product}-${var.org}-${var.env}-cloudtrail-access-${var.identifier}"
   policy = data.aws_iam_policy_document.cloudtrail_permission.json
+}
+
+resource "aws_iam_policy" "cognito_admin_delete_user" {
+  name   = "${var.product}-${var.org}-${var.env}-cognito-admin-delete-user-${var.identifier}"
+  policy = data.aws_iam_policy_document.cognito_admin_delete_user.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -268,6 +278,14 @@ data "aws_iam_policy_document" "cloudtrail_permission" {
     actions   = ["cloudtrail:LookupEvents"]
     effect    = "Allow"
     resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cognito_admin_delete_user" {
+  statement {
+    actions   = ["cognito-idp:AdminDeleteUser"]
+    effect    = "Allow"
+    resources = var.cognito_user_pool_arns
   }
 }
 
