@@ -4,7 +4,9 @@ from typing import Optional
 
 import boto3
 import jwt
-from sqlalchemy import select
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
+from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
@@ -13,6 +15,8 @@ from oqtopus_cloud.lambda_auth.conf import logger
 
 jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
+
+ph = PasswordHasher()
 
 
 class AuthError(Exception):
@@ -117,6 +121,11 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     if api_token is None or api_token == "":
         raise AuthError("API token is None")
 
+    try:
+        api_token_id, api_token_secret = api_token.split(".")
+    except ValueError:
+        raise AuthError("API token is malformed")
+
     # Get environment variables
     try:
         USER_POOL_ID = os.environ["AUTH_USER_POOL_ID"]
@@ -128,30 +137,44 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         dbs = get_db()
         db = next(dbs)
 
-        # Get the MFA status from the database
-        stmt_user = select(User).where(User.api_token_secret == api_token)
-        user = db.execute(stmt_user).scalars().first()
+        select_stmt = select(
+            User.mfa_status,
+            User.api_token_hash,
+            User.api_token_expiration,
+            User.cognito_id,
+        ).where(User.api_token_id == api_token_id)
+        verification_data = db.execute(select_stmt).first()
+        if verification_data is None:
+            raise AuthError("Invalid API token")
 
-        if user is None:
-            raise AuthError("API token is not found")
+        mfa_status, api_token_hash, api_token_expiration, cognito_id = verification_data
 
-        # get mfa_status from the database
-        mfa_status = user.mfa_status
+        # Check the API token hash
+        try:
+            ph.verify(api_token_hash, api_token_secret)
+        except VerifyMismatchError:
+            raise AuthError("Invalid API token")
+        except (VerificationError, InvalidHash):
+            raise AuthError("API token verification error")
 
-        # Get the API token expiration from the database
-        api_token_expiration = user.api_token_expiration
+        if ph.check_needs_rehash(api_token_hash):
+            update_stmt = (
+                update(User)
+                .where(User.api_token_id == api_token_id)
+                .values(api_token_hash=ph.hash(api_token_secret))
+            )
+            db.execute(update_stmt)
+            db.commit()
 
-        # Get the Cognito ID from the database
-        cognito_id = user.cognito_id
+        # Check the API token expiration
+        if (api_token_expiration is None) or (
+            api_token_expiration.astimezone(utc) < datetime.now(utc)
+        ):
+            raise AuthError("API token is expired")
+
         db.close()
     except Exception as e:
         raise AuthError(f"Database error {e}")
-
-    # Check the API token expiration
-    if (api_token_expiration is None) or (
-        api_token_expiration.astimezone(utc) < datetime.now(utc)
-    ):
-        raise AuthError("API token is expired")
 
     if mfa_status != MFAStatus.enabled:
         raise AuthError("MFA is not enabled for this user")

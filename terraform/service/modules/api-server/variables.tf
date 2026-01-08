@@ -127,6 +127,12 @@ variable "lambda_authorizer_arn" {
   description = "ARN of the Lambda function used for authorizer"
 }
 
+variable "lambda_authorizer_alias" {
+  type        = string
+  default     = ""
+  description = "Alias of the Lambda function used for authorizer"
+}
+
 variable "storage_driver" {
   type        = string
   default     = "s3"

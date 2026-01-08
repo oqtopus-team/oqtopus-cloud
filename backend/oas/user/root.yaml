@@ -29,6 +29,8 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
   /api-token:
     $ref: ./paths/api-token.yaml#/api-token
+  /api-token/status:
+    $ref: ./paths/api-token.yaml#/api-token.status
   /announcements:
     $ref: ./paths/announcements.yaml#/announcements
   /announcements/{announcement_id}:

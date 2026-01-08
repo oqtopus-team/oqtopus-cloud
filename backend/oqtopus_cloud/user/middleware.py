@@ -23,7 +23,7 @@ class CustomMiddleware(BaseHTTPMiddleware):
 
         try:
             if os.getenv("ENV") == "local":
-                request.state.owner = "admin"
+                request.state.owner = "admin-email"
             else:
                 owner = APIGatewayProxyEvent(
                     request.scope["aws.event"]

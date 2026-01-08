@@ -49,6 +49,7 @@ module "user_api" {
   lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type               = "LAMBDA"
   lambda_authorizer_arn         = module.lambda_auth.lambda_auth_arn
+  lambda_authorizer_alias       = module.lambda_auth.lambda_auth_alias_name
   cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   power_tools_metrics_namespace = "user-api"
   power_tools_service_name      = "user-api"

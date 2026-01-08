@@ -156,5 +156,6 @@ def get_user_available_devices(username: str, db: Session) -> list[str] | str:
             return available_devices
         else:
             return []
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to list available devices: {e}")
         return []

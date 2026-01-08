@@ -19,7 +19,7 @@ from oqtopus_cloud.provider.routers.jobs import (
     update_job_status,
 )
 from oqtopus_cloud.provider.schemas.errors import (
-    InternalServerErrorResponse,
+    BadRequestResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     EstimationResult,
@@ -258,7 +258,7 @@ def test_get_jobs_invalid_fields(
     response = client.get("/jobs?device_id=SC2&fields=XXX,status,YYY")
     actual = response.json()
     expect = json.loads(
-        InternalServerErrorResponse(
+        BadRequestResponse(
             message=f"fields {["XXX", "YYY"]} is invalid"
         ).body.decode()
     )
