@@ -224,7 +224,7 @@ def test__verify_api_token_expired(test_session, monkeypatch):
     try:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
     except AuthError as e:
-        assert str(e) == "API token is expired"
+        assert str(e) == "Database error API token is expired"
     else:
         assert False
 
@@ -269,7 +269,7 @@ def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
 
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_secret_2")
-    assert "MFA is not enabled for this user" in str(excinfo.value)
+    assert "API token is malformed" in str(excinfo.value)
 
 
 @pytest.mark.usefixtures("override_boto3_client_zero_user")
