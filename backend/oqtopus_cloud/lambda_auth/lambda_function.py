@@ -5,11 +5,11 @@ from typing import Optional
 import boto3
 import jwt
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHash
+from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
 from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.lambda_auth.conf import logger
 
@@ -37,22 +37,26 @@ def _validate_user_status(
         # Get the user status from the database
         if email:
             stmt = select(User).where(
-                User.email == email, User.userstatus == "approved"
+                User.email == email, User.userstatus == UserStatus.approved
             )
             user = db.execute(stmt).scalar()
             db.close()
         elif cognito_id:
             stmt = select(User).where(
-                User.cognito_id == cognito_id, User.userstatus == "approved"
+                User.cognito_id == cognito_id, User.userstatus == UserStatus.approved
             )
             user = db.execute(stmt).scalar()
             db.close()
         else:
-            raise AuthError("Username or cognito_id is not given")
+            raise AuthError("email or cognito_id is not given")
 
         if user is None:
             logger.info(f"User {email} or {cognito_id} is not approved")
             return False
+        # Get the MFA status from the database
+        # only for the case from oqtopus-frontend
+        if email and user.mfa_status != MFAStatus.enabled:
+            raise AuthError("MFA is not enabled for this user")
         return True
     except Exception as e:
         logger.error(f"Failed to get user status: {e}")
@@ -134,6 +138,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         db = next(dbs)
 
         select_stmt = select(
+            User.mfa_status,
             User.api_token_hash,
             User.api_token_expiration,
             User.cognito_id,
@@ -142,7 +147,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         if verification_data is None:
             raise AuthError("Invalid API token")
 
-        api_token_hash, api_token_expiration, cognito_id = verification_data
+        mfa_status, api_token_hash, api_token_expiration, cognito_id = verification_data
 
         # Check the API token hash
         try:
@@ -168,9 +173,11 @@ def _verify_api_token(api_token: Optional[str]) -> str:
             raise AuthError("API token is expired")
 
         db.close()
-
     except Exception as e:
         raise AuthError(f"Database error {e}")
+
+    if mfa_status != MFAStatus.enabled:
+        raise AuthError("MFA is not enabled for this user")
 
     if cognito_id is None:
         raise AuthError("Cognito id is not found")

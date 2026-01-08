@@ -111,7 +111,7 @@ jobs:
         poetry install
     - name: Combine coverage files
       run: |
-        poetry run coverage combine .coverage-common .coverage-user .coverage-provider .coverage-admin
+        poetry run coverage combine .coverage-common .coverage-user .coverage-provider .coverage-admin .coverage-lambda_auth .coverage-user_signup
         poetry run coverage xml
     - name: Upload combined coverage to Codecov
       uses: codecov/codecov-action@v5

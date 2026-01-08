@@ -40,9 +40,13 @@ sequenceDiagram
     alt Request from Oqtopus-frontend
       LA->>C: Verify user's authentication token
       C-->>LA: Success response
+      LA->>DB: Verify MFA status
+      DB-->>LA: Status "enabled"
       LA->>DB: Verify user's account status
       DB-->>LA: Status not "suspended"
     else Request from QURI Parts Oqtopus
+      LA->>DB: Verify MFA status
+      DB-->>LA: Status "enabled"
       LA->>DB: Verify user's API token
       DB-->>LA: Token is valid
       LA->>C: Check if the user is registered in Cognito
@@ -54,4 +58,31 @@ sequenceDiagram
     AG->>L: Forward request
     L->>L: Handle the request
     L-->>U: Response to the request
+```
+
+## User Job-related Requests (failure case due to MFA status "disabled")
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant AG as API Gateway
+    participant LA as Lambda Authorizer
+    participant C as Cognito
+    participant DB as RDS
+    participant L as Lambda
+
+    U->>AG: Job-related request
+    AG->>LA: Forward authentication information
+    alt Request from Oqtopus-frontend
+      LA->>C: Verify user's authentication token
+      C-->>LA: Success response
+      LA->>DB: Verify MFA status
+      DB-->>LA: Status "disabled"
+    else Request from QURI Parts Oqtopus
+      LA->>DB: Verify MFA status
+      DB-->>LA: Status "disabled"
+    end
+    LA->>AG: Error response
+    AG->>U: Forward response
 ```

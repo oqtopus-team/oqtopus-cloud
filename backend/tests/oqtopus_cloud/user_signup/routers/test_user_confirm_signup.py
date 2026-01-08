@@ -2,7 +2,7 @@ from datetime import datetime
 
 from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.user_signup.lambda_function import app
 from oqtopus_cloud.user_signup.routers.confirm_signup import cleanup_user
@@ -38,6 +38,7 @@ def _get_model(n: int) -> User:
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
+        "mfa_status": MFAStatus.disabled,
         "api_token_id": None,
         "api_token_hash": None,
         "api_token_expiration": None,
@@ -49,13 +50,17 @@ def _get_model(n: int) -> User:
 
 def test_confirm_confirm(test_db):
     test_db.flush()
-    test_db.add(_get_model(2))
+    test_db.add(_get_model(1))
     test_db.commit()
     body = ConfirmationSignupRequest(
         email="email1@example.com", confirmation_code="confirmation_code_1"
     )
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 200
+    # confirm mfa_status is enabled
+    user = test_db.query(User).filter(User.email == "email1@example.com").first()
+    assert user is not None
+    assert user.mfa_status == MFAStatus.enabled
 
 
 def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
@@ -79,7 +84,7 @@ def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
     assert response.status_code == 400
     # confirm the user is NOT registered
     user = test_db.query(User).filter(User.email == "email1@example.com").first()
-    assert user.username == "username_1"
+    assert user is None
 
 
 def test_confirm_signup_exception(test_db, fake_cognito_client_fixture):
