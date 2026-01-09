@@ -5,6 +5,7 @@ on:
       - develop
     paths:
       - 'backend/oqtopus_cloud/**'
+  workflow_dispatch:
 
 jobs:
   deployment:
