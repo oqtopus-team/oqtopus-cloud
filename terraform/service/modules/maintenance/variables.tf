@@ -24,3 +24,8 @@ variable "lambda_handler" {
   description = "The handler for the Lambda function"
   type        = string
 }
+
+variable "log_level" {
+  description = "The log level for the Lambda function"
+  type        = string
+}

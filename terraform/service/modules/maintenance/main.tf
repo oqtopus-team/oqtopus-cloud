@@ -26,6 +26,14 @@ data "aws_caller_identity" "current" {}
 resource "aws_lambda_function" "this" {
   architectures = ["x86_64"]
 
+  environment {
+    variables = merge(
+      {
+        LOG_LEVEL = var.log_level
+      }
+    )
+  }
+
   ephemeral_storage {
     size = "512"
   }
@@ -99,7 +107,6 @@ data "aws_iam_policy_document" "lambda_execution" {
     actions   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
     effect    = "Allow"
     resources = ["*"]
-
   }
 }
 
@@ -119,12 +126,16 @@ data "aws_iam_policy_document" "lambda_manager" {
       "lambda:ListFunctions",
       "lambda:ListVersionsByFunction",
       "lambda:ListAliases",
-      "lambda:GetFunction",
       "lambda:DeleteFunction"
     ]
     effect    = "Allow"
     resources = ["*"]
-
+  }
+  statement {
+    sid       = "PreventDeletingLatest"
+    actions   = ["lambda:DeleteFunction"]
+    effect    = "Deny"
+    resources = ["arn:aws:lambda:*:*:function:*:$LATEST"]
   }
 }
 

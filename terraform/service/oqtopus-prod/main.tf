@@ -176,6 +176,7 @@ module "lambda_version_cleaner" {
   identifier     = "version-cleaner"
   region         = var.region
   lambda_handler = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
+  log_level      = "INFO"
 }
 
 module "vpc_endpoint" {
