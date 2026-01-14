@@ -1,10 +1,10 @@
 import json
 from datetime import datetime
-from oqtopus_cloud.user.schemas.settings import EditableField
 import pytz
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from starlette.requests import Request
 from typing import Any, Dict
+from sqlalchemy import select
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.user.lambda_function import app
@@ -20,6 +20,7 @@ from oqtopus_cloud.user.schemas.errors import (
     UnauthorizedResponse,
 )
 from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize
 from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 
@@ -57,6 +58,28 @@ def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
     return WhitelistUser(**model_dict)
+
+
+def _get_job_model(n: int, email: str, job_type: str = "sampling") -> Job:
+    model_dict = {
+        "id": f"testjob{n}id",
+        "owner": email,
+        "name": f"testjob{n}",
+        "description": f"test job {n}",
+        "device_id": "Kawasaki",
+        "job_type": job_type,
+        "job_info": json.dumps({"program": ["code"]}),
+        "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
+        "simulator_info": json.dumps({"this_is": "simulator_info"}),
+        "mitigation_info": json.dumps(
+            {"field1": "value1", "field2": "value2", "field3": "value3"}
+        ),
+        "status": "submitted",
+        "shots": 1000,
+        "submitted_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+        "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+    }
+    return Job(**model_dict)
 
 
 def _create_request(
@@ -440,6 +463,77 @@ def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_cl
     assert actual == expected
 
 
+def test_get_user_should_skip_login_events_when_disabled(test_db, monkeypatch, fake_cloud_trails_client_fixture):
+    monkeypatch.setenv("LOGIN_HISTORY_ENABLED", "false")
+    n = 1
+    user_cognito_id = "test_cognito_id"
+    test_db.flush()
+    user = _get_model(n)
+    user.cognito_id = user_cognito_id
+    test_db.add(user)
+    test_db.commit()
+
+    fake_cloud_trails_client_fixture.events = [{
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id),
+        ]}, {
+        "Events": [
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3")
+        ]
+    }]
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    actual = get_user(request, test_db)
+
+    expected = GetOneUserResponse(
+        id=1,
+        email="email_1",
+        name="username_1",
+        organization="organization_1",
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=None
+    )
+
+    assert actual == expected
+
+
+def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
+    monkeypatch.setenv("VISIBLE_FIELDS", '["email", "organization"]')
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model(n))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    actual = get_user(request, test_db)
+
+    expected = GetOneUserResponse(
+        id=None,
+        email="email_1",
+        name=None,
+        organization="organization_1",
+        created_at=None,
+        login_events=[]
+    )
+
+    assert actual == expected
+
+    monkeypatch.setenv("VISIBLE_FIELDS", '["id", "name", "created_at"]')
+    actual2 = get_user(request, test_db)
+    expected2 = GetOneUserResponse(
+        id=1,
+        email=None,
+        name="username_1",
+        organization=None,
+        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        login_events=[]
+    )
+
+    assert actual2 == expected2
+
 def test_get_user_not_found(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
@@ -647,9 +741,83 @@ def test_delete_user(test_db):
     assert type(get_response) is NotFoundErrorResponse
     assert get_response.status_code == 404
 
-    # confirm the is_signup_completed is set to False in whitelist_users
+    # confirm thr whitelist_user got removed
     whitelist_user = test_db.query(WhitelistUser).filter(WhitelistUser.id == n).first()
-    assert whitelist_user.is_signup_completed is False
+    assert whitelist_user is None
+
+
+def test_delete_user_should_remove_user_jobs(test_db):
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model_whitelist(n, is_completed=True))
+    test_db.add(_get_model(n))
+    test_db.add(_get_job_model(1, f"email_{n}"))
+    test_db.add(_get_job_model(2, f"email_{n}"))
+    test_db.add(_get_job_model(3, f"email_{n}"))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    delete_user(request, test_db)
+
+    user_jobs = test_db.scalars(select(Job).where(Job.owner == f"email_{n}")).all()
+    assert user_jobs == []
+
+
+def test_delete_user_should_not_delete_other_users_jobs(test_db):
+    n = 1
+    test_db.flush()
+    test_db.add(_get_model_whitelist(n, is_completed=True))
+    test_db.add(_get_model(n))
+    test_db.add(_get_job_model(1, f"email_{n}"))
+    test_db.add(_get_job_model(2, f"email_{n}"))
+    test_db.add(_get_job_model(3, f"email_{n}"))
+    test_db.add(_get_job_model(4, "email_2"))
+    test_db.add(_get_job_model(5, "email_3"))
+    test_db.add(_get_job_model(6, "email_3"))
+    test_db.commit()
+
+    request = _create_request()
+    request.state.owner = f"email_{n}"
+    delete_user(request, test_db)
+
+    user2_jobs = test_db.scalars(select(Job).where(Job.owner == "email_2")).all()
+    user3_jobs = test_db.scalars(select(Job).where(Job.owner == "email_3")).all()
+
+    assert isinstance(user2_jobs, list)
+    assert len(user2_jobs) == 1
+    assert isinstance(user3_jobs, list)
+    assert len(user3_jobs) == 2
+
+
+def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage):
+    test_db.flush()
+    test_db.add(_get_model_whitelist(1, is_completed=True))
+    test_db.add(_get_model(1))
+    test_db.add(_get_job_model(1, "email_1", job_type="sse"))
+    test_db.add(_get_job_model(2, "email_1"))
+    test_db.add(_get_job_model(3, "email_1"))
+    test_db.commit()
+
+    test_storage.put(key="testjob1id/oqtopus_test_program.py", data=b"program1")
+    test_storage.put(key="testjob1id/oqtopus_test_log.log", data=b"log1")
+    test_storage.put(key="testjob2id/oqtopus_test_program.py", data=b"program2")
+    test_storage.put(key="testjob2id/oqtopus_test_log.log", data=b"log2")
+
+    request = _create_request()
+    request.state.owner = "email_1"
+    response = delete_user(request, test_db, test_storage)
+
+    assert response is None
+
+    object_keys = [key for key in test_storage.prefix(prefix="testjob1id")]
+    assert object_keys == []
+
+    # should not delete other sse jobs from s3
+    other_object_keys = [key for key in test_storage.prefix(prefix="testjob2id")]
+    assert len(other_object_keys) == 2
+    assert "testjob2id/oqtopus_test_program.py" in other_object_keys
+    assert "testjob2id/oqtopus_test_log.log" in other_object_keys
 
 
 def test_delete_user_with_no_whitelist_user(test_db):

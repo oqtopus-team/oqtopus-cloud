@@ -29,8 +29,6 @@ users.GetOneUserResponse:
       type: array
       items:
         $ref: '#/users.LoginEvent'
-  required:
-    - id
 
 users.UpdateUserRequest:
   description: user update data

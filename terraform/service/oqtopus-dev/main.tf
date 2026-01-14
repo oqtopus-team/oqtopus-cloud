@@ -71,6 +71,8 @@ module "user_api" {
   sse_zip_file_name      = "sselog_{job_id}.zip"
   allow_deletion         = "true"
   editable_fields        = "[\"name\"]"
+  visible_fields         = "[\"id\", \"email\", \"name\", \"organization\", \"created_at\"]"
+  login_history_enabled  = "true"
 }
 
 module "provider_api" {
@@ -104,6 +106,8 @@ module "provider_api" {
   sse_zip_file_name      = "sselog_{job_id}.zip"
   allow_deletion         = "false"
   editable_fields        = "[]"
+  visible_fields         = "[]"
+  login_history_enabled  = "false"
 }
 
 module "admin_api" {

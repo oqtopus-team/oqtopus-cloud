@@ -85,6 +85,8 @@ resource "aws_lambda_function" "this" {
       var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
       var.allow_deletion != "" ? { ALLOW_DELETION = var.allow_deletion } : {},
       var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
+      var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
+      var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
     )
   }
 

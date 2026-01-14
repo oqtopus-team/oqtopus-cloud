@@ -318,3 +318,5 @@ def fake_os_env(monkeypatch, tmp_path):
     monkeypatch.setenv("SSE_ZIP_FILE_NAME", "oqtopus_test_sse_log_{job_id}.zip")
     monkeypatch.setenv("ALLOW_DELETION", "true")
     monkeypatch.setenv("EDITABLE_FIELDS", '["name", "organization"]')
+    monkeypatch.setenv("VISIBLE_FIELDS", '["id", "email", "name", "organization", "created_at"]')
+    monkeypatch.setenv("LOGIN_HISTORY_ENABLED", 'true')

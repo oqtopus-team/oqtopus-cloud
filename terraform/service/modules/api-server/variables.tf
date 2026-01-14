@@ -203,6 +203,18 @@ variable "editable_fields" {
   description = "List of user editable fields"
 }
 
+variable "visible_fields" {
+  type        = string
+  default     = "[]"
+  description = "List of user fields that are visible to the user"
+}
+
+variable "login_history_enabled" {
+  type        = string
+  default     = "false"
+  description = "Flag to control inclusion of login history in user API response"
+}
+
 variable "lambda_timeout" {
   type        = number
   default     = 15

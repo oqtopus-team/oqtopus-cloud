@@ -3,9 +3,12 @@ from os import environ
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request as Event, Body, status
 import boto3
+from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.user.common.settings import get_editable_fields
+from oqtopus_cloud.user.schemas.jobs import JobType
 import pytz
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
 from oqtopus_cloud.user.common.validation_utils import (
@@ -54,7 +57,11 @@ def get_user(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
 
-        login_events = retrieve_user_login_history(user.cognito_id, event.state.region)
+        login_events = (
+            retrieve_user_login_history(user.cognito_id, event.state.region)
+            if environ.get("LOGIN_HISTORY_ENABLED", "false").upper() == "TRUE"
+            else None
+        )
 
         return model_to_schema(user, login_events)
     except Exception as e:
@@ -151,6 +158,7 @@ def update_user(
 def delete_user(
     event: Event,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> None | UnauthorizedResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     user_pool_id = event.state.user_pool_id
     region = event.state.region
@@ -176,16 +184,30 @@ def delete_user(
             WhitelistUser.email == query_result.email
         )
         query_result_whitelist = db.execute(stmt_whitelist).scalars().first()
-        if query_result_whitelist:
-            query_result_whitelist.is_signup_completed = False
-        else:
-            logger.warning(
-                f"User {query_result.email} is not in whitelist_users. Skipping the change of is_signup_completed."
-            )
+        stmt_sse_jobs = select(Job).where(
+            Job.owner == query_result.email, Job.job_type == JobType.sse
+        )
+        user_sse_jobs = db.scalars(stmt_sse_jobs).all()
+        stmt_delete_user_jobs = delete(Job).where(Job.owner == query_result.email)
 
         # delete from RDS
+        db.execute(stmt_delete_user_jobs)
         db.delete(query_result)
+
+        if query_result_whitelist:
+            db.delete(query_result_whitelist)
+        else:
+            logger.warning(
+                f"User {query_result.email} is not in whitelist_users. Skipping whitelist_users deletion."
+            )
         db.commit()
+
+        for user_sse_job in user_sse_jobs:
+            # delete the user program and logs from S3 when SSE
+            is_success_delete_s3 = delete_storage_folder(user_sse_job, storage)
+            if not is_success_delete_s3:
+                # error already logged in delete_storage_folder
+                return InternalServerErrorResponse(message="Internal Server Error")
 
         # delete from cognito
         client.admin_delete_user(
@@ -244,21 +266,61 @@ def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent
     return event_list
 
 
+def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
+    if job.job_type != JobType.sse:
+        return True
+
+    def delete_by_key(key: str) -> bool:
+        try:
+            storage.delete(key)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete {key}: {str(e)}")
+            return False
+
+    try:
+        prefix = f"{job.id}/"
+        results = storage.traverse_prefix(prefix, delete_by_key)
+        return all(results)
+
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
+        return False
+
+
 def localize(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     return pytz.utc.localize(dt)
 
 
+def get_visible_fields() -> list[str]:
+    try:
+        visible_fields = json.loads(environ.get("VISIBLE_FIELDS", "[]"))
+        if not isinstance(visible_fields, list):
+            visible_fields = []
+
+        return [str(v) for v in visible_fields]
+    except Exception:
+        return []
+
+
 def model_to_schema(
     model: User, login_events: list[LoginEvent] | None = None
 ) -> GetOneUserResponse:
+    visible_fields = get_visible_fields()
+
     dict = {
-        "id": model.id,
-        "email": getattr(model, "email", None),
-        "name": getattr(model, "username", None),
-        "organization": getattr(model, "organization", None),
-        "created_at": localize(getattr(model, "created_at", None)),
+        "id": model.id if "id" in visible_fields else None,
+        "email": getattr(model, "email", None) if "email" in visible_fields else None,
+        "name": getattr(model, "username", None) if "name" in visible_fields else None,
+        "organization": getattr(model, "organization", None)
+        if "organization" in visible_fields
+        else None,
+        "created_at": localize(getattr(model, "created_at", None))
+        if "created_at" in visible_fields
+        else None,
         "login_events": login_events,
     }
 
