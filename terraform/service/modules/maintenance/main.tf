@@ -46,7 +46,7 @@ resource "aws_lambda_function" "this" {
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
-  timeout                        = "5"
+  timeout                        = "120"
 
   tracing_config {
     mode = "Active"
@@ -122,20 +122,24 @@ resource "aws_iam_policy" "lambda_manager" {
 
 data "aws_iam_policy_document" "lambda_manager" {
   statement {
+    actions   = ["lambda:ListFunctions"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+  statement {
     actions = [
-      "lambda:ListFunctions",
       "lambda:ListVersionsByFunction",
       "lambda:ListAliases",
       "lambda:DeleteFunction"
     ]
     effect    = "Allow"
-    resources = ["*"]
+    resources = ["arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:${var.product}-${var.org}-${var.env}-*"]
   }
   statement {
     sid       = "PreventDeletingLatest"
     actions   = ["lambda:DeleteFunction"]
     effect    = "Deny"
-    resources = ["arn:aws:lambda:*:*:function:*:$LATEST"]
+    resources = ["arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:${var.product}-${var.org}-${var.env}-*:$LATEST"]
   }
 }
 
@@ -147,7 +151,12 @@ resource "aws_cloudwatch_event_rule" "on_lambda_publish_version" {
     "detail-type" : ["AWS API Call via CloudTrail"],
     "detail" : {
       "eventSource" : ["lambda.amazonaws.com"],
-      "eventName" : ["PublishVersion20150331"]
+      "eventName" : ["PublishVersion20150331"],
+      "requestParameters" : {
+        "functionName" : [{
+          "prefix" : "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:${var.product}-${var.org}-${var.env}-"
+        }]
+      }
     }
   })
 }
