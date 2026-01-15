@@ -87,7 +87,7 @@ def lambda_handler(event, context):
         paginator = lambda_client.get_paginator("list_functions")
         for page in paginator.paginate():
             for function in page["Functions"]:
-                if function_name.startswith("CLEANUP_FUNCTION_PREFIX"):
+                if function["FunctionName"].startswith(CLEANUP_FUNCTION_PREFIX):
                     cleanup_lambda_versions(function["FunctionName"])
 
     return {"statusCode": 200}
