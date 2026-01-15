@@ -1,7 +1,7 @@
 from os import environ
 from fastapi import APIRouter
 
-from oqtopus_cloud.user.common.settings import get_editable_fields
+from oqtopus_cloud.user.common.settings import get_editable_fields, get_visible_fields
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
@@ -26,9 +26,16 @@ def get_settings() -> GetSettingsResponse | InternalServerErrorResponse:
     try:
         allow_deletion = environ.get("ALLOW_DELETION", "false").upper() == "TRUE"
         editable_fields = get_editable_fields()
+        visible_fields = get_visible_fields()
+        login_history_enabled = (
+            environ.get("LOGIN_HISTORY_ENABLED", "false").upper() == "TRUE"
+        )
 
         return GetSettingsResponse(
-            allow_deletion=allow_deletion, editable_fields=editable_fields
+            allow_deletion=allow_deletion,
+            editable_fields=editable_fields,
+            visible_fields=visible_fields,
+            login_history_enabled=login_history_enabled,
         )
     except Exception as e:
         tracer.put_annotation("error", str(e))

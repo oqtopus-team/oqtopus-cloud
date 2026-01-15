@@ -319,4 +319,4 @@ def fake_os_env(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOW_DELETION", "true")
     monkeypatch.setenv("EDITABLE_FIELDS", '["name", "organization"]')
     monkeypatch.setenv("VISIBLE_FIELDS", '["id", "email", "name", "organization", "created_at"]')
-    monkeypatch.setenv("LOGIN_HISTORY_ENABLED", 'true')
+    monkeypatch.setenv("LOGIN_HISTORY_ENABLED", "true")

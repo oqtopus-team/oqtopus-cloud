@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request as Event, Body, status
 import boto3
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
-from oqtopus_cloud.user.common.settings import get_editable_fields
+from oqtopus_cloud.user.common.settings import get_editable_fields, get_visible_fields
 from oqtopus_cloud.user.schemas.jobs import JobType
 import pytz
 from sqlalchemy import select, delete
@@ -293,17 +293,6 @@ def localize(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     return pytz.utc.localize(dt)
-
-
-def get_visible_fields() -> list[str]:
-    try:
-        visible_fields = json.loads(environ.get("VISIBLE_FIELDS", "[]"))
-        if not isinstance(visible_fields, list):
-            visible_fields = []
-
-        return [str(v) for v in visible_fields]
-    except Exception:
-        return []
 
 
 def model_to_schema(

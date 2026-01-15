@@ -1625,6 +1625,20 @@ components:
               - organization
         allow_deletion:
           type: boolean
+        visible_fields:
+          type: array
+          items:
+            type: string
+            enum:
+              - id
+              - name
+              - email
+              - organization
+              - created_at
+        login_history_enabled:
+          type: boolean
       required:
         - editable_fields
         - allow_deletion
+        - visible_fields
+        - login_history_enabled

@@ -14,6 +14,14 @@ class EditableField(str, Enum):
     organization = "organization"
 
 
+class VisibleField(str, Enum):
+    id = "id"
+    name = "name"
+    email = "email"
+    organization = "organization"
+    created_at = "created_at"
+
+
 class GetSettingsResponse(BaseModel):
     """
     detail of settings response
@@ -21,3 +29,5 @@ class GetSettingsResponse(BaseModel):
 
     editable_fields: list[EditableField]
     allow_deletion: bool
+    visible_fields: list[VisibleField]
+    login_history_enabled: bool
