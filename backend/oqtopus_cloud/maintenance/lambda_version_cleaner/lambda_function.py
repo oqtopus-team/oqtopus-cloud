@@ -1,6 +1,10 @@
 import boto3
+import os
 
 from oqtopus_cloud.maintenance.lambda_version_cleaner.conf import logger
+
+VERSIONS_TO_KEEP = 2
+CLEANUP_FUNCTION_PREFIX = os.getenv("CLEANUP_FUNCTION_PREFIX")
 
 lambda_client = boto3.client("lambda")
 
@@ -19,17 +23,12 @@ def get_all_versions(function_name: str) -> list[str]:
 def get_aliased_versions(function_name: str) -> list[str]:
     paginator = lambda_client.get_paginator("list_aliases")
 
-    aliased_versions = [
+    return [
         alias["FunctionVersion"]
         for page in paginator.paginate(FunctionName=function_name)
         for alias in page["Aliases"]
         if alias["FunctionVersion"] != "$LATEST"
     ]
-
-    # aliased version-1 for rollback purposes
-    rollback_versions = [str(int(v) - 1) for v in aliased_versions if int(v) > 1]
-
-    return aliased_versions + rollback_versions
 
 
 def cleanup_lambda_versions(function_name: str):
@@ -42,7 +41,7 @@ def cleanup_lambda_versions(function_name: str):
             logger.info(f"No versions for: {function_name}")
             return
 
-        protected_recent = all_versions[-2:]
+        protected_recent = all_versions[-VERSIONS_TO_KEEP:]
         logger.debug(f"protected_recent: {protected_recent}")
 
         protected_aliased = get_aliased_versions(function_name)
@@ -79,12 +78,16 @@ def lambda_handler(event, context):
 
     if function_name != "*":
         # triggered by CloudWatch event for a specific function
+        if not function_name.startswith(CLEANUP_FUNCTION_PREFIX):
+            logger.error(f"Received event trigger for invalid function: {function_name}")
+            return {"statusCode": 400}
         cleanup_lambda_versions(function_name)
     else:
         # manual trigger for all functions
         paginator = lambda_client.get_paginator("list_functions")
         for page in paginator.paginate():
             for function in page["Functions"]:
-                cleanup_lambda_versions(function["FunctionName"])
+                if function_name.startswith("CLEANUP_FUNCTION_PREFIX"):
+                    cleanup_lambda_versions(function["FunctionName"])
 
     return {"statusCode": 200}
