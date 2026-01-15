@@ -29,7 +29,8 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = merge(
       {
-        LOG_LEVEL = var.log_level
+        CLEANUP_FUNCTION_PREFIX = "${var.product}-${var.org}-${var.env}-"
+        LOG_LEVEL               = var.log_level
       }
     )
   }
@@ -144,7 +145,7 @@ data "aws_iam_policy_document" "lambda_manager" {
 }
 
 resource "aws_cloudwatch_event_rule" "on_lambda_publish_version" {
-  name        = "on-lambda-publish-version"
+  name        = "on-${var.product}-${var.org}-${var.env}-lambda-publish-version"
   description = "Trigger removal of unused lambda versions when new version is published"
   event_pattern = jsonencode({
     "source" : ["aws.lambda"],
@@ -154,7 +155,7 @@ resource "aws_cloudwatch_event_rule" "on_lambda_publish_version" {
       "eventName" : ["PublishVersion20150331"],
       "requestParameters" : {
         "functionName" : [{
-          "prefix" : "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:${var.product}-${var.org}-${var.env}-"
+          "prefix" : "${var.product}-${var.org}-${var.env}-"
         }]
       }
     }
