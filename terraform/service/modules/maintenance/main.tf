@@ -162,16 +162,48 @@ resource "aws_cloudwatch_event_rule" "on_lambda_publish_version" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "lambda_version_cleaner" {
-  rule      = aws_cloudwatch_event_rule.on_lambda_publish_version.name
-  target_id = "lambda_version_cleaner"
-  arn       = aws_lambda_function.this.arn
+resource "aws_cloudwatch_event_rule" "on_lambda_update_with_publish" {
+  name        = "on-${var.product}-${var.org}-${var.env}-lambda_update_with_publish"
+  description = "Trigger removal of unused lambda versions when new version is published"
+  event_pattern = jsonencode({
+    "source" : ["aws.lambda"],
+    "detail-type" : ["AWS API Call via CloudTrail"],
+    "detail" : {
+      "eventSource" : ["lambda.amazonaws.com"],
+      "eventName" : [
+        "UpdateFunctionCode20150331v2",
+        "UpdateFunctionConfiguration20150331v2",
+      ],
+      "requestParameters" : {
+        "functionName" : [{
+          "prefix" : "${var.product}-${var.org}-${var.env}-"
+        }],
+        publish = [true]
+      }
+    }
+  })
 }
 
-resource "aws_lambda_permission" "allow_cloudwatch" {
-  statement_id  = "AllowExecutionFromCloudWatch"
+resource "aws_cloudwatch_event_target" "lambda_version_cleaner_on_publish" {
+  rule = aws_cloudwatch_event_rule.on_lambda_publish_version.name
+  arn  = aws_lambda_function.this.arn
+}
+
+resource "aws_cloudwatch_event_target" "lambda_version_cleaner_on_update" {
+  rule = aws_cloudwatch_event_rule.on_lambda_update_with_publish.name
+  arn  = aws_lambda_function.this.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_on_publish" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.this.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.on_lambda_publish_version.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_on_update" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.this.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.on_lambda_update_with_publish.arn
 }
