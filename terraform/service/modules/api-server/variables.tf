@@ -194,25 +194,25 @@ variable "sse_zip_file_name" {
 variable "allow_deletion" {
   type        = string
   default     = "false"
-  description = "Allow user deletion"
+  description = "Flag to control whether users can delete their accounts"
 }
 
 variable "editable_fields" {
   type        = string
   default     = "[]"
-  description = "List of user editable fields"
+  description = "List of user fields which can be edited by the user"
 }
 
 variable "visible_fields" {
   type        = string
   default     = "[]"
-  description = "List of user fields that are visible to the user"
+  description = "List of user fields which user can view"
 }
 
 variable "login_history_enabled" {
   type        = string
   default     = "false"
-  description = "Flag to control inclusion of login history in user API response"
+  description = "Flag to control whether user login history should be included in GET user API response"
 }
 
 variable "lambda_timeout" {
