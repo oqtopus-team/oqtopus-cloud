@@ -3,7 +3,7 @@ import os
 
 from oqtopus_cloud.maintenance.lambda_version_cleaner.conf import logger
 
-VERSIONS_TO_KEEP = 2
+VERSIONS_TO_KEEP = 1
 CLEANUP_FUNCTION_PREFIX = os.getenv("CLEANUP_FUNCTION_PREFIX")
 
 lambda_client = boto3.client("lambda")
