@@ -183,7 +183,7 @@ module "lambda_version_cleaner" {
   product        = var.product
   org            = var.org
   env            = var.env
-  identifier     = "version-cleaner"
+  identifier     = "lambda-version-cleaner"
   region         = var.region
   lambda_handler = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
   log_level      = "DEBUG"
