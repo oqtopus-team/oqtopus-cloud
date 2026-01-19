@@ -6,7 +6,7 @@ users.GetOneUserResponse:
       type: integer
     email:
       type: string
-    name:
+    display_name:
       type: string
     organization:
       type: string
@@ -41,7 +41,7 @@ users.UpdateUserRequest:
   properties:
     email:
       type: string
-    name:
+    display_name:
       type: string
     organization:
       type: string

@@ -20,12 +20,12 @@ users:
         schema: {type: string}
       - name: email
         in: query
-        description: "query email infomation"
+        description: "query email information"
         required: false
         schema: {type: string}
-      - name: name
+      - name: display_name
         in: query
-        description: "query name information"
+        description: "query display name information"
         required: false
         schema: {type: string}
       - name: organization
