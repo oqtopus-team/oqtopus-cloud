@@ -64,10 +64,10 @@ module "user_api" {
   sse_container_log_name                 = "ssecontainer.log"
   sse_user_program_name                  = "userprogram.py"
   sse_zip_file_name                      = "sselog_{job_id}.zip"
-  allow_deletion                         = "true"
-  editable_fields                        = "[\"name\"]"
-  visible_fields                         = "[\"id\", \"email\", \"name\", \"organization\", \"created_at\"]"
-  login_history_enabled                  = "true"
+  allow_deletion                         = var.allow_deletion
+  editable_fields                        = var.editable_fields
+  visible_fields                         = var.visible_fields
+  login_history_enabled                  = var.login_history_enabled
 }
 
 module "provider_api" {
