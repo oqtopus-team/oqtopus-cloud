@@ -23,7 +23,7 @@ class GetOneUserResponse(BaseModel):
 
     id: int
     email: str | None = None
-    name: str | None = None
+    display_name: str | None = None
     organization: str | None = None
     status: UserStatus | None = None
     group_id: str | None = None
@@ -38,7 +38,7 @@ class GetUsersResponse(BaseModel):
 
 class UpdateUserRequest(BaseModel):
     email: str | None = None
-    name: str | None = None
+    display_name: str | None = None
     organization: str | None = None
     status: UserStatus | None = None
     group_id: str | None = None
