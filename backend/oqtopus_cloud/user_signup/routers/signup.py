@@ -73,8 +73,9 @@ def signup(
         )
         new_user = User(
             cognito_id=cognito_id,
+            user_identifier=email,
             email=email,
-            username=whitelist_user.username,
+            display_name=whitelist_user.display_name,
             userstatus=UserStatus.approved,
             organization=whitelist_user.organization,
             group_id=whitelist_user.group_id,

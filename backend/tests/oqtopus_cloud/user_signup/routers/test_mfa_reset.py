@@ -15,8 +15,9 @@ def _get_model(n: int) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
+        "user_identifier": f"email{n}@example.com",
         "email": f"email{n}@example.com",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": UserStatus.approved,
         "api_token_id": f"api_token_id_{n}",
         "api_token_hash": f"api_token_hash_{n}",

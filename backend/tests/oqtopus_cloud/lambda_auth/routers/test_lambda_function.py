@@ -86,15 +86,14 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
 
 
 def _get_model(
-    n: int, expiration_day=90, username=None, status=UserStatus.approved
+    n: int, expiration_day=90, status=UserStatus.approved
 ) -> User:
-    if username is None:
-        username = f"username_{n}"
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
+        "user_identifier": f"email{n}@example.com",
         "email": f"email{n}@example.com",
-        "username": username,
+        "display_name": f"test_user_{n}",
         "userstatus": status,
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -109,7 +108,7 @@ def _get_model(
 
 
 def test__verify_id_token(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username")
+    user = _get_model(1)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -164,7 +163,7 @@ def test__verify_id_token_jwt_decode_failure():
 
 
 def test__verify_suspended(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username", status=UserStatus.suspended)
+    user = _get_model(1, status=UserStatus.suspended)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -176,7 +175,7 @@ def test__verify_suspended(test_session, monkeypatch):
 
 
 def test__verify_unapproved(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username", status=UserStatus.unapproved)
+    user = _get_model(1, status=UserStatus.unapproved)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -188,7 +187,7 @@ def test__verify_unapproved(test_session, monkeypatch):
 
 
 def test__verify_mfa_inactive(test_session, monkeypatch):
-    user = _get_model(2, username="fake_username")
+    user = _get_model(2)
     test_session.flush()
     test_session.add(user)
     test_session.commit()

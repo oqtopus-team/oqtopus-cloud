@@ -42,7 +42,7 @@ from . import LoggerRouteHandler
 COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "id": User.id,
     "email": User.email,
-    "name": User.username,
+    "display_name": User.display_name,
     "organization": User.organization,
     "status": User.userstatus,
     "group_id": User.group_id,
@@ -62,7 +62,7 @@ def get_users(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
     email: Optional[str] = None,
-    name: Optional[str] = None,
+    display_name: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
     status: Optional[UserStatus] = None,
@@ -75,8 +75,8 @@ def get_users(
         stmt = select(User)
         if email:
             stmt = stmt.where(User.email.ilike(f"%{email}%"))
-        if name:
-            stmt = stmt.where(User.username.ilike(f"%{name}%"))
+        if display_name:
+            stmt = stmt.where(User.display_name.ilike(f"%{display_name}%"))
         if organization:
             stmt = stmt.where(User.organization == organization)
         if group_id:
@@ -198,12 +198,14 @@ def update_user_status(
                 )
             query.email = update_user_request.email
 
-        if update_user_request.name:
-            if len(update_user_request.name) > LEN_VARCHAR:
+        if update_user_request.display_name:
+            if len(update_user_request.display_name) > LEN_VARCHAR:
                 raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
+                    FIELD_TOO_LONG_MESSAGE.format(
+                        update_user_request.display_name, LEN_VARCHAR
+                    )
                 )
-            query.username = update_user_request.name
+            query.display_name = update_user_request.display_name
 
         if update_user_request.organization:
             if len(update_user_request.organization) > LEN_VARCHAR:
@@ -308,7 +310,7 @@ def model_to_schema(model: User) -> GetOneUserResponse:
     return GetOneUserResponse(
         id=model.id,
         email=getattr(model, "email", None),
-        name=getattr(model, "username", None),
+        display_name=getattr(model, "display_name", None),
         organization=getattr(model, "organization", None),
         group_id=getattr(model, "group_id", None),
         status=status,

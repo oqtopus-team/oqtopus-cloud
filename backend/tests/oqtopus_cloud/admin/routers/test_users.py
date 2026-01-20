@@ -20,8 +20,9 @@ def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
+        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": status,
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -41,7 +42,7 @@ def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
         "email": f"email_{n}",
         "group_id": f"group_id_{n}",
         "is_signup_completed": is_completed,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -67,7 +68,7 @@ def test_get_users_simple(
             GetOneUserResponse(
                 id="1",
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
@@ -76,7 +77,7 @@ def test_get_users_simple(
             GetOneUserResponse(
                 id="2",
                 email="email_2",
-                name="username_2",
+                display_name="username_2",
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
@@ -108,7 +109,7 @@ def test_get_users_query_limit_offset(
             GetOneUserResponse(
                 id="2",
                 email="email_2",
-                name="username_2",
+                display_name="username_2",
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
@@ -117,7 +118,7 @@ def test_get_users_query_limit_offset(
             GetOneUserResponse(
                 id="3",
                 email="email_3",
-                name="username_3",
+                display_name="username_3",
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
@@ -149,7 +150,7 @@ def test_get_user_by_email(
             GetOneUserResponse(
                 id="1",
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
@@ -161,7 +162,7 @@ def test_get_user_by_email(
     assert actual == expect
 
 
-def test_get_user_by_name_organization_groupid_status(
+def test_get_user_by_display_name_organization_groupid_status(
     test_db,
 ):
     test_db.flush()
@@ -171,7 +172,7 @@ def test_get_user_by_name_organization_groupid_status(
     test_db.commit()
 
     response = client.get(
-        "/users?name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
+        "/users?display_name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
     )
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
@@ -182,7 +183,7 @@ def test_get_user_by_name_organization_groupid_status(
             GetOneUserResponse(
                 id="1",
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
@@ -201,7 +202,7 @@ def test_get_users_order_ascending(test_db):
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/users?sort=name,asc")
+    response = client.get("/users?sort=display_name,asc")
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
@@ -211,7 +212,7 @@ def test_get_users_order_ascending(test_db):
             GetOneUserResponse(
                 id=1,
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
@@ -220,7 +221,7 @@ def test_get_users_order_ascending(test_db):
             GetOneUserResponse(
                 id=2,
                 email="email_2",
-                name="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 status=UserStatus.approved,
                 group_id="group_id_2",
@@ -229,7 +230,7 @@ def test_get_users_order_ascending(test_db):
             GetOneUserResponse(
                 id=3,
                 email="email_3",
-                name="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 status=UserStatus.approved,
                 group_id="group_id_3",
@@ -258,7 +259,7 @@ def test_get_users_order_descending(test_db):
             GetOneUserResponse(
                 id=3,
                 email="email_3",
-                name="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 status=UserStatus.approved,
                 group_id="group_id_3",
@@ -267,7 +268,7 @@ def test_get_users_order_descending(test_db):
             GetOneUserResponse(
                 id=2,
                 email="email_2",
-                name="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 status=UserStatus.approved,
                 group_id="group_id_2",
@@ -276,7 +277,7 @@ def test_get_users_order_descending(test_db):
             GetOneUserResponse(
                 id=1,
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
@@ -289,13 +290,13 @@ def test_get_users_order_descending(test_db):
 
 
 def test_get_users_invalid_sort_query_parameter():
-    response = client.get("/users?sort=name")
+    response = client.get("/users?sort=display_name")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: name"}
+    assert response.json() == {"message": "Invalid sort parameter: display_name"}
 
-    response = client.get("/users?sort=name,desc,something_else")
+    response = client.get("/users?sort=display_name,desc,something_else")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: name,desc,something_else"}
+    assert response.json() == {"message": "Invalid sort parameter: display_name,desc,something_else"}
 
 
 def test_get_users_invalid_column_name():
@@ -305,14 +306,14 @@ def test_get_users_invalid_column_name():
 
 
 def test_get_users_invalid_order():
-    response = client.get("/users?sort=name,invalid_order")
+    response = client.get("/users?sort=display_name,invalid_order")
     assert response.status_code == 400
     assert response.json() == {"message": "Invalid order to sort: invalid_order"}
 
 
 def test_get_user_500():
     response = client.get(
-        "/users?name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
+        "/users?display_name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
     )
     assert response.status_code == 500
 
@@ -329,7 +330,7 @@ def test_get_one_user(test_db):
     expect = GetOneUserResponse(
         id=2,
         email="email_2",
-        name="username_2",
+        display_name="username_2",
         organization="organization_2",
         status=UserStatus.approved,
         group_id="group_id_2",
@@ -370,7 +371,7 @@ def test_patch_job_status_to_suspended(
     expect = GetOneUserResponse(
         id="1",
         email="email_1",
-        name="username_1",
+        display_name="username_1",
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
@@ -393,7 +394,7 @@ def test_patch_job_status_to_unapproved(
     expect = GetOneUserResponse(
         id="1",
         email="email_1",
-        name="username_1",
+        display_name="username_1",
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
@@ -408,7 +409,7 @@ def test_patch_user(test_db):
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(
-        name="user_name_1",
+        display_name="user_name_1",
         organization="new_organization",
     )
     response = client.patch("/users/1", json=update_data.model_dump())
@@ -417,7 +418,7 @@ def test_patch_user(test_db):
     expect = GetOneUserResponse(
         id=1,
         email="email_1",
-        name="user_name_1",
+        display_name="user_name_1",
         organization="new_organization",
         status=UserStatus.approved,
         group_id="group_id_1",
@@ -433,7 +434,7 @@ def test_patch_user_all_fields(test_db):
     test_db.commit()
     update_data = UpdateUserRequest(
         email="email@email.com",
-        name="user_name_1",
+        display_name="user_name_1",
         organization="new_organization",
         status=UserStatus.unapproved,
         group_id="new_group_id",
@@ -445,7 +446,7 @@ def test_patch_user_all_fields(test_db):
     expect = GetOneUserResponse(
         id=1,
         email="email@email.com",
-        name="user_name_1",
+        display_name="user_name_1",
         organization="new_organization",
         status=UserStatus.unapproved,
         group_id="new_group_id",
@@ -499,18 +500,18 @@ def test_patch_job_400_email_already_exist(test_db):
     assert response.json() == {"message": f"{user_1_mail} is already registered."}
 
 
-def test_patch_job_400_name_too_long(test_db):
+def test_patch_job_400_display_name_too_long(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    too_long_name = "a" * (LEN_VARCHAR + 1)
+    too_long_display_name = "a" * (LEN_VARCHAR + 1)
     update_data = UpdateUserRequest(
-        name=too_long_name,
+        display_name=too_long_display_name,
     )
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {"message": f"The length of {too_long_display_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
 
 
 def test_patch_job_400_organization_too_long(test_db):
@@ -561,7 +562,7 @@ def test_delete_user(
 
     # confirm the user is in the database
     response = client.get(
-        "/users?name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
+        "/users?display_name=username_1&organization=organization_1&group_id=group_id_1&status=approved"
     )
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
@@ -572,7 +573,7 @@ def test_delete_user(
             GetOneUserResponse(
                 id="1",
                 email="email_1",
-                name="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",

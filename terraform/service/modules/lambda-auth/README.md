@@ -49,6 +49,7 @@ module "user_lambda" {
 | [aws_iam_role_policy_attachment.lambda_tag_resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.vpc_access_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_lambda_alias.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_alias) | resource |
 | [aws_lambda_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.lambda_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -89,5 +90,6 @@ module "user_lambda" {
 | Name | Description |
 |------|-------------|
 | <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | The ARN of the IAM role |
+| <a name="output_lambda_auth_alias_name"></a> [lambda\_auth\_alias\_name](#output\_lambda\_auth\_alias\_name) | Alias of the lambda\_auth lambda function |
 | <a name="output_lambda_auth_arn"></a> [lambda\_auth\_arn](#output\_lambda\_auth\_arn) | ARN of the lambda\_auth lambda function |
 <!-- END_TF_DOCS -->

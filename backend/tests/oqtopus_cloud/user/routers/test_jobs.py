@@ -49,15 +49,16 @@ def _get_model(n: int, should_change_owner_num: bool = False) -> Job:
     return Job(**model_dict)
 
 
-def _get_user_model(n: int, username: str, available_devices="*") -> User:
+def _get_user_model(n: int, available_devices="*") -> User:
     if available_devices != "*":
         available_devices = json.dumps(available_devices)
 
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
+        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
-        "username": username,
+        "display_name": f"test_user_{n}",
         "userstatus": UserStatus.approved,
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -547,7 +548,7 @@ def test_job_sortedness(test_client, test_db):
         return xs == sorted(xs)
 
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
     job_ids: list[str] = []
     for n in range(1, 10):
@@ -641,7 +642,7 @@ def test_submit_get(
             test_db (_type_): _description_
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     body = SubmitJobRequest(
@@ -688,7 +689,7 @@ def test_submit_cancel_delete(test_client, test_db):
     """
     sql = select(Job).order_by(Job.created_at)
     before_db = test_db.execute(sql).scalars().all()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     body = SubmitJobRequest(
@@ -741,7 +742,7 @@ def test_submit_job_compat_error(test_client, test_db):
     Args:
             test_db (_type_): _description_
     """
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     body = SubmitJobRequest(
@@ -771,7 +772,7 @@ def test_can_submit_job_for_one_of_available_devices(test_client, test_db):
     """_summary_
     Test for checking submitting job for device that user is allowed to use
     """
-    test_db.add(_get_user_model(1, "admin", available_devices=["Kawasaki", "SVSim"]))
+    test_db.add(_get_user_model(1, available_devices=["Kawasaki", "SVSim"]))
     test_db.commit()
 
     body = SubmitJobRequest(
@@ -812,7 +813,7 @@ def test_job_submit_for_device_user_cannot_access(test_client, test_db):
     """_summary_
     Test for checking submitting job for device that user is not allowed to use
     """
-    test_db.add(_get_user_model(1, "admin", available_devices=["SC", "SVSim"]))
+    test_db.add(_get_user_model(1, available_devices=["SC", "SVSim"]))
     test_db.commit()
 
     body = SubmitJobRequest(
@@ -1046,7 +1047,7 @@ def test_put_user_program_to_s3(
     """
 
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
     program = base64.b64encode(b"program1").decode("utf-8")
 
@@ -1087,7 +1088,7 @@ def test_put_user_program_to_s3_invalid_program(test_client, test_db):
     """
 
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     program = "invalid_program"  # not base64 encoded
@@ -1118,7 +1119,7 @@ def test_put_user_program_to_s3_no_program(
     """
 
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     body = SubmitJobRequest(
