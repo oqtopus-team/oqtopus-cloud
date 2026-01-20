@@ -32,10 +32,12 @@ def test_signup_success(test_db):
     body = SignupRequest(email="email_1", password="password_1")
     response = client.post("/signup", json=body.model_dump())
     assert response.status_code == 201
-    user = test_db.query(User).filter(User.email == "email_1").first()
+    # user_identifier = Cognito username = email
+    user = test_db.query(User).filter(User.user_identifier == "email_1").first()
     whitelist_user = (
         test_db.query(WhitelistUser).filter(WhitelistUser.email == "email_1").first()
     )
+    assert user.user_identifier == "email_1"
     assert user.email == "email_1"
     assert user.display_name == "username_1"
     assert user.organization == "organization_1"

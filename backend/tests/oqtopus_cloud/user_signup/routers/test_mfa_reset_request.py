@@ -42,8 +42,9 @@ def test_mfa_reset_request_success(test_db):
     response = client.put("/mfa_reset_request", json=body.model_dump())
     assert response.status_code == 200
     # refer to db value
+    # user_identifier = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        test_db.execute(select(User).where(User.user_identifier == "email1@example.com"))
         .scalars()
         .first()
     )

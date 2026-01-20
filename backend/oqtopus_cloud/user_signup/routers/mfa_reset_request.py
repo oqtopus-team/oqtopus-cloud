@@ -57,7 +57,8 @@ def mfa_reset_request(
     try:
         logger.info("invoked mfa reset request")
         # check if user exists in users table
-        stmt = select(User).where(User.email == email)
+        # user_identifier = Cognito username = email
+        stmt = select(User).where(User.user_identifier == email)
         user = db.execute(stmt).scalars().first()
         if not user:
             logger.error(f"User not found: {email}")

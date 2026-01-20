@@ -50,8 +50,9 @@ def mfa_reset_start(
 
     try:
         # confirm if mfa_status is enabled
+        # user_identifier = Cognito username = email
         stmt = select(User).where(
-            User.email == email, User.mfa_status == MFAStatus.enabled
+            User.user_identifier == email, User.mfa_status == MFAStatus.enabled
         )
         user = db.execute(stmt).scalars().first()
         if user:

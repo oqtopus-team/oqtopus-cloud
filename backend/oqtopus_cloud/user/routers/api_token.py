@@ -54,8 +54,8 @@ def create_api_token(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    username = event.state.owner
-    logger.info(f"Get api token for {username}")
+    user_identifier = event.state.owner
+    logger.info(f"Get api token for {user_identifier}")
 
     try:
         # generate api token
@@ -66,8 +66,8 @@ def create_api_token(
             second=0, microsecond=0
         ) + timedelta(days=90)
 
-        # save api token to users table (username here is the email address registered in Cognito)
-        stmt = select(User).where(User.email == username)
+        # save api token to users table (user_identifier = Cognito username = email)
+        stmt = select(User).where(User.user_identifier == user_identifier)
         user = db.execute(stmt).scalars().first()
         if not user:
             logger.info("User not found")
@@ -113,11 +113,11 @@ def delete_api_token(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    username = event.state.owner
-    logger.info(f"Delete api token: {username}")
+    user_identifier = event.state.owner
+    logger.info(f"Delete api token: {user_identifier}")
     try:
-        # save user table (username here is the email address registered in Cognito)
-        stmt = select(User).where(User.email == username)
+        # save user table (user_identifier = Cognito username = email)
+        stmt = select(User).where(User.user_identifier == user_identifier)
         user = db.execute(stmt).scalars().first()
         if not user:
             logger.info("User not found")
@@ -157,11 +157,11 @@ def get_api_token_status(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    username = event.state.owner
-    logger.info(f"Get api token: {username}")
+    user_identifier = event.state.owner
+    logger.info(f"Get api token: {user_identifier}")
     try:
-        # save user table (username here is the email address registered in Cognito)
-        stmt = select(User).where(User.email == username)
+        # save user table (user_identifier = Cognito username = email)
+        stmt = select(User).where(User.user_identifier == user_identifier)
         user = db.execute(stmt).scalars().first()
         if not user or user.api_token_hash is None:
             logger.info("User not found")

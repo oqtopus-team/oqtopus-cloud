@@ -26,7 +26,7 @@ class AuthError(Exception):
 
 
 def _validate_user_status(
-    email: str | None = None, cognito_id: str | None = None
+    user_identifier: str | None = None, cognito_id: str | None = None
 ) -> bool:
     try:
         # Get a database session
@@ -35,9 +35,10 @@ def _validate_user_status(
 
         user = None
         # Get the user status from the database
-        if email:
+        if user_identifier:
             stmt = select(User).where(
-                User.email == email, User.userstatus == UserStatus.approved
+                User.user_identifier == user_identifier,
+                User.userstatus == UserStatus.approved,
             )
             user = db.execute(stmt).scalar()
             db.close()
@@ -48,14 +49,14 @@ def _validate_user_status(
             user = db.execute(stmt).scalar()
             db.close()
         else:
-            raise AuthError("email or cognito_id is not given")
+            raise AuthError("user_identifier or cognito_id is not given")
 
         if user is None:
-            logger.info(f"User {email} or {cognito_id} is not approved")
+            logger.info(f"User {user_identifier} or {cognito_id} is not approved")
             return False
         # Get the MFA status from the database
         # only for the case from oqtopus-frontend
-        if email and user.mfa_status != MFAStatus.enabled:
+        if user_identifier and user.mfa_status != MFAStatus.enabled:
             raise AuthError("MFA is not enabled for this user")
         return True
     except Exception as e:
@@ -109,7 +110,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
             raise AuthError("Invalid token_use")
 
         # verify the user status
-        if not _validate_user_status(email=token["cognito:username"]):
+        if not _validate_user_status(user_identifier=token["cognito:username"]):
             raise AuthError("User is not approved")
 
         return token["cognito:username"]

@@ -164,8 +164,9 @@ def test_mfa_reset_confirm_totp_cognito_error(test_db, fake_cognito_client_fixtu
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 400
     assert response.json().get("message") == "Invalid TOTP code"
+    # user_identifier = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        test_db.execute(select(User).where(User.user_identifier == "email1@example.com"))
         .scalars()
         .first()
     )
@@ -186,8 +187,9 @@ def test_mfa_reset_confirm_totp_500(test_db, fake_cognito_client_fixture):
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 500
     assert response.json().get("message") == "Internal server error"
+    # user_identifier = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        test_db.execute(select(User).where(User.user_identifier == "email1@example.com"))
         .scalars()
         .first()
     )

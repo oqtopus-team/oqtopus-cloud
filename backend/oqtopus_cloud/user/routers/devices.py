@@ -83,12 +83,16 @@ def get_device(
     """
     # TODO implement error handling
     try:
-        username = event.state.owner
-        logger.info(f"User {username} is trying to access device_id={device_id}.")
-        available_devices = get_user_available_devices(username, db)
+        user_identifier = event.state.owner
+        logger.info(
+            f"User {user_identifier} is trying to access device_id={device_id}."
+        )
+        available_devices = get_user_available_devices(user_identifier, db)
 
         if available_devices != "*" and device_id not in available_devices:
-            logger.error(f"{username} is not allowed to access device_id={device_id}.")
+            logger.error(
+                f"{user_identifier} is not allowed to access device_id={device_id}."
+            )
             return ForbiddenErrorResponse(
                 message=f"Cannot access device_id={device_id}."
             )
@@ -140,10 +144,11 @@ def model_to_schema(model: Device) -> DeviceInfo:
     return DeviceInfo.model_validate(dict)
 
 
-def get_user_available_devices(username: str, db: Session) -> list[str] | str:
+def get_user_available_devices(user_identifier: str, db: Session) -> list[str] | str:
     try:
-        # username here is the email address registered in Cognito
-        user = db.scalars(select(User).where(User.email == username)).first()
+        user = db.scalars(
+            select(User).where(User.user_identifier == user_identifier)
+        ).first()
         if user is None or user.available_devices is None:
             return []
 
