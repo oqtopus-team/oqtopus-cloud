@@ -4,7 +4,7 @@ SHELL := bash
 
 SNAPSTART_ALIAS := snapstart
 
-.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy deploy-aliased-version set-alias test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
+.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-lambda-version-cleaner deploy-all deploy deploy-aliased-version set-alias test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
 export
@@ -53,7 +53,14 @@ zip-user_signup: ## Build user_signup API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/user_signup
 
-zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker## Build All Lambda Packages
+zip-lambda-version-cleaner: ## Build lambda_version_cleaner Lambda Package
+	@$(MAKE) zip \
+	WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/maintenance/lambda_version_cleaner \
+	BIN=./bin/lambda-version-cleaner
+
+zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner ## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -70,7 +77,9 @@ zip:
   /root/.local/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}" --link-mode=copy
 	@cd ${DEPLOY_PACKAGES_DIR} && rm -rf __pycache__ && zip -r ../${BIN}/lambda.zip * -q
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
-	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q
+	$(if $(strip ${LIB}), \
+		@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q \
+	)
 	@echo "Lambda Package Created: ${BIN}/lambda.zip"
 	@rm -rf ${DEPLOY_PACKAGES_DIR}
 	@rm requirements.txt
@@ -111,7 +120,12 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
 	BIN=./bin/pending-jobs-updater
 
-deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
+deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-version-cleaner Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda-version-cleaner \
+	BIN=./bin/lambda-version-cleaner
+
+deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
 
 deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
