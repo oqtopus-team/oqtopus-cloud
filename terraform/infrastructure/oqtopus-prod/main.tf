@@ -88,3 +88,13 @@ module "s3" {
   org     = var.org
   env     = var.env
 }
+
+module "s3-logging" {
+  source = "../modules/s3-logging"
+
+  product               = var.product
+  org                   = var.org
+  env                   = var.env
+  s3_target_bucket_name = module.s3.s3_bucket_name
+  s3_target_bucket_arn  = module.s3.s3_bucket_arn
+}

@@ -84,7 +84,19 @@ module "admin_cognito" {
 module "s3" {
   source = "../modules/s3"
 
-  product = var.product
-  org     = var.org
-  env     = var.env
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
+  force_destroy_bucket = true
+}
+
+module "s3-logging" {
+  source = "../modules/s3-logging"
+
+  product               = var.product
+  org                   = var.org
+  env                   = var.env
+  s3_target_bucket_name = module.s3.s3_bucket_name
+  s3_target_bucket_arn  = module.s3.s3_bucket_arn
+  force_destroy_bucket  = true
 }
