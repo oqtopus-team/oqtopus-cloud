@@ -18,6 +18,7 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
     BadRequestResponse,
     UnauthorizedResponse,
+    ForbiddenErrorResponse,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.job import Job
@@ -883,8 +884,8 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch):
     request.state.owner = f"email_{n}"
     response = delete_user(request, test_db)
 
-    assert type(response) is UnauthorizedResponse
-    assert response.status_code == 401
+    assert type(response) is ForbiddenErrorResponse
+    assert response.status_code == 403
     assert json.loads(response.body) == {
         "message": "user deletion is disabled"
     }

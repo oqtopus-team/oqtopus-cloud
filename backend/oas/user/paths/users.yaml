@@ -81,6 +81,12 @@ users.me:
         description: Current user deleted
       '401':
         description: Unauthorized
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.ForbiddenError'
       '404':
         description: Not Found
         content:

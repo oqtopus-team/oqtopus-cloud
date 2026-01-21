@@ -21,6 +21,7 @@ from oqtopus_cloud.user.schemas.errors import (
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
+    ForbiddenErrorResponse,
     BadRequestResponse,
     UnauthorizedResponse,
 )
@@ -159,7 +160,9 @@ def delete_user(
     event: Event,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
-) -> None | UnauthorizedResponse | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> (
+    None | ForbiddenErrorResponse | NotFoundErrorResponse | InternalServerErrorResponse
+):
     user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)
@@ -169,7 +172,7 @@ def delete_user(
 
         if environ.get("ALLOW_DELETION", "false").upper() != "TRUE":
             logger.error("user deletion is disabled")
-            return UnauthorizedResponse(message="user deletion is disabled")
+            return ForbiddenErrorResponse(message="user deletion is disabled")
 
         # query
         stmt = select(User).where(User.email == event.state.owner)

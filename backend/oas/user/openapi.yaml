@@ -828,6 +828,12 @@ paths:
           description: Current user deleted
         '401':
           description: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
         '404':
           description: Not Found
           content:

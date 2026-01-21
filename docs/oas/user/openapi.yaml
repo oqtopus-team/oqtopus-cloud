@@ -827,7 +827,13 @@ paths:
         '204':
           description: Current user deleted
         '401':
-          description: Unauthorized
+          description: 
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
         '404':
           description: Not Found
           content:
