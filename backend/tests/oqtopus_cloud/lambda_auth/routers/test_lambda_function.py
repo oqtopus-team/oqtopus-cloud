@@ -26,11 +26,11 @@ def fake__verify_id_token(id_token=""):
     return "fake_username"
 
 
-def fake__verify_id_token_none_owner():
+def fake__verify_id_token_none_user_identifier():
     return ""
 
 
-def fake__generate_policy_allow(principal_id="", resource="", owner=""):
+def fake__generate_policy_allow(principal_id="", resource="", user_identifier=""):
     const = {
         "principalId": "fake_username",
         "policyDocument": {
@@ -43,13 +43,13 @@ def fake__generate_policy_allow(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_identifier": "fake_username"},
     }
 
     return const
 
 
-def fake__generate_policy_deny(principal_id="", resource="", owner=""):
+def fake__generate_policy_deny(principal_id="", resource="", user_identifier=""):
     const = {
         "principalId": "fake_username",
         "policyDocument": {
@@ -62,11 +62,11 @@ def fake__generate_policy_deny(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_identifier": "fake_username"},
     }
 
 
-def fake__generate_policy_none(principal_id="", resource="", owner=""):
+def fake__generate_policy_none(principal_id="", resource="", user_identifier=""):
     const = {
         "principalId": "",
         "policyDocument": {
@@ -79,7 +79,7 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": ""},
+        "context": {"user_identifier": ""},
     }
 
     return const
@@ -345,7 +345,7 @@ def test__generate_policy_allow():
                 }
             ],
         },
-        "context": {"owner": "fake_username1"},
+        "context": {"user_identifier": "fake_username1"},
     }
 
     assert actual == expect
@@ -367,7 +367,7 @@ def test__generate_policy_deny():
                 }
             ],
         },
-        "context": {"owner": "fake_username2"},
+        "context": {"user_identifier": "fake_username2"},
     }
 
     assert actual == expect
@@ -391,7 +391,7 @@ def test_lambda_handler_api_token(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_identifier": "fake_username"},
     }
     monkeypatch.setattr(lambda_function, "_verify_api_token", fake__verify_api_token)
     monkeypatch.setattr(
@@ -405,7 +405,7 @@ def test_lambda_handler_api_token(monkeypatch):
 
 
 def test_lambda_handler_no_api_token(monkeypatch):
-    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, user_identifier=None):
         return "fake_username"
 
     input = {"headers": {"q-api-token": None}, "methodArn": "methodArn"}
@@ -431,7 +431,7 @@ def test_lambda_handler_id_token(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_identifier": "fake_username"},
     }
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
@@ -448,7 +448,7 @@ def test_lambda_handler_id_token(monkeypatch):
     assert actual == event
 
 
-def test_lambda_handler_none_owner(monkeypatch):
+def test_lambda_handler_none_user_identifier(monkeypatch):
     input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
 
     ans = {
@@ -463,11 +463,11 @@ def test_lambda_handler_none_owner(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": ""},
+        "context": {"user_identifier": ""},
     }
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
-        fake__verify_id_token_none_owner,
+        fake__verify_id_token_none_user_identifier,
     )
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_deny",
@@ -481,7 +481,7 @@ def test_lambda_handler_none_owner(monkeypatch):
 
 
 def test_lambda_handler_unexpected_header(monkeypatch):
-    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+    def fake__verify_api_token_deny(principal_id=None, resource=None, user_identifier=None):
         return "fake_username"
 
     input = {"headers": {"q-api-token-unexpected": None}, "methodArn": "methodArn"}

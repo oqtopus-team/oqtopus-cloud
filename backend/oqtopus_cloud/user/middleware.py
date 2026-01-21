@@ -25,10 +25,10 @@ class CustomMiddleware(BaseHTTPMiddleware):
             if os.getenv("ENV") == "local":
                 request.state.owner = "admin-email"
             else:
-                owner = APIGatewayProxyEvent(
+                user_identifier = APIGatewayProxyEvent(
                     request.scope["aws.event"]
-                ).request_context.authorizer["owner"]
-                request.state.owner = owner
+                ).request_context.authorizer["user_identifier"]
+                request.state.owner = user_identifier
         except KeyError:
             logger.error("No AWS event found in request scope")
             raise HTTPException(

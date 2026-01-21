@@ -205,7 +205,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError(f"Failed to list users from Cognito {e}")
 
 
-def _generate_policy_allow(principal_id="", resource="", owner=""):
+def _generate_policy_allow(principal_id="", resource="", user_identifier=""):
     # Generate allow policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -222,13 +222,13 @@ def _generate_policy_allow(principal_id="", resource="", owner=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "owner": owner,
+            "user_identifier": user_identifier,
         }
 
     return auth_response
 
 
-def _generate_policy_deny(principal_id="", resource="", owner=""):
+def _generate_policy_deny(principal_id="", resource="", user_identifier=""):
     # Generate deny policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -241,7 +241,7 @@ def _generate_policy_deny(principal_id="", resource="", owner=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "owner": owner,
+            "user_identifier": user_identifier,
         }
 
     return auth_response
@@ -250,42 +250,44 @@ def _generate_policy_deny(principal_id="", resource="", owner=""):
 def lambda_handler(event, context):
     headers = event["headers"]
     method_arn = event["methodArn"]
-    owner = None
-    unknown_owner = "unknown"
+    user_identifier = None
+    unknown_user_identifier = "unknown"
 
     try:
         if "q-api-token" in headers:
             # Verify API token
-            owner = _verify_api_token(headers["q-api-token"])
+            user_identifier = _verify_api_token(headers["q-api-token"])
         elif "authorization" in headers:
             # Verify Cognito ID token
-            owner = _verify_id_token(headers["authorization"])
+            user_identifier = _verify_id_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
             policy_document = _generate_policy_deny(
-                unknown_owner, method_arn, unknown_owner
+                unknown_user_identifier, method_arn, unknown_user_identifier
             )
             return policy_document
-        if not owner:
+        if not user_identifier:
             # Generate deny policy
             policy_document = _generate_policy_deny(
-                unknown_owner, method_arn, unknown_owner
+                unknown_user_identifier, method_arn, unknown_user_identifier
             )
             return policy_document
         else:
             # Generate allow policy
-            policy_document = _generate_policy_allow(owner, method_arn, owner)
+            policy_document = _generate_policy_allow(
+                user_identifier, method_arn, user_identifier
+            )
             logger.info(f"Authorization success {policy_document}")
             return policy_document
     except AuthError as e:
         logger.exception(f"Authentication/Authorization failed: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_owner, method_arn, unknown_owner
+            unknown_user_identifier, method_arn, unknown_user_identifier
         )
         return policy_document
     except Exception as e:
         logger.exception(f"Unexpected error occurred: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_owner, method_arn, unknown_owner
+            unknown_user_identifier, method_arn, unknown_user_identifier
         )
         return policy_document

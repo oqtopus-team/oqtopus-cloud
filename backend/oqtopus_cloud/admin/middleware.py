@@ -27,10 +27,10 @@ class CustomMiddleware(BaseHTTPMiddleware):
                 request.state.user_pool_id = "ap-northeast-1_XXXXXXXXX"
                 request.state.region = "ap-northeast-1"
             else:
-                owner = APIGatewayProxyEvent(
+                user_identifier = APIGatewayProxyEvent(
                     request.scope["aws.event"]
                 ).request_context.authorizer.claims["cognito:username"]
-                request.state.owner = owner
+                request.state.owner = user_identifier
                 user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
                 request.state.user_pool_id = user_pool_id
                 if user_pool_id:
