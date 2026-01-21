@@ -827,7 +827,7 @@ paths:
         '204':
           description: Current user deleted
         '401':
-          description: 
+          description: Unauthorized
         '403':
           description: Forbidden
           content:
