@@ -724,7 +724,7 @@ def test_update_user_500_on_unexpected_error(test_db):
     }
 
 
-def test_delete_user(test_db):
+def test_delete_user(test_db, test_cognito_client):
     n = 1
     test_db.flush()
     test_db.add(_get_model_whitelist(n, is_completed=True))
@@ -733,7 +733,7 @@ def test_delete_user(test_db):
 
     request = _create_request()
     request.state.owner = f"email_{n}"
-    response = delete_user(request, test_db)
+    response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
 
@@ -747,7 +747,7 @@ def test_delete_user(test_db):
     assert whitelist_user is None
 
 
-def test_delete_user_should_remove_user_jobs(test_db):
+def test_delete_user_should_remove_user_jobs(test_db, test_cognito_client):
     n = 1
     test_db.flush()
     test_db.add(_get_model_whitelist(n, is_completed=True))
@@ -759,13 +759,13 @@ def test_delete_user_should_remove_user_jobs(test_db):
 
     request = _create_request()
     request.state.owner = f"email_{n}"
-    delete_user(request, test_db)
+    delete_user(request, test_db, client=test_cognito_client)
 
     user_jobs = test_db.scalars(select(Job).where(Job.owner == f"email_{n}")).all()
     assert user_jobs == []
 
 
-def test_delete_user_should_not_delete_other_users_jobs(test_db):
+def test_delete_user_should_not_delete_other_users_jobs(test_db, test_cognito_client):
     n = 1
     test_db.flush()
     test_db.add(_get_model_whitelist(n, is_completed=True))
@@ -780,7 +780,7 @@ def test_delete_user_should_not_delete_other_users_jobs(test_db):
 
     request = _create_request()
     request.state.owner = f"email_{n}"
-    delete_user(request, test_db)
+    delete_user(request, test_db, client=test_cognito_client)
 
     user2_jobs = test_db.scalars(select(Job).where(Job.owner == "email_2")).all()
     user3_jobs = test_db.scalars(select(Job).where(Job.owner == "email_3")).all()
@@ -791,7 +791,7 @@ def test_delete_user_should_not_delete_other_users_jobs(test_db):
     assert len(user3_jobs) == 2
 
 
-def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage):
+def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage, test_cognito_client):
     test_db.flush()
     test_db.add(_get_model_whitelist(1, is_completed=True))
     test_db.add(_get_model(1))
@@ -807,7 +807,7 @@ def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage):
 
     request = _create_request()
     request.state.owner = "email_1"
-    response = delete_user(request, test_db, test_storage)
+    response = delete_user(request, test_db, test_storage, client=test_cognito_client)
 
     assert response is None
 
@@ -821,7 +821,7 @@ def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage):
     assert "testjob2id/oqtopus_test_log.log" in other_object_keys
 
 
-def test_delete_user_with_no_whitelist_user(test_db):
+def test_delete_user_with_no_whitelist_user(test_db, test_cognito_client):
     n = 1
     test_db.flush()
     test_db.add(_get_model(n))
@@ -829,7 +829,7 @@ def test_delete_user_with_no_whitelist_user(test_db):
 
     request = _create_request()
     request.state.owner = f"email_{n}"
-    response = delete_user(request, test_db)
+    response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
 
@@ -839,12 +839,12 @@ def test_delete_user_with_no_whitelist_user(test_db):
     assert get_response.status_code == 404
 
 
-def test_delete_user_no_user(test_db):
+def test_delete_user_no_user(test_db, test_cognito_client):
     test_db.flush()
 
     request = _create_request()
     request.state.owner = f"email_{2}"
-    response = delete_user(request, test_db)
+    response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
@@ -871,7 +871,7 @@ def test_delete_user_500(test_db):
     }
 
 
-def test_delete_user_user_deletion_disabled(test_db, monkeypatch):
+def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_client):
     monkeypatch.setenv("ALLOW_DELETION", "false")
 
     n = 1
@@ -882,7 +882,7 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch):
 
     request = _create_request()
     request.state.owner = f"email_{n}"
-    response = delete_user(request, test_db)
+    response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is ForbiddenErrorResponse
     assert response.status_code == 403

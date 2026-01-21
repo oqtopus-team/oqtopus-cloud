@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from typing import (
     Generator,
+    Any,
 )
 
 import boto3
@@ -306,6 +307,11 @@ def test_storage(fake_os_env) -> Generator[FSSpecStorage, None, None]:
     local_storage_path = os.environ["STORAGE_LOCAL_BASE_PATH"]
     os.mkdir(local_storage_path)
     yield FSSpecStorage(fs_url=f"file://{local_storage_path}")
+
+
+@pytest.fixture(scope="function")
+def test_cognito_client() -> Generator[Any, None, None]:
+    yield FakeCognitoClient()
 
 
 @pytest.fixture(autouse=True)

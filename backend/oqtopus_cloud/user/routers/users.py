@@ -27,6 +27,7 @@ from oqtopus_cloud.user.schemas.errors import (
 )
 from oqtopus_cloud.common.session import (
     get_db,
+    get_cognito_client,
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
@@ -160,12 +161,11 @@ def delete_user(
     event: Event,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
+    client=Depends(get_cognito_client),
 ) -> (
     None | ForbiddenErrorResponse | NotFoundErrorResponse | InternalServerErrorResponse
 ):
     user_pool_id = event.state.user_pool_id
-    region = event.state.region
-    client = boto3.client("cognito-idp", region_name=region)
 
     try:
         logger.info("invoked delete user")
