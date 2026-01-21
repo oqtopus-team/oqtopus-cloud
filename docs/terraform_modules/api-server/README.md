@@ -71,6 +71,7 @@ module "user_api" {
 | [aws_iam_role_policy_attachment.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.vpc_access_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_kms_key.api_gateway_log](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
+| [aws_lambda_alias.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_alias) | resource |
 | [aws_lambda_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
 | [aws_lambda_permission.api_lambda_permission](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
 | [aws_lambda_permission.apigw_lambda_auth_invoke](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
@@ -101,6 +102,7 @@ module "user_api" {
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |
 | <a name="input_lambda_additional_env"></a> [lambda\_additional\_env](#input\_lambda\_additional\_env) | Additional environment variables | `map(any)` | `{}` | no |
+| <a name="input_lambda_authorizer_alias"></a> [lambda\_authorizer\_alias](#input\_lambda\_authorizer\_alias) | Alias of the Lambda function used for authorizer | `string` | `""` | no |
 | <a name="input_lambda_authorizer_arn"></a> [lambda\_authorizer\_arn](#input\_lambda\_authorizer\_arn) | ARN of the Lambda function used for authorizer | `string` | `""` | no |
 | <a name="input_lambda_handler"></a> [lambda\_handler](#input\_lambda\_handler) | The handler for the Lambda function | `string` | n/a | yes |
 | <a name="input_lambda_security_group_ids"></a> [lambda\_security\_group\_ids](#input\_lambda\_security\_group\_ids) | The security group IDs for the Lambda function | `list(string)` | n/a | yes |
