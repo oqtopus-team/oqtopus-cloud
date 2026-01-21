@@ -14,7 +14,7 @@ services:
       - 3306:3306
 
   minio:
-    image: quay.io/minio/minio
+    image: oqtopus-minio
     container_name: minio
     ports:
       - "9000:9000"

@@ -76,6 +76,7 @@ export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
 export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+export SSE_USER_PROGRAM_NAME=userprogram.py
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
@@ -95,6 +96,19 @@ run-user_signup: ## Start the user_signup API
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
+build-minio:
+	@export MINIO_SOURCE_PATH=./minio-for-build && \
+	export MINIO_VERSION="RELEASE.2025-10-15T17-29-55Z" && \
+	git clone https://github.com/minio/minio.git $${MINIO_SOURCE_PATH} && \
+	cd $${MINIO_SOURCE_PATH} && \
+	git checkout tags/$${MINIO_VERSION} && \
+	docker run --rm -v $$(pwd):/out golang:1.25.3 bash -c "\
+		go install github.com/minio/minio@$${MINIO_VERSION} && \
+		cp /go/bin/minio /out" && \
+	docker build -t oqtopus-minio . && \
+	cd .. && \
+	rm -rf $${MINIO_SOURCE_PATH}
 
 up: ## Start the DB
 	@docker compose up
