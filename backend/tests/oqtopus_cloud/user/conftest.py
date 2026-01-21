@@ -40,7 +40,7 @@ class TestUserMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
-        request.state.owner = "email_1"
+        request.state.user_identifier = "email_1"
         request.state.username = "test_user"
         response = await call_next(request)
         return response

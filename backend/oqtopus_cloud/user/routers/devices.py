@@ -41,7 +41,7 @@ def get_devices(
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked list_devices")
-        available_devices = get_user_available_devices(event.state.owner, db)
+        available_devices = get_user_available_devices(event.state.user_identifier, db)
 
         if available_devices == "*":
             devices = db.scalars(select(Device)).all()
@@ -83,7 +83,7 @@ def get_device(
     """
     # TODO implement error handling
     try:
-        user_identifier = event.state.owner
+        user_identifier = event.state.user_identifier
         logger.info(
             f"User {user_identifier} is trying to access device_id={device_id}."
         )

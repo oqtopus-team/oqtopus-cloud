@@ -54,7 +54,7 @@ def create_api_token(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    user_identifier = event.state.owner
+    user_identifier = event.state.user_identifier
     logger.info(f"Get api token for {user_identifier}")
 
     try:
@@ -113,7 +113,7 @@ def delete_api_token(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    user_identifier = event.state.owner
+    user_identifier = event.state.user_identifier
     logger.info(f"Delete api token: {user_identifier}")
     try:
         # save user table (user_identifier = Cognito username = email)
@@ -157,7 +157,7 @@ def get_api_token_status(
     | NotFoundErrorResponse
     | InternalServerErrorResponse
 ):
-    user_identifier = event.state.owner
+    user_identifier = event.state.user_identifier
     logger.info(f"Get api token: {user_identifier}")
     try:
         # save user table (user_identifier = Cognito username = email)

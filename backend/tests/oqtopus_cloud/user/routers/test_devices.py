@@ -107,7 +107,7 @@ def test_get_device(test_db):
     # Arrange
     user_no = 1
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no))
     test_db.add(_get_model())
@@ -139,7 +139,7 @@ def test_can_get_device_if_in_available_devices(test_db):
     user_no = 1
     device = "SC"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no, available_devices=[device]))
     test_db.add(_get_model(device=device))
@@ -171,7 +171,7 @@ def test_cannot_get_device_without_permission(test_db):
     user_no = 1
     device = "SC"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
     test_db.add(_get_model(device=device))
@@ -193,7 +193,7 @@ def test_cannot_get_device_that_not_exist(test_db):
     user_no = 1
     device = "SC222"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no))
     test_db.commit()
@@ -211,7 +211,7 @@ def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no, ["Test_model", "SVSim"]))
     test_db.add(_get_model(device="SC"))
@@ -261,7 +261,7 @@ def test_can_return_all_devices_when_user_has_access_to_all_devices(test_db):
     # Arrange
     user_no = 1
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_identifier = f"email_{user_no}"
 
     test_db.add(_get_user_model(user_no, "*"))
     test_db.add(_get_model(device="SC"))
