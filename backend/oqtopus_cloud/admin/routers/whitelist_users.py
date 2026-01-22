@@ -33,7 +33,7 @@ from oqtopus_cloud.common.available_devices import (
     parse_available_devices_string,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
-    EMAIL_ALREADY_EXISTS_MESSAGE,
+    ALREADY_EXISTS_MESSAGE,
     FIELD_REQUIRED_MESSAGE,
     FIELD_TOO_LONG_MESSAGE,
     FormatError,
@@ -76,7 +76,7 @@ def validated_whitelist_user(
         raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.organization, LEN_VARCHAR))
 
     if not is_unique_email(db, WhitelistUser, user.email):
-        raise FormatError(EMAIL_ALREADY_EXISTS_MESSAGE.format(user.email))
+        raise FormatError(ALREADY_EXISTS_MESSAGE.format(user.email))
 
     validated_user = {
         "email": str(user.email),

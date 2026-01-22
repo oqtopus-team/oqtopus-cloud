@@ -67,6 +67,7 @@ def test_get_users_simple(
         users=[
             GetOneUserResponse(
                 id="1",
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
@@ -76,6 +77,7 @@ def test_get_users_simple(
             ),
             GetOneUserResponse(
                 id="2",
+                user_identifier="email_2",
                 email="email_2",
                 display_name="username_2",
                 status=UserStatus.unapproved,
@@ -108,6 +110,7 @@ def test_get_users_query_limit_offset(
         users=[
             GetOneUserResponse(
                 id="2",
+                user_identifier="email_2",
                 email="email_2",
                 display_name="username_2",
                 status=UserStatus.approved,
@@ -117,6 +120,7 @@ def test_get_users_query_limit_offset(
             ),
             GetOneUserResponse(
                 id="3",
+                user_identifier="email_3",
                 email="email_3",
                 display_name="username_3",
                 status=UserStatus.approved,
@@ -127,6 +131,38 @@ def test_get_users_query_limit_offset(
         ],
     )
 
+    assert response.status_code == 200
+    assert actual == expect
+
+
+def test_get_user_by_user_identifier(
+    test_db,
+):
+    test_db.flush()
+    test_db.add(_get_model(3))
+    test_db.add(_get_model(1))
+    test_db.add(_get_model(2))
+    test_db.commit()
+
+    response = client.get("/users?user_identifier=email_1")
+    adapter = TypeAdapter(GetUsersResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetUsersResponse(
+        offset="0",
+        limit="10",
+        users=[
+            GetOneUserResponse(
+                id="1",
+                user_identifier="email_1",
+                email="email_1",
+                display_name="username_1",
+                organization="organization_1",
+                status=UserStatus.approved,
+                group_id="group_id_1",
+                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+            )
+        ],
+    )
     assert response.status_code == 200
     assert actual == expect
 
@@ -149,6 +185,7 @@ def test_get_user_by_email(
         users=[
             GetOneUserResponse(
                 id="1",
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
@@ -182,6 +219,7 @@ def test_get_user_by_display_name_organization_groupid_status(
         users=[
             GetOneUserResponse(
                 id="1",
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
@@ -211,6 +249,7 @@ def test_get_users_order_ascending(test_db):
         users=[
             GetOneUserResponse(
                 id=1,
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
@@ -220,6 +259,7 @@ def test_get_users_order_ascending(test_db):
             ),
             GetOneUserResponse(
                 id=2,
+                user_identifier="email_2",
                 email="email_2",
                 display_name="username_2",
                 organization="organization_2",
@@ -229,6 +269,7 @@ def test_get_users_order_ascending(test_db):
             ),
             GetOneUserResponse(
                 id=3,
+                user_identifier="email_3",
                 email="email_3",
                 display_name="username_3",
                 organization="organization_3",
@@ -249,7 +290,7 @@ def test_get_users_order_descending(test_db):
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/users?sort=email,desc")
+    response = client.get("/users?sort=user_identifier,desc")
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
@@ -258,6 +299,7 @@ def test_get_users_order_descending(test_db):
         users=[
             GetOneUserResponse(
                 id=3,
+                user_identifier="email_3",
                 email="email_3",
                 display_name="username_3",
                 organization="organization_3",
@@ -267,6 +309,7 @@ def test_get_users_order_descending(test_db):
             ),
             GetOneUserResponse(
                 id=2,
+                user_identifier="email_2",
                 email="email_2",
                 display_name="username_2",
                 organization="organization_2",
@@ -276,6 +319,7 @@ def test_get_users_order_descending(test_db):
             ),
             GetOneUserResponse(
                 id=1,
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
@@ -329,6 +373,7 @@ def test_get_one_user(test_db):
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
         id=2,
+        user_identifier="email_2",
         email="email_2",
         display_name="username_2",
         organization="organization_2",
@@ -358,7 +403,7 @@ def test_get_one_user_500():
     response = client.get("/users/1")
     assert response.status_code == 500
 
-def test_patch_job_status_to_suspended(
+def test_patch_user_status_to_suspended(
     test_db,
 ):
     test_db.flush()
@@ -370,6 +415,7 @@ def test_patch_job_status_to_suspended(
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
         id="1",
+        user_identifier="email_1",
         email="email_1",
         display_name="username_1",
         organization="organization_1",
@@ -381,7 +427,7 @@ def test_patch_job_status_to_suspended(
     assert actual == expect
 
 
-def test_patch_job_status_to_unapproved(
+def test_patch_user_status_to_unapproved(
     test_db,
 ):
     test_db.flush()
@@ -393,6 +439,7 @@ def test_patch_job_status_to_unapproved(
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
         id="1",
+        user_identifier="email_1",
         email="email_1",
         display_name="username_1",
         organization="organization_1",
@@ -417,6 +464,7 @@ def test_patch_user(test_db):
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
         id=1,
+        user_identifier="email_1",
         email="email_1",
         display_name="user_name_1",
         organization="new_organization",
@@ -433,6 +481,7 @@ def test_patch_user_all_fields(test_db):
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(
+        user_identifier="email@email.com",
         email="email@email.com",
         display_name="user_name_1",
         organization="new_organization",
@@ -445,6 +494,7 @@ def test_patch_user_all_fields(test_db):
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
         id=1,
+        user_identifier="email@email.com",
         email="email@email.com",
         display_name="user_name_1",
         organization="new_organization",
@@ -456,7 +506,7 @@ def test_patch_user_all_fields(test_db):
     assert actual == expect
 
 
-def test_patch_job_404(
+def test_patch_user_404(
     test_db,
 ):
     test_db.flush()
@@ -468,36 +518,63 @@ def test_patch_job_404(
     assert response.json() == {"message": "User not found: 2"}
 
 
-def test_patch_job_400_email_too_long(test_db):
+def test_patch_user_400_user_identifier_email_mismatch(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    too_long_email = "a" * (LEN_VARCHAR + 1)
     update_data = UpdateUserRequest(
-        email=too_long_email,
+        user_identifier="email@email.com",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    assert response.status_code == 400
+    assert response.json() == {"message": "user_identifier must be the same as email."}
+
+    update_data = UpdateUserRequest(
+        email="email@email.com",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    assert response.status_code == 400
+    assert response.json() == {"message": "user_identifier must be the same as email."}
+
+    update_data = UpdateUserRequest(
+        user_identifier="email@email.com",
+        email="other_email@email.com",
+    )
+    response = client.patch("/users/1", json=update_data.model_dump())
+    assert response.status_code == 400
+    assert response.json() == {"message": "user_identifier must be the same as email."}
+
+
+def test_patch_user_400_user_identifier_too_long(test_db):
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    too_long = "a" * (LEN_VARCHAR + 1)
+    update_data = UpdateUserRequest(
+        user_identifier=too_long,
+        email=too_long,
     )
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_email} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {"message": f"The length of {too_long} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
 
 
-def test_patch_job_400_email_already_exist(test_db):
-    user_1_mail = "email@email.com"
+def test_patch_job_400_user_identifier_already_exist(test_db):
     user_1 = _get_model(1)
-    user_1.email = user_1_mail
 
     test_db.flush()
     test_db.add(user_1)
     test_db.add(_get_model(2))
     test_db.commit()
     update_data = UpdateUserRequest(
-        email=user_1_mail,
+        user_identifier=user_1.user_identifier,
+        email=user_1.email,
     )
     response = client.patch("/users/2", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"{user_1_mail} is already registered."}
+    assert response.json() == {"message": f"{user_1.user_identifier} is already registered."}
 
 
 def test_patch_job_400_display_name_too_long(test_db):
@@ -572,6 +649,7 @@ def test_delete_user(
         users=[
             GetOneUserResponse(
                 id="1",
+                user_identifier="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",

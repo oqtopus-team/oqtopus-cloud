@@ -22,6 +22,7 @@ class GetOneUserResponse(BaseModel):
     """
 
     id: int
+    user_identifier: str | None = None
     email: str | None = None
     display_name: str | None = None
     organization: str | None = None
@@ -37,6 +38,7 @@ class GetUsersResponse(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
+    user_identifier: str | None = None
     email: str | None = None
     display_name: str | None = None
     organization: str | None = None

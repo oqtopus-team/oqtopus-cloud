@@ -20,10 +20,11 @@ from oqtopus_cloud.admin.schemas.users import (
     UserStatus,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
-    EMAIL_ALREADY_EXISTS_MESSAGE,
+    ALREADY_EXISTS_MESSAGE,
     FIELD_TOO_LONG_MESSAGE,
     LEN_VARCHAR,
     is_unique_email,
+    is_unique_user_identifier,
     FormatError,
 )
 from oqtopus_cloud.common.models.user import User
@@ -41,6 +42,7 @@ from . import LoggerRouteHandler
 
 COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "id": User.id,
+    "user_identifier": User.user_identifier,
     "email": User.email,
     "display_name": User.display_name,
     "organization": User.organization,
@@ -61,6 +63,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 def get_users(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
+    user_identifier: Optional[str] = None,
     email: Optional[str] = None,
     display_name: Optional[str] = None,
     organization: Optional[str] = None,
@@ -73,6 +76,8 @@ def get_users(
         logger.info("invoked list_users")
         # query
         stmt = select(User)
+        if user_identifier:
+            stmt = stmt.where(User.user_identifier.ilike(f"%{user_identifier}%"))
         if email:
             stmt = stmt.where(User.email.ilike(f"%{email}%"))
         if display_name:
@@ -185,6 +190,26 @@ def update_user_status(
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
 
+        # consistency check
+        # currently user_identifier = Cognito username = email
+        if update_user_request.user_identifier != update_user_request.email:
+            raise FormatError("user_identifier must be the same as email.")
+
+        if update_user_request.user_identifier:
+            if len(update_user_request.user_identifier) > LEN_VARCHAR:
+                raise FormatError(
+                    FIELD_TOO_LONG_MESSAGE.format(
+                        update_user_request.user_identifier, LEN_VARCHAR
+                    )
+                )
+            if not is_unique_user_identifier(
+                db, User, update_user_request.user_identifier
+            ):
+                raise FormatError(
+                    ALREADY_EXISTS_MESSAGE.format(update_user_request.user_identifier)
+                )
+            query.user_identifier = update_user_request.user_identifier
+
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
                 raise FormatError(
@@ -194,7 +219,7 @@ def update_user_status(
                 )
             if not is_unique_email(db, User, update_user_request.email):
                 raise FormatError(
-                    EMAIL_ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
+                    ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
                 )
             query.email = update_user_request.email
 
@@ -295,7 +320,7 @@ def delete_user(
         # delete from cognito
         client.admin_delete_user(
             UserPoolId=user_pool_id,
-            Username=query_result.email,
+            Username=query_result.user_identifier,
         )
 
         return None
@@ -309,6 +334,7 @@ def model_to_schema(model: User) -> GetOneUserResponse:
     status = status_to_enum(getattr(model, "userstatus", None))
     return GetOneUserResponse(
         id=model.id,
+        user_identifier=model.user_identifier,
         email=getattr(model, "email", None),
         display_name=getattr(model, "display_name", None),
         organization=getattr(model, "organization", None),
