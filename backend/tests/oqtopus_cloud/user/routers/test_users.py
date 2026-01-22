@@ -31,8 +31,9 @@ def _get_model(n: int) -> User:
     model_dict = {
         "id": n,
         "cognito_id": f"cognito_id_{n}",
+        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": "approved",
         "api_token_id": f"api_token_id{n}",
         "api_token_hash": f"api_token_hash{n}",
@@ -53,7 +54,7 @@ def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
         "email": f"email_{n}",
         "group_id": f"group_id_{n}",
         "is_signup_completed": is_completed,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -131,7 +132,7 @@ def test_get_user(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -166,7 +167,7 @@ def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -217,7 +218,7 @@ def test_get_user_should_include_login_events_only_from_given_user(test_db, fake
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -263,7 +264,7 @@ def test_get_user_should_include_only_auth_events(test_db, fake_cloud_trails_cli
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -321,7 +322,7 @@ def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trai
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -392,7 +393,7 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -438,7 +439,7 @@ def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_cl
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -485,7 +486,7 @@ def test_get_user_should_skip_login_events_when_disabled(test_db, monkeypatch, f
     }]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -508,7 +509,7 @@ def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -541,7 +542,7 @@ def test_get_user_not_found(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_2"
+    request.state.user_identifier = f"email_2"
     response = get_user(request, test_db)
 
     assert type(response) is NotFoundErrorResponse
@@ -558,7 +559,7 @@ def test_get_one_user_500_on_unexpected_error(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     response = get_user(request)
 
     assert type(response) is InternalServerErrorResponse
@@ -575,7 +576,7 @@ def test_update_user(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     actual = update_user(request, request_body, test_db)
@@ -598,7 +599,7 @@ def test_update_user_update_only_fields_present_in_request(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name")
     actual = update_user(request, request_body, test_db)
@@ -620,7 +621,7 @@ def test_update_user_not_found(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_2"
+    request.state.user_identifier = f"email_2"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
@@ -639,7 +640,7 @@ def test_update_user_name_too_long(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     too_long_name = "a" * (LEN_VARCHAR + 1)
     request_body = UpdateUserRequest(name=too_long_name, organization="new_organization")
@@ -659,7 +660,7 @@ def test_update_user_name_update_disabled(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
@@ -678,7 +679,7 @@ def test_update_user_organization_update_disabled(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
@@ -695,7 +696,7 @@ def test_update_user_organization_too_long(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
 
     too_long_organization = "a" * (LEN_VARCHAR + 1)
     request_body = UpdateUserRequest(name="new_name", organization=too_long_organization)
@@ -713,7 +714,7 @@ def test_update_user_500_on_unexpected_error(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body)
 
@@ -732,7 +733,7 @@ def test_delete_user(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
@@ -758,7 +759,7 @@ def test_delete_user_should_remove_user_jobs(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     delete_user(request, test_db, client=test_cognito_client)
 
     user_jobs = test_db.scalars(select(Job).where(Job.owner == f"email_{n}")).all()
@@ -779,7 +780,7 @@ def test_delete_user_should_not_delete_other_users_jobs(test_db, test_cognito_cl
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     delete_user(request, test_db, client=test_cognito_client)
 
     user2_jobs = test_db.scalars(select(Job).where(Job.owner == "email_2")).all()
@@ -806,7 +807,7 @@ def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage, test_
     test_storage.put(key="testjob2id/oqtopus_test_log.log", data=b"log2")
 
     request = _create_request()
-    request.state.owner = "email_1"
+    request.state.user_identifier = "email_1"
     response = delete_user(request, test_db, test_storage, client=test_cognito_client)
 
     assert response is None
@@ -828,7 +829,7 @@ def test_delete_user_with_no_whitelist_user(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
@@ -843,7 +844,7 @@ def test_delete_user_no_user(test_db, test_cognito_client):
     test_db.flush()
 
     request = _create_request()
-    request.state.owner = f"email_{2}"
+    request.state.user_identifier = f"email_{2}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is NotFoundErrorResponse
@@ -861,7 +862,7 @@ def test_delete_user_500(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     response = delete_user(request)
 
     assert type(response) is InternalServerErrorResponse
@@ -881,7 +882,7 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_c
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_identifier = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is ForbiddenErrorResponse
