@@ -83,6 +83,10 @@ resource "aws_lambda_function" "this" {
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
       var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
       var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
+      var.allow_deletion != "" ? { ALLOW_DELETION = var.allow_deletion } : {},
+      var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
+      var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
+      var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
     )
   }
 
@@ -182,6 +186,16 @@ resource "aws_iam_role_policy_attachment" "lambda_tag_resource" {
   policy_arn = aws_iam_policy.lambda_tag_resource.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cloudtrail_access" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cloudtrail_access.arn
+}
+
+resource "aws_iam_role_policy_attachment" "cognito_admin_delete_user" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cognito_admin_delete_user.arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -206,6 +220,16 @@ resource "aws_iam_policy" "s3_access" {
 resource "aws_iam_policy" "lambda_tag_resource" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-tag-resource-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_tag_resource.json
+}
+
+resource "aws_iam_policy" "cloudtrail_access" {
+  name   = "${var.product}-${var.org}-${var.env}-cloudtrail-access-${var.identifier}"
+  policy = data.aws_iam_policy_document.cloudtrail_permission.json
+}
+
+resource "aws_iam_policy" "cognito_admin_delete_user" {
+  name   = "${var.product}-${var.org}-${var.env}-cognito-admin-delete-user-${var.identifier}"
+  policy = data.aws_iam_policy_document.cognito_admin_delete_user.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -248,6 +272,22 @@ data "aws_iam_policy_document" "lambda_tag_resource" {
     actions   = ["lambda:TagResource"]
     effect    = "Allow"
     resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cloudtrail_permission" {
+  statement {
+    actions   = ["cloudtrail:LookupEvents"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cognito_admin_delete_user" {
+  statement {
+    actions   = ["cognito-idp:AdminDeleteUser"]
+    effect    = "Allow"
+    resources = var.cognito_user_pool_arns
   }
 }
 

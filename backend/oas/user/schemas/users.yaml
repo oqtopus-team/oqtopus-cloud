@@ -1,0 +1,40 @@
+users.LoginEvent:
+  description: details of login event
+  type: object
+  properties:
+    event_date:
+      type: string
+      format: date-time
+    user_agent:
+      type: string
+    ip:
+      type: string
+
+users.GetOneUserResponse:
+  description: detail of user response
+  type: object
+  properties:
+    id:
+      type: integer
+    email:
+      type: string
+    name:
+      type: string
+    organization:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    login_events:
+      type: array
+      items:
+        $ref: '#/users.LoginEvent'
+
+users.UpdateUserRequest:
+  description: user update data
+  type: object
+  properties:
+    name:
+      type: string
+    organization:
+      type: string

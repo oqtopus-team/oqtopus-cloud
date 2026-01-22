@@ -76,6 +76,10 @@ export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
 export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+export ALLOW_DELETION=true # flag to control whether users can delete their accounts
+export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
+export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
+export LOGIN_HISTORY_ENABLED=true # flag to control whether user login history should be included in GET user API response
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \

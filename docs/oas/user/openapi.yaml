@@ -745,6 +745,131 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal server error
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user
+      description: Get current user
+      operationId: get_current_user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/users.GetOneUserResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    patch:
+      tags:
+        - Users
+      summary: Update current user
+      description: Update current user
+      operationId: update_current_user
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/users.UpdateUserRequest'
+      responses:
+        '200':
+          description: Return current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/users.GetOneUserResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - Users
+      summary: Delete current user
+      description: Delete current user
+      operationId: delete_current_user
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Current user deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /system/settings:
+    get:
+      tags:
+        - Settings
+      summary: Get current settings
+      description: Get current settings
+      operationId: get_current_settings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Return current settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/settings.GetSettingsResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
 components:
   securitySchemes:
     BearerAuth:
@@ -1455,3 +1580,71 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/announcements.GetAnnouncementResponse'
+    users.LoginEvent:
+      description: details of login event
+      type: object
+      properties:
+        event_date:
+          type: string
+          format: date-time
+        user_agent:
+          type: string
+        ip:
+          type: string
+    users.GetOneUserResponse:
+      description: detail of user response
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        organization:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        login_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/users.LoginEvent'
+    users.UpdateUserRequest:
+      description: user update data
+      type: object
+      properties:
+        name:
+          type: string
+        organization:
+          type: string
+    settings.GetSettingsResponse:
+      description: detail of settings response
+      type: object
+      properties:
+        editable_fields:
+          type: array
+          items:
+            type: string
+            enum:
+              - name
+              - organization
+        allow_deletion:
+          type: boolean
+        visible_fields:
+          type: array
+          items:
+            type: string
+            enum:
+              - id
+              - name
+              - email
+              - organization
+              - created_at
+        login_history_enabled:
+          type: boolean
+      required:
+        - editable_fields
+        - allow_deletion
+        - visible_fields
+        - login_history_enabled
