@@ -2,8 +2,10 @@ import os
 from datetime import datetime
 from typing import (
     Generator,
+    Any,
 )
 
+import boto3
 import pytest
 import pytz
 from fastapi.testclient import TestClient
@@ -79,6 +81,58 @@ def test_client(request):
         raise ValueError(f"unknown mode: {mode}")
     test_app.add_middleware(TestUserMiddleware)
     return TestClient(test_app)
+
+
+class FakeCognitoClient:
+    def __init__(self):
+        self.confirm_sign_up_exception = None
+
+    def admin_delete_user(self, UserPoolId=None, Username=None):
+        return {"Response": "Ok"}
+
+
+def fake_boto3_client(service, region_name=None, **kwargs):
+    if service == "cognito-idp":
+        return fake_cognito_client
+    if service == "cloudtrail":
+        return fake_cloud_trails_client
+    raise ValueError(f"Unsupported service: {service}")
+
+
+@pytest.fixture
+def fake_cognito_client_fixture():
+    return FakeCognitoClient()
+
+
+@pytest.fixture(autouse=True)
+def override_boto3_client(monkeypatch, fake_cognito_client_fixture, fake_cloud_trails_client_fixture):
+    global fake_cognito_client
+    fake_cognito_client = fake_cognito_client_fixture
+    global fake_cloud_trails_client
+    fake_cloud_trails_client = fake_cloud_trails_client_fixture
+    monkeypatch.setattr(boto3, "client", fake_boto3_client)
+
+
+class FakeCloudTrailsClient:
+    def __init__(self):
+        self.events = []
+
+    def get_paginator(self, method):
+        return FakeCloudTrailsPaginator(events=self.events)
+
+
+class FakeCloudTrailsPaginator:
+    def __init__(self, events):
+        self.events = events
+
+    def paginate(self, **kwargs):
+        for page in self.events:
+            yield page
+
+
+@pytest.fixture
+def fake_cloud_trails_client_fixture():
+    return FakeCloudTrailsClient()
 
 
 class TestingSession(Session):
@@ -255,6 +309,11 @@ def test_storage(fake_os_env) -> Generator[FSSpecStorage, None, None]:
     yield FSSpecStorage(fs_url=f"file://{local_storage_path}")
 
 
+@pytest.fixture(scope="function")
+def test_cognito_client() -> Generator[Any, None, None]:
+    yield FakeCognitoClient()
+
+
 @pytest.fixture(autouse=True)
 def fake_os_env(monkeypatch, tmp_path):
     monkeypatch.setenv("STORAGE_DRIVER", "local")
@@ -263,3 +322,7 @@ def fake_os_env(monkeypatch, tmp_path):
     monkeypatch.setenv("SSE_USER_PROGRAM_NAME", "oqtopus_test_program.py")
     monkeypatch.setenv("SSE_CONTAINER_LOG_NAME", "qtopus_test_sse_log.log")
     monkeypatch.setenv("SSE_ZIP_FILE_NAME", "oqtopus_test_sse_log_{job_id}.zip")
+    monkeypatch.setenv("ALLOW_DELETION", "true")
+    monkeypatch.setenv("EDITABLE_FIELDS", '["name", "organization"]')
+    monkeypatch.setenv("VISIBLE_FIELDS", '["id", "email", "name", "organization", "created_at"]')
+    monkeypatch.setenv("LOGIN_HISTORY_ENABLED", "true")

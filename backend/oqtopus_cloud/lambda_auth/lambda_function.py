@@ -248,7 +248,8 @@ def _generate_policy_deny(principal_id="", resource="", user_identifier=""):
 
 
 def lambda_handler(event, context):
-    headers = event["headers"]
+    headers_raw = event.get("headers", {})
+    headers = {k.lower(): v for k, v in headers_raw.items()}
     method_arn = event["methodArn"]
     user_identifier = None
     unknown_user_identifier = "unknown"

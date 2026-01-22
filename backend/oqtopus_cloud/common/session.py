@@ -91,3 +91,15 @@ def get_db() -> Generator:
         raise
     finally:
         db.close()
+
+
+def get_cognito_client():
+    region = None
+    if os.getenv("ENV") == "local":
+        region = "ap-northeast-1"
+    else:
+        user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
+        if user_pool_id:
+            region = user_pool_id.split("_")[0]
+
+    return boto3.client("cognito-idp", region_name=region)
