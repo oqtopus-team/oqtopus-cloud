@@ -18,6 +18,11 @@ users:
         description: "Limit information"
         required: false
         schema: {type: string}
+      - name: user_identifier
+        in: query
+        description: "query user identifier"
+        required: false
+        schema: {type: string}
       - name: email
         in: query
         description: "query email information"
