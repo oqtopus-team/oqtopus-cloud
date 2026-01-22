@@ -36,7 +36,7 @@ resource "aws_db_instance" "this" {
   db_subnet_group_name                  = aws_db_subnet_group.this.name
   deletion_protection                   = "true"
   engine                                = "mysql"
-  engine_version                        = "8.0.40"
+  engine_version                        = "8.4.8"
   iam_database_authentication_enabled   = "true"
   instance_class                        = var.db_performance_insights_enabled == true ? "db.t3.medium" : "db.t3.micro"
   iops                                  = "0"
@@ -48,7 +48,7 @@ resource "aws_db_instance" "this" {
   monitoring_interval                   = "0"
   multi_az                              = "true"
   network_type                          = "IPV4"
-  option_group_name                     = "default:mysql-8-0"
+  option_group_name                     = "default:mysql-8-4"
   parameter_group_name                  = aws_db_parameter_group.this.name
   performance_insights_enabled          = var.db_performance_insights_enabled
   performance_insights_kms_key_id       = var.db_performance_insights_enabled == true ? aws_kms_key.db_performance_insights[0].arn : null
@@ -94,8 +94,8 @@ resource "aws_db_subnet_group" "this" {
 
 resource "aws_db_parameter_group" "this" {
   name        = "${var.product}-${var.org}-${var.env}"
-  description = "default mysql8.0 with log_bin_trust_function_creators enabled"
-  family      = "mysql8.0"
+  description = "default mysql8.4 with log_bin_trust_function_creators enabled"
+  family      = "mysql8.4"
 
   parameter {
     apply_method = "immediate"
@@ -107,7 +107,7 @@ resource "aws_db_parameter_group" "this" {
 resource "aws_db_proxy" "this" {
   auth {
     auth_scheme               = "SECRETS"
-    client_password_auth_type = "MYSQL_NATIVE_PASSWORD"
+    client_password_auth_type = "MYSQL_CACHING_SHA2_PASSWORD"
     iam_auth                  = "DISABLED"
     secret_arn                = aws_db_instance.this.master_user_secret[0].secret_arn
   }
@@ -115,7 +115,7 @@ resource "aws_db_proxy" "this" {
   engine_family          = "MYSQL"
   idle_client_timeout    = "5400"
   name                   = "${var.product}-${var.org}-${var.env}"
-  require_tls            = "false"
+  require_tls            = "true"
   role_arn               = aws_iam_role.db_proxy.arn
   vpc_security_group_ids = var.db_proxy_security_group_ids
   vpc_subnet_ids         = var.subnet_ids
