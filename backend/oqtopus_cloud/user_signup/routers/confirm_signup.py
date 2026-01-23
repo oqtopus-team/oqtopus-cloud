@@ -35,8 +35,7 @@ def cleanup_user(
             Username=email,
         )
         # rollback the registration of user
-        # user_identifier = Cognito username = email
-        stmt = select(User).where(User.user_identifier == email)
+        stmt = select(User).where(User.email == email)
         user = db.execute(stmt).scalars().first()
         db.delete(user)
         # change the is_signup_completed flag to False
@@ -76,8 +75,7 @@ def confirm_signup(
             ForceAliasCreation=False,
         )
         # change db mfa_status to enabled
-        # user_identifier = Cognito username = email
-        stmt = select(User).where(User.user_identifier == email)
+        stmt = select(User).where(User.email == email)
         user = db.execute(stmt).scalars().first()
         if user:
             user.mfa_status = MFAStatus.enabled
