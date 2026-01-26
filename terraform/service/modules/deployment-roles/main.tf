@@ -71,13 +71,21 @@ resource "aws_iam_role" "github_actions_role" {
 }
 
 resource "aws_iam_role_policy" "auto_deployment_policy" {
-  name   = "${var.product}-${var.org}-${var.env}-auto-deployment-policy"
-  role   = aws_iam_role.github_actions_role.id
+  name = "${var.product}-${var.org}-${var.env}-auto-deployment-policy"
+  role = aws_iam_role.github_actions_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect   = "Allow"
-      Action   = ["iam:ListAccountAliases", "lambda:UpdateFunctionCode", "lambda:TagResource"]
+      Effect = "Allow"
+      Action = [
+        "iam:ListAccountAliases",
+        "lambda:UpdateFunctionCode",
+        "lambda:TagResource",
+        "lambda:CreateAlias",
+        "lambda:UpdateAlias",
+        "lambda:GetAlias",
+        "lambda:PublishVersion"
+      ]
       Resource = "*"
     }]
   })

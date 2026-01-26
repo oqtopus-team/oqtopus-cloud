@@ -83,6 +83,10 @@ resource "aws_lambda_function" "this" {
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},
       var.sse_user_program_name != "" ? { SSE_USER_PROGRAM_NAME = var.sse_user_program_name } : {},
       var.sse_zip_file_name != "" ? { SSE_ZIP_FILE_NAME = var.sse_zip_file_name } : {},
+      var.allow_deletion != "" ? { ALLOW_DELETION = var.allow_deletion } : {},
+      var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
+      var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
+      var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
     )
   }
 
@@ -90,6 +94,7 @@ resource "aws_lambda_function" "this" {
     size = "512"
   }
   filename                       = "./bin/${var.identifier}/lambda.zip"
+  source_code_hash               = filebase64sha256("./bin/${var.identifier}/lambda.zip")
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -113,10 +118,17 @@ resource "aws_lambda_function" "this" {
   snap_start {
     apply_on = "PublishedVersions"
   }
+  publish = true
 
   lifecycle {
     ignore_changes = [tags["github-sha"]]
   }
+}
+
+resource "aws_lambda_alias" "this" {
+  name             = "snapstart"
+  function_name    = aws_lambda_function.this.function_name
+  function_version = aws_lambda_function.this.version
 }
 
 resource "aws_iam_role" "lambda" {
@@ -174,6 +186,16 @@ resource "aws_iam_role_policy_attachment" "lambda_tag_resource" {
   policy_arn = aws_iam_policy.lambda_tag_resource.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cloudtrail_access" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cloudtrail_access.arn
+}
+
+resource "aws_iam_role_policy_attachment" "cognito_admin_delete_user" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cognito_admin_delete_user.arn
+}
+
 resource "aws_iam_policy" "lambda_execution" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-execution-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_execution.json
@@ -198,6 +220,16 @@ resource "aws_iam_policy" "s3_access" {
 resource "aws_iam_policy" "lambda_tag_resource" {
   name   = "${var.product}-${var.org}-${var.env}-lambda-tag-resource-${var.identifier}"
   policy = data.aws_iam_policy_document.lambda_tag_resource.json
+}
+
+resource "aws_iam_policy" "cloudtrail_access" {
+  name   = "${var.product}-${var.org}-${var.env}-cloudtrail-access-${var.identifier}"
+  policy = data.aws_iam_policy_document.cloudtrail_permission.json
+}
+
+resource "aws_iam_policy" "cognito_admin_delete_user" {
+  name   = "${var.product}-${var.org}-${var.env}-cognito-admin-delete-user-${var.identifier}"
+  policy = data.aws_iam_policy_document.cognito_admin_delete_user.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -240,6 +272,22 @@ data "aws_iam_policy_document" "lambda_tag_resource" {
     actions   = ["lambda:TagResource"]
     effect    = "Allow"
     resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cloudtrail_permission" {
+  statement {
+    actions   = ["cloudtrail:LookupEvents"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "cognito_admin_delete_user" {
+  statement {
+    actions   = ["cognito-idp:AdminDeleteUser"]
+    effect    = "Allow"
+    resources = var.cognito_user_pool_arns
   }
 }
 
@@ -409,13 +457,14 @@ resource "aws_api_gateway_integration" "this" {
   http_method             = aws_api_gateway_method.this.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.this.invoke_arn
+  uri                     = aws_lambda_alias.this.invoke_arn
 }
 
 resource "aws_lambda_permission" "api_lambda_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.this.function_name
+  qualifier     = aws_lambda_alias.this.name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*/*"
 }
@@ -435,14 +484,14 @@ resource "aws_api_gateway_authorizer" "lambda" {
   type                             = "REQUEST"
   identity_source                  = ""
   authorizer_result_ttl_in_seconds = 0
-  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}/invocations"
+  authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}/invocations"
 }
 
 resource "aws_lambda_permission" "apigw_lambda_auth_invoke" {
   count         = var.authorizer_type == "LAMBDA" ? 1 : 0
   statement_id  = "AllowAPIGatewayInvokeForLambdaAuth"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_authorizer_arn
+  function_name = "${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}"
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
 }

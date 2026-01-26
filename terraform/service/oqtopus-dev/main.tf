@@ -37,27 +37,30 @@ module "lambda_auth" {
 module "user_api" {
   source = "../modules/api-server"
 
-  product                       = var.product
-  org                           = var.org
-  env                           = var.env
-  identifier                    = "user"
-  region                        = var.region
-  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
-  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
-  lambda_handler                = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
-  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  authorizer_type               = "LAMBDA"
-  lambda_authorizer_arn         = module.lambda_auth.lambda_auth_arn
-  cognito_user_pool_arns        = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
-  power_tools_metrics_namespace = "user-api"
-  power_tools_service_name      = "user-api"
-  allow_origins                 = "*" # restrict this depending on the client
-  allow_credentials             = "true"
-  allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
-  allow_headers                 = "Content-type,Accept,Authorization,Q-API-Token"
-  log_level                     = "INFO"
-  storage_driver                = "s3"
+  product                                = var.product
+  org                                    = var.org
+  env                                    = var.env
+  identifier                             = "user"
+  region                                 = var.region
+  db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  authorizer_type                        = "LAMBDA"
+  lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
+  lambda_authorizer_alias                = module.lambda_auth.lambda_auth_alias_name
+  cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
+  client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
+  power_tools_metrics_namespace          = "user-api"
+  power_tools_service_name               = "user-api"
+  allow_origins                          = "*" # restrict this depending on the client
+  allow_credentials                      = "true"
+  allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
+  allow_headers                          = "Content-type,Accept,Authorization,Q-API-Token"
+  log_level                              = "INFO"
+  storage_driver                         = "s3"
   storage_env_vars_s3 = {
     STORAGE_S3_REGION      = var.region
     STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
@@ -66,6 +69,10 @@ module "user_api" {
   sse_container_log_name = "ssecontainer.log"
   sse_user_program_name  = "userprogram.py"
   sse_zip_file_name      = "sselog_{job_id}.zip"
+  allow_deletion         = var.allow_deletion
+  editable_fields        = var.editable_fields
+  visible_fields         = var.visible_fields
+  login_history_enabled  = var.login_history_enabled
 }
 
 module "provider_api" {
@@ -97,6 +104,10 @@ module "provider_api" {
   sse_container_log_name = "ssecontainer.log"
   sse_user_program_name  = "userprogram.py"
   sse_zip_file_name      = "sselog_{job_id}.zip"
+  allow_deletion         = "false"
+  editable_fields        = "[]"
+  visible_fields         = "[]"
+  login_history_enabled  = "false"
 }
 
 module "admin_api" {
@@ -174,6 +185,18 @@ module "pending_jobs_updater" {
   allow_methods                 = "*"
   allow_headers                 = "*"
   log_level                     = "INFO"
+}
+
+module "lambda_version_cleaner" {
+  source = "../modules/maintenance"
+
+  product        = var.product
+  org            = var.org
+  env            = var.env
+  identifier     = "lambda-version-cleaner"
+  region         = var.region
+  lambda_handler = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
+  log_level      = "DEBUG"
 }
 
 module "vpc_endpoint" {

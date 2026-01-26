@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from fastapi.testclient import TestClient
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.user_signup.lambda_function import app
 from oqtopus_cloud.user_signup.schemas.mfa_reset_request import (
     MfaResetRequest,
 )
+from sqlalchemy import select
 
 
 def _get_model(n: int) -> User:
@@ -15,11 +16,12 @@ def _get_model(n: int) -> User:
         "email": f"email{n}@example.com",
         "username": f"username_{n}",
         "userstatus": 1,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
-        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
@@ -38,6 +40,14 @@ def test_mfa_reset_request_success(test_db):
     )
     response = client.put("/mfa_reset_request", json=body.model_dump())
     assert response.status_code == 200
+    # refer to db value
+    user = (
+        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        .scalars()
+        .first()
+    )
+    assert user is not None
+    assert user.mfa_status == MFAStatus.disabled
 
 
 def test_mfa_reset_request_cognito_error(test_db, fake_cognito_client_fixture):

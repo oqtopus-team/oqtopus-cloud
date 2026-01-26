@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 import pytest
-from oqtopus_cloud.common.models.user import User, UserStatus
+from argon2 import PasswordHasher
+from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.lambda_auth.lambda_function import (
     AuthError,
     _generate_policy_allow,
@@ -95,10 +96,12 @@ def _get_model(
         "email": f"email{n}@example.com",
         "username": username,
         "userstatus": status,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
+        "mfa_status": MFAStatus.disabled if n % 2 == 0 else MFAStatus.enabled,
+        "api_token_id": f"api_token_id_{n}",
+        "api_token_hash": PasswordHasher().hash(f"api_token_secret_{n}"),
         "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }
@@ -184,6 +187,18 @@ def test__verify_unapproved(test_session, monkeypatch):
     pytest.raises(AuthError, _verify_id_token, "id_token")
 
 
+def test__verify_mfa_inactive(test_session, monkeypatch):
+    user = _get_model(2, username="fake_username")
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+
 def test__verify_api_token(test_session, monkeypatch):
     user = _get_model(1)
     test_session.flush()
@@ -192,7 +207,7 @@ def test__verify_api_token(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    ret = _verify_api_token("api_token_secret_1")
+    ret = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert ret == "fake_username"
 
@@ -207,7 +222,7 @@ def test__verify_api_token_expired(test_session, monkeypatch):
     )
 
     try:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
     except AuthError as e:
         assert str(e) == "Database error API token is expired"
     else:
@@ -238,9 +253,23 @@ def test__verify_api_token_no_env_variable(test_session, monkeypatch):
     )
     monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Environment variable is not set 'AUTH_USER_POOL_ID'" in str(excinfo.value)
+
+
+def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
+    user = _get_model(2)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_2")
+    assert "API token is malformed" in str(excinfo.value)
 
 
 @pytest.mark.usefixtures("override_boto3_client_zero_user")
@@ -253,7 +282,7 @@ def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Failed to list users from Cognito Cognito user is not found" in str(
         excinfo.value
@@ -270,7 +299,7 @@ def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Failed to list users from Cognito Cognito user is duplicated" in str(
         excinfo.value
@@ -286,7 +315,7 @@ def test__verify_api_token_suspended(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
 
 def test__verify_api_token_unapproved(test_session, monkeypatch):
@@ -298,7 +327,7 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
 
 def test__generate_policy_allow():

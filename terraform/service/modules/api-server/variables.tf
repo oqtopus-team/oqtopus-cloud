@@ -127,6 +127,12 @@ variable "lambda_authorizer_arn" {
   description = "ARN of the Lambda function used for authorizer"
 }
 
+variable "lambda_authorizer_alias" {
+  type        = string
+  default     = ""
+  description = "Alias of the Lambda function used for authorizer"
+}
+
 variable "storage_driver" {
   type        = string
   default     = "s3"
@@ -183,6 +189,30 @@ variable "sse_zip_file_name" {
   type        = string
   default     = ""
   description = "SSE zip file name"
+}
+
+variable "allow_deletion" {
+  type        = string
+  default     = "false"
+  description = "Flag to control whether users can delete their accounts"
+}
+
+variable "editable_fields" {
+  type        = string
+  default     = "[]"
+  description = "List of user fields which can be edited by the user"
+}
+
+variable "visible_fields" {
+  type        = string
+  default     = "[]"
+  description = "List of user fields which user can view"
+}
+
+variable "login_history_enabled" {
+  type        = string
+  default     = "false"
+  description = "Flag to control whether user login history should be included in GET user API response"
 }
 
 variable "lambda_timeout" {

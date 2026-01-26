@@ -49,6 +49,29 @@ class BadRequestResponse(ErrorResponse):
         )
 
 
+class UnauthorizedResponse(ErrorResponse):
+    """
+    Represents a response for a bad request.
+
+    Args:
+        message (str): The detailed error message.
+
+    Attributes:
+        status_code (int): The HTTP status code for the response.
+        content (dict): The content of the response.
+
+    """
+
+    def __init__(
+        self,
+        message: str,
+    ):
+        super().__init__(
+            status_code=401,
+            content={"message": message},
+        )
+
+
 class InternalServerErrorResponse(ErrorResponse):
     """
     Represents an internal server error response.

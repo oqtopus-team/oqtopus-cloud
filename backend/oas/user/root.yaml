@@ -29,10 +29,16 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
   /api-token:
     $ref: ./paths/api-token.yaml#/api-token
+  /api-token/status:
+    $ref: ./paths/api-token.yaml#/api-token.status
   /announcements:
     $ref: ./paths/announcements.yaml#/announcements
   /announcements/{announcement_id}:
     $ref: ./paths/announcements.yaml#/announcements.announcement_id
+  /users/me:
+    $ref: ./paths/users.yaml#/users.me
+  /system/settings:
+    $ref: ./paths/system-settings.yaml#/system.settings
 components:
   securitySchemes:
     BearerAuth:
