@@ -1,6 +1,6 @@
 <!-- BEGIN_TF_DOCS -->
 
-# GuardDuty Module
+# AWS WAF Module
 
 ## Description
 

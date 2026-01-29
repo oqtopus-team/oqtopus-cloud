@@ -41,7 +41,7 @@ module "aws_guardduty" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_enable_guardduty"></a> [enable\_guardduty](#input\_enable\_guardduty) | Flag to enabling/disabling AWS GuardDuty protection service | `bool` | `false` | no |
-| <a name="input_enable_mfa"></a> [enable\_guardduty\_s3\_protection](#input\_enable\_guardduty\_s3\_protection) | Flag to enabling/disabling additional AWS GuardDuty feature for detecting potential risks connected with S3 buckets | `bool` | `false` | no |
+| <a name="input_enable_guardduty_s3_protection"></a> [enable\_guardduty\_s3\_protection](#input\_enable\_guardduty\_s3\_protection) | Flag to enabling/disabling additional AWS GuardDuty feature for detecting potential risks connected with S3 buckets | `bool` | `false` | no |
 
 ## Outputs
 
