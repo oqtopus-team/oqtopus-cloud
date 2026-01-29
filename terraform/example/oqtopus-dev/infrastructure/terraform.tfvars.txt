@@ -4,5 +4,5 @@ org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 
-enable_guardduty=false
-enable_guardduty_s3_protection=false
+enable_guardduty               = false
+enable_guardduty_s3_protection = false
