@@ -264,7 +264,7 @@ module "waf" {
   enable_rate_limiting = var.waf_enable_rate_limiting
   rate_limit           = var.waf_rate_limit
 
-  depends_on = [ 
+  depends_on = [
     module.user_api,
     module.provider_api,
     module.admin_api,

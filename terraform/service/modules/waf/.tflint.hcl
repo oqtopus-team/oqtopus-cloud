@@ -1,5 +1,5 @@
 tflint {
- required_version = ">= 0.51.2"
+  required_version = ">= 0.51.2"
 }
 
 plugin "terraform" {
