@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -80,6 +80,7 @@ export ALLOW_DELETION=true # flag to control whether users can delete their acco
 export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
 export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
 export LOGIN_HISTORY_ENABLED=true # flag to control whether user login history should be included in GET user API response
+export LOCAL_WORKER_SCHEDULING_RATE_S=60
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
@@ -99,6 +100,11 @@ run-user_signup: ## Start the user_signup API
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
+run-worker:
+	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
+	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
+	poetry run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB
 	@docker compose up
