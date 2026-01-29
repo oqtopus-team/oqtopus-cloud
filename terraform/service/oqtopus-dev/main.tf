@@ -247,3 +247,27 @@ module "deployment_roles" {
   branch         = var.branch
   aws_account_id = var.aws_account_id
 }
+
+module "aws_wafv2_web_acl" {
+  source = "../modules/waf"
+
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
+  resource_arn_list    = [
+    module.user_api.api_gateway_stage_arn,
+    module.provider_api.api_gateway_stage_arn,
+    module.admin_api.api_gateway_stage_arn,
+    module.user_signup_api.api_gateway_stage_arn,
+  ]
+  enable_common_rules  = var.waf_enable_common_rules
+  enable_rate_limiting = var.waf_enable_rate_limiting
+  rate_limit           = var.waf_rate_limit
+
+  depends_on = [ 
+    module.user_api,
+    module.provider_api,
+    module.admin_api,
+    module.user_signup_api,
+  ]
+}

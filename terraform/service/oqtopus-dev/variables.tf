@@ -76,3 +76,21 @@ variable "login_history_enabled" {
   default     = "false"
   description = "Flag to control whether user login history should be included in GET user API response"
 }
+
+variable "waf_enable_common_rules" {
+  description = "flag for enabling/disabling common rules WAF rule"
+  type = bool
+  default = true
+}
+
+variable "waf_enable_rate_limiting" {
+  description = "flag for enabling/disabling rate limiting WAF rule"
+  type = bool
+  default = true
+}
+
+variable "waf_rate_limit" {
+  description = "maximum number of requests, which have an identical value in the field specified by the RateKey, allowed in a five-minute period. Minimum value is 100"
+  type = number
+  default = 1000
+}
