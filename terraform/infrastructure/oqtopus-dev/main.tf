@@ -101,7 +101,7 @@ module "s3-logging" {
   force_destroy_bucket  = true
 }
 
-module "aws_guardduty_detector" {
+module "guardduty_detector" {
   source = "../modules/guardduty"
 
   enable_guardduty = var.enable_guardduty

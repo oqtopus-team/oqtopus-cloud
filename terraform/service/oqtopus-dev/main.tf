@@ -248,7 +248,7 @@ module "deployment_roles" {
   aws_account_id = var.aws_account_id
 }
 
-module "aws_wafv2_web_acl" {
+module "waf" {
   source = "../modules/waf"
 
   product              = var.product

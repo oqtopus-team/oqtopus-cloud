@@ -99,7 +99,7 @@ module "s3-logging" {
   s3_target_bucket_arn  = module.s3.s3_bucket_arn
 }
 
-module "aws_guardduty_detector" {
+module "guardduty_detector" {
   source = "../modules/guardduty"
 
   enable_guardduty = var.enable_guardduty
