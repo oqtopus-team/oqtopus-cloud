@@ -18,6 +18,8 @@
 *   enable_common_rules = true
 *   enable_rate_limiting = true
 *   rate_limit = 1000
+*   cloudwatch_metrics_enabled = true
+*   sampled_requests_enabled = false
 * }
 * ```
 *
@@ -32,9 +34,9 @@ resource "aws_wafv2_web_acl" "this" {
   }
 
   visibility_config {
-    cloudwatch_metrics_enabled = true
-    metric_name = "${var.product}-${var.org}-${var.env}-metric"
-    sampled_requests_enabled = true
+    cloudwatch_metrics_enabled = var.cloudwatch_metrics_enabled
+    metric_name = "${var.product}-${var.org}-${var.env}-waf-metric"
+    sampled_requests_enabled = var.sampled_requests_enabled
   }
 
   dynamic "rule" {
@@ -55,9 +57,9 @@ resource "aws_wafv2_web_acl" "this" {
       }
 
       visibility_config {
-        cloudwatch_metrics_enabled = true
-        metric_name = "${var.product}-${var.org}-${var.env}-metric-common-rules"
-        sampled_requests_enabled = true
+        cloudwatch_metrics_enabled = var.cloudwatch_metrics_enabled
+        metric_name = "${var.product}-${var.org}-${var.env}-waf-metric-common-rules"
+        sampled_requests_enabled = var.sampled_requests_enabled
       }
     }
   }
@@ -80,9 +82,9 @@ resource "aws_wafv2_web_acl" "this" {
       }
 
       visibility_config {
-        cloudwatch_metrics_enabled = true
-        metric_name = "${var.product}-${var.org}-${var.env}-metric-rate-limit"
-        sampled_requests_enabled = true
+        cloudwatch_metrics_enabled = var.cloudwatch_metrics_enabled
+        metric_name = "${var.product}-${var.org}-${var.env}-waf-metric-rate-limit"
+        sampled_requests_enabled = var.sampled_requests_enabled
       }
     }
   }

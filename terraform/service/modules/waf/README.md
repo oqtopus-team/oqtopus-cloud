@@ -18,6 +18,8 @@ module "aws_waf" {
   enable_common_rules = true
   enable_rate_limiting = true
   rate_limit = 1000
+  cloudwatch_metrics_enabled = true
+  sampled_requests_enabled = false
 }
 ```
 
@@ -52,6 +54,8 @@ module "aws_waf" {
 | <a name="input_enable_common_rules"></a> [enable_common_rules](#input\_enable\_common\_rules) | flag for enabling/disabling common rules WAF rule | `bool` | `false` | no |
 | <a name="input_enable_rate_limiting"></a> [enable_rate_limiting](#input\_enable\_rate\_limiting) | flag for enabling/disabling rate limiting WAF rule | `bool` | `false` | no |
 | <a name="input_rate_limit"></a> [rate_limit](#input\_rate\_limit) | maximum number of requests, which have an identical value in the field specified by the RateKey, allowed in a five-minute period. Minimum value is 100 | `number` | `1000` | no |
+| <a name="input_cloudwatch_metrics_enabled"></a> [cloudwatch_metrics_enabled](#input\_cloudwatch\_metrics\_enabled) | flag for enabling/disabling sending WAF metrics to cloudwatch | `bool` | `false` | no |
+| <a name="input_sampled_requests_enabled"></a> [sampled_requests_enabled](#input\_sampled\_requests\_enabled) | flag for enabling/disabling storing sample requests in WAF for analysis | `bool` | `false` | no |
 
 ## Outputs
 

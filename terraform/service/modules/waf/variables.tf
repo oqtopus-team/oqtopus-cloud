@@ -35,3 +35,15 @@ variable "rate_limit" {
   type = number
   default = 1000
 }
+
+variable "cloudwatch_metrics_enabled" {
+  description = "flag for enabling/disabling sending WAF metrics to cloudwatch"
+  type = bool
+  default = false
+}
+
+variable "sampled_requests_enabled" {
+  description = "flag for enabling/disabling storing sample requests in WAF for analysis"
+  type = bool
+  default = false
+}
