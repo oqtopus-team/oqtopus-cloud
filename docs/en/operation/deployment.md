@@ -106,6 +106,9 @@ product="oqtopus"
 org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
+
+enable_guardduty               = false
+enable_guardduty_s3_protection = false
 ```
 
 These files set the storage location for the state file and environment variables.
@@ -157,6 +160,12 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+waf_enable_common_rules        = false
+waf_enable_rate_limiting       = false
+waf_rate_limit                 = 1000
+waf_cloudwatch_metrics_enabled = false
+waf_sampled_requests_enabled   = false
 
 repository       = "oqtopus-cloud"
 github_user      = "oqtopus-team"
