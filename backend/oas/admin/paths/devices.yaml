@@ -47,16 +47,12 @@ devices:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Device registered
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -134,16 +130,12 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Device's data updated
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -154,16 +146,12 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Device not found
       "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error
   delete:
     tags:
     - devices
@@ -187,16 +175,12 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Device deleted
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -207,8 +191,6 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Device not found
       "500":
         description: Internal Server Error
         content:

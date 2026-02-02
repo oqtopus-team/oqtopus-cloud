@@ -3,5 +3,16 @@ success.SuccessResponse:
   properties:
     message:
       type: string
+      example: Operation completed successfully.
+    message_code:
+      type: string
+      example: OPERATION_SUCCESSFUL
+    message_params:
+      type: object
+      additionalProperties: true
+      default: {}
+      example: {}
   required:
     - message
+    - message_code
+    - message_params

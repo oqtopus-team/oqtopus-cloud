@@ -119,8 +119,6 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -131,16 +129,12 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error
   patch:
     tags:
     - Announcements
@@ -170,16 +164,12 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Announcement data updated
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -190,16 +180,12 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error
   delete:
     tags:
       - Announcements
@@ -223,16 +209,12 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Announcement deleted
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequestError"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -243,8 +225,6 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Announcement not found
       "500":
         description: Internal Server Error
         content:

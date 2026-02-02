@@ -3,19 +3,61 @@ error.NotFoundError:
   properties:
     message:
       type: string
+      example: "Resource id=1 not found."
+    message_code:
+      type: string
+      example: RESOURCE_NOT_FOUND
+    message_params:
+      type: object
+      additionalProperties: true
+      default: {}
+      example: {
+        "id": "1"
+      }
   required:
     - message
+    - message_code
+    - message_params
+
 error.InternalServerError:
   type: object
   properties:
     message:
       type: string
+      default: "Internal Server Error"
+      example: "Internal Server Error"
+    message_code:
+      type: string
+      default: INTERNAL_SERVER_ERROR
+      example: INTERNAL_SERVER_ERROR
+    message_params:
+      type: object
+      properties: {}
+      additionalProperties: true
+      default: {}
+      example: {}
   required:
     - message
+    - message_code
+    - message_params
+
 error.BadRequestError:
   type: object
   properties:
     message:
       type: string
+      example: "Invalid parameter in request body: parameter_name."
+    message_code:
+      type: string
+      example: INVALID_PARAMETER
+    message_params:
+      type: object
+      additionalProperties: true
+      default: {}
+      example: {
+        "parameter": "parameter_name"
+      }
   required:
     - message
+    - message_code
+    - message_params
