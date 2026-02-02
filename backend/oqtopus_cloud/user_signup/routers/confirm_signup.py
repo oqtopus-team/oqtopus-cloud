@@ -91,4 +91,4 @@ def confirm_signup(
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         cleanup_user(db, cognito_client, email, user_pool_id)
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()

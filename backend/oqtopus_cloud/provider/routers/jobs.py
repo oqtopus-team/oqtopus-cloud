@@ -132,7 +132,7 @@ def get_jobs(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.get(
@@ -164,7 +164,7 @@ def get_job(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.patch(
@@ -200,7 +200,7 @@ def update_job_status(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.patch(
@@ -297,7 +297,7 @@ def update_job_info(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.put(
@@ -335,7 +335,7 @@ def update_job_transpiler_info(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.get(
@@ -360,7 +360,7 @@ def get_ssesrc(
             e = f"SSE user program not found: {key}"
             tracer.put_annotation("error", str(e))
             logger.exception(f"Internal Server Error: {e}")
-            return InternalServerErrorResponse(message="Internal Server Error")
+            return InternalServerErrorResponse()
         # encode the file to base64
         program_base64 = base64.b64encode(program).decode("utf-8")
         return PlainTextResponse(content=program_base64)
@@ -368,7 +368,7 @@ def get_ssesrc(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.patch(
@@ -409,7 +409,7 @@ def upload_sselog(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 # TODO: match parameter names of model and schema

@@ -69,7 +69,7 @@ def get_user(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.patch(
@@ -143,7 +143,7 @@ def update_user(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.delete(
@@ -210,7 +210,7 @@ def delete_user(
             is_success_delete_s3 = delete_storage_folder(user_sse_job, storage)
             if not is_success_delete_s3:
                 # error already logged in delete_storage_folder
-                return InternalServerErrorResponse(message="Internal Server Error")
+                return InternalServerErrorResponse()
 
         # delete from cognito
         client.admin_delete_user(
@@ -222,7 +222,7 @@ def delete_user(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 def retrieve_user_login_history(cognito_id: str, region: str) -> list[LoginEvent]:

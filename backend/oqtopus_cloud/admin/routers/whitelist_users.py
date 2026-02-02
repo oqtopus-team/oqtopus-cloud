@@ -162,7 +162,7 @@ def get_whitelist_users(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.post(
@@ -208,7 +208,7 @@ def register_whitelist_user(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.delete(
@@ -242,7 +242,7 @@ def delete_whitelist_user(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:

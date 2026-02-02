@@ -78,18 +78,26 @@ class InternalServerErrorResponse(ErrorResponse):
 
     Args:
         message (str): The error message or details of the internal server error.
+        message_code (str): The literal code indicating the error message for i18n.
+        message_params (str): Parameters of the error message for i18n.
 
     Attributes:
         status_code (int): The HTTP status code for the internal server error response.
-        content (dict): The content of the internal server error response, containing the error message.
+        content (dict): The content of the internal server error response, containing the error detail.
 
     """
 
     def __init__(
         self,
-        message: str,
+        message: str = "Internal Server Error",
+        message_code: str = "INTERNAL_SERVER_ERROR",
+        message_params: dict = {}
     ):
         super().__init__(
             status_code=500,
-            content={"message": message},
+            content={
+                "message": message,
+                "message_code": message_code,
+                "message_params": message_params,
+            }
         )

@@ -46,7 +46,7 @@ def get_devices(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.get(
@@ -75,7 +75,7 @@ def get_device(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.post(
@@ -112,7 +112,7 @@ def register_devices(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.patch(
@@ -160,7 +160,7 @@ def update_device_data(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.delete(
@@ -193,7 +193,7 @@ def delete_device(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 def get_device_id(device_base: DeviceBase) -> str | None:

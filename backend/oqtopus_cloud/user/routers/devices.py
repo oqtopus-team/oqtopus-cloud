@@ -54,7 +54,7 @@ def get_devices(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 @router.get(
@@ -105,7 +105,7 @@ def get_device(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
+        return InternalServerErrorResponse()
 
 
 MAP_MODEL_TO_SCHEMA = {

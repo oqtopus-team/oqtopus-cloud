@@ -76,7 +76,7 @@ def mfa_reset_start(
         )
     except Exception as e:
         logger.exception(f"Failed to send verification code: {str(e)}")
-        return InternalServerErrorResponse(message="Internal server error")
+        return InternalServerErrorResponse()
     logger.info("Verification code sent successfully")
     return MfaResetStartResponse(access_token=access_token)
 
@@ -112,7 +112,7 @@ def mfa_reset_verify_code(
         resp = cognito_client.associate_software_token(AccessToken=access_token)
     except Exception as e:
         logger.exception(f"Failed to associate software token: {str(e)}")
-        return InternalServerErrorResponse(message="Internal server error")
+        return InternalServerErrorResponse()
     logger.info("Software token associated successfully")
     return MfaResetVerifyCodeResponse(secret=resp.get("SecretCode"))
 
@@ -165,6 +165,6 @@ def mfa_reset_confirm_totp(
             db.commit()
     except Exception as e:
         logger.exception(f"Failed to set user MFA preference: {str(e)}")
-        return InternalServerErrorResponse(message="Internal server error")
+        return InternalServerErrorResponse()
     logger.info("MFA reset confirmed successfully")
     return None

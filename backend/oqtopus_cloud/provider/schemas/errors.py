@@ -58,17 +58,19 @@ class InternalServerErrorResponse(ErrorResponse):
 
     Attributes:
         status_code (int): The HTTP status code for the internal server error response.
-        content (dict): The content of the internal server error response, containing the error message.
+        content (dict): The content of the internal server error response, containing the error detail.
 
     """
 
     def __init__(
         self,
-        message: str,
+        message: str = "Internal Server Error",
     ):
         super().__init__(
             status_code=500,
-            content={"message": message},
+            content={
+                "message": message,
+            }
         )
 
 
