@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Annotated, Any
+
+from pydantic import BaseModel, Field
 
 
 class SuccessResponse(BaseModel):
-    message: str
+    message: Annotated[str, Field(examples=["Operation completed successfully."])]
+    message_code: Annotated[str, Field(examples=["OPERATION_SUCCESSFUL"])]
+    message_params: Annotated[dict[str, Any], Field(examples=[{}])] = {}
