@@ -71,7 +71,11 @@ def get_device(
         else:
             message = f"device_id={device_id} is not found."
             logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                message=message,
+                message_code="DEVICE_NOT_FOUND",
+                message_params={"id": device_id},
+            )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -93,22 +97,32 @@ def register_devices(
         device_id = get_device_id(device_info)
         if device_id is None:
             logger.error("device_id is required")
-            return BadRequestErrorResponse(message="device_id is required")
+            return BadRequestErrorResponse(
+                message="device_id is required", message_code="DEVICE_ID_REQUIRED"
+            )
         existing_device = db.scalars(
             select(Device).where(Device.id == device_id)
         ).first()
         if existing_device:
             logger.error(f"device_id={device_id} already exists")
             return BadRequestErrorResponse(
-                message=f"device_id={device_id} already exists"
+                message=f"device_id={device_id} already exists",
+                message_code="DEVICE_ALREADY_EXISTS",
+                message_params={"id": device_id},
             )
         new_device = schema_to_model(device_id, device_info)
         if new_device is None:
-            logger.error("Invalid device timezone")
-            return BadRequestErrorResponse(message="Invalid device timezone")
+            logger.error(f"Invalid timezone for device_id={device_id}")
+            return BadRequestErrorResponse(
+                message=f"Invalid timezone for device_id={device_id}",
+                message_code="INVALID_DEVICE_TIMEZONE",
+                message_params={"id": device_id},
+            )
         db.add(new_device)
         db.commit()
-        return SuccessResponse(message="Device registered successfully")
+        return SuccessResponse(
+            message="Device registered successfully", message_code="DEVICE_REGISTERED"
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -136,14 +150,20 @@ def update_device_data(
         query = db.execute(stmt).scalars().first()
         if not query:
             logger.error(f"device_id={device_id} is not found")
-            return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
+            return NotFoundErrorResponse(
+                message=f"device_id={device_id} is not found",
+                message_code="DEVICE_NOT_FOUND",
+                message_params={"id": device_id},
+            )
         device_id_from_body = get_device_id(device_update)
         if device_id != device_id_from_body:
             logger.error(
                 f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
             )
             return BadRequestErrorResponse(
-                message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
+                message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}",
+                message_code="INCONSISTENT_DEVICE_ID",
+                message_params={"id1": device_id, "id2": device_id_from_body},
             )
         update_fields = device_update.model_dump(exclude_none=True)
         for field, value in update_fields.items():
@@ -156,7 +176,9 @@ def update_device_data(
         # commit the transaction
         db.commit()
         # refresh the object to get the updated value
-        return SuccessResponse(message="Device updated successfully")
+        return SuccessResponse(
+            message="Device updated successfully", message_code="DEVICE_UPDATED"
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -185,11 +207,17 @@ def delete_device(
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
             logger.error(f"device_id={device_id} is not found")
-            return NotFoundErrorResponse(message="Device not found")
+            return NotFoundErrorResponse(
+                message=f"device_id={device_id} is not found",
+                message_code="DEVICE_NOT_FOUND",
+                message_params={"id": device_id},
+            )
         # delete from RDS
         db.delete(query_result)
         db.commit()
-        return SuccessResponse(message="Device deleted successfully")
+        return SuccessResponse(
+            message="Device deleted successfully", message_code="DEVICE_DELETED"
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

@@ -106,7 +106,11 @@ def get_announcement(
         else:
             message = f"announcement_id={announcement_id} is not found."
             logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                message=message,
+                message_code="ANNOUNCEMENT_NOT_FOUND",
+                message_params={"id": announcement_id},
+            )
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -137,11 +141,16 @@ def register_announcements(
         db.add(announcement)
         db.commit()
 
-        return SuccessResponse(message="Announcement registered successfully")
+        return SuccessResponse(
+            message="Announcement registered successfully",
+            message_code="ANNOUNCEMENT_REGISTERED",
+        )
 
     except ValueError as e:
         logger.error(str(e))
-        return BadRequestErrorResponse(message=str(e))
+        return BadRequestErrorResponse(
+            message=str(e), message_code="INVALID_ANNOUNCEMENT_DATA"
+        )
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -171,7 +180,11 @@ def update_announcements_data(
         if not query_result:
             message = f"announcement_id={announcement_id} is not found."
             logger.error(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                message=message,
+                message_code="ANNOUNCEMENT_NOT_FOUND",
+                message_params={"id": announcement_id},
+            )
 
         update_fields = announcement_update.model_dump(exclude_none=True)
 
@@ -181,11 +194,16 @@ def update_announcements_data(
             setattr(query_result, field, value)
         db.commit()
 
-        return SuccessResponse(message="Announcement updated successfully")
+        return SuccessResponse(
+            message="Announcement updated successfully",
+            message_code="ANNOUNCEMENT_UPDATED",
+        )
 
     except ValueError as e:
         logger.error(str(e))
-        return BadRequestErrorResponse(message=str(e))
+        return BadRequestErrorResponse(
+            message=str(e), message_code="INVALID_ANNOUNCEMENT_DATA"
+        )
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -218,12 +236,19 @@ def delete_announcement(
         if not query_result:
             message = f"announcement_id={announcement_id} is not found."
             logger.error(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                message=message,
+                message_code="ANNOUNCEMENT_NOT_FOUND",
+                message_params={"id": announcement_id},
+            )
 
         db.delete(query_result)
         db.commit()
 
-        return SuccessResponse(message="Announcement deleted successfully")
+        return SuccessResponse(
+            message="Announcement deleted successfully",
+            message_code="ANNOUNCEMENT_DELETED",
+        )
 
     except Exception as e:
         tracer.put_annotation("error", str(e))

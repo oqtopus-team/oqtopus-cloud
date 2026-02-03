@@ -85,21 +85,29 @@ def get_users(
             status_num = enum_to_status(status)
             if status_num is None:
                 logger.error(f"Invalid status: {status}")
-                return BadRequestErrorResponse(message=f"Invalid status: {status}")
+                return BadRequestErrorResponse(
+                    message=f"Invalid status: {status}",
+                    message_code="INVALID_STATUS",
+                    message_params={"status": status.value},
+                )
             stmt = stmt.where(User.userstatus == status_num)
         if sort:
             sort_parts = sort.split(",")
             if len(sort_parts) != 2:
                 logger.error(f"Invalid sort parameter: {sort}")
                 return BadRequestErrorResponse(
-                    message=f"Invalid sort parameter: {sort}"
+                    message=f"Invalid sort parameter: {sort}",
+                    message_code="INVALID_SORT_PARAMETER",
+                    message_params={"sort": sort},
                 )
 
             column_name, order_str = sort_parts
             if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
                 logger.error(f"Invalid column name to sort: {column_name}")
                 return BadRequestErrorResponse(
-                    message=f"Invalid column name to sort: {column_name}"
+                    message=f"Invalid column name to sort: {column_name}",
+                    message_code="INVALID_SORT_COLUMN",
+                    message_params={"column": column_name},
                 )
 
             match order_str:
@@ -110,7 +118,9 @@ def get_users(
                 case _:
                     logger.error(f"Invalid order to sort: {order_str}")
                     return BadRequestErrorResponse(
-                        message=f"Invalid order to sort: {order_str}"
+                        message=f"Invalid order to sort: {order_str}",
+                        message_code="INVALID_SORT_ORDER",
+                        message_params={"order": order_str},
                     )
 
             order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
@@ -148,7 +158,11 @@ def get_user(
         if user is None:
             message = f"user_id={user_id} is not found."
             logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                message=message,
+                message_code="USER_NOT_FOUND",
+                message_params={"id": user_id},
+            )
 
         return model_to_schema(user)
     except Exception as e:
@@ -183,7 +197,11 @@ def update_user_status(
         query = db.execute(stmt).scalars().first()
         if not query:
             logger.error(f"User not found: {user_id}")
-            return NotFoundErrorResponse(message=f"User not found: {user_id}")
+            return NotFoundErrorResponse(
+                message=f"User not found: {user_id}",
+                message_code="USER_NOT_FOUND",
+                message_params={"id": user_id},
+            )
 
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
@@ -274,7 +292,11 @@ def delete_user(
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
             logger.error(f"User not found: {user_id}")
-            return NotFoundErrorResponse(message=f"User not found: {user_id}")
+            return NotFoundErrorResponse(
+                message=f"User not found: {user_id}",
+                message_code="USER_NOT_FOUND",
+                message_params={"id": user_id},
+            )
         # check if the user is in whitelist_users
         stmt_whitelist = select(WhitelistUser).where(
             WhitelistUser.email == query_result.email

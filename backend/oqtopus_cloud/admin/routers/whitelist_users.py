@@ -124,14 +124,18 @@ def get_whitelist_users(
             if len(sort_parts) != 2:
                 logger.error(f"Invalid sort parameter: {sort}")
                 return BadRequestErrorResponse(
-                    message=f"Invalid sort parameter: {sort}"
+                    message=f"Invalid sort parameter: {sort}",
+                    message_code="INVALID_SORT_PARAMETER",
+                    message_params={"sort": sort},
                 )
 
             column_name, order_str = sort_parts
             if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
                 logger.error(f"Invalid column name to sort: {column_name}")
                 return BadRequestErrorResponse(
-                    message=f"Invalid column name to sort: {column_name}"
+                    message=f"Invalid column name to sort: {column_name}",
+                    message_code="INVALID_SORT_COLUMN",
+                    message_params={"column": column_name},
                 )
 
             match order_str:
@@ -142,7 +146,9 @@ def get_whitelist_users(
                 case _:
                     logger.error(f"Invalid order to sort: {order_str}")
                     return BadRequestErrorResponse(
-                        message=f"Invalid order to sort: {order_str}"
+                        message=f"Invalid order to sort: {order_str}",
+                        message_code="INVALID_SORT_ORDER",
+                        message_params={"order": order_str},
                     )
 
             order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
@@ -182,7 +188,9 @@ def register_whitelist_user(
         users_list = users.users
         if users_list is None:
             logger.error("No users to register")
-            return BadRequestErrorResponse(message="No users to register")
+            return BadRequestErrorResponse(
+                message="No users to register", message_code="NO_USERS_TO_REGISTER"
+            )
         valid_users_list = [
             validated_whitelist_user(db, one_user) for one_user in users_list
         ]
@@ -191,7 +199,10 @@ def register_whitelist_user(
         return BadRequestErrorResponse(message=str(e))
     if not valid_users_list:
         logger.error("No valid user to register")
-        return BadRequestErrorResponse(message="No valid user to register")
+        return BadRequestErrorResponse(
+            message="No valid user to register",
+            message_code="NO_VALID_USER_TO_REGISTER",
+        )
     try:
         for user in valid_users_list:
             new_whitelist_user = WhitelistUser(
@@ -204,7 +215,10 @@ def register_whitelist_user(
             )
             db.add(new_whitelist_user)
             db.commit()
-        return SuccessResponse(message="Successfully registered")
+        return SuccessResponse(
+            message="User registered successfully",
+            message_code="WHITELIST_USER_REGISTERED",
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
