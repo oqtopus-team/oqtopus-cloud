@@ -146,7 +146,7 @@ data "aws_iam_policy_document" "lambda_manager" {
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
   name              = "/aws/lambda/${var.product}-${var.org}-${var.env}-${var.identifier}"
-  retention_in_days = 14
+  retention_in_days = var.lambda_log_retention_days
 }
 
 resource "aws_cloudwatch_event_rule" "on_lambda_publish_version" {

@@ -51,3 +51,39 @@ variable "public_subnet_cidrs" {
   type        = list(string)
   default     = ["10.2.176.0/20", "10.2.192.0/20", "10.2.208.0/20"]
 }
+
+variable "vpc_flow_log_retention_days" {
+  description = "number of days for which VPC flow logs are retained"
+  type        = number
+  default     = 14
+}
+
+variable "s3_api_trail_cloudwatch_retention_in_days" {
+  description = "Number of days to retain S3 API CloudTrail events in CloudWatch"
+  type        = number
+  default     = 30
+}
+
+variable "cloudtrail_s3_logs_expiration_days" {
+  description = "Number of days after which objects in the log bucket expire"
+  type        = number
+  default     = 365
+}
+
+variable "cloudtrail_s3_logs_transition_days_standard_ia" {
+  description = "Number of days after which objects in the log bucket are moved to STANDARD_IA storage"
+  type        = number
+  default     = 30
+}
+
+variable "cloudtrail_s3_logs_transition_days_glacier_ir" {
+  description = "Number of days after which objects in the log bucket are moved to GLACIER_IR storage"
+  type        = number
+  default     = 90
+}
+
+variable "cloudtrail_s3_logs_transition_days_deep_archive" {
+  description = "Number of days after which objects in the log bucket are moved to DEEP_ARCHIVE storage"
+  type        = number
+  default     = 180
+}

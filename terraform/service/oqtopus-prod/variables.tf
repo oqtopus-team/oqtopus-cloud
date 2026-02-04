@@ -57,3 +57,15 @@ variable "login_history_enabled" {
   description = "Flag to control whether user login history should be included in GET user API response"
 }
 
+variable "api_gateway_log_retention_days" {
+  description = "number of days for which API Gateway logs are retained"
+  type        = number
+  default     = 14
+}
+
+
+variable "lambda_log_retention_days" {
+  description = "number of days for which lambda logs are retained"
+  type        = number
+  default     = 14
+}

@@ -11,6 +11,9 @@ editable_fields       = "[\"name\", \"organization\"]"
 visible_fields        = "[\"id\", \"email\", \"name\", \"organization\", \"created_at\"]"
 login_history_enabled = "true"
 
+api_gateway_log_retention_days = 14
+lambda_log_retention_days = 14
+
 repository       = "oqtopus-cloud"
 github_user      = "oqtopus-team"
 branch           = "develop"
