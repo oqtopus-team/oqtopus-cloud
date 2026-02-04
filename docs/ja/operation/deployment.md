@@ -289,3 +289,21 @@ zip-all                        Build All Lambda Packages
 zip-user                     Build User API Lambda Package
 zip-provider                     Build Provider API Lambda Package
 ```
+
+## GuardDutyの設定
+
+`enable_guardduty` - trueに設定すると、AWS環境の監視および分析機能を提供するGuardDutyサービスが有効になります。不正アクセス試行、侵害されたインスタンスや認証情報、データ流出の試みなどの脅威を検出します。
+
+`enable_guardduty_s3_protection` - trueに設定すると、S3バケットの監視に特化したGuardDutyディテクターの拡張機能が有効になります。不審なダウンロード、侵害された認証情報、または異常なアクセスパターンを検出できます。
+
+## WAFの設定
+
+`waf_enable_common_rules` - SQLインジェクション、XSS、パストラバーサル、悪意のあるヘッダー、不正な形式のリクエストなど、最も一般的なHTTP攻撃に対する包括的な保護を提供します。
+
+`waf_enable_rate_limiting` - レート制限機能を有効にし、ボットやAPIの乱用に対する一般的な保護を提供します。
+
+`waf_rate_limit` - 1つのソース(IP)からの5分間の最大リクエスト数を指定します。この数を超えると、WAFはそれ以降のリクエストをブロックします。
+
+`waf_cloudwatch_metrics_enabled` - trueに設定すると、WAFは処理されたリクエストに関するメトリクスをCloudWatchに送信します。
+
+`waf_sampled_requests_enabled` - trueに設定すると、WAFは処理したサンプルリクエストを保持します。これは分析に使用でき、主にデバッグ目的で使用されます。
