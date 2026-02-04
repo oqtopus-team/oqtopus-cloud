@@ -79,30 +79,30 @@ variable "login_history_enabled" {
 
 variable "waf_enable_common_rules" {
   description = "flag for enabling/disabling common rules WAF rule"
-  type = bool
-  default = true
+  type        = bool
+  default     = false
 }
 
 variable "waf_enable_rate_limiting" {
   description = "flag for enabling/disabling rate limiting WAF rule"
-  type = bool
-  default = true
+  type        = bool
+  default     = false
 }
 
 variable "waf_rate_limit" {
   description = "maximum number of requests, which have an identical value in the field specified by the RateKey, allowed in a five-minute period. Minimum value is 100"
-  type = number
-  default = 1000
+  type        = number
+  default     = 1000
 }
 
 variable "waf_cloudwatch_metrics_enabled" {
   description = "flag for enabling/disabling sending WAF metrics to cloudwatch"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "waf_sampled_requests_enabled" {
   description = "flag for enabling/disabling storing sample requests in WAF for analysis"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
