@@ -106,6 +106,13 @@ product="oqtopus"
 org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
+
+vpc_flow_log_retention_days = 14
+s3_api_trail_cloudwatch_retention_in_days = 30
+cloudtrail_s3_logs_expiration_days = 365
+cloudtrail_s3_logs_transition_days_standard_ia = 30
+cloudtrail_s3_logs_transition_days_glacier_ir = 90
+cloudtrail_s3_logs_transition_days_deep_archive = 180
 ```
 
 These files set the storage location for the state file and environment variables.
@@ -157,6 +164,9 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+api_gateway_log_retention_days = 14
+lambda_log_retention_days = 14
 
 repository       = "oqtopus-cloud"
 github_user      = "oqtopus-team"
