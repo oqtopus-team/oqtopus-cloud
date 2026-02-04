@@ -78,14 +78,14 @@ variable "login_history_enabled" {
 }
 
 variable "api_gateway_log_retention_days" {
-  description = "number of days for which API Gateway logs are retained"
+  description = "Number of days for which API Gateway logs are retained"
   type        = number
   default     = 14
 }
 
 
 variable "lambda_log_retention_days" {
-  description = "number of days for which lambda logs are retained"
+  description = "Number of days for which lambda logs are retained"
   type        = number
   default     = 14
 }

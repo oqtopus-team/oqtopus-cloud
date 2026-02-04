@@ -53,7 +53,7 @@ variable "db_user_name" {
 }
 
 variable "vpc_flow_log_retention_days" {
-  description = "number of days for which VPC flow logs are retained"
+  description = "Number of days for which VPC flow logs are retained"
   type        = number
   default     = 14
 }
