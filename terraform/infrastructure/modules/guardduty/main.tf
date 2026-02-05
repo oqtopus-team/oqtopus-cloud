@@ -23,6 +23,7 @@ resource "aws_guardduty_detector" "this" {
 }
 
 resource "aws_guardduty_detector_feature" "s3_protection" {
+  count       = var.enable_guardduty ? 1 : 0
   detector_id = aws_guardduty_detector.this.id
   name        = "S3_DATA_EVENTS"
   status      = var.enable_guardduty_s3_protection ? "ENABLED" : "DISABLED"
