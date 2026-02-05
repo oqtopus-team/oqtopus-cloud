@@ -63,7 +63,6 @@ variable "api_gateway_log_retention_days" {
   default     = 14
 }
 
-
 variable "lambda_log_retention_days" {
   description = "Number of days for which lambda logs are retained"
   type        = number
