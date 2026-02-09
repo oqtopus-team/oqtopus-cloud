@@ -42,5 +42,8 @@ module "terraform-state" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
+| <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
+| <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_force_destroy_bucket"></a> [force\_destroy\_bucket](#input\_force\_destroy\_bucket) | Should allow S3 terraform state bucket to be destroyed even if it contains objects? | `bool` | `false` | no |
 <!-- END_TF_DOCS -->

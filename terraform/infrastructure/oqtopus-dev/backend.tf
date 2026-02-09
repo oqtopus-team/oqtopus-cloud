@@ -7,10 +7,5 @@ terraform {
   }
   required_version = ">= 1.9.0, < 2.0.0"
   backend "s3" {
-    bucket       = "terraform-state-bucket"
-    key          = "infrastructure/dev/terraform.tfstate"
-    region       = "ap-northeast-1"
-    use_lockfile = true
-    encrypt      = true
   }
 }

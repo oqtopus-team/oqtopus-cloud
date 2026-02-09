@@ -17,11 +17,11 @@
 */
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket        = "terraform-state-bucket"
+  bucket        = "tfstate.${var.product}-${var.org}-${var.env}"
   force_destroy = var.force_destroy_bucket
 
   tags = {
-    Name = "terraform-state-bucket"
+    Name = "tfstate.${var.product}-${var.org}-${var.env}"
   }
 }
 

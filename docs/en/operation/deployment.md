@@ -88,7 +88,7 @@ key            = "infrastructure.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
+use_lockfile   = true
 ```
 
 For standby environment:
@@ -136,7 +136,7 @@ key            = "service.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
+use_lockfile   = true
 ```
 
 For standby environment:
