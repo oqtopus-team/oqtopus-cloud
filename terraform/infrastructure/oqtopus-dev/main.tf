@@ -100,3 +100,10 @@ module "s3-logging" {
   s3_target_bucket_arn  = module.s3.s3_bucket_arn
   force_destroy_bucket  = true
 }
+
+module "guardduty_detector" {
+  source = "../modules/guardduty"
+
+  enable_guardduty = var.enable_guardduty
+  enable_guardduty_s3_protection = var.enable_guardduty_s3_protection
+}

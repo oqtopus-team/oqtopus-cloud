@@ -11,6 +11,12 @@ editable_fields       = "[\"name\", \"organization\"]"
 visible_fields        = "[\"id\", \"email\", \"name\", \"organization\", \"created_at\"]"
 login_history_enabled = "true"
 
+waf_enable_common_rules        = false
+waf_enable_rate_limiting       = false
+waf_rate_limit                 = 1000
+waf_cloudwatch_metrics_enabled = false
+waf_sampled_requests_enabled   = false
+
 repository       = "oqtopus-cloud"
 github_user      = "oqtopus-team"
 branch           = "develop"
