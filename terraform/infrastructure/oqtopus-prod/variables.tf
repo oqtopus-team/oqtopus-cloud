@@ -51,3 +51,15 @@ variable "public_subnet_cidrs" {
   type        = list(string)
   default     = ["10.2.176.0/20", "10.2.192.0/20", "10.2.208.0/20"]
 }
+
+variable "enable_guardduty" {
+  description = "Flag to enabling/disabling AWS GuardDuty protection service"
+  type        = bool
+  default     = false
+}
+
+variable "enable_guardduty_s3_protection" {
+  description = "Flag to enabling/disabling additional AWS GuardDuty feature for detecting potential risks connected with S3 buckets"
+  type        = bool
+  default     = false
+}
