@@ -102,5 +102,8 @@ module "s3-logging" {
 module "terraform-state" {
   source = "../modules/terraform-state"
 
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
   force_destroy_bucket = true
 }
