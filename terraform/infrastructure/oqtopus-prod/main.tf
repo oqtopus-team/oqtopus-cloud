@@ -98,12 +98,3 @@ module "s3-logging" {
   s3_target_bucket_name = module.s3.s3_bucket_name
   s3_target_bucket_arn  = module.s3.s3_bucket_arn
 }
-
-module "terraform-state" {
-  source = "../modules/terraform-state"
-
-  product              = var.product
-  org                  = var.org
-  env                  = var.env
-  force_destroy_bucket = true
-}

@@ -100,12 +100,3 @@ module "s3-logging" {
   s3_target_bucket_arn  = module.s3.s3_bucket_arn
   force_destroy_bucket  = true
 }
-
-module "terraform-state" {
-  source = "../modules/terraform-state"
-
-  product              = var.product
-  org                  = var.org
-  env                  = var.env
-  force_destroy_bucket = true
-}
