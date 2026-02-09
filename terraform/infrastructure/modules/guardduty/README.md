@@ -1,6 +1,6 @@
 <!-- BEGIN_TF_DOCS -->
 
-# GuardDuty Module
+# AWS GuardDuty Module
 
 ## Description
 
@@ -34,7 +34,7 @@ module "aws_guardduty" {
 | Name | Type |
 |------|------|
 | [aws_guardduty_detector.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector) | resource |
-| [aws_guardduty_detector_feature.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature) | resource |
+| [aws_guardduty_detector_feature.s3_protection](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature) | resource |
 
 ## Inputs
 
