@@ -192,8 +192,9 @@ resource "aws_iam_role_policy_attachment" "cloudtrail_access" {
 }
 
 resource "aws_iam_role_policy_attachment" "cognito_admin_delete_user" {
+  count      = length(var.cognito_user_pool_arns) > 0 ? 1 : 0
   role       = aws_iam_role.lambda.name
-  policy_arn = aws_iam_policy.cognito_admin_delete_user.arn
+  policy_arn = aws_iam_policy.cognito_admin_delete_user[0].arn
 }
 
 resource "aws_iam_policy" "lambda_execution" {
@@ -228,6 +229,7 @@ resource "aws_iam_policy" "cloudtrail_access" {
 }
 
 resource "aws_iam_policy" "cognito_admin_delete_user" {
+  count  = length(var.cognito_user_pool_arns) > 0 ? 1 : 0
   name   = "${var.product}-${var.org}-${var.env}-cognito-admin-delete-user-${var.identifier}"
   policy = data.aws_iam_policy_document.cognito_admin_delete_user.json
 }
