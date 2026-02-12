@@ -167,7 +167,11 @@ def test_register_devices(
 
     response = client.post("/devices", json=body)
     assert response.status_code == 200
-    assert response.json() == {"message": "Device registered successfully"}
+    assert response.json() == {
+        "message_code": "DEVICE_REGISTERED",
+        "message_params": {},
+        "message": "Device registered successfully"
+    }
     # confirm the device is registered
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.basis_gates == '["x", "sx", "rz", "cx", "t"]'
@@ -217,7 +221,11 @@ def test_register_devices_no_device_id_400(
 
     response = client.post("/devices", json=body)
     assert response.status_code == 400
-    assert response.json() == {"message": "device_id is required"}
+    assert response.json() == {
+        "message_code": "DEVICE_ID_REQUIRED",
+        "message_params": {},
+        "message": "device_id is required"
+    }
 
 
 def test_register_devices_device_id_exception_400(
@@ -240,7 +248,11 @@ def test_register_devices_device_id_exception_400(
 
     response = client.post("/devices", json=body)
     assert response.status_code == 400
-    assert response.json() == {"message": "device_id is required"}
+    assert response.json() == {
+        "message_code": "DEVICE_ID_REQUIRED",
+        "message_params": {},
+        "message": "device_id is required"
+    }
 
 
 def test_register_devices_400(
@@ -265,7 +277,11 @@ def test_register_devices_400(
 
     response = client.post("/devices", json=body)
     assert response.status_code == 400
-    assert response.json() == {"message": "device_id is required"}
+    assert response.json() == {
+        "message_code": "DEVICE_ID_REQUIRED",
+        "message_params": {},
+        "message": "device_id is required"
+    }
 
 
 def test_register_devices_overlap(
@@ -293,7 +309,11 @@ def test_register_devices_overlap(
 
     response = client.post("/devices", json=body)
     assert response.status_code == 400
-    assert response.json() == {"message": "device_id=SVSim1 already exists"}
+    assert response.json() == {
+        "message_code": "DEVICE_ALREADY_EXISTS",
+        "message_params": {"id": "SVSim1"},
+        "message": "device_id=SVSim1 already exists"
+    }
 
 
 def test_register_devices_500():
@@ -344,7 +364,11 @@ def test_update_device_data_full(
 
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 200
-    assert response.json() == {"message": "Device updated successfully"}
+    assert response.json() == {
+        "message_code": "DEVICE_UPDATED",
+        "message_params": {},
+        "message": "Device updated successfully"
+    }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.device_type == "QPU"
@@ -376,7 +400,11 @@ def test_update_device_data_partial(
     }
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 200
-    assert response.json() == {"message": "Device updated successfully"}
+    assert response.json() == {
+        "message_code": "DEVICE_UPDATED",
+        "message_params": {},
+        "message": "Device updated successfully"
+    }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.description == "updated description"
@@ -403,7 +431,11 @@ def test_update_device_data_timezone_awareness(
 
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 200
-    assert response.json() == {"message": "Device updated successfully"}
+    assert response.json() == {
+        "message_code": "DEVICE_UPDATED",
+        "message_params": {},
+        "message": "Device updated successfully"
+    }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.calibrated_at == datetime(2024, 3, 4, 3, 34, 56, tzinfo=timezone.utc)
@@ -430,6 +462,8 @@ def test_update_device_data_inconsistent_device_id(
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 400
     assert response.json() == {
+        "message_code": "INCONSISTENT_DEVICE_ID",
+        "message_params": {"id1": "SVSim1", "id2": "SVSim2"},
         "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2"
     }
 

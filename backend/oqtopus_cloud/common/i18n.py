@@ -20,6 +20,12 @@ class Message:
 
 
 class Messages(Enum):
+    ANNOUNCEMENT_NOT_FOUND = MessageTemplate(
+        message_code="ANNOUNCEMENT_NOT_FOUND",
+        message_params=["id"],
+        message_template="announcement_id={id} is not found.",
+    )
+
     ANNOUNCEMENT_REGISTERED = MessageTemplate(
         message_code="ANNOUNCEMENT_REGISTERED",
         message_params=[],
@@ -32,16 +38,58 @@ class Messages(Enum):
         message_template="Announcement updated successfully",
     )
 
-    ANNOUNCEMENT_NOT_FOUND = MessageTemplate(
-        message_code="ANNOUNCEMENT_NOT_FOUND",
-        message_params=["id"],
-        message_template="announcement_id={id} is not found.",
-    )
-
     INVALID_ANNOUNCEMENT_DATA = MessageTemplate(
         message_code="INVALID_ANNOUNCEMENT_DATA",
         message_params=["details"],
         message_template="Invalid announcement data: {details}",
+    )
+
+    DEVICE_NOT_FOUND = MessageTemplate(
+        message_code="DEVICE_NOT_FOUND",
+        message_params=["id"],
+        message_template="device_id={id} is not found.",
+    )
+
+    DEVICE_ID_REQUIRED = MessageTemplate(
+        message_code="DEVICE_ID_REQUIRED",
+        message_params=[],
+        message_template="device_id is required",
+    )
+
+    DEVICE_ALREADY_EXISTS = MessageTemplate(
+        message_code="DEVICE_ALREADY_EXISTS",
+        message_params=["id"],
+        message_template="device_id={id} already exists",
+    )
+
+    INVALID_DEVICE_TIMEZONE = MessageTemplate(
+        message_code="INVALID_DEVICE_TIMEZONE",
+        message_params=["id"],
+        message_template="Invalid timezone for device_id={id}",
+    )
+
+    DEVICE_REGISTERED = MessageTemplate(
+        message_code="DEVICE_REGISTERED",
+        message_params=[],
+        message_template="Device registered successfully",
+    )
+
+    INCONSISTENT_DEVICE_ID = MessageTemplate(
+        message_code="INCONSISTENT_DEVICE_ID",
+        message_params=["id1", "id2"],
+        message_template="device_id is inconsistent with device_info: {id1} != {id2}",
+    )
+
+    DEVICE_UPDATED = MessageTemplate(
+        message_code="DEVICE_UPDATED",
+        message_params=[],
+        message_template="Device updated successfully",
+    )
+
+    DEVICE_DELETED = MessageTemplate(
+        message_code="DEVICE_DELETED",
+        message_params=[],
+        message_template="Device deleted successfully",
     )
 
     OPERATION_SUCCESSFUL = MessageTemplate(
