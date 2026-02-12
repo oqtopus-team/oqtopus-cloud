@@ -72,7 +72,7 @@ class NotFoundErrorResponse(ErrorResponse):
 
     """
 
-    def __init__(self, message: str, message_code: str, message_params: dict = {}):
+    def __init__(self, message: str, message_code: str, message_params):
         super().__init__(
             status_code=404,
             content={
@@ -98,7 +98,7 @@ class BadRequestErrorResponse(ErrorResponse):
 
     """
 
-    def __init__(self, message: str, message_code: str, message_params: dict = {}):
+    def __init__(self, message: str, message_code: str, message_params: dict):
         super().__init__(
             status_code=400,
             content={

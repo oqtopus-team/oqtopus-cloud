@@ -119,27 +119,27 @@ def test_get_all_announcements_offset1_limit2_desc(
 def test_get_announcements_list_with_current_time(test_db):
     test_db.flush()
     test_db.add(Announcement(
-        id=1, 
-        title="title1", 
-        content="content1", 
-        start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc), 
-        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
+        id=1,
+        title="title1",
+        content="content1",
+        start_time=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc),
         updated_at=datetime(2025, 1, 5, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.add(Announcement(
-        id=2, 
-        title="title2", 
-        content="content2", 
-        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
-        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc), 
+        id=2,
+        title="title2",
+        content="content2",
+        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+        end_time=datetime(2025, 1, 6, 12, 34, 56, tzinfo=timezone.utc),
         updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.add(Announcement(
-        id=3, 
-        title="title3", 
-        content="content3", 
-        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc), 
-        end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=timezone.utc), 
+        id=3,
+        title="title3",
+        content="content3",
+        start_time=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
+        end_time=datetime(2025, 1, 5, 11, 34, 56, tzinfo=timezone.utc),
         updated_at=datetime(2025, 1, 4, 12, 34, 56, tzinfo=timezone.utc),
     ))
     test_db.commit()
@@ -223,7 +223,11 @@ def test_get_announcement_404(
 
     response = client.get("/announcements/2")
     assert response.status_code == 404
-    assert response.json() == {"message": "announcement_id=2 is not found."}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_NOT_FOUND",
+        "message_params": {"id": "2"},
+        "message": "announcement_id=2 is not found."
+    }
 
 
 def test_get_announcement_500():
@@ -258,7 +262,11 @@ def test_register_announcement(
         json=announcement_body,
     )
     assert response.status_code == 200
-    assert response.json() == {"message": "Announcement registered successfully"}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_REGISTERED",
+        "message_params": {},
+        "message": "Announcement registered successfully"
+    }
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
 
@@ -303,7 +311,11 @@ def test_register_announcement_no_utc(
             json=malformed_body,
         )
         assert response.status_code == 400
-        assert response.json() == {"message": "Datetime is not in UTC."}
+        assert response.json() == {
+            "message_code": "INVALID_ANNOUNCEMENT_DATA",
+            "message_params": {"details": "Datetime is not in UTC."},
+            "message": "Invalid announcement data: Datetime is not in UTC."
+        }
 
 
 def test_register_announcements_500(
@@ -336,7 +348,11 @@ def test_update_announcement_full_update(
         json=announcement_body,
     )
     assert response.status_code == 200
-    assert response.json() == {"message": "Announcement updated successfully"}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_UPDATED",
+        "message_params": {},
+        "message": "Announcement updated successfully"
+    }
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
 
@@ -366,7 +382,10 @@ def test_update_announcement_partial_update(
         },
     )
     assert response.status_code == 200
-    assert response.json() == {"message": "Announcement updated successfully"}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_UPDATED",
+        "message_params": {},
+        "message": "Announcement updated successfully"}
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
 
@@ -395,7 +414,11 @@ def test_update_announcement_no_utc(
         },
     )
     assert response.status_code == 400
-    assert response.json() == {"message": "Datetime is not in UTC."}
+    assert response.json() == {
+        "message_code": "INVALID_ANNOUNCEMENT_DATA",
+        "message_params": {"details": "Datetime is not in UTC."},
+        "message": "Invalid announcement data: Datetime is not in UTC."
+    }
 
 
 def test_update_announcement_404(
@@ -414,7 +437,11 @@ def test_update_announcement_404(
         json=announcement_body,
     )
     assert response.status_code == 404
-    assert response.json() == {"message": "announcement_id=2 is not found."}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_NOT_FOUND",
+        "message_params": {"id": "2"},
+        "message": "announcement_id=2 is not found."
+    }
 
 
 def test_update_announcement_500(
@@ -460,7 +487,11 @@ def test_delete_announcement_404(
 
     response = client.delete("/announcements/2")
     assert response.status_code == 404
-    assert response.json() == {"message": "announcement_id=2 is not found."}
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_NOT_FOUND",
+        "message_params": {"id": "2"},
+        "message": "announcement_id=2 is not found."
+    }
 
 
 def test_delete_announcement_500():

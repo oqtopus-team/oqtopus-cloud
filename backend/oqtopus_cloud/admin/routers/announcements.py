@@ -21,6 +21,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.success import SuccessResponse
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.session import (
     get_db,
@@ -104,13 +105,9 @@ def get_announcement(
             announcement = model_to_schema(query_result)
             return announcement
         else:
-            message = f"announcement_id={announcement_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(
-                message=message,
-                message_code="ANNOUNCEMENT_NOT_FOUND",
-                message_params={"id": announcement_id},
-            )
+            message = Messages.ANNOUNCEMENT_NOT_FOUND.format(id=announcement_id)
+            logger.info(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -141,15 +138,12 @@ def register_announcements(
         db.add(announcement)
         db.commit()
 
-        return SuccessResponse(
-            message="Announcement registered successfully",
-            message_code="ANNOUNCEMENT_REGISTERED",
-        )
+        return SuccessResponse(**Messages.ANNOUNCEMENT_REGISTERED.format().to_dict())
 
     except ValueError as e:
         logger.error(str(e))
         return BadRequestErrorResponse(
-            message=str(e), message_code="INVALID_ANNOUNCEMENT_DATA"
+            **Messages.INVALID_ANNOUNCEMENT_DATA.format(details=str(e)).to_dict()
         )
 
     except Exception as e:
@@ -178,13 +172,9 @@ def update_announcements_data(
         stmt = select(Announcement).where(Announcement.id == announcement_id)
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
-            message = f"announcement_id={announcement_id} is not found."
-            logger.error(message)
-            return NotFoundErrorResponse(
-                message=message,
-                message_code="ANNOUNCEMENT_NOT_FOUND",
-                message_params={"id": announcement_id},
-            )
+            message = Messages.ANNOUNCEMENT_NOT_FOUND.format(id=announcement_id)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         update_fields = announcement_update.model_dump(exclude_none=True)
 
@@ -194,15 +184,12 @@ def update_announcements_data(
             setattr(query_result, field, value)
         db.commit()
 
-        return SuccessResponse(
-            message="Announcement updated successfully",
-            message_code="ANNOUNCEMENT_UPDATED",
-        )
+        return SuccessResponse(**Messages.ANNOUNCEMENT_UPDATED.format().to_dict())
 
     except ValueError as e:
         logger.error(str(e))
         return BadRequestErrorResponse(
-            message=str(e), message_code="INVALID_ANNOUNCEMENT_DATA"
+            **Messages.INVALID_ANNOUNCEMENT_DATA.format(details=str(e)).to_dict()
         )
 
     except Exception as e:
@@ -234,13 +221,9 @@ def delete_announcement(
             .first()
         )
         if not query_result:
-            message = f"announcement_id={announcement_id} is not found."
-            logger.error(message)
-            return NotFoundErrorResponse(
-                message=message,
-                message_code="ANNOUNCEMENT_NOT_FOUND",
-                message_params={"id": announcement_id},
-            )
+            message = Messages.ANNOUNCEMENT_NOT_FOUND.format(id=announcement_id)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         db.delete(query_result)
         db.commit()
