@@ -28,24 +28,27 @@ class Message(BaseModel):
 
 class BadRequestResponse(ErrorResponse):
     """
-    Represents a response for a bad request.
+    Represents an error response for a bad request.
 
     Args:
         message (str): The detailed error message.
+        message_code (str): The literal code indicating the error message for i18n.
+        message_params (str): Parameters of the error message for i18n.
 
     Attributes:
-        status_code (int): The HTTP status code for the response.
-        content (dict): The content of the response.
+        status_code (int): The HTTP status code of the error response.
+        content (dict): The content of the error response.
 
     """
 
-    def __init__(
-        self,
-        message: str,
-    ):
+    def __init__(self, message: str, message_code: str, message_params: dict):
         super().__init__(
             status_code=400,
-            content={"message": message},
+            content={
+                "message": message,
+                "message_code": message_code,
+                "message_params": message_params,
+            },
         )
 
 
@@ -55,6 +58,8 @@ class NotFoundErrorResponse(ErrorResponse):
 
     Args:
         message (str): The detailed error message.
+        message_code (str): The literal code indicating the error message for i18n.
+        message_params (str): Parameters of the error message for i18n.
 
     Attributes:
         status_code (int): The HTTP status code of the error response.
@@ -62,13 +67,14 @@ class NotFoundErrorResponse(ErrorResponse):
 
     """
 
-    def __init__(
-        self,
-        message: str,
-    ):
+    def __init__(self, message: str, message_code: str, message_params):
         super().__init__(
             status_code=404,
-            content={"message": message},
+            content={
+                "message": message,
+                "message_code": message_code,
+                "message_params": message_params,
+            },
         )
 
 
@@ -91,7 +97,7 @@ class InternalServerErrorResponse(ErrorResponse):
         self,
         message: str = "Internal Server Error",
         message_code: str = "INTERNAL_SERVER_ERROR",
-        message_params: dict = {}
+        message_params: dict = {},
     ):
         super().__init__(
             status_code=500,
@@ -99,5 +105,5 @@ class InternalServerErrorResponse(ErrorResponse):
                 "message": message,
                 "message_code": message_code,
                 "message_params": message_params,
-            }
+            },
         )
