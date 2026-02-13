@@ -121,6 +121,12 @@ class Messages(Enum):
         message_template="user_id={id} is not found.",
     )
 
+    FIELD_REQUIRED_MESSAGE = MessageTemplate(
+        message_code="FIELD_REQUIRED",
+        message_params=["field"],
+        message_template="{field} is required.",
+    )
+
     FIELD_TOO_LONG_MESSAGE = MessageTemplate(
         message_code="FIELD_TOO_LONG",
         message_params=["field", "limit"],
@@ -131,6 +137,24 @@ class Messages(Enum):
         message_code="EMAIL_ALREADY_EXISTS",
         message_params=["email"],
         message_template="{email} is already registered.",
+    )
+
+    NO_USERS_TO_REGISTER = MessageTemplate(
+        message_code="NO_USERS_TO_REGISTER",
+        message_params=[],
+        message_template="No users to register.",
+    )
+
+    NO_VALID_USER_TO_REGISTER = MessageTemplate(
+        message_code="NO_VALID_USER_TO_REGISTER",
+        message_params=[],
+        message_template="No valid user to register.",
+    )
+
+    WHITELIST_USER_REGISTERED = MessageTemplate(
+        message_code="WHITELIST_USER_REGISTERED",
+        message_params=[],
+        message_template="Whitelist user registered successfully",
     )
 
     OPERATION_SUCCESSFUL = MessageTemplate(

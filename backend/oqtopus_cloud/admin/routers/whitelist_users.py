@@ -24,6 +24,7 @@ from oqtopus_cloud.admin.schemas.whitelist_users import (
     RegisterWhitelistUsersRequest,
     WhitelistUsersDeleteRequest,
 )
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
     get_db,
@@ -33,9 +34,6 @@ from oqtopus_cloud.common.available_devices import (
     parse_available_devices_string,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
-    EMAIL_ALREADY_EXISTS_MESSAGE,
-    FIELD_REQUIRED_MESSAGE,
-    FIELD_TOO_LONG_MESSAGE,
     FormatError,
     LEN_VARCHAR,
     is_unique_email,
@@ -60,23 +58,49 @@ def validated_whitelist_user(
     db: Session, user: RegisterWhitelistUserRequest
 ) -> WhitelistUser:
     if not user.email:
-        raise FormatError(FIELD_REQUIRED_MESSAGE.format("email address"))
+        raise FormatError(
+            **Messages.FIELD_REQUIRED_MESSAGE.format(field="email").to_dict()
+        )
     if not user.group_id:
-        raise FormatError(FIELD_REQUIRED_MESSAGE.format("group_id"))
+        raise FormatError(
+            **Messages.FIELD_REQUIRED_MESSAGE.format(field="group_id").to_dict()
+        )
     if not user.available_devices:
-        raise FormatError(FIELD_REQUIRED_MESSAGE.format("available_devices"))
+        raise FormatError(
+            **Messages.FIELD_REQUIRED_MESSAGE.format(
+                field="available_devices"
+            ).to_dict()
+        )
 
     if len(str(user.email)) > LEN_VARCHAR:
-        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.email, LEN_VARCHAR))
+        raise FormatError(
+            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                field="email", limit=LEN_VARCHAR
+            ).to_dict()
+        )
     if len(str(user.group_id)) > LEN_VARCHAR:
-        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.group_id, LEN_VARCHAR))
+        raise FormatError(
+            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                field="group_id", limit=LEN_VARCHAR
+            ).to_dict()
+        )
     if user.username and len(str(user.username)) > LEN_VARCHAR:
-        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.username, LEN_VARCHAR))
+        raise FormatError(
+            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                field="username", limit=LEN_VARCHAR
+            ).to_dict()
+        )
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
-        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.organization, LEN_VARCHAR))
+        raise FormatError(
+            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                field="organization", limit=LEN_VARCHAR
+            ).to_dict()
+        )
 
     if not is_unique_email(db, WhitelistUser, user.email):
-        raise FormatError(EMAIL_ALREADY_EXISTS_MESSAGE.format(user.email))
+        raise FormatError(
+            **Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(email=user.email).to_dict()
+        )
 
     validated_user = {
         "email": str(user.email),
@@ -122,21 +146,15 @@ def get_whitelist_users(
         if sort:
             sort_parts = sort.split(",")
             if len(sort_parts) != 2:
-                logger.error(f"Invalid sort parameter: {sort}")
-                return BadRequestErrorResponse(
-                    message=f"Invalid sort parameter: {sort}",
-                    message_code="INVALID_SORT_PARAMETER",
-                    message_params={"sort": sort},
-                )
+                message = Messages.INVALID_SORT_PARAMETER.format(sort=sort)
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
 
             column_name, order_str = sort_parts
             if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
-                logger.error(f"Invalid column name to sort: {column_name}")
-                return BadRequestErrorResponse(
-                    message=f"Invalid column name to sort: {column_name}",
-                    message_code="INVALID_SORT_COLUMN",
-                    message_params={"column": column_name},
-                )
+                message = Messages.INVALID_SORT_COLUMN.format(column=column_name)
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
 
             match order_str:
                 case "asc":
@@ -144,12 +162,9 @@ def get_whitelist_users(
                 case "desc":
                     order = desc
                 case _:
-                    logger.error(f"Invalid order to sort: {order_str}")
-                    return BadRequestErrorResponse(
-                        message=f"Invalid order to sort: {order_str}",
-                        message_code="INVALID_SORT_ORDER",
-                        message_params={"order": order_str},
-                    )
+                    message = Messages.INVALID_SORT_ORDER.format(order=order_str)
+                    logger.error(message.message)
+                    return BadRequestErrorResponse(**message.to_dict())
 
             order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
             if column_name != "id":
@@ -187,22 +202,23 @@ def register_whitelist_user(
     try:
         users_list = users.users
         if users_list is None:
-            logger.error("No users to register")
-            return BadRequestErrorResponse(
-                message="No users to register", message_code="NO_USERS_TO_REGISTER"
-            )
+            message = Messages.NO_USERS_TO_REGISTER.format()
+            logger.error(message.message)
+            return BadRequestErrorResponse(**message.to_dict())
         valid_users_list = [
             validated_whitelist_user(db, one_user) for one_user in users_list
         ]
-    except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return BadRequestErrorResponse(message=str(e))
-    if not valid_users_list:
-        logger.error("No valid user to register")
+    except FormatError as e:
+        logger.exception(e.message)
         return BadRequestErrorResponse(
-            message="No valid user to register",
-            message_code="NO_VALID_USER_TO_REGISTER",
+            message=e.message,
+            message_code=e.message_code,
+            message_params=e.message_params,
         )
+    if not valid_users_list:
+        message = Messages.NO_VALID_USER_TO_REGISTER.format()
+        logger.error(message.message)
+        return BadRequestErrorResponse(**message.to_dict())
     try:
         for user in valid_users_list:
             new_whitelist_user = WhitelistUser(
@@ -215,10 +231,7 @@ def register_whitelist_user(
             )
             db.add(new_whitelist_user)
             db.commit()
-        return SuccessResponse(
-            message="User registered successfully",
-            message_code="WHITELIST_USER_REGISTERED",
-        )
+        return SuccessResponse(**Messages.WHITELIST_USER_REGISTERED.format().to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

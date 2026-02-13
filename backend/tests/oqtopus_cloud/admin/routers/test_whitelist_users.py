@@ -252,11 +252,19 @@ def test_get_whitelist_users_invalid_sort_query_parameter():
     """
     response = client.get("/whitelist_users?sort=username")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: username"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_PARAMETER",
+        "message_params": {"sort": "username"},
+        "message": "Invalid sort parameter: username"
+    }
 
     response = client.get("/whitelist_users?sort=username,desc,something_else")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: username,desc,something_else"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_PARAMETER",
+        "message_params": {"sort": "username,desc,something_else"},
+        "message": "Invalid sort parameter: username,desc,something_else"
+    }
 
 
 def test_get_whitelist_users_invalid_column_name():
@@ -265,7 +273,11 @@ def test_get_whitelist_users_invalid_column_name():
     """
     response = client.get("/whitelist_users?sort=no_such_column,desc")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid column name to sort: no_such_column"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_COLUMN",
+        "message_params": {"column": "no_such_column"},
+        "message": "Invalid column name to sort: no_such_column"
+    }
 
 
 def test_get_whitelist_users_invalid_order():
@@ -274,7 +286,11 @@ def test_get_whitelist_users_invalid_order():
     """
     response = client.get("/whitelist_users?sort=username,invalid_order")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid order to sort: invalid_order"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_ORDER",
+        "message_params": {"order": "invalid_order"},
+        "message": "Invalid order to sort: invalid_order"
+    }
 
 
 def test_get_whitelist_users_500():
@@ -493,55 +509,74 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
         json=request_body_no_email.model_dump(),
     )
     assert response_no_email.status_code == 400
+    assert response_no_email.json() == {
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "email"},
+        "message": "email is required."
+    }
     request_body_no_group_id = client.post(
         "/whitelist_users",
         json=request_body_no_group_id.model_dump(),
     )
     assert request_body_no_group_id.status_code == 400
+    assert request_body_no_group_id.json() == {
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "group_id"},
+        "message": "group_id is required."
+    }
     request_body_email_too_long = client.post(
         "/whitelist_users",
         json=request_body_email_too_long.model_dump(),
     )
     assert request_body_email_too_long.status_code == 400
+    assert request_body_email_too_long.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "email", "limit": 255},
+        "message": "The length of email exceeds the limit. Please enter within 255 characters"
+    }
     request_body_group_id_too_long = client.post(
         "/whitelist_users",
         json=request_body_group_id_too_long.model_dump(),
     )
     assert request_body_group_id_too_long.status_code == 400
+    assert request_body_group_id_too_long.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "group_id", "limit": 255},
+        "message": "The length of group_id exceeds the limit. Please enter within 255 characters"
+    }
     request_body_username_too_long = client.post(
         "/whitelist_users",
         json=request_body_username_too_long.model_dump(),
     )
     assert request_body_username_too_long.status_code == 400
+    assert request_body_username_too_long.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "username", "limit": 255},
+        "message": "The length of username exceeds the limit. Please enter within 255 characters"
+    }
     request_body_organization_too_long = client.post(
         "/whitelist_users",
         json=request_body_organization_too_long.model_dump(),
     )
     assert request_body_organization_too_long.status_code == 400
+    assert request_body_organization_too_long.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "organization", "limit": 255},
+        "message": "The length of organization exceeds the limit. Please enter within 255 characters"
+    }
     request_body_overlap_username = client.post(
         "/whitelist_users",
         json=request_body_overlap_username.model_dump(),
     )
+    assert request_body_overlap_username.json() == {
+        "message_code": "EMAIL_ALREADY_EXISTS",
+        "message_params": {"email": "email_1"},
+        "message": "email_1 is already registered."
+    }
     assert request_body_overlap_username.status_code == 400
 
 
 def test_post_whitelist_users_no_userlist_in_request(test_db):
-    """_summary_
-    Simple POST /whitelist_users tests 400 error
-    """
-    test_db.flush()
-    test_db.add(_get_model(1, True))
-    test_db.add(_get_model(2, False))
-    test_db.commit()
-    request_body = RegisterWhitelistUsersRequest(users=[])
-    response = client.post(
-        "/whitelist_users",
-        json=request_body.model_dump(),
-    )
-    assert response.status_code == 400
-
-
-def test_post_whitelist_users_no_valid_user(test_db):
     """_summary_
     Simple POST /whitelist_users tests 400 error
     """
@@ -555,7 +590,32 @@ def test_post_whitelist_users_no_valid_user(test_db):
         json=request_body.model_dump(),
     )
     assert response.status_code == 400
+    assert response.json() == {
+        "message_code": "NO_USERS_TO_REGISTER",
+        "message_params": {},
+        "message": "No users to register."
+    }
 
+
+def test_post_whitelist_users_no_valid_user(test_db):
+    """_summary_
+    Simple POST /whitelist_users tests 400 error
+    """
+    test_db.flush()
+    test_db.add(_get_model(1, True))
+    test_db.add(_get_model(2, False))
+    test_db.commit()
+    request_body = RegisterWhitelistUsersRequest(users=[])
+    response = client.post(
+        "/whitelist_users",
+        json=request_body.model_dump(),
+    )
+    assert response.status_code == 400
+    assert response.json() == {
+        "message_code": "NO_VALID_USER_TO_REGISTER",
+        "message_params": {},
+        "message": "No valid user to register."
+    }
 
 def test_post_whitelist_users_no_available_devices(test_db):
     """_summary_
@@ -580,7 +640,11 @@ def test_post_whitelist_users_no_available_devices(test_db):
         json=request_body.model_dump(),
     )
     assert response.status_code == 400
-    assert response.json() == {"message": "available_devices is required."}
+    assert response.json() == {
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "available_devices"},
+        "message": "available_devices is required."
+    }
 
 
 def test_delete_whitelist_users(test_db):
