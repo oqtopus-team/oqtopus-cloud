@@ -20,6 +20,7 @@ from oqtopus_cloud.admin.schemas.users import (
     UserStatus,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
+    FormatError,
     LEN_VARCHAR,
     is_unique_email,
 )
@@ -184,44 +185,44 @@ def update_user_status(
 
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
-                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
-                    field=update_user_request.email, limit=LEN_VARCHAR
+                raise FormatError(
+                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                        field=update_user_request.email, limit=LEN_VARCHAR
+                    ).to_dict()
                 )
-                logger.error(message.message)
-                return BadRequestErrorResponse(**message.to_dict())
             if not is_unique_email(db, User, update_user_request.email):
-                message = Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(
-                    email=update_user_request.email
+                raise FormatError(
+                    **Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(
+                        email=update_user_request.email
+                    ).to_dict()
                 )
-                logger.error(message.message)
-                return BadRequestErrorResponse(**message.to_dict())
             query.email = update_user_request.email
 
         if update_user_request.name:
             if len(update_user_request.name) > LEN_VARCHAR:
-                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
-                    field=update_user_request.name, limit=LEN_VARCHAR
+                raise FormatError(
+                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                        field=update_user_request.name, limit=LEN_VARCHAR
+                    ).to_dict()
                 )
-                logger.error(message.message)
-                return BadRequestErrorResponse(**message.to_dict())
             query.username = update_user_request.name
 
         if update_user_request.organization:
             if len(update_user_request.organization) > LEN_VARCHAR:
-                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
-                    field=update_user_request.organization, limit=LEN_VARCHAR
+                raise FormatError(
+                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                        field=update_user_request.organization, limit=LEN_VARCHAR
+                    ).to_dict()
                 )
-                logger.error(message.message)
-                return BadRequestErrorResponse(**message.to_dict())
             query.organization = update_user_request.organization
 
         if update_user_request.group_id:
             if len(update_user_request.group_id) > LEN_VARCHAR:
-                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
-                    field=update_user_request.group_id, limit=LEN_VARCHAR
+                raise FormatError(
+                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                        field=update_user_request.group_id, limit=LEN_VARCHAR
+                    ).to_dict()
                 )
-                logger.error(message.message)
-                return BadRequestErrorResponse(**message.to_dict())
             query.group_id = update_user_request.group_id
 
         if update_user_request.status:
@@ -240,6 +241,14 @@ def update_user_status(
         user = model_to_schema(query)
 
         return user
+
+    except FormatError as e:
+        logger.exception(e.message)
+        return BadRequestErrorResponse(
+            message=e.message,
+            message_code=e.message_code,
+            message_params=e.message_params,
+        )
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
