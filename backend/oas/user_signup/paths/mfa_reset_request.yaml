@@ -32,8 +32,6 @@ mfa_reset_request:
           application/json:
             schema:
               $ref: '../schemas/error.yaml#/error.NotFoundError'
-            example:
-              message: User not found
       '500':
         description: Internal server error
         content:
