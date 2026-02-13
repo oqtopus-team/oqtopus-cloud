@@ -20,12 +20,10 @@ from oqtopus_cloud.admin.schemas.users import (
     UserStatus,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
-    EMAIL_ALREADY_EXISTS_MESSAGE,
-    FIELD_TOO_LONG_MESSAGE,
     LEN_VARCHAR,
     is_unique_email,
-    FormatError,
 )
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.user import UserStatus as UserStatusSchema
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
@@ -84,31 +82,22 @@ def get_users(
         if status:
             status_num = enum_to_status(status)
             if status_num is None:
-                logger.error(f"Invalid status: {status}")
-                return BadRequestErrorResponse(
-                    message=f"Invalid status: {status}",
-                    message_code="INVALID_STATUS",
-                    message_params={"status": status.value},
-                )
+                message = Messages.INVALID_USER_STATUS.format(status=status.value)
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             stmt = stmt.where(User.userstatus == status_num)
         if sort:
             sort_parts = sort.split(",")
             if len(sort_parts) != 2:
-                logger.error(f"Invalid sort parameter: {sort}")
-                return BadRequestErrorResponse(
-                    message=f"Invalid sort parameter: {sort}",
-                    message_code="INVALID_SORT_PARAMETER",
-                    message_params={"sort": sort},
-                )
+                message = Messages.INVALID_SORT_PARAMETER.format(sort=sort)
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
 
             column_name, order_str = sort_parts
             if column_name not in COLUMNS_POSSIBLE_TO_ORDER_BY_DICT:
-                logger.error(f"Invalid column name to sort: {column_name}")
-                return BadRequestErrorResponse(
-                    message=f"Invalid column name to sort: {column_name}",
-                    message_code="INVALID_SORT_COLUMN",
-                    message_params={"column": column_name},
-                )
+                message = Messages.INVALID_SORT_COLUMN.format(column=column_name)
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
 
             match order_str:
                 case "asc":
@@ -116,12 +105,9 @@ def get_users(
                 case "desc":
                     order = desc
                 case _:
-                    logger.error(f"Invalid order to sort: {order_str}")
-                    return BadRequestErrorResponse(
-                        message=f"Invalid order to sort: {order_str}",
-                        message_code="INVALID_SORT_ORDER",
-                        message_params={"order": order_str},
-                    )
+                    message = Messages.INVALID_SORT_ORDER.format(order=order_str)
+                    logger.error(message.message)
+                    return BadRequestErrorResponse(**message.to_dict())
 
             order_list = [order(COLUMNS_POSSIBLE_TO_ORDER_BY_DICT[column_name])]
             if column_name != "id":
@@ -156,13 +142,9 @@ def get_user(
         user = db.scalars(select(User).where(User.id == user_id)).first()
 
         if user is None:
-            message = f"user_id={user_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(
-                message=message,
-                message_code="USER_NOT_FOUND",
-                message_params={"id": user_id},
-            )
+            message = Messages.USER_NOT_FOUND.format(id=str(user_id))
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         return model_to_schema(user)
     except Exception as e:
@@ -196,49 +178,50 @@ def update_user_status(
         stmt = select(User).where(User.id == user_id)
         query = db.execute(stmt).scalars().first()
         if not query:
-            logger.error(f"User not found: {user_id}")
-            return NotFoundErrorResponse(
-                message=f"User not found: {user_id}",
-                message_code="USER_NOT_FOUND",
-                message_params={"id": user_id},
-            )
+            message = Messages.USER_NOT_FOUND.format(id=str(user_id))
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
-                raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(
-                        update_user_request.email, LEN_VARCHAR
-                    )
+                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    field=update_user_request.email, limit=LEN_VARCHAR
                 )
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             if not is_unique_email(db, User, update_user_request.email):
-                raise FormatError(
-                    EMAIL_ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
+                message = Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(
+                    email=update_user_request.email
                 )
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             query.email = update_user_request.email
 
         if update_user_request.name:
             if len(update_user_request.name) > LEN_VARCHAR:
-                raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
+                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    field=update_user_request.name, limit=LEN_VARCHAR
                 )
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             query.username = update_user_request.name
 
         if update_user_request.organization:
             if len(update_user_request.organization) > LEN_VARCHAR:
-                raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(
-                        update_user_request.organization, LEN_VARCHAR
-                    )
+                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    field=update_user_request.organization, limit=LEN_VARCHAR
                 )
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             query.organization = update_user_request.organization
 
         if update_user_request.group_id:
             if len(update_user_request.group_id) > LEN_VARCHAR:
-                raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(
-                        update_user_request.group_id, LEN_VARCHAR
-                    )
+                message = Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    field=update_user_request.group_id, limit=LEN_VARCHAR
                 )
+                logger.error(message.message)
+                return BadRequestErrorResponse(**message.to_dict())
             query.group_id = update_user_request.group_id
 
         if update_user_request.status:
@@ -257,9 +240,7 @@ def update_user_status(
         user = model_to_schema(query)
 
         return user
-    except FormatError as e:
-        logger.exception(f"error: {str(e)}")
-        return BadRequestErrorResponse(message=str(e))
+
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -291,12 +272,9 @@ def delete_user(
         # pagination
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
-            logger.error(f"User not found: {user_id}")
-            return NotFoundErrorResponse(
-                message=f"User not found: {user_id}",
-                message_code="USER_NOT_FOUND",
-                message_params={"id": user_id},
-            )
+            message = Messages.USER_NOT_FOUND.format(id=str(user_id))
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
         # check if the user is in whitelist_users
         stmt_whitelist = select(WhitelistUser).where(
             WhitelistUser.email == query_result.email

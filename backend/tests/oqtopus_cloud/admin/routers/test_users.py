@@ -291,23 +291,39 @@ def test_get_users_order_descending(test_db):
 def test_get_users_invalid_sort_query_parameter():
     response = client.get("/users?sort=name")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: name"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_PARAMETER",
+        "message_params": {"sort": "name"},
+        "message": "Invalid sort parameter: name"
+    }
 
     response = client.get("/users?sort=name,desc,something_else")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: name,desc,something_else"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_PARAMETER",
+        "message_params": {"sort": "name,desc,something_else"},
+        "message": "Invalid sort parameter: name,desc,something_else"
+    }
 
 
 def test_get_users_invalid_column_name():
     response = client.get("/users?sort=no_such_column,desc")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid column name to sort: no_such_column"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_COLUMN",
+        "message_params": {"column": "no_such_column"},
+        "message": "Invalid column name to sort: no_such_column"
+    }
 
 
 def test_get_users_invalid_order():
     response = client.get("/users?sort=name,invalid_order")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid order to sort: invalid_order"}
+    assert response.json() == {
+        "message_code": "INVALID_SORT_ORDER",
+        "message_params": {"order": "invalid_order"},
+        "message": "Invalid order to sort: invalid_order"
+    }
 
 
 def test_get_user_500():
@@ -350,7 +366,11 @@ def test_get_one_user_404(test_db):
     response = client.get("/users/5")
 
     assert response.status_code == 404
-    assert response.json() == {"message": "user_id=5 is not found."}
+    assert response.json() == {
+        "message_code": "USER_NOT_FOUND",
+        "message_params": {"id": "5"},
+        "message": "user_id=5 is not found."
+    }
 
 
 def test_get_one_user_500():
@@ -464,7 +484,11 @@ def test_patch_job_404(
     update_data = UpdateUserRequest(status=UserStatus.suspended)
     response = client.patch("/users/2", json=update_data.model_dump())
     assert response.status_code == 404
-    assert response.json() == {"message": "User not found: 2"}
+    assert response.json() == {
+        "message_code": "USER_NOT_FOUND",
+        "message_params": {"id": "2"},
+        "message": "user_id=2 is not found."
+    }
 
 
 def test_patch_job_400_email_too_long(test_db):
@@ -478,7 +502,11 @@ def test_patch_job_400_email_too_long(test_db):
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_email} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": too_long_email, "limit": LEN_VARCHAR},
+        "message": f"The length of {too_long_email} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_400_email_already_exist(test_db):
@@ -496,7 +524,11 @@ def test_patch_job_400_email_already_exist(test_db):
     response = client.patch("/users/2", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"{user_1_mail} is already registered."}
+    assert response.json() == {
+        "message_code": "EMAIL_ALREADY_EXISTS",
+        "message_params": {"email": user_1_mail},
+        "message": f"{user_1_mail} is already registered."
+    }
 
 
 def test_patch_job_400_name_too_long(test_db):
@@ -510,7 +542,11 @@ def test_patch_job_400_name_too_long(test_db):
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": too_long_name, "limit": LEN_VARCHAR},
+        "message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_400_organization_too_long(test_db):
@@ -524,7 +560,11 @@ def test_patch_job_400_organization_too_long(test_db):
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": too_long_organization, "limit": LEN_VARCHAR},
+        "message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_400_group_id_too_long(test_db):
@@ -538,7 +578,11 @@ def test_patch_job_400_group_id_too_long(test_db):
     response = client.patch("/users/1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": too_long_group_id, "limit": LEN_VARCHAR},
+        "message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_500():

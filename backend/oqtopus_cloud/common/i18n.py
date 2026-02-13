@@ -92,6 +92,47 @@ class Messages(Enum):
         message_template="Device deleted successfully",
     )
 
+    INVALID_USER_STATUS = MessageTemplate(
+        message_code="INVALID_USER_STATUS",
+        message_params=["status"],
+        message_template="Invalid user status: {status}",
+    )
+
+    INVALID_SORT_PARAMETER = MessageTemplate(
+        message_code="INVALID_SORT_PARAMETER",
+        message_params=["sort"],
+        message_template="Invalid sort parameter: {sort}",
+    )
+
+    INVALID_SORT_COLUMN = MessageTemplate(
+        message_code="INVALID_SORT_COLUMN",
+        message_params=["column"],
+        message_template="Invalid column name to sort: {column}",
+    )
+    INVALID_SORT_ORDER = MessageTemplate(
+        message_code="INVALID_SORT_ORDER",
+        message_params=["order"],
+        message_template="Invalid order to sort: {order}",
+    )
+
+    USER_NOT_FOUND = MessageTemplate(
+        message_code="USER_NOT_FOUND",
+        message_params=["id"],
+        message_template="user_id={id} is not found.",
+    )
+
+    FIELD_TOO_LONG_MESSAGE = MessageTemplate(
+        message_code="FIELD_TOO_LONG",
+        message_params=["field", "limit"],
+        message_template="The length of {field} exceeds the limit. Please enter within {limit} characters",
+    )
+
+    EMAIL_ALREADY_EXISTS_MESSAGE = MessageTemplate(
+        message_code="EMAIL_ALREADY_EXISTS",
+        message_params=["email"],
+        message_template="{email} is already registered.",
+    )
+
     OPERATION_SUCCESSFUL = MessageTemplate(
         message_code="OPERATION_SUCCESSFUL",
         message_params=[],
