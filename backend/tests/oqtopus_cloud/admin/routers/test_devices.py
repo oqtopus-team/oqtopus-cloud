@@ -222,9 +222,9 @@ def test_register_devices_no_device_id_400(
     response = client.post("/devices", json=body)
     assert response.status_code == 400
     assert response.json() == {
-        "message_code": "DEVICE_ID_REQUIRED",
-        "message_params": {},
-        "message": "device_id is required"
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "device_id"},
+        "message": "device_id is required."
     }
 
 
@@ -249,9 +249,9 @@ def test_register_devices_device_id_exception_400(
     response = client.post("/devices", json=body)
     assert response.status_code == 400
     assert response.json() == {
-        "message_code": "DEVICE_ID_REQUIRED",
-        "message_params": {},
-        "message": "device_id is required"
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "device_id"},
+        "message": "device_id is required."
     }
 
 
@@ -278,9 +278,9 @@ def test_register_devices_400(
     response = client.post("/devices", json=body)
     assert response.status_code == 400
     assert response.json() == {
-        "message_code": "DEVICE_ID_REQUIRED",
-        "message_params": {},
-        "message": "device_id is required"
+        "message_code": "FIELD_REQUIRED",
+        "message_params": {"field": "device_id"},
+        "message": "device_id is required."
     }
 
 

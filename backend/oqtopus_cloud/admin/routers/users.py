@@ -186,13 +186,13 @@ def update_user_status(
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
                 raise FormatError(
-                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    **Messages.FIELD_TOO_LONG.format(
                         field=update_user_request.email, limit=LEN_VARCHAR
                     ).to_dict()
                 )
             if not is_unique_email(db, User, update_user_request.email):
                 raise FormatError(
-                    **Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(
+                    **Messages.EMAIL_ALREADY_EXISTS.format(
                         email=update_user_request.email
                     ).to_dict()
                 )
@@ -201,7 +201,7 @@ def update_user_status(
         if update_user_request.name:
             if len(update_user_request.name) > LEN_VARCHAR:
                 raise FormatError(
-                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    **Messages.FIELD_TOO_LONG.format(
                         field=update_user_request.name, limit=LEN_VARCHAR
                     ).to_dict()
                 )
@@ -210,7 +210,7 @@ def update_user_status(
         if update_user_request.organization:
             if len(update_user_request.organization) > LEN_VARCHAR:
                 raise FormatError(
-                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    **Messages.FIELD_TOO_LONG.format(
                         field=update_user_request.organization, limit=LEN_VARCHAR
                     ).to_dict()
                 )
@@ -219,7 +219,7 @@ def update_user_status(
         if update_user_request.group_id:
             if len(update_user_request.group_id) > LEN_VARCHAR:
                 raise FormatError(
-                    **Messages.FIELD_TOO_LONG_MESSAGE.format(
+                    **Messages.FIELD_TOO_LONG.format(
                         field=update_user_request.group_id, limit=LEN_VARCHAR
                     ).to_dict()
                 )

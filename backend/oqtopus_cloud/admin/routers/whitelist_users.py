@@ -58,48 +58,40 @@ def validated_whitelist_user(
     db: Session, user: RegisterWhitelistUserRequest
 ) -> WhitelistUser:
     if not user.email:
-        raise FormatError(
-            **Messages.FIELD_REQUIRED_MESSAGE.format(field="email").to_dict()
-        )
+        raise FormatError(**Messages.FIELD_REQUIRED.format(field="email").to_dict())
     if not user.group_id:
-        raise FormatError(
-            **Messages.FIELD_REQUIRED_MESSAGE.format(field="group_id").to_dict()
-        )
+        raise FormatError(**Messages.FIELD_REQUIRED.format(field="group_id").to_dict())
     if not user.available_devices:
         raise FormatError(
-            **Messages.FIELD_REQUIRED_MESSAGE.format(
-                field="available_devices"
-            ).to_dict()
+            **Messages.FIELD_REQUIRED.format(field="available_devices").to_dict()
         )
 
     if len(str(user.email)) > LEN_VARCHAR:
         raise FormatError(
-            **Messages.FIELD_TOO_LONG_MESSAGE.format(
-                field="email", limit=LEN_VARCHAR
-            ).to_dict()
+            **Messages.FIELD_TOO_LONG.format(field="email", limit=LEN_VARCHAR).to_dict()
         )
     if len(str(user.group_id)) > LEN_VARCHAR:
         raise FormatError(
-            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+            **Messages.FIELD_TOO_LONG.format(
                 field="group_id", limit=LEN_VARCHAR
             ).to_dict()
         )
     if user.username and len(str(user.username)) > LEN_VARCHAR:
         raise FormatError(
-            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+            **Messages.FIELD_TOO_LONG.format(
                 field="username", limit=LEN_VARCHAR
             ).to_dict()
         )
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
         raise FormatError(
-            **Messages.FIELD_TOO_LONG_MESSAGE.format(
+            **Messages.FIELD_TOO_LONG.format(
                 field="organization", limit=LEN_VARCHAR
             ).to_dict()
         )
 
     if not is_unique_email(db, WhitelistUser, user.email):
         raise FormatError(
-            **Messages.EMAIL_ALREADY_EXISTS_MESSAGE.format(email=user.email).to_dict()
+            **Messages.EMAIL_ALREADY_EXISTS.format(email=user.email).to_dict()
         )
 
     validated_user = {

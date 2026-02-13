@@ -94,7 +94,7 @@ def register_devices(
         logger.info("invoked register_devices")
         device_id = get_device_id(device_info)
         if device_id is None:
-            message = Messages.DEVICE_ID_REQUIRED.format()
+            message = Messages.FIELD_REQUIRED.format(field="device_id")
             logger.error(message.message)
             return BadRequestErrorResponse(**message.to_dict())
         existing_device = db.scalars(
@@ -160,7 +160,7 @@ def update_device_data(
         # commit the transaction
         db.commit()
         # refresh the object to get the updated value
-        return (SuccessResponse(**Messages.DEVICE_UPDATED.format().to_dict()))
+        return SuccessResponse(**Messages.DEVICE_UPDATED.format().to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
