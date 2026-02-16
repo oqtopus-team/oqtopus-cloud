@@ -360,7 +360,7 @@ resource "aws_kms_key" "api_gateway_log" {
 
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/api-gateway/${var.product}-${var.org}-${var.env}-${var.identifier}"
-  retention_in_days = 14
+  retention_in_days = var.api_gateway_log_retention_days
   kms_key_id        = aws_kms_key.api_gateway_log.arn
 }
 

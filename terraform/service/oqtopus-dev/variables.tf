@@ -77,6 +77,18 @@ variable "login_history_enabled" {
   description = "Flag to control whether user login history should be included in GET user API response"
 }
 
+variable "api_gateway_log_retention_days" {
+  description = "Number of days for which API Gateway logs are retained"
+  type        = number
+  default     = 14
+}
+
+variable "lambda_log_retention_days" {
+  description = "Number of days for which lambda logs are retained"
+  type        = number
+  default     = 14
+}
+
 variable "waf_enable_common_rules" {
   description = "flag for enabling/disabling common rules WAF rule"
   type        = bool
