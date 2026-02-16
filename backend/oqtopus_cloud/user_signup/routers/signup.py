@@ -4,6 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
@@ -44,8 +45,9 @@ def signup(
         stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
         whitelist_user = db.execute(stmt_whitelist).scalars().first()
         if not whitelist_user:
-            logger.error(f"Not in whitelist_users: {email}")
-            return BadRequestResponse(message="Not in whitelist_users")
+            message = Messages.USER_NOT_IN_WHITELIST.format(id=email)
+            logger.error(message.message)
+            return BadRequestResponse(**message.to_dict())
         # cognito sign up
         client = boto3.client("cognito-idp")
         response = client.sign_up(

@@ -82,6 +82,14 @@ def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
     )
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 400
+    assert response.json() == {
+        "message_code": "SIGNUP_CONFIRMATION_FAILED",
+        "message_params": {
+            "details":
+            "An error occurred (InvalidParameterException) when calling the ConfirmSignUp operation: Invalid confirmation code."
+        },
+        "message": "Failed to confirm signup: An error occurred (InvalidParameterException) when calling the ConfirmSignUp operation: Invalid confirmation code."
+    }
     # confirm the user is NOT registered
     user = test_db.query(User).filter(User.email == "email1@example.com").first()
     assert user is None

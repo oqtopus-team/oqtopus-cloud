@@ -151,6 +151,42 @@ class Messages(Enum):
         message_template="Whitelist user registered successfully",
     )
 
+    USER_NOT_IN_WHITELIST = MessageTemplate(
+        message_code="USER_NOT_IN_WHITELIST",
+        message_params=["id"],
+        message_template="Not in whitelist_users: {id}",
+    )
+
+    SIGNUP_CONFIRMATION_FAILED = MessageTemplate(
+        message_code="SIGNUP_CONFIRMATION_FAILED",
+        message_params=["details"],
+        message_template="Failed to confirm signup: {details}",
+    )
+
+    AUTHENTICATION_FAILED = MessageTemplate(
+        message_code="AUTHENTICATION_FAILED",
+        message_params=[],
+        message_template="Failed to authenticate user",
+    )
+
+    MFA_ALREADY_ENABLED = MessageTemplate(
+        message_code="MFA_ALREADY_ENABLED",
+        message_params=["id"],
+        message_template="MFA is already enabled for user: {id}",
+    )
+
+    CODE_VERIFICATION_FAILED = MessageTemplate(
+        message_code="CODE_VERIFICATION_FAILED",
+        message_params=[],
+        message_template="Failed to verify the code.",
+    )
+
+    INVALID_TOTP_CODE = MessageTemplate(
+        message_code="INVALID_TOTP_CODE",
+        message_params=[],
+        message_template="Invalid TOTP code.",
+    )
+
     OPERATION_SUCCESSFUL = MessageTemplate(
         message_code="OPERATION_SUCCESSFUL",
         message_params=[],

@@ -4,6 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.session import (
     get_db,
@@ -55,8 +56,9 @@ def mfa_reset_start(
         )
         user = db.execute(stmt).scalars().first()
         if user:
-            logger.info(f"MFA is already enabled for user: {email}")
-            return BadRequestResponse(message="MFA is already enabled for this user")
+            message = Messages.MFA_ALREADY_ENABLED.format(id=email)
+            logger.info(message.message)
+            return BadRequestResponse(**message.to_dict())
         # verify password
         resp = cognito_client.admin_initiate_auth(
             UserPoolId=pool_id,
@@ -67,7 +69,7 @@ def mfa_reset_start(
         access_token = resp["AuthenticationResult"]["AccessToken"]
     except Exception as e:
         logger.exception(f"Failed to authenticate user: {str(e)}")
-        return BadRequestResponse(message="Failed to authenticate user")
+        return BadRequestResponse(**Messages.AUTHENTICATION_FAILED.format().to_dict())
     try:
         # send verification code to user's email
         cognito_client.get_user_attribute_verification_code(
@@ -107,7 +109,9 @@ def mfa_reset_verify_code(
         )
     except Exception as e:
         logger.exception(f"Failed to verify code: {str(e)}")
-        return BadRequestResponse(message="Failed to verify code")
+        return BadRequestResponse(
+            **Messages.CODE_VERIFICATION_FAILED.format().to_dict()
+        )
     try:
         resp = cognito_client.associate_software_token(AccessToken=access_token)
     except Exception as e:
@@ -148,8 +152,9 @@ def mfa_reset_confirm_totp(
                 cognito_id = attr["Value"]
                 break
         logger.info(cognito_id)
-    except Exception:
-        return BadRequestResponse(message="Invalid TOTP code")
+    except Exception as e:
+        logger.exception(f"Invalid TOTP code: {str(e)}")
+        return BadRequestResponse(**Messages.INVALID_TOTP_CODE.format().to_dict())
 
     try:
         # update user's MFA preference to enable TOTP

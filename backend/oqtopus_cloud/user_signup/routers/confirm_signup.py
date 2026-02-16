@@ -7,6 +7,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.common.session import (
@@ -84,9 +85,10 @@ def confirm_signup(
         return None
     except ClientError as e:
         # catch the cognito error
-        logger.exception(f"error: {str(e)}")
+        message = Messages.SIGNUP_CONFIRMATION_FAILED.format(details=str(e))
+        logger.exception(message.message)
         cleanup_user(db, cognito_client, email, user_pool_id)
-        return BadRequestResponse(message=str(e))
+        return BadRequestResponse(**message.to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

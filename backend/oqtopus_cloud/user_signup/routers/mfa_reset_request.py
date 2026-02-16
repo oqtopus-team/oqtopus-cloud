@@ -4,6 +4,7 @@ from fastapi import Request as Event
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.session import (
     get_db,
@@ -52,16 +53,17 @@ def mfa_reset_request(
             AuthParameters={"USERNAME": email, "PASSWORD": password},
         )
     except Exception as e:
-        logger.exception(f"error: {str(e)}")
-        return BadRequestResponse(message="Failed to authenticate user")
+        logger.exception(f"Failed to authenticate user: {str(e)}")
+        return BadRequestResponse(**Messages.AUTHENTICATION_FAILED.format().to_dict())
     try:
         logger.info("invoked mfa reset request")
         # check if user exists in users table
         stmt = select(User).where(User.email == email)
         user = db.execute(stmt).scalars().first()
         if not user:
-            logger.error(f"User not found: {email}")
-            return NotFoundErrorResponse(message="User not found")
+            message = Messages.USER_NOT_FOUND.format(id=email)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
         # update user.mfa_status to disabled
         user.mfa_status = MFAStatus.disabled  # Assuming 'disabled' is the correct value
         db.commit()

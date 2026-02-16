@@ -55,8 +55,11 @@ def test_mfa_reset_start_user_mfa_active(test_db):
     )
     response = client.post("/mfa_reset/start", json=body.model_dump())
     assert response.status_code == 400
-    assert response.json().get("message") == "MFA is already enabled for this user"
-
+    assert response.json() == {
+        "message_code": "MFA_ALREADY_ENABLED",
+        "message_params": {"id": "email2@example.com"},
+        "message": "MFA is already enabled for user: email2@example.com"
+    }
 
 def test_mfa_reset_start_cognito_error(test_db, fake_cognito_client_fixture):
     fake_cognito_client_fixture.admin_initiate_auth = Exception("Invalid token")
@@ -70,7 +73,11 @@ def test_mfa_reset_start_cognito_error(test_db, fake_cognito_client_fixture):
     )
     response = client.post("/mfa_reset/start", json=body.model_dump())
     assert response.status_code == 400
-    assert response.json().get("message") == "Failed to authenticate user"
+    assert response.json() == {
+        "message_code": "AUTHENTICATION_FAILED",
+        "message_params": {},
+        "message": "Failed to authenticate user"
+    }
 
 
 def test_mfa_reset_start_500(test_db, fake_cognito_client_fixture):
@@ -115,7 +122,11 @@ def test_mfa_reset_verify_code_verification_failure(
     )
     response = client.post("/mfa_reset/verify_code", json=body.model_dump())
     assert response.status_code == 400
-    assert response.json().get("message") == "Failed to verify code"
+    assert response.json() == {
+        "message_code": "CODE_VERIFICATION_FAILED",
+        "message_params": {},
+        "message": "Failed to verify the code."
+    }
 
 
 def test_mfa_reset_verify_code_500(fake_cognito_client_fixture):
@@ -127,7 +138,11 @@ def test_mfa_reset_verify_code_500(fake_cognito_client_fixture):
     )
     response = client.post("/mfa_reset/verify_code", json=body.model_dump())
     assert response.status_code == 500
-    assert response.json().get("message") == "Internal server error"
+    assert response.json() == {
+        "message_code": "INTERNAL_SERVER_ERROR",
+        "message_params": {},
+        "message": "Internal Server Error"
+    }
 
 
 def test_mfa_reset_confirm_totp_success(test_db, fake_cognito_client_fixture):
@@ -162,7 +177,12 @@ def test_mfa_reset_confirm_totp_cognito_error(test_db, fake_cognito_client_fixtu
     )
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 400
-    assert response.json().get("message") == "Invalid TOTP code"
+    assert response.json() == {
+        "message_code": "INVALID_TOTP_CODE",
+        "message_params": {},
+        "message": "Invalid TOTP code."
+    }
+
     user = (
         test_db.execute(select(User).where(User.email == "email1@example.com"))
         .scalars()
@@ -184,7 +204,12 @@ def test_mfa_reset_confirm_totp_500(test_db, fake_cognito_client_fixture):
     )
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 500
-    assert response.json().get("message") == "Internal server error"
+    assert response.json() == {
+        "message_code": "INTERNAL_SERVER_ERROR",
+        "message_params": {},
+        "message": "Internal Server Error"
+    }
+
     user = (
         test_db.execute(select(User).where(User.email == "email1@example.com"))
         .scalars()

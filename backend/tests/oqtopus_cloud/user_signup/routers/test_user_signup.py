@@ -60,4 +60,8 @@ def test_signup_not_in_whitelist(test_db):
     body = SignupRequest(email="email_2", password="password_1")
     response = client.post("/signup", json=body.model_dump())
     assert response.status_code == 400
-    assert response.json() == {"message": "Not in whitelist_users"}
+    assert response.json() == {
+        "message_code": "USER_NOT_IN_WHITELIST",
+        "message_params": {"id": "email_2"},
+        "message": "Not in whitelist_users: email_2"
+    }
