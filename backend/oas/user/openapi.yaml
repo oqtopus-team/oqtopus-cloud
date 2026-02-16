@@ -37,8 +37,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '500':
           description: Internal Server Error
           content:
@@ -184,8 +182,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
     post:
       tags:
         - job
@@ -263,24 +265,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '403':
           description: Forbidden
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Forbidden
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /jobs/{job_id}:
     get:
       tags:
@@ -310,24 +312,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
     delete:
       tags:
         - job
@@ -350,32 +352,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/success.SuccessResponse'
-              example:
-                message: Quantum job deleted
         '400':
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /jobs/{job_id}/status:
     get:
       tags:
@@ -405,24 +405,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /jobs/{job_id}/cancel:
     post:
       tags:
@@ -446,32 +446,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/success.SuccessResponse'
-              example:
-                message: cancel request accepted
         '400':
           description: Bad Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /jobs/{job_id}/sselog:
     get:
       tags:
@@ -501,32 +499,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.UnauthorizedError'
-              example:
-                message: Unauthorized
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
   /api-token:
     post:
       tags:
@@ -549,16 +539,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Frobidden
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Not found the specified user
         '500':
           description: Internal Server Error
           content:
@@ -582,16 +568,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Frobidden
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Not found the specified user
         '500':
           description: Internal Server Error
           content:
@@ -620,16 +602,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ForbiddenError'
-              example:
-                message: Frobidden
         '404':
           description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Not found the specified user
         '500':
           description: Internal Server Error
           content:
@@ -639,7 +617,7 @@ paths:
   /announcements:
     get:
       tags:
-        - Announcements
+        - announcements
       summary: Get announcements list from backend
       description: Get announcements list from backend
       operationId: get_announcements_list
@@ -686,7 +664,7 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: 'Not authorized : user is not admin'
+          description: Not authorized
         '500':
           description: Internal Server Error
           content:
@@ -696,7 +674,7 @@ paths:
   /announcements/{announcement_id}:
     get:
       tags:
-        - Announcements
+        - announcements
       summary: Get selected announcement
       description: Get selected announcement
       operationId: get_announcement
@@ -723,8 +701,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
         '401':
           description: Unauthorized
         '403':
@@ -735,20 +711,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Announcement not found
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
   /users/me:
     get:
       tags:
-        - Users
+        - users
       summary: Get current user
       description: Get current user
       operationId: get_current_user
@@ -777,7 +749,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
     patch:
       tags:
-        - Users
+        - users
       summary: Update current user
       description: Update current user
       operationId: update_current_user
@@ -817,7 +789,7 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
     delete:
       tags:
-        - Users
+        - users
       summary: Delete current user
       description: Delete current user
       operationId: delete_current_user
@@ -849,7 +821,7 @@ paths:
   /system/settings:
     get:
       tags:
-        - Settings
+        - settings
       summary: Get current settings
       description: Get current settings
       operationId: get_current_settings
@@ -1025,29 +997,77 @@ components:
       properties:
         message:
           type: string
+          example: Unauthorized
+        message_code:
+          type: string
+          example: UNAUTHORIZED
+        message_params:
+          type: object
+          additionalProperties: true
+          default: {}
+          example: {}
       required:
         - message
+        - message_code
+        - message_params
     error.InternalServerError:
       type: object
       properties:
         message:
           type: string
+          default: Internal Server Error
+          example: Internal Server Error
+        message_code:
+          type: string
+          default: INTERNAL_SERVER_ERROR
+          example: INTERNAL_SERVER_ERROR
+        message_params:
+          type: object
+          properties: {}
+          additionalProperties: true
+          default: {}
+          example: {}
       required:
         - message
+        - message_code
+        - message_params
     error.ForbiddenError:
       type: object
       properties:
         message:
           type: string
+          example: Forbidden
+        message_code:
+          type: string
+          example: FORBIDDEN
+        message_params:
+          type: object
+          additionalProperties: true
+          default: {}
+          example: {}
       required:
         - message
+        - message_code
+        - message_params
     error.NotFoundError:
       type: object
       properties:
         message:
           type: string
+          example: Resource id=1 not found.
+        message_code:
+          type: string
+          example: RESOURCE_NOT_FOUND
+        message_params:
+          type: object
+          additionalProperties: true
+          default: {}
+          example:
+            id: '1'
       required:
         - message
+        - message_code
+        - message_params
     jobs.JobId:
       type: string
       example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -1365,8 +1385,20 @@ components:
       properties:
         message:
           type: string
+          example: 'Invalid parameter in request: parameter_name.'
+        message_code:
+          type: string
+          example: INVALID_PARAMETER
+        message_params:
+          type: object
+          additionalProperties: true
+          default: {}
+          example:
+            parameter: parameter_name
       required:
         - message
+        - message_code
+        - message_params
     jobs.JobDef:
       type: object
       properties:
@@ -1492,8 +1524,19 @@ components:
       properties:
         message:
           type: string
+          example: Operation completed successfully.
+        message_code:
+          type: string
+          example: OPERATION_SUCCESSFUL
+        message_params:
+          type: object
+          additionalProperties: true
+          default: {}
+          example: {}
       required:
         - message
+        - message_code
+        - message_params
     jobs.GetJobStatusResponse:
       description: job status
       type: object

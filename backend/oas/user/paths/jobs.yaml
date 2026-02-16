@@ -99,8 +99,12 @@ jobs:
           application/json:
             schema:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
-            example:
-              message: Unauthorized
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
   post:
     tags:
       - job
@@ -193,24 +197,24 @@ jobs:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       '403':
           description: Forbidden
           content:
             application/json:
               schema:
                 $ref: '../schemas/error.yaml#/error.ForbiddenError'
-              example:
-                message: Forbidden
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
 
 jobs.job_id:
   get:
@@ -240,24 +244,24 @@ jobs.job_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       "404":
         description: Not Found
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
   delete:
     tags:
       - job
@@ -279,32 +283,30 @@ jobs.job_id:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: Quantum job deleted
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       "404":
         description: Not Found
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
 
 jobs.job_id.status:
   get:
@@ -334,24 +336,24 @@ jobs.job_id.status:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       "404":
         description: Not Found
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
 
 jobs.job_id.cancel:
   post:
@@ -375,32 +377,30 @@ jobs.job_id.cancel:
           application/json:
             schema:
               $ref: "../schemas/success.yaml#/success.SuccessResponse"
-            example:
-              message: cancel request accepted
       "400":
         description: Bad Request
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       "404":
         description: Not Found
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'
 
 jobs.job_id.sse_log:
   get:
@@ -430,29 +430,21 @@ jobs.job_id.sse_log:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
       "404":
         description: Not Found
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
       "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error

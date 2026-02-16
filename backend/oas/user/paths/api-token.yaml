@@ -25,16 +25,12 @@ api-token:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.ForbiddenError"
-            example:
-              message: Frobidden
       "404":
         description: "Not Found"
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: "Not found the specified user"
       "500":
         description: "Internal Server Error"
         content:
@@ -58,16 +54,12 @@ api-token:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.ForbiddenError"
-            example:
-              message: Frobidden
       "404":
         description: "Not Found"
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: "Not found the specified user"
       "500":
         description: "Internal Server Error"
         content:
@@ -97,16 +89,12 @@ api-token.status:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.ForbiddenError"
-            example:
-              message: Frobidden
       "404":
         description: "Not Found"
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: "Not found the specified user"
       "500":
         description: "Internal Server Error"
         content:

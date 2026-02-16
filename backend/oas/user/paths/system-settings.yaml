@@ -1,7 +1,7 @@
 system.settings:
   get:
     tags:
-      - Settings
+      - settings
     summary: Get current settings
     description: Get current settings
     operationId: get_current_settings

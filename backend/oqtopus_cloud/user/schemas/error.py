@@ -4,24 +4,44 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Annotated, Any
+
+from pydantic import BaseModel, Field
 
 
 class UnauthorizedError(BaseModel):
-    message: str
+    message: Annotated[str, Field(examples=["Unauthorized"])]
+    message_code: Annotated[str, Field(examples=["UNAUTHORIZED"])]
+    message_params: Annotated[dict[str, Any], Field(examples=[{}])] = {}
 
 
 class InternalServerError(BaseModel):
-    message: str
+    message: Annotated[str, Field(examples=["Internal Server Error"])] = (
+        "Internal Server Error"
+    )
+    message_code: Annotated[str, Field(examples=["INTERNAL_SERVER_ERROR"])] = (
+        "INTERNAL_SERVER_ERROR"
+    )
+    message_params: Annotated[dict[str, Any], Field(examples=[{}])] = {}
 
 
 class ForbiddenError(BaseModel):
-    message: str
+    message: Annotated[str, Field(examples=["Forbidden"])]
+    message_code: Annotated[str, Field(examples=["FORBIDDEN"])]
+    message_params: Annotated[dict[str, Any], Field(examples=[{}])] = {}
 
 
 class NotFoundError(BaseModel):
-    message: str
+    message: Annotated[str, Field(examples=["Resource id=1 not found."])]
+    message_code: Annotated[str, Field(examples=["RESOURCE_NOT_FOUND"])]
+    message_params: Annotated[dict[str, Any], Field(examples=[{"id": "1"}])] = {}
 
 
 class BadRequest(BaseModel):
-    message: str
+    message: Annotated[
+        str, Field(examples=["Invalid parameter in request: parameter_name."])
+    ]
+    message_code: Annotated[str, Field(examples=["INVALID_PARAMETER"])]
+    message_params: Annotated[
+        dict[str, Any], Field(examples=[{"parameter": "parameter_name"}])
+    ] = {}

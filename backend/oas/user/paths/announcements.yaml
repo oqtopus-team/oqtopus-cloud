@@ -1,7 +1,7 @@
 announcements:
   get:
     tags:
-      - Announcements
+      - announcements
     summary: "Get announcements list from backend"
     description: "Get announcements list from backend"
     operationId: get_announcements_list
@@ -46,7 +46,7 @@ announcements:
       "401":
         description: Unauthorized
       "403":
-        description: "Not authorized : user is not admin"
+        description: "Not authorized"
       "500":
         description: "Internal Server Error"
         content:
@@ -56,7 +56,7 @@ announcements:
 announcements.announcement_id:
   get:
     tags:
-    - Announcements
+    - announcements
     summary: "Get selected announcement"
     description: "Get selected announcement"
     operationId: get_announcement
@@ -83,8 +83,6 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
       "401":
         description: "Unauthorized"
       "403":
@@ -95,13 +93,9 @@ announcements.announcement_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Announcement not found
       "500":
         description: Internal Server Error
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error

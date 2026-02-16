@@ -1,7 +1,7 @@
 users.me:
   get:
     tags:
-      - Users
+      - users
     summary: Get current user
     description: Get current user
     operationId: get_current_user
@@ -30,7 +30,7 @@ users.me:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
   patch:
     tags:
-      - Users
+      - users
     summary: Update current user
     description: Update current user
     operationId: update_current_user
@@ -70,7 +70,7 @@ users.me:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
   delete:
     tags:
-      - Users
+      - users
     summary: Delete current user
     description: Delete current user
     operationId: delete_current_user
