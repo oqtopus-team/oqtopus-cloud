@@ -140,21 +140,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     status = "Enabled"
 
     expiration {
-      days = var.s3_logs_expiration_in_days
+      days = var.cloudtrail_s3_logs_expiration_days
     }
 
     transition {
-      days          = 30
+      days          = var.cloudtrail_s3_logs_transition_days_standard_ia
       storage_class = "STANDARD_IA"
     }
 
     transition {
-      days          = 90
+      days          = var.cloudtrail_s3_logs_transition_days_glacier_ir
       storage_class = "GLACIER_IR"
     }
 
     transition {
-      days          = 180
+      days          = var.cloudtrail_s3_logs_transition_days_deep_archive
       storage_class = "DEEP_ARCHIVE"
     }
   }
