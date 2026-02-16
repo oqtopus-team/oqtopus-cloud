@@ -67,7 +67,7 @@ def test_mfa_reset_request_cognito_error(test_db, fake_cognito_client_fixture):
         "message_code": "AUTHENTICATION_FAILED",
         "message_params": {},
         "message": "Failed to authenticate user",
-   }
+    }
 
 def test_mfa_reset_request_500():
     client = TestClient(app)
@@ -97,7 +97,7 @@ def test_mfa_reset_request_no_user_found(test_db, fake_cognito_client_fixture):
         "message_code": "AUTHENTICATION_FAILED",
         "message_params": {},
         "message": "Failed to authenticate user",
-   }
+    }
 
 def test__request_no_user_found(test_db):
     client = TestClient(app)
@@ -114,7 +114,7 @@ def test__request_no_user_found(test_db):
     assert response.json() == {
         "message_code": "USER_NOT_FOUND",
         "message_params": {
-           "id": "email1@example.com",
+            "id": "email1@example.com",
         },
         "message": "user_id=email1@example.com is not found."
     }
