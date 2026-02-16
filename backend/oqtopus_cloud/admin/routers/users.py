@@ -24,7 +24,7 @@ from oqtopus_cloud.admin.common.validation_utils import (
     FIELD_TOO_LONG_MESSAGE,
     LEN_VARCHAR,
     is_unique_email,
-    is_unique_user_identifier,
+    is_unique_user_id,
     FormatError,
 )
 from oqtopus_cloud.common.models.user import User
@@ -42,7 +42,6 @@ from . import LoggerRouteHandler
 
 COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "id": User.id,
-    "user_identifier": User.user_identifier,
     "email": User.email,
     "display_name": User.display_name,
     "organization": User.organization,
@@ -63,7 +62,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 def get_users(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
-    user_identifier: Optional[str] = None,
+    user_id: Optional[str] = None,
     email: Optional[str] = None,
     display_name: Optional[str] = None,
     organization: Optional[str] = None,
@@ -76,8 +75,8 @@ def get_users(
         logger.info("invoked list_users")
         # query
         stmt = select(User)
-        if user_identifier:
-            stmt = stmt.where(User.user_identifier.ilike(f"%{user_identifier}%"))
+        if user_id:
+            stmt = stmt.where(User.id.ilike(f"%{user_id}%"))
         if email:
             stmt = stmt.where(User.email.ilike(f"%{email}%"))
         if display_name:
@@ -123,6 +122,9 @@ def get_users(
                 order_list.append(order(User.id))
 
             stmt = stmt.order_by(*order_list)
+        else:
+            # Default order: oldest users first.
+            stmt = stmt.order_by(asc(User.created_at), asc(User.id))
 
         stmt = stmt.offset(offset).limit(limit)
         query_result = db.execute(stmt)
@@ -143,7 +145,7 @@ def get_users(
 )
 @tracer.capture_method
 def get_user(
-    user_id: int,
+    user_id: str,
     db: Session = Depends(get_db),
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     logger.info("invoked get user")
@@ -172,7 +174,7 @@ def get_user(
 )
 @tracer.capture_method
 def update_user_status(
-    user_id: int,
+    user_id: str,
     update_user_request: UpdateUserRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> (
@@ -190,26 +192,6 @@ def update_user_status(
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
 
-        # consistency check
-        # currently user_identifier = Cognito username = email
-        if update_user_request.user_identifier != update_user_request.email:
-            raise FormatError("user_identifier must be the same as email.")
-
-        if update_user_request.user_identifier:
-            if len(update_user_request.user_identifier) > LEN_VARCHAR:
-                raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(
-                        update_user_request.user_identifier, LEN_VARCHAR
-                    )
-                )
-            if not is_unique_user_identifier(
-                db, User, update_user_request.user_identifier
-            ):
-                raise FormatError(
-                    ALREADY_EXISTS_MESSAGE.format(update_user_request.user_identifier)
-                )
-            query.user_identifier = update_user_request.user_identifier
-
         if update_user_request.email:
             if len(update_user_request.email) > LEN_VARCHAR:
                 raise FormatError(
@@ -221,6 +203,13 @@ def update_user_status(
                 raise FormatError(
                     ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
                 )
+            if update_user_request.email != query.id and not is_unique_user_id(
+                db, User, update_user_request.email
+            ):
+                raise FormatError(
+                    ALREADY_EXISTS_MESSAGE.format(update_user_request.email)
+                )
+            query.id = update_user_request.email
             query.email = update_user_request.email
 
         if update_user_request.display_name:
@@ -287,7 +276,7 @@ def update_user_status(
 @tracer.capture_method
 def delete_user(
     event: Event,
-    user_id: int,
+    user_id: str,
     db: Session = Depends(get_db),
 ) -> None | NotFoundErrorResponse | InternalServerErrorResponse:
     user_pool_id = event.state.user_pool_id
@@ -320,7 +309,7 @@ def delete_user(
         # delete from cognito
         client.admin_delete_user(
             UserPoolId=user_pool_id,
-            Username=query_result.user_identifier,
+            Username=query_result.id,
         )
 
         return None
@@ -334,7 +323,6 @@ def model_to_schema(model: User) -> GetOneUserResponse:
     status = status_to_enum(getattr(model, "userstatus", None))
     return GetOneUserResponse(
         id=model.id,
-        user_identifier=model.user_identifier,
         email=getattr(model, "email", None),
         display_name=getattr(model, "display_name", None),
         organization=getattr(model, "organization", None),

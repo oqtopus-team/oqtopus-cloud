@@ -9,7 +9,7 @@ from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.user.routers.api_token import (
     create_api_token,
     delete_api_token,
-    get_api_token_status
+    get_api_token_status,
 )
 from oqtopus_cloud.user.schemas.api_token import ApiToken, ApiTokenStatus
 from starlette.requests import Request
@@ -20,9 +20,8 @@ utc = ZoneInfo("UTC")
 
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
-        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
         "display_name": f"test_user_{n}",
         "userstatus": UserStatus.approved,
@@ -61,7 +60,7 @@ def test_create_api_token(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -79,7 +78,7 @@ def test_create_api_token(
     assert actual.api_token_secret is not None
     assert actual.api_token_expiration is not None
 
-    user = test_db.query(User).filter(User.user_identifier == "email_1").first()
+    user = test_db.query(User).filter(User.id == "email_1").first()
     assert user.api_token_id == actual.api_token_id
     assert PasswordHasher().verify(user.api_token_hash, actual.api_token_secret)
     assert pytz.utc.localize(user.api_token_expiration) == actual.api_token_expiration
@@ -100,7 +99,7 @@ def test_create_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_2"
+    request.state.user_id = "email_2"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -129,7 +128,7 @@ def test_create_api_token_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     new_user = _get_model(1)
@@ -160,7 +159,7 @@ def test_create_api_token_500(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     test_db.add(_get_model(1))
@@ -189,7 +188,7 @@ def test_delete_api_token(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     test_db.add(_get_model_with_token(1))
@@ -197,7 +196,7 @@ def test_delete_api_token(
 
     # check if user has api token
     assert (
-        test_db.query(User).filter(User.user_identifier == "email_1").first().api_token_id
+        test_db.query(User).filter(User.id == "email_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -208,7 +207,7 @@ def test_delete_api_token(
     assert response.status_code == 200
 
     # check if api token is deleted
-    user = test_db.query(User).filter(User.user_identifier == "email_1").first()
+    user = test_db.query(User).filter(User.id == "email_1").first()
     assert user.api_token_id is None
     assert user.api_token_hash is None
     assert user.api_token_expiration is None
@@ -227,7 +226,7 @@ def test_delete_api_token_500():
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     response = delete_api_token(
         request,
@@ -251,7 +250,7 @@ def test_delete_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_2"
+    request.state.user_id = "email_2"
 
     test_db.flush()
     test_db.add(_get_model_with_token(1))
@@ -259,7 +258,7 @@ def test_delete_api_token_no_user_found(
 
     # check if user has api token
     assert (
-        test_db.query(User).filter(User.user_identifier == "email_1").first().api_token_id
+        test_db.query(User).filter(User.id == "email_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -272,7 +271,7 @@ def test_delete_api_token_no_user_found(
 
     # check if api token is NOT deleted
     assert (
-        test_db.query(User).filter(User.user_identifier == "email_1").first().api_token_id
+        test_db.query(User).filter(User.id == "email_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -292,7 +291,7 @@ def test_delete_api_token_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     new_user = _get_model_with_token(1)
@@ -302,7 +301,7 @@ def test_delete_api_token_user_status_suspended(
 
     # check if user has api token
     assert (
-        test_db.query(User).filter(User.user_identifier == "email_1").first().api_token_id
+        test_db.query(User).filter(User.id == "email_1").first().api_token_id
         == "api_token_id_1"
     )
 
@@ -313,9 +312,10 @@ def test_delete_api_token_user_status_suspended(
     assert response.status_code == 403
     # check if api token is NOT deleted
     assert (
-        test_db.query(User).filter(User.user_identifier == "email_1").first().api_token_id
+        test_db.query(User).filter(User.id == "email_1").first().api_token_id
         == "api_token_id_1"
     )
+
 
 def test_get_api_token_status(
     test_db,
@@ -332,7 +332,7 @@ def test_get_api_token_status(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     test_db.add(_get_model_with_token(1))
@@ -362,7 +362,7 @@ def test_get_api_token_no_user_found(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_2"
+    request.state.user_id = "email_2"
 
     test_db.flush()
     test_db.add(_get_model_with_token(1))
@@ -390,7 +390,7 @@ def test_get_api_token_no_user_status_suspended(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     new_user = _get_model_with_token(1)
@@ -420,7 +420,7 @@ def test_get_api_token_500(
         return {"type": "http.request", "body": b""}
 
     request = Request(scope=scope, receive=receive)
-    request.state.user_identifier = "email_1"
+    request.state.user_id = "email_1"
 
     test_db.flush()
     test_db.add(_get_model_with_token(1))

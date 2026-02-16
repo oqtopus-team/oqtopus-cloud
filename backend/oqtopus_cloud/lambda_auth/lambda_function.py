@@ -26,7 +26,7 @@ class AuthError(Exception):
 
 
 def _validate_user_status(
-    user_identifier: str | None = None, cognito_id: str | None = None
+    user_id: str | None = None, cognito_id: str | None = None
 ) -> bool:
     try:
         # Get a database session
@@ -35,9 +35,9 @@ def _validate_user_status(
 
         user = None
         # Get the user status from the database
-        if user_identifier:
+        if user_id:
             stmt = select(User).where(
-                User.user_identifier == user_identifier,
+                User.id == user_id,
                 User.userstatus == UserStatus.approved,
             )
             user = db.execute(stmt).scalar()
@@ -49,14 +49,14 @@ def _validate_user_status(
             user = db.execute(stmt).scalar()
             db.close()
         else:
-            raise AuthError("user_identifier or cognito_id is not given")
+            raise AuthError("user_id or cognito_id is not given")
 
         if user is None:
-            logger.info(f"User {user_identifier} or {cognito_id} is not approved")
+            logger.info(f"User {user_id} or {cognito_id} is not approved")
             return False
         # Get the MFA status from the database
         # only for the case from oqtopus-frontend
-        if user_identifier and user.mfa_status != MFAStatus.enabled:
+        if user_id and user.mfa_status != MFAStatus.enabled:
             raise AuthError("MFA is not enabled for this user")
         return True
     except Exception as e:
@@ -110,7 +110,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
             raise AuthError("Invalid token_use")
 
         # verify the user status
-        if not _validate_user_status(user_identifier=token["cognito:username"]):
+        if not _validate_user_status(user_id=token["cognito:username"]):
             raise AuthError("User is not approved")
 
         return token["cognito:username"]
@@ -205,7 +205,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError(f"Failed to list users from Cognito {e}")
 
 
-def _generate_policy_allow(principal_id="", resource="", user_identifier=""):
+def _generate_policy_allow(principal_id="", resource="", user_id=""):
     # Generate allow policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -222,13 +222,13 @@ def _generate_policy_allow(principal_id="", resource="", user_identifier=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "user_identifier": user_identifier,
+            "user_id": user_id,
         }
 
     return auth_response
 
 
-def _generate_policy_deny(principal_id="", resource="", user_identifier=""):
+def _generate_policy_deny(principal_id="", resource="", user_id=""):
     # Generate deny policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -241,7 +241,7 @@ def _generate_policy_deny(principal_id="", resource="", user_identifier=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "user_identifier": user_identifier,
+            "user_id": user_id,
         }
 
     return auth_response
@@ -251,44 +251,42 @@ def lambda_handler(event, context):
     headers_raw = event.get("headers", {})
     headers = {k.lower(): v for k, v in headers_raw.items()}
     method_arn = event["methodArn"]
-    user_identifier = None
-    unknown_user_identifier = "unknown"
+    user_id = None
+    unknown_user_id = "unknown"
 
     try:
         if "q-api-token" in headers:
             # Verify API token
-            user_identifier = _verify_api_token(headers["q-api-token"])
+            user_id = _verify_api_token(headers["q-api-token"])
         elif "authorization" in headers:
             # Verify Cognito ID token
-            user_identifier = _verify_id_token(headers["authorization"])
+            user_id = _verify_id_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
             policy_document = _generate_policy_deny(
-                unknown_user_identifier, method_arn, unknown_user_identifier
+                unknown_user_id, method_arn, unknown_user_id
             )
             return policy_document
-        if not user_identifier:
+        if not user_id:
             # Generate deny policy
             policy_document = _generate_policy_deny(
-                unknown_user_identifier, method_arn, unknown_user_identifier
+                unknown_user_id, method_arn, unknown_user_id
             )
             return policy_document
         else:
             # Generate allow policy
-            policy_document = _generate_policy_allow(
-                user_identifier, method_arn, user_identifier
-            )
+            policy_document = _generate_policy_allow(user_id, method_arn, user_id)
             logger.info(f"Authorization success {policy_document}")
             return policy_document
     except AuthError as e:
         logger.exception(f"Authentication/Authorization failed: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_user_identifier, method_arn, unknown_user_identifier
+            unknown_user_id, method_arn, unknown_user_id
         )
         return policy_document
     except Exception as e:
         logger.exception(f"Unexpected error occurred: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_user_identifier, method_arn, unknown_user_identifier
+            unknown_user_id, method_arn, unknown_user_id
         )
         return policy_document

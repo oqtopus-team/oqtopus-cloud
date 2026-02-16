@@ -182,7 +182,7 @@ def override_jwt_decode(monkeypatch):
                 }
             ],
         },
-        "context": {"user_identifier": ""},
+        "context": {"user_id": ""},
     }
 
     return const
@@ -204,7 +204,7 @@ def override_jwt_decode_failure(monkeypatch):
                 }
             ],
         },
-        "context": {"user_identifier": ""},
+        "context": {"user_id": ""},
     }
 
     return const

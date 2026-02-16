@@ -3,8 +3,6 @@ users.GetOneUserResponse:
   type: object
   properties:
     id:
-      type: integer
-    user_identifier:
       type: string
     email:
       type: string
@@ -41,8 +39,6 @@ users.UserStatus:
 users.UpdateUserRequest:
   type: object
   properties:
-    user_identifier:
-      type: string
     email:
       type: string
     display_name:

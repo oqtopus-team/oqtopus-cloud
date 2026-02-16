@@ -35,9 +35,9 @@ paths:
           required: false
           schema:
             type: string
-        - name: user_identifier
+        - name: user_id
           in: query
-          description: query user identifier
+          description: query user id
           required: false
           schema:
             type: string
@@ -113,7 +113,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -151,7 +151,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -199,7 +199,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '204':
           description: Success
@@ -820,8 +820,6 @@ components:
       type: object
       properties:
         id:
-          type: integer
-        user_identifier:
           type: string
         email:
           type: string
@@ -879,8 +877,6 @@ components:
     users.UpdateUserRequest:
       type: object
       properties:
-        user_identifier:
-          type: string
         email:
           type: string
         display_name:

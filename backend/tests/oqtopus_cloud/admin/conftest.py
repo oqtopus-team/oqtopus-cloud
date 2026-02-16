@@ -135,5 +135,5 @@ def apigw_event_dummy():
     response = Event({"type": "http"})
     response.user_pool_id = "dummy_user_pool_id"
     response.region = "dummy_region"
-    response.state.user_identifier = "username_1"
+    response.state.user_id = "username_1"
     return response

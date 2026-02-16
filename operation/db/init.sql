@@ -57,9 +57,8 @@ SELECT * FROM (
 WHERE NOT EXISTS (SELECT 1 FROM main.jobs LIMIT 1);
 
 CREATE TABLE IF NOT EXISTS users (
-    id                serial PRIMARY KEY,
+    id                VARCHAR(255) PRIMARY KEY,
     cognito_id        VARCHAR(255) UNIQUE NOT NULL,
-    user_identifier   VARCHAR(255) UNIQUE NOT NULL,
     email             VARCHAR(255)        NOT NULL,
     display_name      VARCHAR(100),
     userstatus        VARCHAR(10),

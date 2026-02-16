@@ -54,9 +54,8 @@ def _get_user_model(n: int, available_devices="*") -> User:
         available_devices = json.dumps(available_devices)
 
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
-        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
         "display_name": f"test_user_{n}",
         "userstatus": UserStatus.approved,
@@ -249,9 +248,7 @@ def test_get_jobs_invalid_fields(
     response = test_client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
     actual = response.json()
     expect = json.loads(
-        BadRequestResponse(
-            message=f"fields {["XXX", "YYY"]} is invalid"
-        ).body.decode()
+        BadRequestResponse(message=f"fields {["XXX", "YYY"]} is invalid").body.decode()
     )
 
     assert response.status_code == 400

@@ -30,9 +30,8 @@ def _get_model_whitelist_users(n: int, is_completed: bool) -> WhitelistUser:
 
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email{n}@example.com",
         "cognito_id": f"cognito_id_{n}",
-        "user_identifier": f"email{n}@example.com",
         "email": f"email{n}@example.com",
         "display_name": f"username_{n}",
         "userstatus": 1,
@@ -59,8 +58,8 @@ def test_confirm_confirm(test_db):
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 200
     # confirm mfa_status is enabled
-    # user_identifier = Cognito username = email
-    user = test_db.query(User).filter(User.user_identifier == "email1@example.com").first()
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
     assert user is not None
     assert user.mfa_status == MFAStatus.enabled
 
@@ -85,8 +84,8 @@ def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 400
     # confirm the user is NOT registered
-    # user_identifier = Cognito username = email
-    user = test_db.query(User).filter(User.user_identifier == "email1@example.com").first()
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
     assert user is None
 
 
@@ -118,8 +117,8 @@ def test_cleanup_user(test_db, fake_cognito_client_fixture):
     test_db.add(_get_model_whitelist_users(1, True))
     test_db.commit()
     cleanup_user(test_db, fake_cognito_client_fixture, "email1@example.com", "pool_id")
-    # user_identifier = Cognito username = email
-    user = test_db.query(User).filter(User.user_identifier == "email1@example.com").first()
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
     whitelist_user = (
         test_db.query(WhitelistUser)
         .filter(WhitelistUser.email == "email1@example.com")

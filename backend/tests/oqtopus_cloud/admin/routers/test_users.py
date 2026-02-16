@@ -18,9 +18,8 @@ client = TestClient(app)
 
 def _get_model(n: int, status: UserStatus = UserStatus.approved) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
-        "user_identifier": f"email_{n}",
         "email": f"email_{n}",
         "display_name": f"username_{n}",
         "userstatus": status,
@@ -66,24 +65,32 @@ def test_get_users_simple(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id="2",
-                user_identifier="email_2",
+                id="email_2",
                 email="email_2",
                 display_name="username_2",
                 status=UserStatus.unapproved,
                 organization="organization_2",
                 group_id="group_id_2",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
         ],
     )
@@ -109,24 +116,32 @@ def test_get_users_query_limit_offset(
         limit="2",
         users=[
             GetOneUserResponse(
-                id="2",
-                user_identifier="email_2",
+                id="email_2",
                 email="email_2",
                 display_name="username_2",
                 status=UserStatus.approved,
                 organization="organization_2",
                 group_id="group_id_2",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id="3",
-                user_identifier="email_3",
+                id="email_3",
                 email="email_3",
                 display_name="username_3",
                 status=UserStatus.approved,
                 organization="organization_3",
                 group_id="group_id_3",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
         ],
     )
@@ -135,7 +150,7 @@ def test_get_users_query_limit_offset(
     assert actual == expect
 
 
-def test_get_user_by_user_identifier(
+def test_get_user_by_user_id(
     test_db,
 ):
     test_db.flush()
@@ -144,7 +159,7 @@ def test_get_user_by_user_identifier(
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/users?user_identifier=email_1")
+    response = client.get("/users?user_id=email_1")
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
@@ -152,14 +167,18 @@ def test_get_user_by_user_identifier(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             )
         ],
     )
@@ -184,14 +203,18 @@ def test_get_user_by_email(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             )
         ],
     )
@@ -218,14 +241,18 @@ def test_get_user_by_display_name_organization_groupid_status(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             )
         ],
     )
@@ -248,35 +275,47 @@ def test_get_users_order_ascending(test_db):
         limit="10",
         users=[
             GetOneUserResponse(
-                id=1,
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id=2,
-                user_identifier="email_2",
+                id="email_2",
                 email="email_2",
                 display_name="username_2",
                 organization="organization_2",
                 status=UserStatus.approved,
                 group_id="group_id_2",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id=3,
-                user_identifier="email_3",
+                id="email_3",
                 email="email_3",
                 display_name="username_3",
                 organization="organization_3",
                 status=UserStatus.approved,
                 group_id="group_id_3",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
-            )
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
+            ),
         ],
     )
     assert response.status_code == 200
@@ -290,7 +329,7 @@ def test_get_users_order_descending(test_db):
     test_db.add(_get_model(2))
     test_db.commit()
 
-    response = client.get("/users?sort=user_identifier,desc")
+    response = client.get("/users?sort=id,desc")
     adapter = TypeAdapter(GetUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = GetUsersResponse(
@@ -298,35 +337,47 @@ def test_get_users_order_descending(test_db):
         limit="10",
         users=[
             GetOneUserResponse(
-                id=3,
-                user_identifier="email_3",
+                id="email_3",
                 email="email_3",
                 display_name="username_3",
                 organization="organization_3",
                 status=UserStatus.approved,
                 group_id="group_id_3",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id=2,
-                user_identifier="email_2",
+                id="email_2",
                 email="email_2",
                 display_name="username_2",
                 organization="organization_2",
                 status=UserStatus.approved,
                 group_id="group_id_2",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             ),
             GetOneUserResponse(
-                id=1,
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
-            )
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
+            ),
         ],
     )
     assert response.status_code == 200
@@ -340,7 +391,9 @@ def test_get_users_invalid_sort_query_parameter():
 
     response = client.get("/users?sort=display_name,desc,something_else")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: display_name,desc,something_else"}
+    assert response.json() == {
+        "message": "Invalid sort parameter: display_name,desc,something_else"
+    }
 
 
 def test_get_users_invalid_column_name():
@@ -361,6 +414,7 @@ def test_get_user_500():
     )
     assert response.status_code == 500
 
+
 def test_get_one_user(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
@@ -368,18 +422,22 @@ def test_get_one_user(test_db):
     test_db.add(_get_model(3))
     test_db.commit()
 
-    response = client.get("/users/2")
+    response = client.get("/users/email_2")
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id=2,
-        user_identifier="email_2",
+        id="email_2",
         email="email_2",
         display_name="username_2",
         organization="organization_2",
         status=UserStatus.approved,
         group_id="group_id_2",
-        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+        available_devices=[
+            "SC",
+            "SVSim",
+            "Kawasaki",
+            "01927422-86d4-7597-b724-b08a5e7781fc",
+        ],
     )
 
     assert response.status_code == 200
@@ -393,15 +451,16 @@ def test_get_one_user_404(test_db):
     test_db.add(_get_model(3))
     test_db.commit()
 
-    response = client.get("/users/5")
+    response = client.get("/users/email_5")
 
     assert response.status_code == 404
-    assert response.json() == {"message": "user_id=5 is not found."}
+    assert response.json() == {"message": "user_id=email_5 is not found."}
 
 
 def test_get_one_user_500():
-    response = client.get("/users/1")
+    response = client.get("/users/email_1")
     assert response.status_code == 500
+
 
 def test_patch_user_status_to_suspended(
     test_db,
@@ -410,18 +469,22 @@ def test_patch_user_status_to_suspended(
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(status=UserStatus.suspended)
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id="1",
-        user_identifier="email_1",
+        id="email_1",
         email="email_1",
         display_name="username_1",
         organization="organization_1",
         status=UserStatus.suspended,
         group_id="group_id_1",
-        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+        available_devices=[
+            "SC",
+            "SVSim",
+            "Kawasaki",
+            "01927422-86d4-7597-b724-b08a5e7781fc",
+        ],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -434,18 +497,22 @@ def test_patch_user_status_to_unapproved(
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(status=UserStatus.unapproved)
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id="1",
-        user_identifier="email_1",
+        id="email_1",
         email="email_1",
         display_name="username_1",
         organization="organization_1",
         status=UserStatus.unapproved,
         group_id="group_id_1",
-        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+        available_devices=[
+            "SC",
+            "SVSim",
+            "Kawasaki",
+            "01927422-86d4-7597-b724-b08a5e7781fc",
+        ],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -459,18 +526,22 @@ def test_patch_user(test_db):
         display_name="user_name_1",
         organization="new_organization",
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id=1,
-        user_identifier="email_1",
+        id="email_1",
         email="email_1",
         display_name="user_name_1",
         organization="new_organization",
         status=UserStatus.approved,
         group_id="group_id_1",
-        available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+        available_devices=[
+            "SC",
+            "SVSim",
+            "Kawasaki",
+            "01927422-86d4-7597-b724-b08a5e7781fc",
+        ],
     )
     assert response.status_code == 200
     assert actual == expect
@@ -481,7 +552,6 @@ def test_patch_user_all_fields(test_db):
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(
-        user_identifier="email@email.com",
         email="email@email.com",
         display_name="user_name_1",
         organization="new_organization",
@@ -489,12 +559,11 @@ def test_patch_user_all_fields(test_db):
         group_id="new_group_id",
         available_devices=["SVSim", "Kawasaki"],
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
     adapter = TypeAdapter(GetOneUserResponse)
     actual = adapter.validate_python(response.json())
     expect = GetOneUserResponse(
-        id=1,
-        user_identifier="email@email.com",
+        id="email@email.com",
         email="email@email.com",
         display_name="user_name_1",
         organization="new_organization",
@@ -513,54 +582,54 @@ def test_patch_user_404(
     test_db.add(_get_model(1))
     test_db.commit()
     update_data = UpdateUserRequest(status=UserStatus.suspended)
-    response = client.patch("/users/2", json=update_data.model_dump())
+    response = client.patch("/users/email_2", json=update_data.model_dump())
     assert response.status_code == 404
-    assert response.json() == {"message": "User not found: 2"}
+    assert response.json() == {"message": "User not found: email_2"}
 
 
-def test_patch_user_400_user_identifier_email_mismatch(test_db):
+def test_patch_user_email_only_updates_id(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
-    update_data = UpdateUserRequest(
-        user_identifier="email@email.com",
-    )
-    response = client.patch("/users/1", json=update_data.model_dump())
-    assert response.status_code == 400
-    assert response.json() == {"message": "user_identifier must be the same as email."}
-
-    update_data = UpdateUserRequest(
+    update_data = UpdateUserRequest(email="email@email.com")
+    response = client.patch("/users/email_1", json=update_data.model_dump())
+    adapter = TypeAdapter(GetOneUserResponse)
+    actual = adapter.validate_python(response.json())
+    expect = GetOneUserResponse(
+        id="email@email.com",
         email="email@email.com",
+        display_name="username_1",
+        organization="organization_1",
+        status=UserStatus.approved,
+        group_id="group_id_1",
+        available_devices=[
+            "SC",
+            "SVSim",
+            "Kawasaki",
+            "01927422-86d4-7597-b724-b08a5e7781fc",
+        ],
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
-    assert response.status_code == 400
-    assert response.json() == {"message": "user_identifier must be the same as email."}
-
-    update_data = UpdateUserRequest(
-        user_identifier="email@email.com",
-        email="other_email@email.com",
-    )
-    response = client.patch("/users/1", json=update_data.model_dump())
-    assert response.status_code == 400
-    assert response.json() == {"message": "user_identifier must be the same as email."}
+    assert response.status_code == 200
+    assert actual == expect
 
 
-def test_patch_user_400_user_identifier_too_long(test_db):
+def test_patch_user_400_email_too_long(test_db):
     test_db.flush()
     test_db.add(_get_model(1))
     test_db.commit()
     too_long = "a" * (LEN_VARCHAR + 1)
     update_data = UpdateUserRequest(
-        user_identifier=too_long,
         email=too_long,
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message": f"The length of {too_long} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
-def test_patch_job_400_user_identifier_already_exist(test_db):
+def test_patch_job_400_email_already_exist(test_db):
     user_1 = _get_model(1)
 
     test_db.flush()
@@ -568,13 +637,12 @@ def test_patch_job_400_user_identifier_already_exist(test_db):
     test_db.add(_get_model(2))
     test_db.commit()
     update_data = UpdateUserRequest(
-        user_identifier=user_1.user_identifier,
         email=user_1.email,
     )
-    response = client.patch("/users/2", json=update_data.model_dump())
+    response = client.patch("/users/email_2", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"{user_1.user_identifier} is already registered."}
+    assert response.json() == {"message": f"{user_1.id} is already registered."}
 
 
 def test_patch_job_400_display_name_too_long(test_db):
@@ -585,10 +653,12 @@ def test_patch_job_400_display_name_too_long(test_db):
     update_data = UpdateUserRequest(
         display_name=too_long_display_name,
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_display_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message": f"The length of {too_long_display_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_400_organization_too_long(test_db):
@@ -599,10 +669,12 @@ def test_patch_job_400_organization_too_long(test_db):
     update_data = UpdateUserRequest(
         organization=too_long_organization,
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_400_group_id_too_long(test_db):
@@ -613,15 +685,17 @@ def test_patch_job_400_group_id_too_long(test_db):
     update_data = UpdateUserRequest(
         group_id=too_long_group_id,
     )
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert response.json() == {
+        "message": f"The length of {too_long_group_id} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_patch_job_500():
     update_data = UpdateUserRequest(status=UserStatus.suspended)
-    response = client.patch("/users/2", json=update_data.model_dump())
+    response = client.patch("/users/email_2", json=update_data.model_dump())
     assert response.status_code == 500
 
 
@@ -648,26 +722,30 @@ def test_delete_user(
         limit="10",
         users=[
             GetOneUserResponse(
-                id="1",
-                user_identifier="email_1",
+                id="email_1",
                 email="email_1",
                 display_name="username_1",
                 organization="organization_1",
                 status=UserStatus.approved,
                 group_id="group_id_1",
-                available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
+                available_devices=[
+                    "SC",
+                    "SVSim",
+                    "Kawasaki",
+                    "01927422-86d4-7597-b724-b08a5e7781fc",
+                ],
             )
         ],
     )
     assert response.status_code == 200
     assert actual == expect
 
-    response = client.delete("/users/1")
+    response = client.delete("/users/email_1")
     assert response.status_code == 204
 
     # confirm the user is deleted
     update_data = UpdateUserRequest(status=UserStatus.suspended)
-    response = client.patch("/users/1", json=update_data.model_dump())
+    response = client.patch("/users/email_1", json=update_data.model_dump())
     assert response.status_code == 404
 
     # confirm the is_signup_completed is set to False in whitelist_users
@@ -683,11 +761,11 @@ def test_delete_user_404(
     test_db.add(_get_model(2))
     test_db.commit()
     # confirm the user is in the database
-    response = client.delete("/users/1")
+    response = client.delete("/users/email_1")
     assert response.status_code == 404
 
 
 def test_delete_user_500():
     # confirm the user is in the database
-    response = client.delete("/users/1")
+    response = client.delete("/users/email_1")
     assert response.status_code == 500

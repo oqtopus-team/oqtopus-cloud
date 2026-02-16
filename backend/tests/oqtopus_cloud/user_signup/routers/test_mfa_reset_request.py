@@ -11,9 +11,8 @@ from sqlalchemy import select
 
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email{n}@example.com",
         "cognito_id": f"cognito_id_{n}",
-        "user_identifier": f"email{n}@example.com",
         "email": f"email{n}@example.com",
         "display_name": f"username_{n}",
         "userstatus": 1,
@@ -42,9 +41,9 @@ def test_mfa_reset_request_success(test_db):
     response = client.put("/mfa_reset_request", json=body.model_dump())
     assert response.status_code == 200
     # refer to db value
-    # user_identifier = Cognito username = email
+    # user_id = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.user_identifier == "email1@example.com"))
+        test_db.execute(select(User).where(User.id == "email1@example.com"))
         .scalars()
         .first()
     )

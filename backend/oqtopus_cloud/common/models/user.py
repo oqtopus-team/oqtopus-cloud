@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -29,9 +29,8 @@ class User(Base, TimestampMixin):
     See https://github.com/sqlalchemy/sqlalchemy/issues/5613 for the reason why we need to use nullable=True for some columns.
 
     Attributes:
-    id (int)                        The unique identifier of the user.
+    id (str)                        The unique identifier of the user.
     cognito_id (str)                Cognito ID of the user.
-    user_identifier (str)           Cognito username of the user.
     email (str)                     Email of the user.
     display_name (str):             The display name of the user.
     username (str)                  Username of the user.
@@ -48,9 +47,8 @@ class User(Base, TimestampMixin):
     """
 
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
     cognito_id: Mapped[str] = mapped_column(String, index=True)
-    user_identifier: Mapped[str] = mapped_column(String, index=True)
     email: Mapped[str] = mapped_column(String, index=True)
     display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     userstatus: Mapped[Optional[UserStatus]] = mapped_column(String, nullable=True)

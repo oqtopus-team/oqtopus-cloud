@@ -19,12 +19,8 @@ class FormatError(Exception):
     pass
 
 
-def is_unique_user_identifier(
-    session: Session, entity: type[User], user_identifier: str
-) -> bool:
-    return (
-        session.query(entity).filter_by(user_identifier=user_identifier).first() is None
-    )
+def is_unique_user_id(session: Session, entity: type[User], user_id: str) -> bool:
+    return session.query(entity).filter_by(id=user_id).first() is None
 
 
 def is_unique_email(
