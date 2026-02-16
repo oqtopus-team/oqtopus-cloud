@@ -106,3 +106,10 @@ module "s3-logging" {
   cloudtrail_s3_logs_transition_days_glacier_ir   = var.cloudtrail_s3_logs_transition_days_glacier_ir
   cloudtrail_s3_logs_transition_days_deep_archive = var.cloudtrail_s3_logs_transition_days_deep_archive
 }
+
+module "guardduty_detector" {
+  source = "../modules/guardduty"
+
+  enable_guardduty = var.enable_guardduty
+  enable_guardduty_s3_protection = var.enable_guardduty_s3_protection
+}

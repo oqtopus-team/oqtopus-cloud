@@ -10,3 +10,6 @@ cloudtrail_s3_logs_expiration_days = 365
 cloudtrail_s3_logs_transition_days_standard_ia = 30
 cloudtrail_s3_logs_transition_days_glacier_ir = 90
 cloudtrail_s3_logs_transition_days_deep_archive = 180
+
+enable_guardduty               = false
+enable_guardduty_s3_protection = false
