@@ -226,3 +226,9 @@ variable "lambda_additional_env" {
   default     = {}
   description = "Additional environment variables"
 }
+
+variable "api_gateway_log_retention_days" {
+  description = "Number of days for which API Gateway logs are retained"
+  type        = number
+  default     = 14
+}

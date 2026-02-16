@@ -65,14 +65,15 @@ module "user_api" {
     STORAGE_S3_REGION      = var.region
     STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   }
-  sse_bucket             = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name = "ssecontainer.log"
-  sse_user_program_name  = "userprogram.py"
-  sse_zip_file_name      = "sselog_{job_id}.zip"
-  allow_deletion         = var.allow_deletion
-  editable_fields        = var.editable_fields
-  visible_fields         = var.visible_fields
-  login_history_enabled  = var.login_history_enabled
+  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name         = "ssecontainer.log"
+  sse_user_program_name          = "userprogram.py"
+  sse_zip_file_name              = "sselog_{job_id}.zip"
+  allow_deletion                 = var.allow_deletion
+  editable_fields                = var.editable_fields
+  visible_fields                 = var.visible_fields
+  login_history_enabled          = var.login_history_enabled
+  api_gateway_log_retention_days = var.api_gateway_log_retention_days
 }
 
 module "provider_api" {
@@ -100,14 +101,15 @@ module "provider_api" {
     STORAGE_S3_REGION      = var.region
     STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   }
-  sse_bucket             = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name = "ssecontainer.log"
-  sse_user_program_name  = "userprogram.py"
-  sse_zip_file_name      = "sselog_{job_id}.zip"
-  allow_deletion         = "false"
-  editable_fields        = "[]"
-  visible_fields         = "[]"
-  login_history_enabled  = "false"
+  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name         = "ssecontainer.log"
+  sse_user_program_name          = "userprogram.py"
+  sse_zip_file_name              = "sselog_{job_id}.zip"
+  allow_deletion                 = "false"
+  editable_fields                = "[]"
+  visible_fields                 = "[]"
+  login_history_enabled          = "false"
+  api_gateway_log_retention_days = var.api_gateway_log_retention_days
 }
 
 module "admin_api" {
@@ -136,6 +138,7 @@ module "admin_api" {
   allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
   lambda_timeout                         = 30
+  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
 }
 
 module "user_signup_api" {
@@ -163,6 +166,7 @@ module "user_signup_api" {
   allow_methods                          = "POST,PUT"
   allow_headers                          = "Content-type,Accept"
   log_level                              = "INFO"
+  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
 }
 
 module "pending_jobs_updater" {
@@ -190,13 +194,14 @@ module "pending_jobs_updater" {
 module "lambda_version_cleaner" {
   source = "../modules/maintenance"
 
-  product        = var.product
-  org            = var.org
-  env            = var.env
-  identifier     = "lambda-version-cleaner"
-  region         = var.region
-  lambda_handler = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
-  log_level      = "DEBUG"
+  product                   = var.product
+  org                       = var.org
+  env                       = var.env
+  identifier                = "lambda-version-cleaner"
+  region                    = var.region
+  lambda_handler            = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
+  log_level                 = "DEBUG"
+  lambda_log_retention_days = var.lambda_log_retention_days
 }
 
 module "vpc_endpoint" {
@@ -246,4 +251,30 @@ module "deployment_roles" {
   github_user    = var.github_user
   branch         = var.branch
   aws_account_id = var.aws_account_id
+}
+
+module "waf" {
+  source = "../modules/waf"
+
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
+  resource_arn_list    = [
+    module.user_api.api_gateway_stage_arn,
+    module.provider_api.api_gateway_stage_arn,
+    module.admin_api.api_gateway_stage_arn,
+    module.user_signup_api.api_gateway_stage_arn,
+  ]
+  enable_common_rules        = var.waf_enable_common_rules
+  enable_rate_limiting       = var.waf_enable_rate_limiting
+  rate_limit                 = var.waf_rate_limit
+  cloudwatch_metrics_enabled = var.waf_cloudwatch_metrics_enabled
+  sampled_requests_enabled   = var.waf_sampled_requests_enabled
+
+  depends_on = [
+    module.user_api,
+    module.provider_api,
+    module.admin_api,
+    module.user_signup_api,
+  ]
 }

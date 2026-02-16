@@ -35,3 +35,9 @@ variable "public_subnets" {
     az   = string
   }))
 }
+
+variable "vpc_flow_log_retention_days" {
+  description = "Number of days for which VPC flow logs are retained"
+  type        = number
+  default     = 14
+}

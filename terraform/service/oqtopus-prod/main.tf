@@ -68,32 +68,34 @@ module "user_api" {
   editable_fields                        = var.editable_fields
   visible_fields                         = var.visible_fields
   login_history_enabled                  = var.login_history_enabled
+  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
 }
 
 module "provider_api" {
   source = "../modules/api-server"
 
-  product                       = var.product
-  org                           = var.org
-  env                           = var.env
-  identifier                    = "provider"
-  region                        = var.region
-  db_proxy_endpoint             = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
-  db_secret_arn                 = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
-  lambda_handler                = "oqtopus_cloud.provider.lambda_function.handler"
-  lambda_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
-  lambda_subnet_ids             = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  authorizer_type               = "NONE"
-  require_api_key               = true
-  cognito_user_pool_arns        = []
-  power_tools_metrics_namespace = "provider-api"
-  power_tools_service_name      = "provider-api"
-  enable_cors                   = false
-  log_level                     = "INFO"
-  sse_bucket                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name        = "ssecontainer.log"
-  sse_user_program_name         = "userprogram.py"
-  sse_zip_file_name             = "sselog_{job_id}.zip"
+  product                        = var.product
+  org                            = var.org
+  env                            = var.env
+  identifier                     = "provider"
+  region                         = var.region
+  db_proxy_endpoint              = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn                  = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler                 = "oqtopus_cloud.provider.lambda_function.handler"
+  lambda_security_group_ids      = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids              = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  authorizer_type                = "NONE"
+  require_api_key                = true
+  cognito_user_pool_arns         = []
+  power_tools_metrics_namespace  = "provider-api"
+  power_tools_service_name       = "provider-api"
+  enable_cors                    = false
+  log_level                      = "INFO"
+  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name         = "ssecontainer.log"
+  sse_user_program_name          = "userprogram.py"
+  sse_zip_file_name              = "sselog_{job_id}.zip"
+  api_gateway_log_retention_days = var.api_gateway_log_retention_days
 }
 
 module "admin_api" {
@@ -122,6 +124,7 @@ module "admin_api" {
   allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
   lambda_timeout                         = 30
+  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
 }
 
 module "user_signup_api" {
@@ -149,6 +152,7 @@ module "user_signup_api" {
   allow_methods                          = "POST,PUT"
   allow_headers                          = "Content-type,Accept"
   log_level                              = "INFO"
+  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
 }
 
 module "pending_jobs_updater" {
@@ -176,13 +180,14 @@ module "pending_jobs_updater" {
 module "lambda_version_cleaner" {
   source = "../modules/maintenance"
 
-  product        = var.product
-  org            = var.org
-  env            = var.env
-  identifier     = "lambda-version-cleaner"
-  region         = var.region
-  lambda_handler = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
-  log_level      = "INFO"
+  product                   = var.product
+  org                       = var.org
+  env                       = var.env
+  identifier                = "lambda-version-cleaner"
+  region                    = var.region
+  lambda_handler            = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
+  log_level                 = "INFO"
+  lambda_log_retention_days = var.lambda_log_retention_days
 }
 
 module "vpc_endpoint" {
@@ -217,5 +222,31 @@ module "vpc_endpoint" {
     module.admin_api,
     module.user_signup_api,
     module.pending_jobs_updater
+  ]
+}
+
+module "waf" {
+  source = "../modules/waf"
+
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
+  resource_arn_list    = [
+    module.user_api.api_gateway_stage_arn,
+    module.provider_api.api_gateway_stage_arn,
+    module.admin_api.api_gateway_stage_arn,
+    module.user_signup_api.api_gateway_stage_arn,
+  ]
+  enable_common_rules        = var.waf_enable_common_rules
+  enable_rate_limiting       = var.waf_enable_rate_limiting
+  rate_limit                 = var.waf_rate_limit
+  cloudwatch_metrics_enabled = var.waf_cloudwatch_metrics_enabled
+  sampled_requests_enabled   = var.waf_sampled_requests_enabled
+
+  depends_on = [
+    module.user_api,
+    module.provider_api,
+    module.admin_api,
+    module.user_signup_api,
   ]
 }

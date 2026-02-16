@@ -20,6 +20,7 @@ module "network" {
       az   = "${var.region}${az}"
     }
   }
+  vpc_flow_log_retention_days = var.vpc_flow_log_retention_days
 }
 
 module "security_group" {
@@ -92,9 +93,21 @@ module "s3" {
 module "s3-logging" {
   source = "../modules/s3-logging"
 
-  product               = var.product
-  org                   = var.org
-  env                   = var.env
-  s3_target_bucket_name = module.s3.s3_bucket_name
-  s3_target_bucket_arn  = module.s3.s3_bucket_arn
+  product                                         = var.product
+  org                                             = var.org
+  env                                             = var.env
+  s3_target_bucket_name                           = module.s3.s3_bucket_name
+  s3_target_bucket_arn                            = module.s3.s3_bucket_arn
+  s3_api_trail_cloudwatch_retention_in_days       = var.s3_api_trail_cloudwatch_retention_in_days
+  cloudtrail_s3_logs_expiration_days              = var.cloudtrail_s3_logs_expiration_days
+  cloudtrail_s3_logs_transition_days_standard_ia  = var.cloudtrail_s3_logs_transition_days_standard_ia
+  cloudtrail_s3_logs_transition_days_glacier_ir   = var.cloudtrail_s3_logs_transition_days_glacier_ir
+  cloudtrail_s3_logs_transition_days_deep_archive = var.cloudtrail_s3_logs_transition_days_deep_archive
+}
+
+module "guardduty_detector" {
+  source = "../modules/guardduty"
+
+  enable_guardduty = var.enable_guardduty
+  enable_guardduty_s3_protection = var.enable_guardduty_s3_protection
 }
