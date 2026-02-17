@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.models.user import User
@@ -121,7 +122,9 @@ def get_jobs(
                 ]
                 invalid_fields_list = [fields_list[i] for i in invalid_indices]
                 return BadRequestResponse(
-                    message=f"fields {invalid_fields_list} is invalid"
+                    **Messages.INVALID_FIELDS.format(
+                        fields=str(invalid_fields_list)
+                    ).to_dict()
                 )
         else:
             stmt = select(Job).filter(Job.owner == owner).order_by(arg_order, Job.id)
@@ -203,18 +206,25 @@ def submit_jobs(
                 f"user={owner} is not allowed to create job for device={request.device_id}"
             )
             return ForbiddenErrorResponse(
-                message=f"cannot create job for device={request.device_id}"
+                **Messages.FORBIDDEN_DEVICE_ACCESS.format(
+                    id=request.device_id
+                ).to_dict()
             )
 
         device = db.get(Device, request.device_id)  # type: ignore
         if device is None:
-            return BadRequestResponse(message="device not found")
+            return BadRequestResponse(
+                **Messages.DEVICE_NOT_FOUND.format(id=request.device_id).to_dict()
+            )
         logger.info("invoked!", extra={"owner": owner})
         if device.status != "available":
-            return BadRequestResponse(f"device {device.id} is not available")
+            return BadRequestResponse(
+                **Messages.DEVICE_NOT_AVAILABLE.format(id=request.device_id).to_dict()
+            )
         if request.job_type not in jobtype_of_jobinfo(request.job_info):
-            return BadRequestResponse("job_info is not compatible with job_type")
-
+            return BadRequestResponse(
+                **Messages.JOB_INFO_INCOMPATIBLE_WITH_JOB_TYPE.format().to_dict()
+            )
         # NOTE: method and operator is validated by pydantic
         shots = request.shots
         # name is optional
@@ -273,11 +283,15 @@ def get_job(
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
         job = model_to_schema(job_model)
         if isinstance(job, ValueError):
             logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
         return job
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -307,11 +321,13 @@ def delete_job(
         job = db.get(Job, job_id)
 
         if job is None:
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
 
         if job.owner != owner or job.status not in ["succeeded", "failed", "cancelled"]:
             return NotFoundErrorResponse(
-                message=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
+                **Messages.JOB_INVALID_STATUS_FOR_DELETION.format(id=job_id).to_dict()
             )
 
         db.delete(job)
@@ -322,7 +338,7 @@ def delete_job(
         if not is_success_delete_s3:
             # error already logged in delete_storage_folder
             return InternalServerErrorResponse()
-        return SuccessResponse(message="job deleted")
+        return SuccessResponse(**Messages.JOB_DELETED.format().to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -355,7 +371,9 @@ def get_job_status(
         .first()
     )
     if job is None:
-        return NotFoundErrorResponse(message="job not found with the given id")
+        return NotFoundErrorResponse(
+            **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+        )
     return GetJobStatusResponse(job_id=job_id, status=job.status)
 
 
@@ -381,7 +399,9 @@ def cancel_job(
         job = db.get(Job, job_id)
 
         if job is None:
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
         if job.owner != owner or job.status not in [
             "ready",
             "submitted",
@@ -389,7 +409,9 @@ def cancel_job(
             "cancelled",
         ]:
             return NotFoundErrorResponse(
-                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
+                **Messages.JOB_INVALID_STATUS_FOR_CANCELLATION.format(
+                    id=job_id
+                ).to_dict()
             )
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
@@ -397,7 +419,7 @@ def cancel_job(
             )
             job.status = JobStatus.cancelled
             db.commit()
-        return SuccessResponse(message="cancel request accepted")
+        return SuccessResponse(**Messages.JOB_CANCELLING_ACCEPTED.format().to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -430,17 +452,21 @@ def get_sselog(
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
             logger.info("job not found with the given id")
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
         job = model_to_schema(job_model)
         if isinstance(job, ValueError):
             logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
+            return NotFoundErrorResponse(
+                **Messages.JOB_NOT_FOUND.format(id=job_id).to_dict()
+            )
         if job.job_type != JobType.sse:
             logger.info("job is not an SSE job")
-            return BadRequestResponse(message="job is not an SSE job")
+            return BadRequestResponse(**Messages.JOB_NOT_SSE.format().to_dict())
         if job.status != JobStatus.succeeded and job.status != JobStatus.failed:
             logger.info("job has not finished yet")
-            return BadRequestResponse(message="job has not finished yet")
+            return BadRequestResponse(**Messages.JOB_NOT_FINISHED.format().to_dict())
 
         # get the logs from the AWS S3 bucket
         log_object = None
@@ -451,7 +477,9 @@ def get_sselog(
             logger.exception(f"Failed to get the log file: {str(e)}")
 
         if log_object is None:
-            return NotFoundErrorResponse(message="log file not found")
+            return NotFoundErrorResponse(
+                **Messages.LOG_FILE_NOT_FOUND.format().to_dict()
+            )
 
         log_str = log_object.decode()
         file_name = zip_name.replace("{job_id}", job_id)

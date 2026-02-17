@@ -83,7 +83,11 @@ def test_get_job_404(
     print(test_db)  # => 1
     response = test_client.get("/jobs/e8a60c14-8838-46c9-816a-30191d6ab517")
     assert response.status_code == 404
-    assert response.json() == {"message": "job not found with the given id"}
+    assert response.json() == {
+        "message_code": "JOB_NOT_FOUND",
+        "message_params": {"id": "e8a60c14-8838-46c9-816a-30191d6ab517"},
+        "message": "job_id=e8a60c14-8838-46c9-816a-30191d6ab517 is not found.",
+    }
 
 
 def test_get_jobs_simple(
@@ -249,7 +253,9 @@ def test_get_jobs_invalid_fields(
     actual = response.json()
     expect = json.loads(
         BadRequestResponse(
-            message=f"fields {["XXX", "YYY"]} is invalid"
+            message_code = "INVALID_FIELDS",
+            message_params = {"fields": "['XXX', 'YYY']"},
+            message="Invalid fields in request: ['XXX', 'YYY']."
         ).body.decode()
     )
 
@@ -836,7 +842,11 @@ def test_job_submit_for_device_user_cannot_access(test_client, test_db):
     # Submitting
     submit_resp = test_client.post("/jobs", content=body.model_dump_json())
     assert submit_resp.status_code == 403
-    assert submit_resp.json() == {"message": "cannot create job for device=Kawasaki"}
+    assert submit_resp.json() == {
+        "message_code": "FORBIDDEN_DEVICE_ACCESS",
+        "message_params": {"id": "Kawasaki"},
+        "message": "Forbidden: cannot access device_id=Kawasaki."
+    }
 
 
 def test_submit_job_shots_boundary(test_db):
@@ -933,7 +943,7 @@ def test_get_sselog_invalid_owner(
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
 
     response = test_client.get("/jobs/testjob1id/sselog")
-    adapter = TypeAdapter(dict[str, str])
+    adapter = TypeAdapter(dict[str, str | dict])
     adapter.validate_python(response.json())
 
     assert response.status_code == 404
@@ -959,7 +969,7 @@ def test_get_sselog_unknown_jobid(test_client, test_db, test_storage):
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
     response = test_client.get("/jobs/testjob1id/sselog")
-    adapter = TypeAdapter(dict[str, str])
+    adapter = TypeAdapter(dict[str, str | dict])
     adapter.validate_python(response.json())
 
     assert response.status_code == 404
@@ -985,7 +995,7 @@ def test_get_sselog_invalid_jobtype(test_client, test_db, test_storage):
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
 
     response = test_client.get("/jobs/testjob1id/sselog")
-    adapter = TypeAdapter(dict[str, str])
+    adapter = TypeAdapter(dict[str, str | dict])
     adapter.validate_python(response.json())
 
     assert response.status_code == 400
@@ -1010,7 +1020,7 @@ def test_get_sselog_running_job(test_client, test_db, test_storage):
     log_body = b"log1"
     test_storage.put(key=f"testjob1id/{log_name}", data=log_body)
     response = test_client.get("/jobs/testjob1id/sselog")
-    adapter = TypeAdapter(dict[str, str])
+    adapter = TypeAdapter(dict[str, str | dict])
     adapter.validate_python(response.json())
 
     assert response.status_code == 400
@@ -1031,7 +1041,7 @@ def test_get_sselog_no_log(test_client, test_db, test_storage):
     test_db.add(job_model)
     test_db.commit()
     response = test_client.get("/jobs/testjob1id/sselog")
-    adapter = TypeAdapter(dict[str, str])
+    adapter = TypeAdapter(dict[str, str | dict])
     adapter.validate_python(response.json())
     assert response.status_code == 404
 

@@ -321,3 +321,8 @@ def test_get_announcement_404(test_client, test_db):
     response = test_client.get("/announcements/202")
 
     assert response.status_code == 404
+    assert response.json() == {
+        "message_code": "ANNOUNCEMENT_NOT_FOUND",
+        "message_params": {"id": 202},
+        "message": "announcement_id=202 is not found.",
+    }

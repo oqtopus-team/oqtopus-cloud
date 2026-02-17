@@ -187,6 +187,96 @@ class Messages(Enum):
         message_template="Invalid TOTP code.",
     )
 
+    FORBIDDEN_USER_SUSPENDED = MessageTemplate(
+        message_code="FORBIDDEN_USER_SUSPENDED",
+        message_params=[],
+        message_template="Forbidden: user status is suspended.",
+    )
+
+    FORBIDDEN_DEVICE_ACCESS = MessageTemplate(
+        message_code="FORBIDDEN_DEVICE_ACCESS",
+        message_params=["id"],
+        message_template="Forbidden: cannot access device_id={id}.",
+    )
+
+    INVALID_FIELDS = MessageTemplate(
+        message_code="INVALID_FIELDS",
+        message_params=["fields"],
+        message_template="Invalid fields in request: {fields}.",
+    )
+
+    DEVICE_NOT_AVAILABLE = MessageTemplate(
+        message_code="DEVICE_NOT_AVAILABLE",
+        message_params=["id"],
+        message_template="Device_id={id} is not available.",
+    )
+
+    JOB_INFO_INCOMPATIBLE_WITH_JOB_TYPE = MessageTemplate(
+        message_code="JOB_INFO_INCOMPATIBLE_WITH_JOB_TYPE",
+        message_params=[],
+        message_template="job_info is not compatible with job_type.",
+    )
+
+    JOB_NOT_FOUND = MessageTemplate(
+        message_code="JOB_NOT_FOUND",
+        message_params=["id"],
+        message_template="job_id={id} is not found.",
+    )
+
+    JOB_INVALID_STATUS_FOR_DELETION = MessageTemplate(
+        message_code="JOB_INVALID_STATUS_FOR_DELETION",
+        message_params=["id"],
+        message_template="job_id={id} is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')",
+    )
+
+    JOB_DELETED = MessageTemplate(
+        message_code="JOB_DELETED",
+        message_params=[],
+        message_template="Job deleted successfully.",
+    )
+
+    JOB_INVALID_STATUS_FOR_CANCELLATION = MessageTemplate(
+        message_code="JOB_INVALID_STATUS_FOR_DELETION",
+        message_params=["id"],
+        message_template="job_id={id} is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')",
+    )
+
+    JOB_CANCELLING_ACCEPTED = MessageTemplate(
+        message_code="JOB_CANCELLING_ACCEPTED",
+        message_params=[],
+        message_template="Job cancellation request accepted.",
+    )
+
+    JOB_NOT_SSE = MessageTemplate(
+        message_code="JOB_NOT_SSE",
+        message_params=[],
+        message_template="Job is not an SSE job",
+    )
+
+    JOB_NOT_FINISHED = MessageTemplate(
+        message_code="JOB_NOT_FINISHED",
+        message_params=[],
+        message_template="Job has not finished yet",
+    )
+
+    LOG_FILE_NOT_FOUND = MessageTemplate(
+        message_code="LOG_FILE_NOT_FOUND",
+        message_params=[],
+        message_template="Log file not found.",
+    )
+
+    FIELD_DISABLED_FOR_UPDATES = MessageTemplate(
+        message_code="FIELD_DISABLED_FOR_UPDATES",
+        message_params=["field"],
+        message_template="Field is disabled for updates: {field}",
+    )
+
+    USER_DELETION_DISABLED = MessageTemplate(
+        message_code="USER_DELETION_DISABLED",
+        message_params=[],
+        message_template="User deletion is disabled.",
+    )
+
     OPERATION_SUCCESSFUL = MessageTemplate(
         message_code="OPERATION_SUCCESSFUL",
         message_params=[],

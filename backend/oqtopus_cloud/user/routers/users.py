@@ -11,8 +11,8 @@ import pytz
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.user.common.validation_utils import (
-    FIELD_TOO_LONG_MESSAGE,
     LEN_VARCHAR,
     FormatError,
 )
@@ -57,7 +57,9 @@ def get_user(
         if user is None:
             message = "user is not found"
             logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            return NotFoundErrorResponse(
+                **Messages.USER_NOT_FOUND.format(id=event.state.owner).to_dict()
+            )
 
         login_events = (
             retrieve_user_login_history(user.cognito_id, event.state.region)
@@ -99,34 +101,37 @@ def update_user(
         stmt = select(User).where(User.email == event.state.owner)
         query = db.execute(stmt).scalars().first()
         if not query:
-            logger.error("user not found")
-            return NotFoundErrorResponse(message="user not found")
+            message = Messages.USER_NOT_FOUND.format(id=event.state.owner)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         editable_fields = get_editable_fields()
 
         if update_user_request.name:
             if "name" not in editable_fields:
-                logger.error("name field is disabled for updates")
-                return UnauthorizedResponse(
-                    message="name field is disabled for updates"
-                )
+                message = Messages.FIELD_DISABLED_FOR_UPDATES.format(field="name")
+                logger.error(message.message)
+                return UnauthorizedResponse(**message.to_dict())
             if len(update_user_request.name) > LEN_VARCHAR:
                 raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
+                    **Messages.FIELD_TOO_LONG.format(
+                        field="name", limit=LEN_VARCHAR
+                    ).to_dict()
                 )
             query.username = update_user_request.name
 
         if update_user_request.organization:
             if "organization" not in editable_fields:
-                logger.error("organization field is disabled for updates")
-                return UnauthorizedResponse(
-                    message="organization field is disabled for updates"
+                message = Messages.FIELD_DISABLED_FOR_UPDATES.format(
+                    field="organization"
                 )
+                logger.error(message.message)
+                return UnauthorizedResponse(**message.to_dict())
             if len(update_user_request.organization) > LEN_VARCHAR:
                 raise FormatError(
-                    FIELD_TOO_LONG_MESSAGE.format(
-                        update_user_request.organization, LEN_VARCHAR
-                    )
+                    **Messages.FIELD_TOO_LONG.format(
+                        field="organization", limit=LEN_VARCHAR
+                    ).to_dict()
                 )
             query.organization = update_user_request.organization
 
@@ -138,8 +143,12 @@ def update_user(
 
         return user
     except FormatError as e:
-        logger.exception(f"error: {str(e)}")
-        return BadRequestResponse(message=str(e))
+        logger.exception(e.message)
+        return BadRequestResponse(
+            message=e.message,
+            message_code=e.message_code,
+            message_params=e.message_params,
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -171,16 +180,18 @@ def delete_user(
         logger.info("invoked delete user")
 
         if environ.get("ALLOW_DELETION", "false").upper() != "TRUE":
-            logger.error("user deletion is disabled")
-            return ForbiddenErrorResponse(message="user deletion is disabled")
+            message = Messages.USER_DELETION_DISABLED.format()
+            logger.error(message.message)
+            return ForbiddenErrorResponse(**message.to_dict())
 
         # query
         stmt = select(User).where(User.email == event.state.owner)
         # pagination
         query_result = db.execute(stmt).scalars().first()
         if not query_result:
-            logger.error("User not found")
-            return NotFoundErrorResponse(message="User not found")
+            message = Messages.USER_NOT_FOUND.format(id=event.state.owner)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         # check if the user is in whitelist_users
         stmt_whitelist = select(WhitelistUser).where(

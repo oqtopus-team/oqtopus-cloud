@@ -7,6 +7,7 @@ from sqlalchemy import and_, asc, desc, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.announcements import Announcement
 from oqtopus_cloud.common.session import (
     get_db,
@@ -95,9 +96,9 @@ def get_announcement(
         if announcement:
             return model_to_schema(announcement)
         else:
-            message = f"announcement_id={announcement_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            message = Messages.ANNOUNCEMENT_NOT_FOUND.format(id=announcement_id)
+            logger.info(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

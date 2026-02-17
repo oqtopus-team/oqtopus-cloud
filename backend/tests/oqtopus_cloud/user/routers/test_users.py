@@ -547,7 +547,9 @@ def test_get_user_not_found(test_db):
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
     assert json.loads(response.body) == {
-        "message": "user is not found"
+        "message_code": "USER_NOT_FOUND",
+        "message_params": {"id": "email_2"},
+        "message": "user_id=email_2 is not found."
     }
 
 
@@ -564,6 +566,8 @@ def test_get_one_user_500_on_unexpected_error(test_db):
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
     assert json.loads(response.body) == {
+        "message_code": "INTERNAL_SERVER_ERROR",
+        "message_params": {},
         "message": "Internal Server Error"
     }
 
@@ -628,7 +632,9 @@ def test_update_user_not_found(test_db):
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
     assert json.loads(response.body) == {
-        "message": "user not found"
+        "message_code": "USER_NOT_FOUND",
+        "message_params": {"id": "email_2"},
+        "message": "user_id=email_2 is not found."
     }
 
 
@@ -647,7 +653,10 @@ def test_update_user_name_too_long(test_db):
 
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
-    assert json.loads(response.body) == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert json.loads(response.body) == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "name", "limit": LEN_VARCHAR},
+        "message": f"The length of name exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
 
 
 def test_update_user_name_update_disabled(test_db, monkeypatch):
@@ -666,7 +675,10 @@ def test_update_user_name_update_disabled(test_db, monkeypatch):
 
     assert type(response) is UnauthorizedResponse
     assert response.status_code == 401
-    assert json.loads(response.body) == {"message": "name field is disabled for updates"}
+    assert json.loads(response.body) == {
+        "message_code": "FIELD_DISABLED_FOR_UPDATES",
+        "message_params": {"field": "name"},
+        "message": "Field is disabled for updates: name"}
 
 
 def test_update_user_organization_update_disabled(test_db, monkeypatch):
@@ -685,7 +697,10 @@ def test_update_user_organization_update_disabled(test_db, monkeypatch):
 
     assert type(response) is UnauthorizedResponse
     assert response.status_code == 401
-    assert json.loads(response.body) == {"message": "organization field is disabled for updates"}
+    assert json.loads(response.body) == {
+        "message_code": "FIELD_DISABLED_FOR_UPDATES",
+        "message_params": {"field": "organization"},
+        "message": "Field is disabled for updates: organization"}
 
 
 def test_update_user_organization_too_long(test_db):
@@ -703,7 +718,10 @@ def test_update_user_organization_too_long(test_db):
 
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
-    assert json.loads(response.body) == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert json.loads(response.body) == {
+        "message_code": "FIELD_TOO_LONG",
+        "message_params": {"field": "organization", "limit": LEN_VARCHAR},
+        "message": f"The length of organization exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
 
 
 def test_update_user_500_on_unexpected_error(test_db):
@@ -720,6 +738,8 @@ def test_update_user_500_on_unexpected_error(test_db):
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
     assert json.loads(response.body) == {
+        "message_code": "INTERNAL_SERVER_ERROR",
+        "message_params": {},
         "message": "Internal Server Error"
     }
 
@@ -849,7 +869,9 @@ def test_delete_user_no_user(test_db, test_cognito_client):
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
     assert json.loads(response.body) == {
-        "message": "User not found"
+        "message_code": "USER_NOT_FOUND",
+        "message_params": {"id": "email_2"},
+        "message": "user_id=email_2 is not found."
     }
 
 
@@ -867,6 +889,8 @@ def test_delete_user_500(test_db):
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
     assert json.loads(response.body) == {
+        "message_code": "INTERNAL_SERVER_ERROR",
+        "message_params": {},
         "message": "Internal Server Error"
     }
 
@@ -887,7 +911,9 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_c
     assert type(response) is ForbiddenErrorResponse
     assert response.status_code == 403
     assert json.loads(response.body) == {
-        "message": "user deletion is disabled"
+        "message_code": "USER_DELETION_DISABLED",
+        "message_params": {},
+        "message": "User deletion is disabled."
     }
 
 

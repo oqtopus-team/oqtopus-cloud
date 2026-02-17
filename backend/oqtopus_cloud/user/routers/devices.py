@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
+from oqtopus_cloud.common.i18n import Messages
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
@@ -88,10 +89,9 @@ def get_device(
         available_devices = get_user_available_devices(username, db)
 
         if available_devices != "*" and device_id not in available_devices:
-            logger.error(f"{username} is not allowed to access device_id={device_id}.")
-            return ForbiddenErrorResponse(
-                message=f"Cannot access device_id={device_id}."
-            )
+            message = Messages.FORBIDDEN_DEVICE_ACCESS.format(id=device_id)
+            logger.error(message.message)
+            return ForbiddenErrorResponse(**message.to_dict())
 
         device = db.scalars(select(Device).where(Device.id == device_id)).first()
         logger.info("invoked get_device")
@@ -99,9 +99,9 @@ def get_device(
             response = model_to_schema(device)
             return response
         else:
-            message = f"device_id={device_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(message=message)
+            message = Messages.DEVICE_NOT_FOUND.format(id=device_id)
+            logger.error(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
