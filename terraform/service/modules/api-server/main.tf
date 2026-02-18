@@ -320,27 +320,27 @@ resource "aws_api_gateway_rest_api" "this" {
 
 locals {
   custom_gateway_responses = {
-    ACCESS_DENIED                  = { status = "403", code = "AUTH_ACCESS_DENIED" }
-    API_CONFIGURATION_ERROR        = { status = "500", code = "API_CONFIG_ERROR" }
-    AUTHORIZER_CONFIGURATION_ERROR = { status = "500", code = "AUTH_CONFIG_ERROR" }
-    AUTHORIZER_FAILURE             = { status = "500", code = "AUTH_FAILURE" }
-    BAD_REQUEST_PARAMETERS         = { status = "400", code = "INVALID_PARAMS" }
-    BAD_REQUEST_BODY               = { status = "400", code = "INVALID_BODY" }
-    EXPIRED_TOKEN                  = { status = "401", code = "TOKEN_EXPIRED" }
-    INTEGRATION_FAILURE            = { status = "504", code = "INTEGRATION_FAILURE" }
-    INTEGRATION_TIMEOUT            = { status = "504", code = "TIMEOUT" }
-    INVALID_API_KEY                = { status = "403", code = "INVALID_API_KEY" }
-    INVALID_SIGNATURE              = { status = "403", code = "INVALID_SIGNATURE" }
-    MISSING_AUTHENTICATION_TOKEN   = { status = "401", code = "MISSING_TOKEN" }
-    QUOTA_EXCEEDED                 = { status = "429", code = "QUOTA_EXCEEDED" }
-    REQUEST_TOO_LARGE              = { status = "413", code = "REQUEST_TOO_LARGE" }
-    RESOURCE_NOT_FOUND             = { status = "404", code = "NOT_FOUND" }
-    THROTTLED                      = { status = "429", code = "RATE_LIMITED" }
-    UNAUTHORIZED                   = { status = "401", code = "UNAUTHORIZED" }
-    UNSUPPORTED_MEDIA_TYPE         = { status = "415", code = "UNSUPPORTED_MEDIA" }
-    WAF_FILTERED                   = { status = "403", code = "BLOCKED_BY_WAF" }
-    DEFAULT_4XX                    = { status = "400", code = "CLIENT_ERROR" }
-    DEFAULT_5XX                    = { status = "500", code = "SERVER_ERROR" }
+    ACCESS_DENIED                  = { status = "403", code = "GATEWAY_AUTH_ACCESS_DENIED" }
+    API_CONFIGURATION_ERROR        = { status = "500", code = "GATEWAY_API_CONFIG_ERROR" }
+    AUTHORIZER_CONFIGURATION_ERROR = { status = "500", code = "GATEWAY_AUTH_CONFIG_ERROR" }
+    AUTHORIZER_FAILURE             = { status = "500", code = "GATEWAY_AUTH_FAILURE" }
+    BAD_REQUEST_PARAMETERS         = { status = "400", code = "GATEWAY_INVALID_PARAMS" }
+    BAD_REQUEST_BODY               = { status = "400", code = "GATEWAY_INVALID_BODY" }
+    EXPIRED_TOKEN                  = { status = "401", code = "GATEWAY_TOKEN_EXPIRED" }
+    INTEGRATION_FAILURE            = { status = "504", code = "GATEWAY_INTEGRATION_FAILURE" }
+    INTEGRATION_TIMEOUT            = { status = "504", code = "GATEWAY_TIMEOUT" }
+    INVALID_API_KEY                = { status = "403", code = "GATEWAY_INVALID_API_KEY" }
+    INVALID_SIGNATURE              = { status = "403", code = "GATEWAY_INVALID_SIGNATURE" }
+    MISSING_AUTHENTICATION_TOKEN   = { status = "401", code = "GATEWAY_MISSING_TOKEN" }
+    QUOTA_EXCEEDED                 = { status = "429", code = "GATEWAY_QUOTA_EXCEEDED" }
+    REQUEST_TOO_LARGE              = { status = "413", code = "GATEWAY_REQUEST_TOO_LARGE" }
+    RESOURCE_NOT_FOUND             = { status = "404", code = "GATEWAY_NOT_FOUND" }
+    THROTTLED                      = { status = "429", code = "GATEWAY_RATE_LIMITED" }
+    UNAUTHORIZED                   = { status = "401", code = "GATEWAY_UNAUTHORIZED" }
+    UNSUPPORTED_MEDIA_TYPE         = { status = "415", code = "GATEWAY_UNSUPPORTED_MEDIA" }
+    WAF_FILTERED                   = { status = "403", code = "GATEWAY_BLOCKED_BY_WAF" }
+    DEFAULT_4XX                    = { status = "400", code = "GATEWAY_CLIENT_ERROR" }
+    DEFAULT_5XX                    = { status = "500", code = "GATEWAY_SERVER_ERROR" }
   }
 }
 
