@@ -140,7 +140,7 @@ def update_device_data(
         query = db.execute(stmt).scalars().first()
         if not query:
             message = Messages.DEVICE_NOT_FOUND.format(id=device_id)
-            logger.error(message)
+            logger.error(message.message)
             return NotFoundErrorResponse(**message.to_dict())
         device_id_from_body = get_device_id(device_update)
         if device_id != device_id_from_body:

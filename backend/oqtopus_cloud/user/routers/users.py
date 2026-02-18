@@ -55,11 +55,9 @@ def get_user(
         user = db.scalars(select(User).where(User.email == event.state.owner)).first()
 
         if user is None:
-            message = "user is not found"
-            logger.info(message)
-            return NotFoundErrorResponse(
-                **Messages.USER_NOT_FOUND.format(id=event.state.owner).to_dict()
-            )
+            message = Messages.USER_NOT_FOUND.format(id=event.state.owner)
+            logger.info(message.message)
+            return NotFoundErrorResponse(**message.to_dict())
 
         login_events = (
             retrieve_user_login_history(user.cognito_id, event.state.region)

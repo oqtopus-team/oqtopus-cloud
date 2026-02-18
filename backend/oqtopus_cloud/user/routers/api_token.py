@@ -72,11 +72,11 @@ def create_api_token(
         user = db.execute(stmt).scalars().first()
         if not user:
             message = Messages.USER_NOT_FOUND.format(id=username)
-            logger.info(message)
+            logger.info(message.message)
             return NotFoundErrorResponse(**message.to_dict())
         if user.userstatus == UserStatus.suspended:  # suspended status
             message = Messages.FORBIDDEN_USER_SUSPENDED.format()
-            logger.info(message)
+            logger.info(message.message)
             return ForbiddenErrorResponse(**message.to_dict())
         else:
             user.api_token_id = api_token_id
