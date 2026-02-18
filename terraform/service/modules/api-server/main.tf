@@ -318,6 +318,45 @@ resource "aws_api_gateway_rest_api" "this" {
   }
 }
 
+locals {
+  custom_gateway_responses = {
+    ACCESS_DENIED                  = { status = "403", code = "AUTH_ACCESS_DENIED" }
+    API_CONFIGURATION_ERROR        = { status = "500", code = "API_CONFIG_ERROR" }
+    AUTHORIZER_CONFIGURATION_ERROR = { status = "500", code = "AUTH_CONFIG_ERROR" }
+    AUTHORIZER_FAILURE             = { status = "500", code = "AUTH_FAILURE" }
+    BAD_REQUEST_PARAMETERS         = { status = "400", code = "INVALID_PARAMS" }
+    BAD_REQUEST_BODY               = { status = "400", code = "INVALID_BODY" }
+    EXPIRED_TOKEN                  = { status = "401", code = "TOKEN_EXPIRED" }
+    INTEGRATION_FAILURE            = { status = "504", code = "INTEGRATION_FAILURE" }
+    INTEGRATION_TIMEOUT            = { status = "504", code = "TIMEOUT" }
+    INVALID_API_KEY                = { status = "403", code = "INVALID_API_KEY" }
+    INVALID_SIGNATURE              = { status = "403", code = "INVALID_SIGNATURE" }
+    MISSING_AUTHENTICATION_TOKEN   = { status = "401", code = "MISSING_TOKEN" }
+    QUOTA_EXCEEDED                 = { status = "429", code = "QUOTA_EXCEEDED" }
+    REQUEST_TOO_LARGE              = { status = "413", code = "REQUEST_TOO_LARGE" }
+    RESOURCE_NOT_FOUND             = { status = "404", code = "NOT_FOUND" }
+    THROTTLED                      = { status = "429", code = "RATE_LIMITED" }
+    UNAUTHORIZED                   = { status = "401", code = "UNAUTHORIZED" }
+    UNSUPPORTED_MEDIA_TYPE         = { status = "415", code = "UNSUPPORTED_MEDIA" }
+    WAF_FILTERED                   = { status = "403", code = "BLOCKED_BY_WAF" }
+    DEFAULT_4XX                    = { status = "400", code = "CLIENT_ERROR" }
+    DEFAULT_5XX                    = { status = "500", code = "SERVER_ERROR" }
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "all" {
+  for_each = var.identifier != "provider" ? local.custom_gateway_responses : {}
+
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  response_type = each.key
+  status_code   = each.value.status
+
+  response_templates = {
+    "application/json" = <<EOF
+{"code": "${each.value.code}", "params": {"details": $context.error.messageString}, "message": $context.error.messageString}
+EOF
+  }
+}
 
 resource "aws_api_gateway_deployment" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
