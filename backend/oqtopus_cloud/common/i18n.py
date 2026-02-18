@@ -320,8 +320,7 @@ class Messages(Enum):
         Generates a `Message` instance from the template, validating required parameters.
 
         Args:
-            **kwargs: Parameters to substitute into the `message_template`.
-                      Keys must match `self.value.message_params`.
+            **kwargs: Parameters to substitute into the `message_template`. Keys must match `self.value.message_params`.
 
         Returns:
             Message: A fully constructed `Message` object.
