@@ -4,6 +4,16 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class MessageTemplate:
+    """
+    Represents a standardized API message template with i18n support.
+
+    Attributes:
+        message_code (str): A unique code identifying the message.
+        message_params (list[str]): A list of parameter names required for the message.
+                                    These keys correspond to placeholders in the `message_template`
+        message_template (str): An f-string template string of the default message (in english).
+    """
+
     message_code: str
     message_params: list[str]
     message_template: str
@@ -11,11 +21,26 @@ class MessageTemplate:
 
 @dataclass
 class Message:
+    """
+    Represents a standardized API message with i18n support.
+
+    Attributes:
+        message_code (str): A unique code identifying the message.
+        message_params (dict[str, Any]): A dictionary of parameter names and their actual values.
+        message (str): Default API message (in english).
+    """
+
     message_code: str
     message_params: dict[str, str]
     message: str
 
     def to_dict(self) -> dict:
+        """
+        Returns the `Message` object as a dictionary.
+
+        Returns:
+            dict: Dictionary representation of the `Message` instance.
+        """
         return asdict(self)
 
 
@@ -292,8 +317,17 @@ class Messages(Enum):
 
     def format(self, **kwargs) -> Message:
         """
-        Helper to construct the dictionary response.
-        Validates that you passed the required parameters.
+        Generates a `Message` instance from the template, validating required parameters.
+
+        Args:
+            **kwargs: Parameters to substitute into the `message_template`.
+                      Keys must match `self.value.message_params`.
+
+        Returns:
+            Message: A fully constructed `Message` object.
+
+        Raises:
+            ValueError: If a required parameter specified in `message_params` is missing.
         """
         # validation: check if provided kwargs match required params
         required = set(self.value.message_params)
