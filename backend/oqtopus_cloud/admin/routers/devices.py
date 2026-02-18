@@ -144,7 +144,7 @@ def update_device_data(
             return NotFoundErrorResponse(**message.to_dict())
         device_id_from_body = get_device_id(device_update)
         if device_id != device_id_from_body:
-            message = Messages.INCONSISTENT_DEVICE_ID.format(
+            message = Messages.DEVICE_INCONSISTENT_DEVICE_ID.format(
                 id1=device_id, id2=device_id_from_body
             )
             logger.error(message.message)

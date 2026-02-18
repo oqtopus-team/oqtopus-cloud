@@ -188,7 +188,7 @@ def test_cannot_get_device_without_permission(test_db):
     assert json.loads(response.body) == {
         "message_code": "FORBIDDEN_DEVICE_ACCESS",
         "message_params": {"id": device},
-        "message": f"Forbidden: cannot access device_id={device}.",
+        "message": f"Forbidden: device_id={device} cannot be accessed.",
     }
 
 

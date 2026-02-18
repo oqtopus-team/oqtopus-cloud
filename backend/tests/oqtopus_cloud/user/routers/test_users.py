@@ -678,7 +678,7 @@ def test_update_user_name_update_disabled(test_db, monkeypatch):
     assert json.loads(response.body) == {
         "message_code": "FIELD_DISABLED_FOR_UPDATES",
         "message_params": {"field": "name"},
-        "message": "Field is disabled for updates: name"}
+        "message": "Field is disabled for updates: name."}
 
 
 def test_update_user_organization_update_disabled(test_db, monkeypatch):
@@ -700,7 +700,7 @@ def test_update_user_organization_update_disabled(test_db, monkeypatch):
     assert json.loads(response.body) == {
         "message_code": "FIELD_DISABLED_FOR_UPDATES",
         "message_params": {"field": "organization"},
-        "message": "Field is disabled for updates: organization"}
+        "message": "Field is disabled for updates: organization."}
 
 
 def test_update_user_organization_too_long(test_db):

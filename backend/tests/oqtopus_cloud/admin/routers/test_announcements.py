@@ -265,7 +265,7 @@ def test_register_announcement(
     assert response.json() == {
         "message_code": "ANNOUNCEMENT_REGISTERED",
         "message_params": {},
-        "message": "Announcement registered successfully"
+        "message": "Announcement registered successfully."
     }
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
@@ -351,7 +351,7 @@ def test_update_announcement_full_update(
     assert response.json() == {
         "message_code": "ANNOUNCEMENT_UPDATED",
         "message_params": {},
-        "message": "Announcement updated successfully"
+        "message": "Announcement updated successfully."
     }
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
@@ -385,7 +385,7 @@ def test_update_announcement_partial_update(
     assert response.json() == {
         "message_code": "ANNOUNCEMENT_UPDATED",
         "message_params": {},
-        "message": "Announcement updated successfully"}
+        "message": "Announcement updated successfully."}
 
     announcement = test_db.query(Announcement).filter(Announcement.id == "1").first()
 

@@ -63,5 +63,5 @@ def test_signup_not_in_whitelist(test_db):
     assert response.json() == {
         "message_code": "USER_NOT_IN_WHITELIST",
         "message_params": {"id": "email_2"},
-        "message": "Not in whitelist_users: email_2"
+        "message": "Not in whitelist_users: email_2."
     }

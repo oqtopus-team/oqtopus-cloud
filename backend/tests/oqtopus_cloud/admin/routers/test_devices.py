@@ -170,7 +170,7 @@ def test_register_devices(
     assert response.json() == {
         "message_code": "DEVICE_REGISTERED",
         "message_params": {},
-        "message": "Device registered successfully"
+        "message": "Device registered successfully."
     }
     # confirm the device is registered
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
@@ -224,7 +224,7 @@ def test_register_devices_no_device_id_400(
     assert response.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "device_id"},
-        "message": "device_id is required."
+        "message": "Field is required: device_id."
     }
 
 
@@ -251,7 +251,7 @@ def test_register_devices_device_id_exception_400(
     assert response.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "device_id"},
-        "message": "device_id is required."
+        "message": "Field is required: device_id."
     }
 
 
@@ -280,7 +280,7 @@ def test_register_devices_400(
     assert response.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "device_id"},
-        "message": "device_id is required."
+        "message": "Field is required: device_id."
     }
 
 
@@ -312,7 +312,7 @@ def test_register_devices_overlap(
     assert response.json() == {
         "message_code": "DEVICE_ALREADY_EXISTS",
         "message_params": {"id": "SVSim1"},
-        "message": "device_id=SVSim1 already exists"
+        "message": "device_id=SVSim1 already exists."
     }
 
 
@@ -367,7 +367,7 @@ def test_update_device_data_full(
     assert response.json() == {
         "message_code": "DEVICE_UPDATED",
         "message_params": {},
-        "message": "Device updated successfully"
+        "message": "Device updated successfully."
     }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
@@ -403,7 +403,7 @@ def test_update_device_data_partial(
     assert response.json() == {
         "message_code": "DEVICE_UPDATED",
         "message_params": {},
-        "message": "Device updated successfully"
+        "message": "Device updated successfully."
     }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
@@ -434,7 +434,7 @@ def test_update_device_data_timezone_awareness(
     assert response.json() == {
         "message_code": "DEVICE_UPDATED",
         "message_params": {},
-        "message": "Device updated successfully"
+        "message": "Device updated successfully."
     }
     # confirm the device is updated
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
@@ -462,9 +462,9 @@ def test_update_device_data_inconsistent_device_id(
     response = client.patch("/devices/SVSim1", json=body)
     assert response.status_code == 400
     assert response.json() == {
-        "message_code": "INCONSISTENT_DEVICE_ID",
+        "message_code": "DEVICE_INCONSISTENT_DEVICE_ID",
         "message_params": {"id1": "SVSim1", "id2": "SVSim2"},
-        "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2"
+        "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2."
     }
 
 

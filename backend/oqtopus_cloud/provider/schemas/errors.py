@@ -70,7 +70,7 @@ class InternalServerErrorResponse(ErrorResponse):
             status_code=500,
             content={
                 "message": message,
-            }
+            },
         )
 
 

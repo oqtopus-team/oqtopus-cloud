@@ -58,7 +58,7 @@ def test_mfa_reset_start_user_mfa_active(test_db):
     assert response.json() == {
         "message_code": "MFA_ALREADY_ENABLED",
         "message_params": {"id": "email2@example.com"},
-        "message": "MFA is already enabled for user: email2@example.com"
+        "message": "MFA is already enabled for user: email2@example.com."
     }
 
 def test_mfa_reset_start_cognito_error(test_db, fake_cognito_client_fixture):
@@ -76,7 +76,7 @@ def test_mfa_reset_start_cognito_error(test_db, fake_cognito_client_fixture):
     assert response.json() == {
         "message_code": "AUTHENTICATION_FAILED",
         "message_params": {},
-        "message": "Failed to authenticate user"
+        "message": "Failed to authenticate user."
     }
 
 

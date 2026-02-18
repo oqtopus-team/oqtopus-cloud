@@ -79,7 +79,9 @@ def lambda_handler(event, context):
     if function_name != "*":
         # triggered by CloudWatch event for a specific function
         if not function_name.startswith(CLEANUP_FUNCTION_PREFIX):
-            logger.error(f"Received event trigger for invalid function: {function_name}")
+            logger.error(
+                f"Received event trigger for invalid function: {function_name}"
+            )
             return {"statusCode": 400}
         cleanup_lambda_versions(function_name)
     else:

@@ -26,7 +26,7 @@ class Message:
 
     Attributes:
         message_code (str): A unique code identifying the message.
-        message_params (dict[str, Any]): A dictionary of parameter names and their actual values.
+        message_params (dict[str, str]): A dictionary of parameter names and their actual values.
         message (str): Default API message (in english).
     """
 
@@ -87,6 +87,12 @@ class Messages(Enum):
         message_template="Device deleted successfully.",
     )
 
+    DEVICE_INCONSISTENT_DEVICE_ID = MessageTemplate(
+        message_code="DEVICE_INCONSISTENT_DEVICE_ID",
+        message_params=["id1", "id2"],
+        message_template="device_id is inconsistent with device_info: {id1} != {id2}.",
+    )
+
     DEVICE_NOT_AVAILABLE = MessageTemplate(
         message_code="DEVICE_NOT_AVAILABLE",
         message_params=["id"],
@@ -114,7 +120,7 @@ class Messages(Enum):
     EMAIL_ALREADY_EXISTS = MessageTemplate(
         message_code="EMAIL_ALREADY_EXISTS",
         message_params=["email"],
-        message_template="Email is already registered: {email}.",
+        message_template="Email {email} is already registered.",
     )
 
     FIELD_DISABLED_FOR_UPDATES = MessageTemplate(
@@ -126,7 +132,7 @@ class Messages(Enum):
     FIELD_REQUIRED = MessageTemplate(
         message_code="FIELD_REQUIRED",
         message_params=["field"],
-        message_template="Filed is required: {filed}.",
+        message_template="Field is required: {field}.",
     )
 
     FIELD_TOO_LONG = MessageTemplate(
@@ -138,19 +144,13 @@ class Messages(Enum):
     FORBIDDEN_DEVICE_ACCESS = MessageTemplate(
         message_code="FORBIDDEN_DEVICE_ACCESS",
         message_params=["id"],
-        message_template="Forbidden: cannot access device_id={id}.",
+        message_template="Forbidden: device_id={id} cannot be accessed.",
     )
 
     FORBIDDEN_USER_SUSPENDED = MessageTemplate(
         message_code="FORBIDDEN_USER_SUSPENDED",
         message_params=[],
         message_template="Forbidden: user status is suspended.",
-    )
-
-    INCONSISTENT_DEVICE_ID = MessageTemplate(
-        message_code="INCONSISTENT_DEVICE_ID",
-        message_params=["id1", "id2"],
-        message_template="device_id is inconsistent with device_info: {id1} != {id2}.",
     )
 
     INTERNAL_SERVER_ERROR = MessageTemplate(
@@ -162,7 +162,7 @@ class Messages(Enum):
     INVALID_ANNOUNCEMENT_DATA = MessageTemplate(
         message_code="INVALID_ANNOUNCEMENT_DATA",
         message_params=["details"],
-        message_template="Invalid announcement data: {details}.",
+        message_template="Invalid announcement data: {details}",
     )
 
     INVALID_DEVICE_TIMEZONE = MessageTemplate(
@@ -226,7 +226,7 @@ class Messages(Enum):
     )
 
     JOB_INVALID_STATUS_FOR_CANCELLATION = MessageTemplate(
-        message_code="JOB_INVALID_STATUS_FOR_DELETION",
+        message_code="JOB_INVALID_STATUS_FOR_CANCELLATION",
         message_params=["id"],
         message_template="job_id={id} is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running').",
     )
@@ -235,6 +235,12 @@ class Messages(Enum):
         message_code="JOB_INVALID_STATUS_FOR_DELETION",
         message_params=["id"],
         message_template="job_id={id} is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled').",
+    )
+
+    JOB_LOG_FILE_NOT_FOUND = MessageTemplate(
+        message_code="JOB_LOG_FILE_NOT_FOUND",
+        message_params=[],
+        message_template="Log file not found.",
     )
 
     JOB_NOT_FINISHED = MessageTemplate(
@@ -253,12 +259,6 @@ class Messages(Enum):
         message_code="JOB_NOT_SSE",
         message_params=[],
         message_template="Job is not an SSE job.",
-    )
-
-    LOG_FILE_NOT_FOUND = MessageTemplate(
-        message_code="LOG_FILE_NOT_FOUND",
-        message_params=[],
-        message_template="Log file not found.",
     )
 
     MFA_ALREADY_ENABLED = MessageTemplate(
@@ -288,7 +288,7 @@ class Messages(Enum):
     SIGNUP_CONFIRMATION_FAILED = MessageTemplate(
         message_code="SIGNUP_CONFIRMATION_FAILED",
         message_params=["details"],
-        message_template="Failed to confirm signup: {details}.",
+        message_template="Failed to confirm signup: {details}",
     )
 
     USER_DELETION_DISABLED = MessageTemplate(

@@ -294,7 +294,7 @@ def test_get_users_invalid_sort_query_parameter():
     assert response.json() == {
         "message_code": "INVALID_SORT_PARAMETER",
         "message_params": {"sort": "name"},
-        "message": "Invalid sort parameter: name"
+        "message": "Invalid sort parameter: name."
     }
 
     response = client.get("/users?sort=name,desc,something_else")
@@ -302,7 +302,7 @@ def test_get_users_invalid_sort_query_parameter():
     assert response.json() == {
         "message_code": "INVALID_SORT_PARAMETER",
         "message_params": {"sort": "name,desc,something_else"},
-        "message": "Invalid sort parameter: name,desc,something_else"
+        "message": "Invalid sort parameter: name,desc,something_else."
     }
 
 
@@ -312,7 +312,7 @@ def test_get_users_invalid_column_name():
     assert response.json() == {
         "message_code": "INVALID_SORT_COLUMN",
         "message_params": {"column": "no_such_column"},
-        "message": "Invalid column name to sort: no_such_column"
+        "message": "Invalid column name to sort: no_such_column."
     }
 
 
@@ -322,7 +322,7 @@ def test_get_users_invalid_order():
     assert response.json() == {
         "message_code": "INVALID_SORT_ORDER",
         "message_params": {"order": "invalid_order"},
-        "message": "Invalid order to sort: invalid_order"
+        "message": "Invalid order to sort: invalid_order."
     }
 
 
@@ -527,7 +527,7 @@ def test_patch_job_400_email_already_exist(test_db):
     assert response.json() == {
         "message_code": "EMAIL_ALREADY_EXISTS",
         "message_params": {"email": user_1_mail},
-        "message": f"{user_1_mail} is already registered."
+        "message": f"Email {user_1_mail} is already registered."
     }
 
 

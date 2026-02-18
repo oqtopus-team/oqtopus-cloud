@@ -845,7 +845,7 @@ def test_job_submit_for_device_user_cannot_access(test_client, test_db):
     assert submit_resp.json() == {
         "message_code": "FORBIDDEN_DEVICE_ACCESS",
         "message_params": {"id": "Kawasaki"},
-        "message": "Forbidden: cannot access device_id=Kawasaki."
+        "message": "Forbidden: device_id=Kawasaki cannot be accessed."
     }
 
 

@@ -255,7 +255,7 @@ def test_get_whitelist_users_invalid_sort_query_parameter():
     assert response.json() == {
         "message_code": "INVALID_SORT_PARAMETER",
         "message_params": {"sort": "username"},
-        "message": "Invalid sort parameter: username"
+        "message": "Invalid sort parameter: username."
     }
 
     response = client.get("/whitelist_users?sort=username,desc,something_else")
@@ -263,7 +263,7 @@ def test_get_whitelist_users_invalid_sort_query_parameter():
     assert response.json() == {
         "message_code": "INVALID_SORT_PARAMETER",
         "message_params": {"sort": "username,desc,something_else"},
-        "message": "Invalid sort parameter: username,desc,something_else"
+        "message": "Invalid sort parameter: username,desc,something_else."
     }
 
 
@@ -276,7 +276,7 @@ def test_get_whitelist_users_invalid_column_name():
     assert response.json() == {
         "message_code": "INVALID_SORT_COLUMN",
         "message_params": {"column": "no_such_column"},
-        "message": "Invalid column name to sort: no_such_column"
+        "message": "Invalid column name to sort: no_such_column."
     }
 
 
@@ -289,7 +289,7 @@ def test_get_whitelist_users_invalid_order():
     assert response.json() == {
         "message_code": "INVALID_SORT_ORDER",
         "message_params": {"order": "invalid_order"},
-        "message": "Invalid order to sort: invalid_order"
+        "message": "Invalid order to sort: invalid_order."
     }
 
 
@@ -512,7 +512,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
     assert response_no_email.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "email"},
-        "message": "email is required."
+        "message": "Field is required: email."
     }
     request_body_no_group_id = client.post(
         "/whitelist_users",
@@ -522,7 +522,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
     assert request_body_no_group_id.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "group_id"},
-        "message": "group_id is required."
+        "message": "Field is required: group_id."
     }
     request_body_email_too_long = client.post(
         "/whitelist_users",
@@ -571,7 +571,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
     assert request_body_overlap_username.json() == {
         "message_code": "EMAIL_ALREADY_EXISTS",
         "message_params": {"email": "email_1"},
-        "message": "email_1 is already registered."
+        "message": "Email email_1 is already registered."
     }
     assert request_body_overlap_username.status_code == 400
 
@@ -643,7 +643,7 @@ def test_post_whitelist_users_no_available_devices(test_db):
     assert response.json() == {
         "message_code": "FIELD_REQUIRED",
         "message_params": {"field": "available_devices"},
-        "message": "available_devices is required."
+        "message": "Field is required: available_devices."
     }
 
 

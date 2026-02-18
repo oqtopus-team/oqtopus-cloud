@@ -478,7 +478,7 @@ def get_sselog(
 
         if log_object is None:
             return NotFoundErrorResponse(
-                **Messages.LOG_FILE_NOT_FOUND.format().to_dict()
+                **Messages.JOB_LOG_FILE_NOT_FOUND.format().to_dict()
             )
 
         log_str = log_object.decode()
