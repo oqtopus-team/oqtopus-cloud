@@ -54,19 +54,19 @@ class Messages(Enum):
     ANNOUNCEMENT_REGISTERED = MessageTemplate(
         message_code="ANNOUNCEMENT_REGISTERED",
         message_params=[],
-        message_template="Announcement registered successfully",
+        message_template="Announcement registered successfully.",
     )
 
     ANNOUNCEMENT_UPDATED = MessageTemplate(
         message_code="ANNOUNCEMENT_UPDATED",
         message_params=[],
-        message_template="Announcement updated successfully",
+        message_template="Announcement updated successfully.",
     )
 
     AUTHENTICATION_FAILED = MessageTemplate(
         message_code="AUTHENTICATION_FAILED",
         message_params=[],
-        message_template="Failed to authenticate user",
+        message_template="Failed to authenticate user.",
     )
 
     CODE_VERIFICATION_FAILED = MessageTemplate(
@@ -78,19 +78,19 @@ class Messages(Enum):
     DEVICE_ALREADY_EXISTS = MessageTemplate(
         message_code="DEVICE_ALREADY_EXISTS",
         message_params=["id"],
-        message_template="device_id={id} already exists",
+        message_template="device_id={id} already exists.",
     )
 
     DEVICE_DELETED = MessageTemplate(
         message_code="DEVICE_DELETED",
         message_params=[],
-        message_template="Device deleted successfully",
+        message_template="Device deleted successfully.",
     )
 
     DEVICE_NOT_AVAILABLE = MessageTemplate(
         message_code="DEVICE_NOT_AVAILABLE",
         message_params=["id"],
-        message_template="Device_id={id} is not available.",
+        message_template="device_id={id} is not available.",
     )
 
     DEVICE_NOT_FOUND = MessageTemplate(
@@ -102,31 +102,31 @@ class Messages(Enum):
     DEVICE_REGISTERED = MessageTemplate(
         message_code="DEVICE_REGISTERED",
         message_params=[],
-        message_template="Device registered successfully",
+        message_template="Device registered successfully.",
     )
 
     DEVICE_UPDATED = MessageTemplate(
         message_code="DEVICE_UPDATED",
         message_params=[],
-        message_template="Device updated successfully",
+        message_template="Device updated successfully.",
     )
 
     EMAIL_ALREADY_EXISTS = MessageTemplate(
         message_code="EMAIL_ALREADY_EXISTS",
         message_params=["email"],
-        message_template="{email} is already registered.",
+        message_template="Email is already registered: {email}.",
     )
 
     FIELD_DISABLED_FOR_UPDATES = MessageTemplate(
         message_code="FIELD_DISABLED_FOR_UPDATES",
         message_params=["field"],
-        message_template="Field is disabled for updates: {field}",
+        message_template="Field is disabled for updates: {field}.",
     )
 
     FIELD_REQUIRED = MessageTemplate(
         message_code="FIELD_REQUIRED",
         message_params=["field"],
-        message_template="{field} is required.",
+        message_template="Filed is required: {filed}.",
     )
 
     FIELD_TOO_LONG = MessageTemplate(
@@ -150,7 +150,7 @@ class Messages(Enum):
     INCONSISTENT_DEVICE_ID = MessageTemplate(
         message_code="INCONSISTENT_DEVICE_ID",
         message_params=["id1", "id2"],
-        message_template="device_id is inconsistent with device_info: {id1} != {id2}",
+        message_template="device_id is inconsistent with device_info: {id1} != {id2}.",
     )
 
     INTERNAL_SERVER_ERROR = MessageTemplate(
@@ -162,13 +162,13 @@ class Messages(Enum):
     INVALID_ANNOUNCEMENT_DATA = MessageTemplate(
         message_code="INVALID_ANNOUNCEMENT_DATA",
         message_params=["details"],
-        message_template="Invalid announcement data: {details}",
+        message_template="Invalid announcement data: {details}.",
     )
 
     INVALID_DEVICE_TIMEZONE = MessageTemplate(
         message_code="INVALID_DEVICE_TIMEZONE",
         message_params=["id"],
-        message_template="Invalid timezone for device_id={id}",
+        message_template="Invalid timezone for device_id={id}.",
     )
 
     INVALID_FIELDS = MessageTemplate(
@@ -180,19 +180,19 @@ class Messages(Enum):
     INVALID_SORT_COLUMN = MessageTemplate(
         message_code="INVALID_SORT_COLUMN",
         message_params=["column"],
-        message_template="Invalid column name to sort: {column}",
+        message_template="Invalid column name to sort: {column}.",
     )
 
     INVALID_SORT_ORDER = MessageTemplate(
         message_code="INVALID_SORT_ORDER",
         message_params=["order"],
-        message_template="Invalid order to sort: {order}",
+        message_template="Invalid order to sort: {order}.",
     )
 
     INVALID_SORT_PARAMETER = MessageTemplate(
         message_code="INVALID_SORT_PARAMETER",
         message_params=["sort"],
-        message_template="Invalid sort parameter: {sort}",
+        message_template="Invalid sort parameter: {sort}.",
     )
 
     INVALID_TOTP_CODE = MessageTemplate(
@@ -204,7 +204,7 @@ class Messages(Enum):
     INVALID_USER_STATUS = MessageTemplate(
         message_code="INVALID_USER_STATUS",
         message_params=["status"],
-        message_template="Invalid user status: {status}",
+        message_template="Invalid user status: {status}.",
     )
 
     JOB_CANCELLING_ACCEPTED = MessageTemplate(
@@ -228,19 +228,19 @@ class Messages(Enum):
     JOB_INVALID_STATUS_FOR_CANCELLATION = MessageTemplate(
         message_code="JOB_INVALID_STATUS_FOR_DELETION",
         message_params=["id"],
-        message_template="job_id={id} is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')",
+        message_template="job_id={id} is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running').",
     )
 
     JOB_INVALID_STATUS_FOR_DELETION = MessageTemplate(
         message_code="JOB_INVALID_STATUS_FOR_DELETION",
         message_params=["id"],
-        message_template="job_id={id} is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')",
+        message_template="job_id={id} is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled').",
     )
 
     JOB_NOT_FINISHED = MessageTemplate(
         message_code="JOB_NOT_FINISHED",
         message_params=[],
-        message_template="Job has not finished yet",
+        message_template="Job has not finished yet.",
     )
 
     JOB_NOT_FOUND = MessageTemplate(
@@ -252,7 +252,7 @@ class Messages(Enum):
     JOB_NOT_SSE = MessageTemplate(
         message_code="JOB_NOT_SSE",
         message_params=[],
-        message_template="Job is not an SSE job",
+        message_template="Job is not an SSE job.",
     )
 
     LOG_FILE_NOT_FOUND = MessageTemplate(
@@ -264,7 +264,7 @@ class Messages(Enum):
     MFA_ALREADY_ENABLED = MessageTemplate(
         message_code="MFA_ALREADY_ENABLED",
         message_params=["id"],
-        message_template="MFA is already enabled for user: {id}",
+        message_template="MFA is already enabled for user: {id}.",
     )
 
     NO_USERS_TO_REGISTER = MessageTemplate(
@@ -288,7 +288,7 @@ class Messages(Enum):
     SIGNUP_CONFIRMATION_FAILED = MessageTemplate(
         message_code="SIGNUP_CONFIRMATION_FAILED",
         message_params=["details"],
-        message_template="Failed to confirm signup: {details}",
+        message_template="Failed to confirm signup: {details}.",
     )
 
     USER_DELETION_DISABLED = MessageTemplate(
@@ -306,13 +306,13 @@ class Messages(Enum):
     USER_NOT_IN_WHITELIST = MessageTemplate(
         message_code="USER_NOT_IN_WHITELIST",
         message_params=["id"],
-        message_template="Not in whitelist_users: {id}",
+        message_template="Not in whitelist_users: {id}.",
     )
 
     WHITELIST_USER_REGISTERED = MessageTemplate(
         message_code="WHITELIST_USER_REGISTERED",
         message_params=[],
-        message_template="Whitelist user registered successfully",
+        message_template="Whitelist user registered successfully.",
     )
 
     def format(self, **kwargs) -> Message:
