@@ -1,6 +1,6 @@
 jobs.JobId:
   type: string
-  example: "7af020f6-2e38-4d70-8cf0-4349650ea08c"
+  example: 7af020f6-2e38-4d70-8cf0-4349650ea08c
 
 jobs.JobStatus:
   type: string
@@ -43,7 +43,7 @@ jobs.JobDef:
       type: integer
       minimum: 1
       maximum: 1e7
-      example: "1000"
+      example: 1000
       nullable: false
     job_type:
       $ref: "#/jobs.JobType"
@@ -85,7 +85,7 @@ jobs.JobDef:
       properties: {}
       additionalProperties: true
       example: {
-        ro_error_mitigation": "pseudo_inverse"
+        "ro_error_mitigation": "pseudo_inverse"
       }
       nullable: true
     status:
@@ -93,7 +93,7 @@ jobs.JobDef:
       nullable: false
     execution_time:
       type: number
-      example: "10.123"
+      example: 10.123
       nullable: true
       default: null
     submitted_at:
@@ -142,20 +142,20 @@ jobs.JobDef:
         skip_transpilation: false,
         seed_transpilation: 873
       }
-      simulator_info: >-
-        {
-          "n_qubits": 5,
-          "n_nodes": 12,
-          "n_per_node": 2,
-          "seed_simulation": 39058567,
-          "simulation_opt": {
-            "optimization_method": "light",
-            "optimization_block_size": 1,
-            "optimization_swap_level": 1
-          }
+      simulator_info: {
+        "n_qubits": 5,
+        "n_nodes": 12,
+        "n_per_node": 2,
+        "seed_simulation": 39058567,
+        "simulation_opt": {
+          "optimization_method": "light",
+          "optimization_block_size": 1,
+          "optimization_swap_level": 1
         }
-      mitigation_info: |
-        { "ro_error_mitigation": "pseudo_inverse" }
+      }
+      mitigation_info: {
+        "ro_error_mitigation": "pseudo_inverse"
+      }
       shots: 1000
       status: submitted
       execution_time: 10.123
@@ -183,8 +183,11 @@ jobs.JobStatusUpdate:
       items:
         type: string
       nullable: true
-      example:
-          [ 7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip, 7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip, 7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip ]
+      example: [
+        7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip,
+        7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip,
+        7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
+      ]
     message:
       type: string
       nullable: true
@@ -277,8 +280,9 @@ jobs.S3SubmitJobInfo:
         Otherwise, those programs are combined according to the multiprogramming machinery.
       items:
         type: string
-      example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+      example: [
+          "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+        ]
     operator:
       type: array
       items:
@@ -296,32 +300,31 @@ jobs.S3SamplingResult:
       nullable: false
       properties: {}
       additionalProperties: true
-      example: >-
-        {
-          "10": 84,
-          "11": 387,
-          "10": 454,
-          "01": 75
-        }
+      example: {
+        "10": 84,
+        "11": 387,
+        "00": 454,
+        "01": 75
+      }
     divided_counts:
       type: object
       nullable: true
       properties: {}
       additionalProperties: true
-      example: >-
-        {
-          "0": {
-            "00": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          },
-          "1": {
-            "00": 84,
-            "11": 387,
-            "10": 454,
-            "01": 75
-          }
+      example: {
+        "0": {
+          "00": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        },
+        "1": {
+          "00": 84,
+          "11": 387,
+          "10": 454,
+          "01": 75
+        }
+      }
   required:
     - counts
 
