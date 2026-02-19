@@ -353,7 +353,7 @@ resource "aws_api_gateway_gateway_response" "all" {
 
   response_templates = {
     "application/json" = <<EOF
-{"message_code": "${each.value.code}", "message_params": {"details": $context.error.messageString}, "message": $context.error.messageString}
+{"message_code": "${each.value.code}", "message_params": {"details": "$util.escapeJavaScript($context.error.message)"}, "message": "$util.escapeJavaScript($context.error.message)"}
 EOF
   }
 }
