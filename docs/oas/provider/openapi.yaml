@@ -242,7 +242,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobDef'
+                  $ref: '#/components/schemas/jobs.Job'
         '400':
           description: Bad Request
           content:
@@ -456,7 +456,8 @@ components:
           description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
           items:
             type: string
-          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+          example:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
         operator:
           type: array
           items:
@@ -612,7 +613,7 @@ components:
       type: string
       nullable: false
       example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-    jobs.JobDef:
+    jobs.Job:
       type: object
       properties:
         job_id:
@@ -626,6 +627,9 @@ components:
           type: string
           example: Bell State Sampling Example
           nullable: false
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
+          nullable: false
         device_id:
           type: string
           example: Kawasaki
@@ -634,10 +638,7 @@ components:
           type: integer
           minimum: 1
           maximum: 10000000
-          example: '1000'
-          nullable: false
-        job_type:
-          $ref: '#/components/schemas/jobs.JobType'
+          example: 1000
           nullable: false
         input:
           $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
@@ -672,14 +673,14 @@ components:
           properties: {}
           additionalProperties: true
           example:
-            ro_error_mitigation": pseudo_inverse
+            ro_error_mitigation: pseudo_inverse
           nullable: true
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
           nullable: false
         execution_time:
           type: number
-          example: '10.123'
+          example: 10.123
           nullable: true
           default: null
         submitted_at:
@@ -706,13 +707,7 @@ components:
           example: '2022-10-19T11:45:34Z'
           nullable: true
           default: null
-      required:
-        - job_id
-        - device_id
-        - job_type
-        - input
-        - shots
-        - status
+      required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
@@ -726,20 +721,17 @@ components:
             '1': 16
           skip_transpilation: false
           seed_transpilation: 873
-        simulator_info: |-
-          {
-            "n_qubits": 5,
-            "n_nodes": 12,
-            "n_per_node": 2,
-            "seed_simulation": 39058567,
-            "simulation_opt": {
-              "optimization_method": "light",
-              "optimization_block_size": 1,
-              "optimization_swap_level": 1
-            }
-          }
-        mitigation_info: |
-          { "ro_error_mitigation": "pseudo_inverse" }
+        simulator_info:
+          n_qubits: 5
+          n_nodes: 12
+          n_per_node: 2
+          seed_simulation: 39058567
+          simulation_opt:
+            optimization_method: light
+            optimization_block_size: 1
+            optimization_swap_level: 1
+        mitigation_info:
+          ro_error_mitigation: pseudo_inverse
         shots: 1000
         status: submitted
         execution_time: 10.123
@@ -747,6 +739,16 @@ components:
         ready_at: '2022-10-19T11:45:34Z'
         running_at: '2022-10-19T11:45:34Z'
         ended_at: '2022-10-19T11:45:34Z'
+    jobs.JobDef:
+      allOf:
+        - $ref: '#/components/schemas/jobs.Job'
+      required:
+        - job_id
+        - device_id
+        - job_type
+        - input
+        - shots
+        - status
     jobs.JobInfoUploadPresignedURL:
       description: Presigned URL for uploading file to OCTOPUS cloud.
       type: object
@@ -852,32 +854,27 @@ components:
           nullable: false
           properties: {}
           additionalProperties: true
-          example: |-
-            {
-              "10": 84,
-              "11": 387,
-              "10": 454,
-              "01": 75
-            }
+          example:
+            '10': 84
+            '11': 387
+            '00': 454
+            '01': 75
         divided_counts:
           type: object
           nullable: true
           properties: {}
           additionalProperties: true
-          example: |-
-            {
-              "0": {
-                "00": 84,
-                "11": 387,
-                "10": 454,
-                "01": 75
-              },
-              "1": {
-                "00": 84,
-                "11": 387,
-                "10": 454,
-                "01": 75
-              }
+          example:
+            '0':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
+            '1':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
       required:
         - counts
     jobs.S3EstimationResult:

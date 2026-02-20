@@ -21,7 +21,7 @@ jobs.JobType:
     - multi_manual
     - sse
 
-jobs.JobDef:
+jobs.Job:
   type: object
   properties:
     job_id:
@@ -35,6 +35,9 @@ jobs.JobDef:
       type: string
       example: Bell State Sampling Example
       nullable: false
+    job_type:
+      $ref: "#/jobs.JobType"
+      nullable: false
     device_id:
       type: string
       example: Kawasaki
@@ -44,9 +47,6 @@ jobs.JobDef:
       minimum: 1
       maximum: 1e7
       example: 1000
-      nullable: false
-    job_type:
-      $ref: "#/jobs.JobType"
       nullable: false
     input:
       $ref: "#/jobs.JobInfoDownloadPresignedURL"
@@ -121,12 +121,7 @@ jobs.JobDef:
       nullable: true
       default: null
   required:
-    - job_id
-    - device_id
-    - job_type
-    - input
-    - shots
-    - status
+    []
   example:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
@@ -163,6 +158,17 @@ jobs.JobDef:
       ready_at: 2022-10-19T11:45:34Z
       running_at: 2022-10-19T11:45:34Z
       ended_at: 2022-10-19T11:45:34Z
+
+jobs.JobDef:
+  allOf:
+    - $ref: '#/jobs.Job'
+  required:
+    - job_id
+    - device_id
+    - job_type
+    - input
+    - shots
+    - status
 
 jobs.JobStatusUpdate:
   type: object
