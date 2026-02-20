@@ -34,6 +34,8 @@ CREATE TABLE
     transpiler_info TEXT,
     simulator_info TEXT,
     mitigation_info TEXT,
+    output_files TEXT,
+    message TEXT,
     submitted_at TIMESTAMP,
     ready_at TIMESTAMP,
     running_at TIMESTAMP,
