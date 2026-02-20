@@ -242,7 +242,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/jobs.JobDef'
+                  $ref: '#/components/schemas/jobs.Job'
         '400':
           description: Bad Request
           content:
@@ -613,7 +613,7 @@ components:
       type: string
       nullable: false
       example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-    jobs.JobDef:
+    jobs.Job:
       type: object
       properties:
         job_id:
@@ -627,6 +627,9 @@ components:
           type: string
           example: Bell State Sampling Example
           nullable: false
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
+          nullable: false
         device_id:
           type: string
           example: Kawasaki
@@ -636,9 +639,6 @@ components:
           minimum: 1
           maximum: 10000000
           example: 1000
-          nullable: false
-        job_type:
-          $ref: '#/components/schemas/jobs.JobType'
           nullable: false
         input:
           $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
@@ -707,13 +707,7 @@ components:
           example: '2022-10-19T11:45:34Z'
           nullable: true
           default: null
-      required:
-        - job_id
-        - device_id
-        - job_type
-        - input
-        - shots
-        - status
+      required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
@@ -745,6 +739,16 @@ components:
         ready_at: '2022-10-19T11:45:34Z'
         running_at: '2022-10-19T11:45:34Z'
         ended_at: '2022-10-19T11:45:34Z'
+    jobs.JobDef:
+      allOf:
+        - $ref: '#/components/schemas/jobs.Job'
+      required:
+        - job_id
+        - device_id
+        - job_type
+        - input
+        - shots
+        - status
     jobs.JobInfoUploadPresignedURL:
       description: Presigned URL for uploading file to OCTOPUS cloud.
       type: object
