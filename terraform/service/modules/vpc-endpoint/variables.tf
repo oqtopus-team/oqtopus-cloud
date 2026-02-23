@@ -38,12 +38,12 @@ variable "secret_manager_security_group_ids" {
   type        = list(string)
 }
 
-variable "identifiers" {
-  description = "identifiers"
+variable "cognito_security_group_ids" {
+  description = "The security group IDs for the Cognito"
   type        = list(string)
 }
 
-variable "s3_lambda_iam_role_arns" {
-  description = "The ARNs of the IAM roles for the Lambda functions connected to the S3 VPC endpoint"
-  type        = list(string)
+variable "identifiers" {
+  description = "The Lamda role ARNs that are allowed to access the VPC endpoints"
+  type        = map(string)
 }
