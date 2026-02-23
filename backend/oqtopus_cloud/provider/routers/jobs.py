@@ -77,15 +77,20 @@ def get_jobs(
             fields_list = fields.split(",")
             valid_fields_list = [field in Job.model_fields for field in fields_list]
             if all(valid_fields_list):
-                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
                 converted_fields_list = [
-                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                    MAP_SCHEMA_TO_MODEL[field]
+                    for field in fields_list
+                    if field in MAP_SCHEMA_TO_MODEL
                 ]
-                columns = [getattr(JobModel, field) for field in converted_fields_list]
+                arg_select = [
+                    getattr(JobModel, field) for field in converted_fields_list
+                ]
 
                 # remove duplicated fields
-                arg_select = list(dict.fromkeys(columns))
-                select_stmt = select_stmt.options(load_only(*arg_select))
+                arg_select = list(dict.fromkeys(arg_select))
+
+                if arg_select:
+                    select_stmt = select_stmt.options(load_only(*arg_select))
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -302,6 +307,7 @@ def update_job_status(
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
 
+
 @router.put(
     "/jobs/{job_id}/transpiler_info",
     response_model=UpdateJobTranspilerInfoResponse,
@@ -363,6 +369,9 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
+MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+
+
 def parse_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
@@ -409,9 +418,7 @@ def set_job_status(model: JobModel, status: str | JobStatus) -> None:
     return
 
 
-def model_to_schema(
-    model: JobModel, storage: AbstractStorage
-) -> JobDef | ValueError:
+def model_to_schema(model: JobModel, storage: AbstractStorage) -> JobDef | ValueError:
     status = parse_job_status(model.status)
     if isinstance(status, ValueError):
         return status
