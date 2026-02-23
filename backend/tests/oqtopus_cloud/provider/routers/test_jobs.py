@@ -172,6 +172,41 @@ def test_get_jobs_filtering_fields(
     test_db.add(_get_job_model(2, JobType.sampling))
     test_db.commit()
 
+    response = client.get(
+        "/jobs?device_id=SC&fields=job_id,name,job_type,status,transpiler_info"
+    )
+    adapter = TypeAdapter(List[Job])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+
+    assert len(actual) == 2
+
+    assert actual[0].job_id == "testjob1id"
+    assert actual[0].name == "testjob1"
+    assert actual[0].job_type == JobType.sampling
+    assert actual[0].status == JobStatus.ready
+    assert actual[0].transpiler_info == {"this_is": "transpiler_info"}
+
+    assert actual[1].job_id == "testjob2id"
+    assert actual[1].name == "testjob2"
+    assert actual[1].job_type == JobType.sampling
+    assert actual[1].status == JobStatus.ready
+    assert actual[1].transpiler_info == {"this_is": "transpiler_info"}
+
+
+def test_get_jobs_filtering_input(
+    test_db,
+):
+    """_summary_
+    GET job input (input requires dedicated handling as it is not stored in DB)
+    """
+
+    test_db.flush()
+    test_db.add(_get_job_model(1, JobType.sampling))
+    test_db.add(_get_job_model(2, JobType.sampling))
+    test_db.commit()
+
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = client.get(
@@ -183,19 +218,8 @@ def test_get_jobs_filtering_fields(
     assert response.status_code == 200
 
     assert len(actual) == 2
-    assert actual[0].job_id == "testjob1id"
-    assert actual[0].name == "testjob1"
-    assert actual[0].job_type == JobType.sampling
-    assert actual[0].status == JobStatus.ready
     assert urlparse(actual[0].input).path == f"{storage_base}/testjob1id/input.zip"
-    assert actual[0].transpiler_info == {"this_is": "transpiler_info"}
-
-    assert actual[1].job_id == "testjob2id"
-    assert actual[1].name == "testjob2"
-    assert actual[1].job_type == JobType.sampling
-    assert actual[1].status == JobStatus.ready
     assert urlparse(actual[1].input).path == f"{storage_base}/testjob2id/input.zip"
-    assert actual[1].transpiler_info == {"this_is": "transpiler_info"}
 
 
 def test_get_jobs_all_fields(test_db):
