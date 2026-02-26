@@ -117,15 +117,15 @@ paths:
             example: job_id,status,name
         - name: start_time
           in: query
-          description: Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
+          description: Allows to filter the list of jobs to fetch by submission time. If specified only jobs with submission time (submitted_at property) >= start_time are returned.
           required: false
           schema:
             type: string
             format: date-time
             example: '2022-10-19T11:45:34+09:00'
-        - name: end_tiime
+        - name: end_time
           in: query
-          description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
+          description: Allows to filter the list of jobs to fetch by to submission time. If specified only jobs with submission time (submitted_at property) <= end_time are returned.
           required: false
           schema:
             type: string
