@@ -349,6 +349,40 @@ def test_get_jobs_filtering_end_time(
     assert actual == expect
 
 
+def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
+    test_client,
+    test_db,
+):
+    """
+    start_time filter must use submitted_at.
+    even if created_at is newer, older submitted_at job should be excluded.
+    """
+
+    test_db.flush()
+    job1 = _get_model(1)
+    job2 = _get_model(2)
+
+    # Keep created_at after filter threshold for both jobs to detect wrong column usage.
+    shared_created_at = pytz.utc.localize(datetime(2024, 3, 6, 12, 34, 56))
+    job1.created_at = shared_created_at
+    job2.created_at = shared_created_at
+    job1.submitted_at = pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56))
+    job2.submitted_at = pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56))
+
+    test_db.add(job1)
+    test_db.add(job2)
+    test_db.commit()
+
+    response = test_client.get(
+        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert [job.job_id for job in actual] == ["testjob2id"]
+
+
 def test_get_jobs_filtering_search_string(
     test_client,
     test_db,

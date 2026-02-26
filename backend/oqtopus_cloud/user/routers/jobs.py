@@ -129,10 +129,10 @@ def get_jobs(
         # Filtering Jobs
         if start_time is not None:
             stime = datetime.fromisoformat(start_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at >= stime)
+            stmt = stmt.filter(Job.submitted_at >= stime)
         if end_time is not None:
             etime = datetime.fromisoformat(end_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at <= etime)
+            stmt = stmt.filter(Job.submitted_at <= etime)
         if q is not None:
             stmt = stmt.filter(
                 or_(
