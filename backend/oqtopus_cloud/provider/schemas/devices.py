@@ -30,8 +30,8 @@ class DeviceStatusUpdate(BaseModel):
 
 
 class DeviceDataUpdateResponse(BaseModel):
-    message: Annotated[str, Field(examples=["Device's data updated"])] = (
-        "Device's data updated"
+    message: Annotated[str, Field(examples=["Device data updated"])] = (
+        "Device data updated"
     )
 
 
