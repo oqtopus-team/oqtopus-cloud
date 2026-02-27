@@ -553,8 +553,8 @@ components:
         message:
           type: string
           nullable: false
-          default: Device's data updated
-          example: Device's data updated
+          default: Device data updated
+          example: Device data updated
       required:
         - message
     devices.DeviceInfoUpdate:
