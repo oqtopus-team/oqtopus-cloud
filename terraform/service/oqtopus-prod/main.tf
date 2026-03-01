@@ -19,7 +19,7 @@ module "lambda_auth" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_idp_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   client_cognito_user_pool_arn           = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
@@ -45,7 +45,7 @@ module "user_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_idp_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "LAMBDA"
   lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
@@ -109,7 +109,7 @@ module "admin_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.admin.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_idp_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.admin_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
@@ -138,7 +138,7 @@ module "user_signup_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user_signup.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_idp_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "NONE"
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
@@ -188,11 +188,6 @@ module "lambda_version_cleaner" {
   lambda_handler            = "oqtopus_cloud.maintenance.lambda_version_cleaner.lambda_function.lambda_handler"
   log_level                 = "INFO"
   lambda_log_retention_days = var.lambda_log_retention_days
-}
-
-import {
-  id = data.terraform_remote_state.infrastructure.outputs.network.s3_vpc_endpoint_id
-  to = module.vpc_endpoint.aws_vpc_endpoint.s3
 }
 
 module "vpc_endpoint" {

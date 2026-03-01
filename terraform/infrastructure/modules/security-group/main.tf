@@ -84,7 +84,7 @@ resource "aws_security_group" "cognito" {  #TODO: can be deleted but need to rem
     Name = "${var.product}-${var.org}-${var.env}-to-cognito"
   }
 }
-resource "aws_security_group" "cognito-idp" {
+resource "aws_security_group" "cognito_idp" {
   name        = "${var.product}-${var.org}-${var.env}-to-cognito-idp"
   vpc_id      = var.vpc_id
   description = "Cognito VPC endpoint"
@@ -166,7 +166,7 @@ resource "aws_vpc_security_group_ingress_rule" "secret_manager_from_ec2_bastion"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "cognito_from_lambda" {
-  security_group_id            = aws_security_group.cognito-idp.id
+  security_group_id            = aws_security_group.cognito_idp.id
   referenced_security_group_id = aws_security_group.lambda.id
   from_port                    = 443
   to_port                      = 443
@@ -251,6 +251,17 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_db_proxy" {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-db-proxy"
   }
 }
+resource "aws_vpc_security_group_egress_rule" "lambda_to_cognito_idp" {
+  security_group_id            = aws_security_group.lambda.id
+  referenced_security_group_id = aws_security_group.cognito_idp.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "Cognito-idp access"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-lambda-to-cognito-idp"
+  }
+}
 
 
 data "aws_prefix_list" "s3" {
@@ -267,16 +278,4 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_s3" {
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-s3-egress"
   }
-}
-
-# Security group rule using cidr_blocks
-
-resource "aws_security_group_rule" "lambda_to_cognito" {
-  type              = "egress"
-  security_group_id = aws_security_group.cognito-idp.id
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Cognito access from Lambda"
 }
