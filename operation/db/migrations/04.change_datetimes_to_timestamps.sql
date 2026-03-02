@@ -1,3 +1,5 @@
+SET time_zone = '+00:00';
+
 ALTER TABLE main.devices MODIFY COLUMN available_at TIMESTAMP;
 ALTER TABLE main.devices MODIFY COLUMN calibrated_at TIMESTAMP;
 
