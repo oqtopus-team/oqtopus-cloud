@@ -270,7 +270,7 @@ def test_get_jobs_filtering_start_time(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B00%3A00&order=ASC"
+        "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -317,7 +317,7 @@ def test_get_jobs_filtering_end_time(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?end_time=2024-03-05T07%3A04%3A24%2B00%3A00&order=ASC" #TODO: convert to ISO string
+        "/jobs?end_time=2024-03-05T07%3A04%3A24Z&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -375,7 +375,7 @@ def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+        "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -542,7 +542,7 @@ def test_get_jobs_all_parameters(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B00%3A00&end_time=2024-03-08T16%3A12%3A29%2B00%3A00&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29Z&end_time=2024-03-08T16%3A12%3A29Z&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())

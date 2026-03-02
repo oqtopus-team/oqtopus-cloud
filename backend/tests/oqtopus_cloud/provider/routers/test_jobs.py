@@ -274,7 +274,7 @@ def test_get_jobs_timestamp(test_db: Session):
     test_db.commit()
 
     response = client.get(
-        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24Z"
     )
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
