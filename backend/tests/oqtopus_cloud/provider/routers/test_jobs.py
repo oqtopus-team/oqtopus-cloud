@@ -44,9 +44,7 @@ from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
 
 # sqlite does not support jst timezone
-# utc = ZoneInfo("UTC")
 utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 client = TestClient(app)
 
@@ -420,7 +418,7 @@ def test_update_job_info_transpile_result(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(_get_device_model())
     # Set ready
-    job_model.ready_at = datetime.now()
+    job_model.ready_at = datetime.now(utc)
     job_model.status = JobStatus.ready
     test_db.add(job_model)
     test_db.commit()

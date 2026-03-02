@@ -23,11 +23,11 @@ devices.DeviceBase:
     available_at:
       type: string
       format: date-time
-      example: "2022-10-19T11:45:34+00:00"
+      example: "2022-10-19T11:45:34Z"
     calibrated_at:
       type: string
       format: date-time
-      example: "2022-10-19T11:45:34+00:00"
+      example: "2022-10-19T11:45:34Z"
     basis_gates:
       type: array
       items:
@@ -65,7 +65,7 @@ devices.DeviceInfo:
       description: "Parameter mandatory and valid for 'unavailable' devices"
       type: string
       format: date-time
-      example: "2022-10-19T11:45:34+00:00"
+      example: "2022-10-19T11:45:34Z"
     n_pending_jobs:
       type: integer
       example: 8
@@ -89,7 +89,7 @@ devices.DeviceInfo:
       description: "Parameter available only for `QPU` devices with available calibration data"
       type: string
       format: date-time
-      example: "2022-10-19T11:45:34+00:00"
+      example: "2022-10-19T11:45:34Z"
     description:
       type: string
       example: "State vector-based quantum circuit simulator"
@@ -122,5 +122,5 @@ devices.DeviceInfo:
             }
           }
         }
-      calibrated_at: "2022-10-19T11:45:34"
+      calibrated_at: "2022-10-19T11:45:34Z"
       description: "State vector-based quantum circuit simulator"

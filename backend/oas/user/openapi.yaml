@@ -122,7 +122,7 @@ paths:
           schema:
             type: string
             format: date-time
-            example: '2022-10-19T11:45:34+09:00'
+            example: '2022-10-19T11:45:34Z'
         - name: end_tiime
           in: query
           description: Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
@@ -130,7 +130,7 @@ paths:
           schema:
             type: string
             format: date-time
-            example: '2022-10-19T11:45:34+09:00'
+            example: '2022-10-19T11:45:34Z'
         - name: q
           in: query
           description: Allows to filter the list of jobs to fetch by job's id, name and description. If specified only jobs which id, name or description contains specified search string are returned.
@@ -899,7 +899,7 @@ components:
           description: Parameter mandatory and valid for 'unavailable' devices
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34'
+          example: '2022-10-19T11:45:34Z'
         n_pending_jobs:
           type: integer
           example: 8
@@ -960,7 +960,7 @@ components:
           description: Parameter available only for `QPU` devices with available calibration data
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34'
+          example: '2022-10-19T11:45:34Z'
         description:
           type: string
           example: State vector-based quantum circuit simulator
@@ -1018,7 +1018,7 @@ components:
                 }
               }
             }
-          calibrated_at: '2022-10-19T11:45:34'
+          calibrated_at: '2022-10-19T11:45:34Z'
           description: State vector-based quantum circuit simulator
     error.UnauthorizedError:
       type: object
@@ -1241,19 +1241,19 @@ components:
         submitted_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ready_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         running_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ended_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
       required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
@@ -1275,10 +1275,10 @@ components:
         shots: 1000
         status: submitted
         execution_time: 10.123
-        submitted_at: '2022-10-19T11:45:34+09:00'
-        ready_at: '2022-10-19T11:45:34+09:00'
-        running_at: '2022-10-19T11:45:34+09:00'
-        ended_at: '2022-10-19T11:45:34+09:00'
+        submitted_at: '2022-10-19T11:45:34Z'
+        ready_at: '2022-10-19T11:45:34Z'
+        running_at: '2022-10-19T11:45:34Z'
+        ended_at: '2022-10-19T11:45:34Z'
     jobs.SubmitJobInfo:
       description: All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
       type: object
@@ -1427,19 +1427,19 @@ components:
         submitted_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ready_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         running_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ended_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
       required:
         - job_id
         - name
@@ -1483,10 +1483,10 @@ components:
         shots: 1000
         status: submitted
         execution_time: 10.123
-        submitted_at: '2022-10-19T11:45:34+09:00'
-        ready_at: '2022-10-19T11:45:34+09:00'
-        running_at: '2022-10-19T11:45:34+09:00'
-        ended_at: '2022-10-19T11:45:34+09:00'
+        submitted_at: '2022-10-19T11:45:34Z'
+        ready_at: '2022-10-19T11:45:34Z'
+        running_at: '2022-10-19T11:45:34Z'
+        ended_at: '2022-10-19T11:45:34Z'
     success.SuccessResponse:
       type: object
       properties:
@@ -1519,7 +1519,7 @@ components:
     api-token.Expiration:
       type: string
       format: date-time
-      example: '2025-01-09T12:34:56'
+      example: '2025-01-09T12:34:56Z'
       description: The expiration date of the api token
     api-token.ApiToken:
       type: object
@@ -1552,11 +1552,11 @@ components:
         start_time:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         end_time:
           type: string
           format: date-time
-          example: '2022-12-19T11:45:34+09:00'
+          example: '2022-12-19T11:45:34Z'
         publishable:
           type: boolean
           example: true
@@ -1571,8 +1571,8 @@ components:
         id: 0
         title: Example Title
         content: Example Content
-        start_time: '2022-10-19T11:45:34+09:00'
-        end_time: '2022-12-19T11:45:34+09:00'
+        start_time: '2022-10-19T11:45:34Z'
+        end_time: '2022-12-19T11:45:34Z'
         publishable: true
     announcements.GetAnnouncementsListResponse:
       properties:

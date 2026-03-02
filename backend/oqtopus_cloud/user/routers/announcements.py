@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional
 
-import pytz
 from fastapi import APIRouter, Depends
 from sqlalchemy import and_, asc, desc, select
 from sqlalchemy.orm import Session
@@ -104,19 +103,13 @@ def get_announcement(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-def localize(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return pytz.utc.localize(dt)
-
-
 def model_to_schema(model: Announcement) -> GetAnnouncementResponse:
     dict = {
         "id": getattr(model, "id", None),
         "title": getattr(model, "title", None),
         "content": getattr(model, "content", None),
-        "start_time": localize(getattr(model, "start_time", None)),
-        "end_time": localize(getattr(model, "end_time", None)),
+        "start_time": getattr(model, "start_time", None),
+        "end_time": getattr(model, "end_time", None),
         "publishable": getattr(model, "publishable", None),
     }
     return GetAnnouncementResponse.model_validate(dict)

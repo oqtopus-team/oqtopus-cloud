@@ -7,6 +7,7 @@ from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.models.common import TimestampMixin
+from oqtopus_cloud.common.model_util import DateTimeTz
 
 
 class Announcement(Base, TimestampMixin):
@@ -36,8 +37,8 @@ class Announcement(Base, TimestampMixin):
         String(255),
     )
     content: Mapped[str]
-    start_time: Mapped[datetime.datetime]
-    end_time: Mapped[datetime.datetime]
+    start_time: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
+    end_time: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
     publishable: Mapped[bool] = mapped_column(
         Boolean,
         default=False,

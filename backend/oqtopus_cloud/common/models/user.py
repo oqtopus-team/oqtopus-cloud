@@ -2,13 +2,14 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.models.common import TimestampMixin, current_time_utc
+from oqtopus_cloud.common.model_util import DateTimeTz
 
 
 class UserStatus(str, Enum):
@@ -62,5 +63,5 @@ class User(Base, TimestampMixin):
     )
     api_token_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime, default=current_time_utc, nullable=True
+        DateTimeTz(), default=current_time_utc, nullable=True
     )

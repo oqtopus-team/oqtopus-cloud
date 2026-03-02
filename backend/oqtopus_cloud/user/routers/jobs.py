@@ -6,7 +6,6 @@ import zipfile
 from datetime import datetime
 from typing import Any, Optional
 
-import pytz
 from fastapi import (
     APIRouter,
     Depends,
@@ -51,7 +50,6 @@ from oqtopus_cloud.user.schemas.success import SuccessResponse
 
 from . import LoggerRouteHandler
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
@@ -128,11 +126,11 @@ def get_jobs(
 
         # Filtering Jobs
         if start_time is not None:
-            stime = datetime.fromisoformat(start_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at >= stime)
+            stime = datetime.fromisoformat(start_time).astimezone(utc)
+            stmt = stmt.filter(Job.submitted_at >= stime)
         if end_time is not None:
-            etime = datetime.fromisoformat(end_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at <= etime)
+            etime = datetime.fromisoformat(end_time).astimezone(utc)
+            stmt = stmt.filter(Job.submitted_at <= etime)
         if q is not None:
             stmt = stmt.filter(
                 or_(
@@ -235,7 +233,7 @@ def submit_jobs(
             mitigation_info=json.dumps(request.mitigation_info),
             job_type=request.job_type,
             shots=shots,
-            submitted_at=datetime.now(),
+            submitted_at=datetime.now(utc),
         )
 
         # put the user program to S3 when SSE
@@ -529,7 +527,7 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
 
 def set_job_failure(job: Job) -> None:
     job.status = JobStatus.failed
-    job.ended_at = datetime.now()
+    job.ended_at = datetime.now(utc)
 
 
 # TODO: match parameter names of model and schema
@@ -567,22 +565,6 @@ def decode_job_info(j: Any) -> JobInfo | ValueError:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
-    def is_datetime_field(fld: str) -> bool:
-        if fld == "submitted_at":
-            return True
-        elif fld == "ready_at":
-            return True
-        elif fld == "running_at":
-            return True
-        elif fld == "ended_at":
-            return True
-        elif fld == "created_at":
-            return True
-        elif fld == "updated_at":
-            return True
-
-        return False
-
     def is_object_field(fld: str) -> bool:
         if fld == "transpiler_info":
             return True
@@ -592,11 +574,6 @@ def model_to_schema(
             return True
 
         return False
-
-    def localize(dt: datetime | None) -> datetime | None:
-        if dt is None:
-            return None
-        return pytz.utc.localize(dt)
 
     job_info = decode_job_info(json.loads(model.job_info))
 
@@ -617,10 +594,10 @@ def model_to_schema(
             mitigation_info=json.loads(model.mitigation_info),
             simulator_info=json.loads(model.simulator_info),
             execution_time=model.execution_time,
-            submitted_at=localize(model.submitted_at),
-            ready_at=localize(model.ready_at),
-            running_at=localize(model.running_at),
-            ended_at=localize(model.ended_at),
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -639,8 +616,6 @@ def model_to_schema(
                 dict_schema[k] = JobStatus(model.status)
             elif is_object_field(k):
                 dict_schema[k] = json.loads(getattr(model, k))
-            elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
             else:
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)
