@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 import pytest
@@ -102,7 +102,7 @@ def _get_model(
         "mfa_status": MFAStatus.disabled if n % 2 == 0 else MFAStatus.enabled,
         "api_token_id": f"api_token_id_{n}",
         "api_token_hash": PasswordHasher().hash(f"api_token_secret_{n}"),
-        "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
+        "api_token_expiration": datetime.now(timezone.utc).replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }
     return User(**model_dict)

@@ -19,5 +19,5 @@ api-token.ApiTokenStatus:
 api-token.Expiration:
   type: string
   format: date-time
-  example: "2025-01-09T12:34:56"
+  example: "2025-01-09T12:34:56Z"
   description: "The expiration date of the api token"

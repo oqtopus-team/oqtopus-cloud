@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import pytz
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from starlette.requests import Request
@@ -22,7 +22,7 @@ from oqtopus_cloud.user.schemas.errors import (
 )
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user, localize
+from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user
 from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 
 client = TestClient(app)
@@ -77,8 +77,8 @@ def _get_job_model(n: int, email: str, job_type: str = "sampling") -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
-        "submitted_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
-        "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+        "submitted_at": datetime(2024, 3, 3 + n, 12, 34, 56, tzinfo=timezone.utc),
+        "created_at": datetime(2024, 3, 3 + n, 12, 34, 56, tzinfo=timezone.utc),
     }
     return Job(**model_dict)
 
@@ -118,7 +118,7 @@ def _create_cloud_trail_event(
                     "accessToken": token,
                 }
             },
-            "eventTime": pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)).isoformat(),
+            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
             "userAgent": user_agent,
             "sourceIPAddress": "127.0.0.1"
         })
@@ -139,7 +139,7 @@ def test_get_user(test_db):
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[]
     )
 
@@ -174,20 +174,20 @@ def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_3",
                 ip="127.0.0.1"
             ),
@@ -225,15 +225,15 @@ def test_get_user_should_include_login_events_only_from_given_user(test_db, fake
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
                 ip="127.0.0.1"
             ),
@@ -271,15 +271,15 @@ def test_get_user_should_include_only_auth_events(test_db, fake_cloud_trails_cli
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
                 ip="127.0.0.1"
             ),
@@ -304,7 +304,7 @@ def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trai
             "requestParameters": {
                 "authFlow": "USER_SRP_AUTH"
             },
-            "eventTime": pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)).isoformat(),
+            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
             "userAgent": "user_agent",
             "sourceIPAddress": "127.0.0.1"
         })
@@ -329,15 +329,15 @@ def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trai
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
                 ip="127.0.0.1"
             ),
@@ -362,7 +362,7 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
             "additionalEventData": {
                 "sub": user_cognito_id
             },
-            "eventTime": pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)).isoformat(),
+            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
             "userAgent": "user_agent",
             "sourceIPAddress": "127.0.0.1"
         })
@@ -374,7 +374,7 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
                 "sub": user_cognito_id
             },
             "responseElements": {},
-            "eventTime": pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)).isoformat(),
+            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
             "userAgent": "user_agent",
             "sourceIPAddress": "127.0.0.1"
         })
@@ -400,15 +400,15 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
                 ip="127.0.0.1"
             ),
@@ -446,15 +446,15 @@ def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_cl
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
                 ip="127.0.0.1"
             ),
             LoginEvent(
-                event_date=pytz.utc.localize(datetime(2025, 2, 3, 12, 34, 56)),
+                event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
                 ip="127.0.0.1"
             ),
@@ -493,7 +493,7 @@ def test_get_user_should_skip_login_events_when_disabled(test_db, monkeypatch, f
         email="email_1",
         name="username_1",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=None
     )
 
@@ -529,7 +529,7 @@ def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
         email=None,
         name="username_1",
         organization=None,
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
         login_events=[]
     )
 
@@ -585,7 +585,7 @@ def test_update_user(test_db):
         email="email_1",
         name="new_name",
         organization="new_organization",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57))
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc)
     )
 
     assert actual == expected
@@ -608,7 +608,7 @@ def test_update_user_update_only_fields_present_in_request(test_db):
         email="email_1",
         name="new_name",
         organization="organization_1",
-        created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57))
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc)
     )
 
     assert actual == expected
@@ -889,13 +889,3 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_c
     assert json.loads(response.body) == {
         "message": "user deletion is disabled"
     }
-
-
-def test_localize():
-    date = datetime(2024, 3, 4, 12, 34, 57)
-    actual = localize(date)
-    assert pytz.utc.localize(date) == actual
-
-
-def test_localize_none():
-    assert localize(None) is None

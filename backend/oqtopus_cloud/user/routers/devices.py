@@ -26,7 +26,6 @@ from oqtopus_cloud.user.schemas.errors import (
 from . import LoggerRouteHandler
 
 utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 

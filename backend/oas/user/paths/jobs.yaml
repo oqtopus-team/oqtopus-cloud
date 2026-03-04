@@ -34,7 +34,7 @@ jobs:
         schema:
           type: string
           format: date-time
-          example: "2022-10-19T11:45:34+09:00"
+          example: "2022-10-19T11:45:34Z"
       - name: end_time
         in: query
         description: |-
@@ -43,7 +43,7 @@ jobs:
         schema:
           type: string
           format: date-time
-          example: "2022-10-19T11:45:34+09:00"
+          example: "2022-10-19T11:45:34Z"
       - name: q
         in: query
         description: |-

@@ -13,7 +13,6 @@ from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.lambda_auth.conf import logger
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 ph = PasswordHasher()
