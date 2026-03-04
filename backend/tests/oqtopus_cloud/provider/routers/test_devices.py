@@ -22,7 +22,6 @@ from oqtopus_cloud.provider.schemas.devices import (
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
 from zoneinfo import ZoneInfo
 
-# jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 client = TestClient(app)
 

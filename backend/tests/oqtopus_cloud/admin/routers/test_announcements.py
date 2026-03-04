@@ -264,8 +264,8 @@ def test_register_announcement(
 
     assert announcement.title == "Test title"
     assert announcement.content == "Test content"
-    assert announcement.start_time == datetime(2025, 4, 8, 13, 5, 47)
-    assert announcement.end_time == datetime(2025, 4, 9, 13, 5, 47)
+    assert announcement.start_time == datetime(2025, 4, 8, 13, 5, 47, tzinfo=timezone.utc)
+    assert announcement.end_time == datetime(2025, 4, 9, 13, 5, 47, tzinfo=timezone.utc)
     assert announcement.publishable == True
 
 
@@ -342,8 +342,8 @@ def test_update_announcement_full_update(
 
     assert announcement.title == "Test title"
     assert announcement.content == "Test content"
-    assert announcement.start_time == datetime(2025, 4, 8, 13, 5, 47)
-    assert announcement.end_time == datetime(2025, 4, 9, 13, 5, 47)
+    assert announcement.start_time == datetime(2025, 4, 8, 13, 5, 47, tzinfo=timezone.utc)
+    assert announcement.end_time == datetime(2025, 4, 9, 13, 5, 47, tzinfo=timezone.utc)
     assert announcement.publishable == True
 
 
@@ -372,8 +372,8 @@ def test_update_announcement_partial_update(
 
     assert announcement.title == "Test title"
     assert announcement.content == "Test content"
-    assert announcement.start_time == datetime(2024, 3, 5, 14, 0, 0)
-    assert announcement.end_time == datetime(2024, 3, 6, 14, 0, 0)
+    assert announcement.start_time == datetime(2024, 3, 5, 14, 0, 0, tzinfo=timezone.utc)
+    assert announcement.end_time == datetime(2024, 3, 6, 14, 0, 0, tzinfo=timezone.utc)
     assert announcement.publishable == True
 
 

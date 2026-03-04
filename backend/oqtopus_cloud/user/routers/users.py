@@ -7,7 +7,6 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.user.common.settings import get_editable_fields, get_visible_fields
 from oqtopus_cloud.user.schemas.jobs import JobType
-import pytz
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
@@ -292,12 +291,6 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
         return False
 
 
-def localize(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return pytz.utc.localize(dt)
-
-
 def model_to_schema(
     model: User, login_events: list[LoginEvent] | None = None
 ) -> GetOneUserResponse:
@@ -310,7 +303,7 @@ def model_to_schema(
         "organization": getattr(model, "organization", None)
         if "organization" in visible_fields
         else None,
-        "created_at": localize(getattr(model, "created_at", None))
+        "created_at": getattr(model, "created_at", None)
         if "created_at" in visible_fields
         else None,
         "login_events": login_events,
