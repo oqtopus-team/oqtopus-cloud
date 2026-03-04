@@ -44,7 +44,7 @@ jobs:
       - in: query
         name: timestamp
         description: "Additional search parameter:<br/> Jobs created after the specified timetsamp"
-        schema: { type: string, example: "2022-12-15 15:54:46" }
+        schema: { type: string, format: date-time, example: "2022-12-15T15:54:46Z" }
     responses:
       "200":
         description: "List of jobs for a device"

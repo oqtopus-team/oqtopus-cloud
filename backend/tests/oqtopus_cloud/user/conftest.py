@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     Generator,
     Any,
@@ -158,15 +158,15 @@ def insert_initial_data(db: Session):
             id="Kawasaki",
             device_type="QPU",
             status="available",
-            available_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            available_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             pending_jobs=2,
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
             device_info="{}",
-            calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             description="Superconducting quantum computer",
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            created_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         ),
         # Job(
         #     id="7af020f6-2e38-4d70-8cf0-4349650ea08c",

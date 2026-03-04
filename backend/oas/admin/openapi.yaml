@@ -1004,7 +1004,7 @@ components:
           description: Parameter mandatory and valid for 'unavailable' devices
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         n_pending_jobs:
           type: integer
           example: 8
@@ -1053,7 +1053,7 @@ components:
           description: Parameter available only for `QPU` devices with available calibration data
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         description:
           type: string
           example: State vector-based quantum circuit simulator
@@ -1111,7 +1111,7 @@ components:
                 }
               }
             }
-          calibrated_at: '2022-10-19T11:45:34'
+          calibrated_at: '2022-10-19T11:45:34Z'
           description: State vector-based quantum circuit simulator
     devices.DeviceBase:
       type: object
@@ -1137,11 +1137,11 @@ components:
         available_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         calibrated_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         basis_gates:
           type: array
           items:
@@ -1195,18 +1195,18 @@ components:
         start_time:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         end_time:
           type: string
           format: date-time
-          example: '2022-12-19T11:45:34+09:00'
+          example: '2022-12-19T11:45:34Z'
         publishable:
           type: boolean
           example: true
         updated_at:
           type: string
           format: date-time
-          example: '2022-12-19T11:45:34+09:00'
+          example: '2022-12-19T11:45:34Z'
       required:
         - id
         - title
@@ -1219,8 +1219,8 @@ components:
         id: 0
         title: Example Title
         content: Example Content
-        start_time: '2022-10-19T11:45:34+09:00'
-        end_time: '2022-12-19T11:45:34+09:00'
+        start_time: '2022-10-19T11:45:34Z'
+        end_time: '2022-12-19T11:45:34Z'
         publishable: true
     announcements.GetAnnouncementsListResponse:
       properties:

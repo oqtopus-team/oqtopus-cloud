@@ -81,7 +81,7 @@ def test_create_api_token(
     user = test_db.query(User).filter(User.id == "email_1").first()
     assert user.api_token_id == actual.api_token_id
     assert PasswordHasher().verify(user.api_token_hash, actual.api_token_secret)
-    assert pytz.utc.localize(user.api_token_expiration) == actual.api_token_expiration
+    assert user.api_token_expiration == actual.api_token_expiration
 
 
 def test_create_api_token_no_user_found(

@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 from typing import Any, Optional
 
-import pytz
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from oqtopus_cloud.common.models.job import Job as JobModel
@@ -43,7 +42,6 @@ from . import LoggerRouteHandler
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 JobId = str
 
@@ -104,7 +102,7 @@ def get_jobs(
         if status is not None:
             select_stmt = select_stmt.filter(JobModel.status == status)
         if timestamp is not None:
-            time = datetime.fromisoformat(timestamp).astimezone(jst)
+            time = datetime.fromisoformat(timestamp).astimezone(utc)
             select_stmt = select_stmt.filter(JobModel.created_at > time)
         if limit is not None:
             select_stmt = select_stmt.limit(limit)
@@ -477,29 +475,6 @@ def is_object_field(fld: str) -> bool:
     return False
 
 
-def localize(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return pytz.utc.localize(dt)
-
-
-def is_datetime_field(fld: str) -> bool:
-    if fld == "submitted_at":
-        return True
-    elif fld == "ready_at":
-        return True
-    elif fld == "running_at":
-        return True
-    elif fld == "ended_at":
-        return True
-    elif fld == "created_at":
-        return True
-    elif fld == "updated_at":
-        return True
-
-    return False
-
-
 def set_job_status(model: JobModel, status: str | JobStatus) -> None:
     if isinstance(status, str):
         status = JobStatus(status)
@@ -507,17 +482,17 @@ def set_job_status(model: JobModel, status: str | JobStatus) -> None:
     model.status = status
     if status == JobStatus.ready:
         if model.ready_at is None:
-            model.ready_at = datetime.now()
+            model.ready_at = datetime.now(utc)
     elif status == JobStatus.running:
         if model.running_at is None:
-            model.running_at = datetime.now()
+            model.running_at = datetime.now(utc)
     elif (
         status == JobStatus.succeeded
         or status == JobStatus.failed
         or status == JobStatus.cancelled
     ):
         if model.ended_at is None:
-            model.ended_at = datetime.now()
+            model.ended_at = datetime.now(utc)
     return
 
 
@@ -558,10 +533,10 @@ def model_to_schema(
         mitigation_info=json.loads(model.mitigation_info),
         simulator_info=json.loads(model.simulator_info),
         execution_time=model.execution_time,
-        submitted_at=localize(model.submitted_at),
-        ready_at=localize(model.ready_at),
-        running_at=localize(model.running_at),
-        ended_at=localize(model.ended_at),
+        submitted_at=model.submitted_at,
+        ready_at=model.ready_at,
+        running_at=model.running_at,
+        ended_at=model.ended_at,
     )
 
 
@@ -595,8 +570,6 @@ def model_to_filtered_schema(
                     dict_schema[k] = status
             elif is_object_field(k):
                 dict_schema[k] = json.loads(getattr(model, k))
-            elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
             else:
                 dict_schema[k] = getattr(model, k)
         return Job(**dict_schema)
