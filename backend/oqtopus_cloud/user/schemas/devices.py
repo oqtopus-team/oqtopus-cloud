@@ -25,7 +25,7 @@ class DeviceInfo(BaseModel):
     device_type: Annotated[DeviceType, Field(examples=["simulator"])]
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
@@ -78,7 +78,7 @@ class DeviceInfo(BaseModel):
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     """
     Parameter available only for `QPU` devices with available calibration data

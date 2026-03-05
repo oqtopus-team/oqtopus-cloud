@@ -10,13 +10,6 @@ from typing import Annotated, Any
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
-class JobType(str, Enum):
-    estimation = "estimation"
-    sampling = "sampling"
-    multi_manual = "multi_manual"
-    sse = "sse"
-
-
 class JobStatus(str, Enum):
     submitted = "submitted"
     ready = "ready"
@@ -24,6 +17,13 @@ class JobStatus(str, Enum):
     succeeded = "succeeded"
     failed = "failed"
     cancelled = "cancelled"
+
+
+class JobType(str, Enum):
+    estimation = "estimation"
+    sampling = "sampling"
+    multi_manual = "multi_manual"
+    sse = "sse"
 
 
 class OperatorItem(BaseModel):
@@ -176,16 +176,16 @@ class GetJobsResponse(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
 
 
@@ -308,16 +308,16 @@ class JobDef(BaseModel):
     ] = None
     execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
 
 
