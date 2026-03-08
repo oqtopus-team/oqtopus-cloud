@@ -16,7 +16,8 @@
 *   identifiers = {user_api = "arn:aws:iam::123"}
 *   vpc_id = "vpc-123"
 *   secret_manager_security_group_ids = ["sg-123"]
-*   cognito_security_group_ids = ["sg-123"]
+*   cognito_security_group_ids = ["sg-459"]
+*   cloudtrail_security_group_ids = ["sg-789"]
 *   lambda_subnet_ids = ["subnet-123"]
 * }
 * ```
@@ -99,6 +100,48 @@ resource "aws_vpc_endpoint" "cognito" {
         ]
         Resource = "*"
         Principal = "*"
+      }
+    ]
+  })
+  lifecycle {
+    ignore_changes = [policy]
+  }
+  vpc_endpoint_type = "Interface"
+  vpc_id            = var.vpc_id
+}
+
+resource "aws_vpc_endpoint" "cloudtrail" {
+  dns_options {
+    dns_record_ip_type                             = "ipv4"
+    private_dns_only_for_inbound_resolver_endpoint = "false"
+  }
+
+  ip_address_type = "ipv4"
+
+  private_dns_enabled = "true"
+  security_group_ids  = var.cloudtrail_security_group_ids
+  service_name        = "com.amazonaws.${var.region}.cloudtrail"
+  subnet_ids          = var.lambda_subnet_ids
+
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cloudtrail-vpc-endpoint"
+  }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "cloudtrail:LookupEvents"
+        ]
+        Resource = "*"
+        # allow access only to user_api Lambda functions
+        Principal = {
+          "AWS": [
+            for key, lambda_role_arn in var.identifiers: lambda_role_arn
+            if contains(["user_api"], key)
+          ]
+        }
       }
     ]
   })

@@ -31,3 +31,8 @@ output "cognito_security_group_ids" {
  value       = [aws_security_group.cognito_idp.id]
  description = "The security group IDs for the Cognito IdP"
 }
+
+output "cloudtrail_security_group_ids" {
+ value       = [aws_security_group.cloudtrail.id]
+ description = "The security group IDs for the CloudTrail"
+}

@@ -43,6 +43,11 @@ variable "cognito_security_group_ids" {
   type        = list(string)
 }
 
+variable "cloudtrail_security_group_ids" {
+  description = "The security group IDs for the CloudTrail"
+  type        = list(string)
+}
+
 variable "identifiers" {
   description = "The Lamda role ARNs that are allowed to access the VPC endpoints"
   type        = map(string)

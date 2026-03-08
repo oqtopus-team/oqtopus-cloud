@@ -170,15 +170,6 @@ resource "aws_internet_gateway" "this" {
   }
 }
 
-# Elastic IP for NAT Gateway
-resource "aws_eip" "nat_eip" {
-  for_each = var.public_subnets
-  domain   = "vpc"
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-eip-${each.key}"
-  }
-}
-
 ## Public Route Table
 resource "aws_route_table" "public" {
   for_each = var.public_subnets
