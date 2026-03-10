@@ -564,6 +564,12 @@ def test_get_jobs_all_parameters(
     test_db.flush()
     for i in range(1, 10):
         test_db.add(_get_model(i))
+
+    cancelledJob = _get_model(11)
+    cancelledJob.status = JobStatus.cancelled
+    cancelledJob.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
+    test_db.add(cancelledJob)
+
     test_db.commit()
 
     response = test_client.get(
