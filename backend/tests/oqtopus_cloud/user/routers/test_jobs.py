@@ -382,6 +382,31 @@ def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
     assert [job.job_id for job in actual] == ["testjob2id"]
 
 
+def test_get_jobs_by_status(test_client, test_db):
+    """_summary_
+    filtering by status, expect only testjob1 to be retrieved
+    """
+    test_db.flush()
+    job1 = _get_model(1)
+    job2 = _get_model(2)
+
+    job1.status = JobStatus.ready
+    job2.status = JobStatus.submitted
+
+    test_db.add(job1)
+    test_db.add(job2)
+    test_db.commit()
+
+    response = test_client.get(
+        "/jobs?status=ready&order=ASC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert [job.job_id for job in actual] == ["testjob1id"]
+
+
 def test_get_jobs_filtering_search_string(
     test_client,
     test_db,
@@ -531,16 +556,22 @@ def test_get_jobs_all_parameters(
     test_db,
 ):
     """_summary_
-    filtering start_time, end_time, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
+    filtering start_time, end_time, status, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
     """
 
     test_db.flush()
     for i in range(1, 10):
         test_db.add(_get_model(i))
+
+    cancelledJob = _get_model(11)
+    cancelledJob.status = JobStatus.cancelled
+    cancelledJob.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
+    test_db.add(cancelledJob)
+
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29Z&end_time=2024-03-08T16%3A12%3A29Z&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29Z&end_time=2024-03-08T16%3A12%3A29Z&status=submitted&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())

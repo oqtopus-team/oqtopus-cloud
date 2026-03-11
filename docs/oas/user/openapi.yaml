@@ -95,7 +95,7 @@ paths:
       description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
+        List of jobs can be filtered by submission time, status or search text with 'start_time', 'end_time', 'status' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
       operationId: list_jobs
@@ -131,6 +131,12 @@ paths:
             type: string
             format: date-time
             example: '2022-10-19T11:45:34Z'
+        - name: status
+          in: query
+          description: Allows to filter the list of jobs to fetch by job's status. If specified only jobs which status is equal to provided status are returned.
+          required: false
+          schema:
+            $ref: "#/components/schemas/jobs.JobStatus"
         - name: q
           in: query
           description: Allows to filter the list of jobs to fetch by job's id, name and description. If specified only jobs which id, name or description contains specified search string are returned.

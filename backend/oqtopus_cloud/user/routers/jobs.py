@@ -75,6 +75,7 @@ def get_jobs(
     fields: Optional[str] = None,
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
+    status: Optional[JobStatus] = None,
     q: Optional[str] = None,
     order: Optional[str] = None,
     size: Optional[str] = None,
@@ -131,6 +132,8 @@ def get_jobs(
         if end_time is not None:
             etime = datetime.fromisoformat(end_time).astimezone(utc)
             stmt = stmt.filter(Job.submitted_at <= etime)
+        if status is not None:
+            stmt = stmt.filter(Job.status == status)
         if q is not None:
             stmt = stmt.filter(
                 or_(
