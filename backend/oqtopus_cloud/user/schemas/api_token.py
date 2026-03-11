@@ -19,7 +19,7 @@ class ApiToken(BaseModel):
     The api token secret
     """
     api_token_expiration: Annotated[
-        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56"])
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56Z"])
     ] = None
     """
     The expiration date of the api token
@@ -28,7 +28,7 @@ class ApiToken(BaseModel):
 
 class ApiTokenStatus(BaseModel):
     api_token_expiration: Annotated[
-        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56"])
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56Z"])
     ] = None
     """
     The expiration date of the api token

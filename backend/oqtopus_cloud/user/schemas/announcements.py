@@ -13,8 +13,8 @@ class GetAnnouncementResponse(BaseModel):
     id: Annotated[int, Field(examples=[0])]
     title: Annotated[str, Field(examples=["Example Title"])]
     content: Annotated[str, Field(examples=["Example Content"])]
-    start_time: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34+09:00"])]
-    end_time: Annotated[AwareDatetime, Field(examples=["2022-12-19T11:45:34+09:00"])]
+    start_time: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34Z"])]
+    end_time: Annotated[AwareDatetime, Field(examples=["2022-12-19T11:45:34Z"])]
     publishable: Annotated[bool, Field(examples=[True])]
 
 
