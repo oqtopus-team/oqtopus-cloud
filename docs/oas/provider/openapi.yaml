@@ -453,7 +453,7 @@ components:
       properties:
         program:
           type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          description: A list of OPENQASM3 program. Required for sampling, estimation and multiprogramming jobs. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
           items:
             type: string
           example:
@@ -462,8 +462,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/jobs.S3OperatorItem'
-      required:
-        - program
+          description: Estimation operator. Required for estimation jobs.
+        sse_program:
+          type: string
+          description: SSE user program. Required for SSE jobs.
     jobs.S3JobResult:
       type: object
       nullable: true
