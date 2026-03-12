@@ -201,6 +201,7 @@ module "vpc_endpoint" {
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
   cognito_security_group_ids        = data.terraform_remote_state.infrastructure.outputs.security_group.cognito_security_group_ids
+  cloudtrail_security_group_ids      = data.terraform_remote_state.infrastructure.outputs.security_group.cloudtrail_security_group_ids
   s3_bucket_name                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
 
   identifiers = {
