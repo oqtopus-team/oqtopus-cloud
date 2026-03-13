@@ -98,16 +98,16 @@ class Job(BaseModel):
     status: JobStatus | None = None
     execution_time: Annotated[float | None, Field(examples=[10.123])] = None
     submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
 
 
