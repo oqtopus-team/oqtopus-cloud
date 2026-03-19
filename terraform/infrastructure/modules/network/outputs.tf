@@ -21,3 +21,8 @@ output "ec2_bastion_route_table_id" {
   value       = values(aws_route_table.public)[0].id
   description = "The route table ID for the EC2 instance"
 }
+
+output "s3_vpc_endpoint_id" {
+  value       = aws_vpc_endpoint.s3.id
+  description = "The ID of VPC endpoint for S3"
+}
