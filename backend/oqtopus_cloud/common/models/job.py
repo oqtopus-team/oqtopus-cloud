@@ -25,7 +25,6 @@ class Job(Base, TimestampMixin):
         description (str): Additional notes for the job.
         device_id (str): The device used for the job.
         n_qubits (int): The number of qubits used in the job.
-        job_info(str): The information of the job.
         transpiler_info(str): The information about the transpiler.
         simulator_info(str): The information about the simulator.
         mitigation_info(str): The information about the error mitigation.
@@ -59,7 +58,6 @@ class Job(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    job_info: Mapped[str]
     transpiler_info: Mapped[str]
     simulator_info: Mapped[str]
     mitigation_info: Mapped[str]
