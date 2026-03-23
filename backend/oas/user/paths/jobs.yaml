@@ -92,13 +92,13 @@ jobs:
           default: "ASC"
     responses:
       "200":
-        description: "Return a list of submitted quantum jobs"
+        description: "Return a list of quantum jobs"
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: "../schemas/jobs.yaml#/jobs.GetJobsResponse"
+                $ref: "../schemas/jobs.yaml#/jobs.Job"
       "401":
         description: Unauthorized
         content:
@@ -107,14 +107,61 @@ jobs:
               $ref: '../schemas/error.yaml#/error.UnauthorizedError'
             example:
               message: Unauthorized
+
   post:
     tags:
       - job
-    summary: "Submit a quantum job"
-    description: "Submit a quantum job"
+    summary: "Register new job"
+    description: "Register new job and generate a presigned URL to upload job information (`jobs.S3SubmitJobInfo`) to OQTOPUS cloud."
+    operationId: register_job_id
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: "Return new job_id and presigned URL for job information upload"
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/jobs.yaml#/jobs.RegisterJobResponse"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
+            example:
+              message: Unauthorized
+
+jobs.job_id.submit:
+  post:
+    tags:
+      - job
+    summary: "Complete submission of a quantum job"
+    description: |-
+      Complete submission of a previously registered quantum job.
+
+      job_id must be created via 'POST /jobs' request.
+
+      Submit job information (`jobs.S3SubmitJobInfo`) must be formerly uploaded to OQTOPUS cloud using presigned URL received in 'POST /jobs' response.
+
     operationId: submit_job
     security:
       - BearerAuth: []
+    parameters:
+      - in: path
+        name: job_id
+        required: true
+        description: Job identifier
+        schema:
+          type: string
     requestBody:
       description: "Quantum job to be submitted"
       content:
@@ -130,10 +177,6 @@ jobs:
                   description: "Bell State Sampling Example",
                   device_id: "Kawasaki",
                   job_type: "sampling",
-                  job_info: {
-                    program:
-                      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
-                  },
                   transpiler_info: {},
                   simulator_info: {
                     "n_qubits": 5,
@@ -157,21 +200,6 @@ jobs:
                   description: "Bell State Estimation Example",
                   device_id: "Kawasaki",
                   job_type: "estimation",
-                  job_info: {
-                    program: [
-                      "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
-                    ],
-                    operator: [
-                      {
-                        pauli: "X 0 X 1",
-                        coeff: 1.5
-                      },
-                      {
-                        pauli: "Y 0 Z 1",
-                        coeff: 1.2
-                      }
-                    ]
-                  },
                   transpiler_info: {
                     "qubit_allocation": {"0": 12, "1": 16},
                     "skip_transpilation": false,
@@ -190,9 +218,9 @@ jobs:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.SubmitJobResponse"
+              $ref: "../schemas/success.yaml#/success.SuccessResponse"
             example:
-              job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+              message: Quantum job submitted
       "400":
         description: Bad Request
         content:
@@ -209,14 +237,22 @@ jobs:
               $ref: "../schemas/error.yaml#/error.UnauthorizedError"
             example:
               message: Unauthorized
-      '403':
+      "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: '../schemas/error.yaml#/error.ForbiddenError'
+                $ref: "../schemas/error.yaml#/error.ForbiddenError"
               example:
                 message: Forbidden
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
 
 jobs.job_id:
   get:
@@ -239,7 +275,19 @@ jobs.job_id:
         content:
           application/json:
             schema:
-              $ref: "../schemas/jobs.yaml#/jobs.JobDef"
+              $ref: "../schemas/jobs.yaml#/jobs.Job"
+              # oneOf:
+              #   - $ref: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #   - $ref: "../schemas/jobs.yaml#/jobs.RegisteredJob"
+              # discriminator:
+              #   propertyName: status
+              #   mapping:
+              #     submitted: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     running: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     succeeded: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     failed: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     cancelled: "../schemas/jobs.yaml#/jobs.SubmittedJob"
+              #     registered: "../schemas/jobs.yaml#/jobs.RegisteredJob"
       "400":
         description: Bad Request
         content:
@@ -407,58 +455,3 @@ jobs.job_id.cancel:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
-
-jobs.job_id.sse_log:
-  get:
-    tags:
-      - job
-    summary: "Get SSE log file"
-    description: "Get SSE log file of selected job"
-    operationId: get_sselog
-    security:
-      - BearerAuth: []
-    parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: "Job identifier"
-          schema: {type: string}
-    responses:
-      "200":
-        description: "Return SSE log file"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/jobs.yaml#/jobs.GetSselogResponse"
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "401":
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.UnauthorizedError"
-            example:
-              message: Unauthorized
-      "404":
-        description: Not Found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error
