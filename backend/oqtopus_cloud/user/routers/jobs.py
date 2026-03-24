@@ -541,9 +541,6 @@ def delete_job(
 
 
 def delete_storage_folder(job: JobModel, storage: AbstractStorage) -> bool:
-    if job.job_type != JobType.sse:
-        return True
-
     def delete_by_key(key: str) -> bool:
         try:
             storage.delete(key)
