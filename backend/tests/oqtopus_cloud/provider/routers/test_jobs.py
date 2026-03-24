@@ -68,7 +68,6 @@ def _get_registered_job_model(n: int) -> JobModel:
         "name": "",
         "device_id": "null",
         "job_type": "none",
-        "job_info": "",
         "transpiler_info": "null",
         "simulator_info": "null",
         "mitigation_info": "null",
@@ -89,7 +88,6 @@ def _get_job_model(
         "description": f"test job {n}",
         "device_id": "SC",
         "job_type": jt.value,
-        "job_info": "",
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(
