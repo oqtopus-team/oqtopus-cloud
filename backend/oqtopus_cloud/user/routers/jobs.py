@@ -1,10 +1,6 @@
-import base64
-import io
 import json
-import os
-import zipfile
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from fastapi import (
     APIRouter,
@@ -19,12 +15,15 @@ from uuid_extensions import uuid7
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
-from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
+    JOB_INFO_INPUT_PARAM,
+)
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.errors import (
     BadRequestResponse,
@@ -35,16 +34,16 @@ from oqtopus_cloud.user.schemas.errors import (
     NotFoundErrorResponse,
 )
 from oqtopus_cloud.user.schemas.jobs import (
-    GetJobsResponse,
     GetJobStatusResponse,
-    GetSselogResponse,
-    JobDef,
+    Job,
     JobInfo,
+    JobInfoUploadPresignedURL,
     JobStatus,
     JobType,
-    SubmitJobInfo,
+    RegisteredJob,
+    RegisterJobResponse,
+    SubmittedJob,
     SubmitJobRequest,
-    SubmitJobResponse,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -57,15 +56,174 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 DEFAULT_PAGE_INDEX = 1
 DEFAULT_ITEMS_PER_PAGE = 100
 
+S3_JOB_INFO_INPUT_FILE = "input.zip"
+
+DEFAULT_MAX_JOB_INFO_CONTENT_LENGTH_B = 50 * 1024 * 1024  # 50Mb
+DEFAULT_PRESIGNED_ULR_EXP_S = 60 * 60  # 1h
+
 
 class BadRequest(Exception):
     def __init__(self, message: str):
         self.message = message
 
 
+@router.post(
+    "/jobs",
+    response_model=RegisterJobResponse,
+    responses={
+        400: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def register_job(
+    event: Event,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> RegisterJobResponse | ErrorResponse:
+    try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
+
+        job = JobModel(
+            id=job_id,
+            owner=owner,
+            status="registered",
+            created_at=datetime.now(utc),
+            # dummy data to comply with the NOT NULL DB constraint
+            name="",
+            device_id="null",
+            transpiler_info="null",
+            simulator_info="null",
+            mitigation_info="null",
+            job_type="none",
+            shots=0,
+        )
+        db.add(job)
+        db.commit()
+
+        return RegisterJobResponse(
+            job_id=job.id,
+            presigned_url=JobInfoUploadPresignedURL(
+                **storage.get_upload_presigned_url_data(
+                    key=f"{job_id}/{JOB_INFO_INPUT_PARAM}.zip"
+                )
+            ),
+        )
+
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.post(
+    "/jobs/{job_id}/submit",
+    response_model=SuccessResponse,
+    responses={
+        400: {"model": Message},
+        403: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def submit_job(
+    event: Event,
+    job_id: str,
+    request: SubmitJobRequest,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> SuccessResponse | ErrorResponse:
+    try:
+        owner = event.state.owner
+        logger.info("invoked!", extra={"owner": owner})
+
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
+        if job is None:
+            return NotFoundErrorResponse(message="job not found with the given id")
+
+        if job.status != "registered":
+            return BadRequestResponse(
+                message=f"{job_id} job is not in valid status for submission (valid status for submission: 'registered')"
+            )
+
+        # name is optional
+        job.name = validate_name(request)
+        # description is optional
+        job.description = validate_description(request)
+
+        device = db.get(Device, request.device_id)  # type: ignore
+        if device is None:
+            return BadRequestResponse(message="device not found")
+        if device.status != "available":
+            return BadRequestResponse(f"device {device.id} is not available")
+        if not can_user_access_device(owner, request.device_id, db):
+            logger.error(
+                f"user={owner} is not allowed to create job for device={request.device_id}"
+            )
+            return ForbiddenErrorResponse(
+                message=f"cannot create job for device={request.device_id}"
+            )
+        job.device_id = request.device_id
+
+        job.transpiler_info = json.dumps(request.transpiler_info)
+        job.simulator_info = json.dumps(request.simulator_info)
+        job.mitigation_info = json.dumps(request.mitigation_info)
+        job.job_type = JobType(request.job_type)
+        job.shots = request.shots
+        job.status = JobStatus.submitted
+        job.submitted_at = datetime.now(utc)
+        job.updated_at = job.submitted_at
+
+        if not storage.does_exist(key=f"{job_id}/{S3_JOB_INFO_INPUT_FILE}"):
+            return BadRequestResponse(
+                f"job information input for {job_id} job not found"
+            )
+
+        db.commit()
+        return SuccessResponse(message="job submitted")
+
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+def validate_name(request: SubmitJobRequest) -> str:
+    return request.name if request.name is not None else ""
+
+
+def validate_description(request: SubmitJobRequest) -> str:
+    return request.description if (request.description is not None) else ""
+
+
+def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
+    try:
+        # username here is the email address registered in Cognito
+        user = db.scalars(select(User).where(User.email == username)).first()
+        if user is None or user.available_devices is None:
+            return False
+
+        if user.available_devices == "*":
+            return True
+
+        available_devices = json.loads(user.available_devices)
+
+        return isinstance(available_devices, list) and device_id in available_devices
+    except Exception:
+        return False
+
+
 @router.get(
     "/jobs",
-    response_model=list[GetJobsResponse | JobDef],
+    response_model=list[Job],
     response_model_exclude_none=True,
     responses={500: {"model": Message}},
 )
@@ -81,39 +239,51 @@ def get_jobs(
     size: Optional[str] = None,
     page: Optional[str] = None,
     db: Session = Depends(get_db),
-) -> list[GetJobsResponse | JobDef] | ErrorResponse:
+    storage: AbstractStorage = Depends(get_storage),
+) -> list[Job] | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
         # Order Control
         if order == "ASC" or order is None:
-            arg_order = asc(Job.created_at)
+            arg_order = asc(JobModel.created_at)
         elif order == "DESC":
-            arg_order = desc(Job.created_at)
+            arg_order = desc(JobModel.created_at)
         else:
-            arg_order = asc(Job.created_at)
+            arg_order = asc(JobModel.created_at)
+
+        stmt = (
+            select(JobModel)
+            .filter(JobModel.owner == owner)
+            .order_by(arg_order, JobModel.id)
+        )
 
         # Fields Control
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
-            valid_fields_list = [field in JobDef.model_fields for field in fields_list]
+            valid_fields_list = [field in Job.model_fields for field in fields_list]
             if all(valid_fields_list):
-                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+                # this removes job_info field which doesn't have a relevant model property
                 converted_fields_list = [
-                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                    MAP_SCHEMA_TO_MODEL[field]
+                    for field in fields_list
+                    if field in MAP_SCHEMA_TO_MODEL
                 ]
-                columns = [getattr(Job, field) for field in converted_fields_list]
+                arg_select = [
+                    getattr(JobModel, field) for field in converted_fields_list
+                ]
+
+                # setting up name and job_info in model_to_filtered_schema() requires status
+                if "name" in arg_select or "job_info" in arg_select:
+                    arg_select.append("status")
 
                 # remove duplicated fields
-                arg_select = list(dict.fromkeys(columns))
-                stmt = (
-                    select(Job)
-                    .filter(Job.owner == owner)
-                    .order_by(arg_order, Job.id)
-                    .options(load_only(*arg_select))
-                )
+                arg_select = list(dict.fromkeys(arg_select))
+
+                if arg_select:
+                    stmt = stmt.options(load_only(*arg_select))
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -122,24 +292,22 @@ def get_jobs(
                 return BadRequestResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
-        else:
-            stmt = select(Job).filter(Job.owner == owner).order_by(arg_order, Job.id)
 
         # Filtering Jobs
         if start_time is not None:
             stime = datetime.fromisoformat(start_time).astimezone(utc)
-            stmt = stmt.filter(Job.submitted_at >= stime)
+            stmt = stmt.filter(JobModel.submitted_at >= stime)
         if end_time is not None:
             etime = datetime.fromisoformat(end_time).astimezone(utc)
-            stmt = stmt.filter(Job.submitted_at <= etime)
+            stmt = stmt.filter(JobModel.submitted_at <= etime)
         if status is not None:
-            stmt = stmt.filter(Job.status == status)
+            stmt = stmt.filter(JobModel.status == status)
         if q is not None:
             stmt = stmt.filter(
                 or_(
-                    Job.id.contains(q),
-                    Job.name.contains(q),
-                    Job.description.contains(q),
+                    JobModel.id.contains(q),
+                    JobModel.name.contains(q),
+                    JobModel.description.contains(q),
                 )
             )
 
@@ -149,104 +317,17 @@ def get_jobs(
                 page=int(page) if page is not None else DEFAULT_PAGE_INDEX,
             )
         )
-        set_page(Page[Job])
+        set_page(Page[JobModel])
         models = paginate(db, stmt)
 
         results = []
         for model, job in [
-            (model, model_to_schema(model, fields_list)) for model in models.items
+            (model, model_to_filtered_schema(model, storage, fields_list))
+            for model in models.items
         ]:
-            if isinstance(job, ValueError):
-                logger.warning(str(job))
-                # ignore illegal jobs
-                continue
-            else:
-                results.append(job)
+            results.append(job)
         return results
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
 
-
-def validate_name(request: JobDef) -> str | None:
-    if request.name is not None:
-        return request.name
-    return ""
-
-
-def validate_description(
-    request: JobDef,
-) -> str | None:
-    return request.description if (request.description is not None) else ""
-
-
-@router.post(
-    "/jobs",
-    response_model=SubmitJobResponse,
-    responses={
-        400: {"model": Message},
-        403: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def submit_jobs(
-    event: Event,
-    request: SubmitJobRequest,
-    db: Session = Depends(get_db),
-    storage: AbstractStorage = Depends(get_storage),
-) -> SubmitJobResponse | ErrorResponse:
-    try:
-        owner = event.state.owner
-        if not can_user_access_device(owner, request.device_id, db):
-            logger.error(
-                f"user={owner} is not allowed to create job for device={request.device_id}"
-            )
-            return ForbiddenErrorResponse(
-                message=f"cannot create job for device={request.device_id}"
-            )
-
-        device = db.get(Device, request.device_id)  # type: ignore
-        if device is None:
-            return BadRequestResponse(message="device not found")
-        logger.info("invoked!", extra={"owner": owner})
-        if device.status != "available":
-            return BadRequestResponse(f"device {device.id} is not available")
-        if request.job_type not in jobtype_of_jobinfo(request.job_info):
-            return BadRequestResponse("job_info is not compatible with job_type")
-
-        # NOTE: method and operator is validated by pydantic
-        shots = request.shots
-        # name is optional
-        name = validate_name(request)
-
-        # description is optional
-        description = validate_description(request)
-
-        job = Job(
-            id=uuid7(as_type="str"),
-            owner=owner,
-            name=name,
-            description=description,
-            device_id=request.device_id,
-            job_info=json.dumps(request.job_info.model_dump()),
-            transpiler_info=json.dumps(request.transpiler_info),
-            simulator_info=json.dumps(request.simulator_info),
-            mitigation_info=json.dumps(request.mitigation_info),
-            job_type=request.job_type,
-            shots=shots,
-            submitted_at=datetime.now(utc),
-        )
-
-        # put the user program to S3 when SSE
-        is_success_put_s3 = put_user_program_to_s3(job, storage)
-        if not is_success_put_s3:
-            # error already logged in put_user_program_to_s3
-            return InternalServerErrorResponse(message="Internal Server Error")
-        db.add(job)
-        db.commit()
-        return SubmitJobResponse(job_id=job.id)
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -255,7 +336,7 @@ def submit_jobs(
 
 @router.get(
     "/jobs/{job_id}",
-    response_model=JobDef,
+    response_model=Job,
     response_model_exclude_none=True,
     responses={
         400: {"model": Message},
@@ -268,22 +349,147 @@ def get_job(
     event: Event,
     job_id: str,
     db: Session = Depends(get_db),
-) -> JobDef | GetJobsResponse | ErrorResponse:
+    storage: AbstractStorage = Depends(get_storage),
+) -> RegisteredJob | SubmittedJob | ErrorResponse:
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-        job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
+        job_model = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job_model is None:
             return NotFoundErrorResponse(message="job not found with the given id")
-        job = model_to_schema(job_model)
-        if isinstance(job, ValueError):
-            logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
+        job = model_to_schema(job_model, storage)
         return job
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
+
+
+# TODO: match parameter names of model and schema
+MAP_MODEL_TO_SCHEMA = {
+    "id": "job_id",
+    "owner": "owner",
+    "status": "status",
+    "name": "name",
+    "description": "description",
+    "device_id": "device_id",
+    "transpiler_info": "transpiler_info",
+    "simulator_info": "simulator_info",
+    "mitigation_info": "mitigation_info",
+    "job_type": "job_type",
+    "shots": "shots",
+    "execution_time": "execution_time",
+    "submitted_at": "submitted_at",
+    "ready_at": "ready_at",
+    "running_at": "running_at",
+    "ended_at": "ended_at",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+}
+
+
+MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
+
+
+def get_job_info(model: JobModel, storage: AbstractStorage) -> JobInfo:
+    output_dict = {}
+    if model.output_files:
+        output_files = json.loads(model.output_files)
+        output_dict = {
+            file: storage.get_download_presigned_url(key=f"{model.id}/{file}.zip")
+            for file in output_files
+        }
+
+    return JobInfo(
+        input=storage.get_download_presigned_url(
+            key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+        ),
+        message=model.message,
+        **output_dict,
+    )
+
+
+def model_to_schema(
+    model: JobModel,
+    storage: AbstractStorage,
+) -> RegisteredJob | SubmittedJob:
+    if model.status == "registered":
+        return RegisteredJob(
+            job_id=model.id,
+            status=JobStatus(model.status),
+        )
+    else:
+        return SubmittedJob(
+            job_id=model.id,
+            name=model.name,
+            description=model.description,
+            device_id=model.device_id,
+            shots=model.shots,
+            job_type=JobType(model.job_type),
+            job_info=get_job_info(model, storage),
+            status=JobStatus(model.status),
+            transpiler_info=json.loads(model.transpiler_info),
+            mitigation_info=json.loads(model.mitigation_info),
+            simulator_info=json.loads(model.simulator_info),
+            execution_time=model.execution_time,
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
+        )
+
+
+def model_to_filtered_schema(
+    model: JobModel,
+    storage: AbstractStorage,
+    fields: list[str] | None = None,
+) -> Job:
+    def is_object_field(fld: str) -> bool:
+        if fld == "transpiler_info":
+            return True
+        elif fld == "mitigation_info":
+            return True
+        elif fld == "simulator_info":
+            return True
+
+        return False
+
+    if fields is None:
+        return model_to_schema(model, storage)
+    else:
+        dict_schema: dict[str, Any] = {}
+        for k in fields:
+            if model.status == "registered" and k in [
+                "name",
+                "device_id",
+                "transpiler_info",
+                "simulator_info",
+                "mitigation_info",
+                "job_type",
+                "shots",
+                "job_info",
+            ]:
+                # ignore registered job dummy values from DB
+                dict_schema[k] = None
+            else:
+                if k == "job_id":
+                    dict_schema[k] = model.id
+                elif k == "job_type":
+                    dict_schema[k] = JobType(model.job_type)
+                elif k == "job_info":
+                    dict_schema[k] = get_job_info(model, storage)
+                elif k == "status":
+                    dict_schema[k] = JobStatus(model.status)
+                elif is_object_field(k):
+                    dict_schema[k] = json.loads(getattr(model, k))
+                else:
+                    dict_schema[k] = getattr(model, k)
+
+        return Job(**dict_schema)
 
 
 @router.delete(
@@ -305,29 +511,56 @@ def delete_job(
     try:
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
-        job = db.get(Job, job_id)
 
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
-        if job.owner != owner or job.status not in ["succeeded", "failed", "cancelled"]:
-            return NotFoundErrorResponse(
+        if job.status not in ["succeeded", "failed", "cancelled"]:
+            return BadRequestResponse(
                 message=f"{job_id} job is not in valid status for deletion (valid statuses for deletion: 'succeeded', 'failed' and 'cancelled')"
             )
 
         db.delete(job)
         db.commit()
 
-        # delete the user program and logs from S3 when SSE
         is_success_delete_s3 = delete_storage_folder(job, storage)
         if not is_success_delete_s3:
             # error already logged in delete_storage_folder
             return InternalServerErrorResponse(message="Internal Server Error")
         return SuccessResponse(message="job deleted")
+
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
+
+
+def delete_storage_folder(job: JobModel, storage: AbstractStorage) -> bool:
+    if job.job_type != JobType.sse:
+        return True
+
+    def delete_by_key(key: str) -> bool:
+        try:
+            storage.delete(key)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete {key}: {str(e)}")
+            return False
+
+    try:
+        prefix = f"{job.id}/"
+        results = storage.traverse_prefix(prefix, delete_by_key)
+        return all(results)
+
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
+        return False
 
 
 @router.get(
@@ -348,10 +581,10 @@ def get_job_status(
     owner = event.state.owner
     logger.info("invoked!", extra={"owner": owner})
     job = (
-        db.query(Job.id, Job.status)
+        db.query(JobModel.id, JobModel.status)
         .filter(
-            Job.id == job_id,
-            Job.owner == owner,
+            JobModel.id == job_id,
+            JobModel.owner == owner,
         )
         .first()
     )
@@ -379,272 +612,29 @@ def cancel_job(
         owner = event.state.owner
         logger.info("invoked!", extra={"owner": owner})
 
-        job = db.get(Job, job_id)
-
+        job = (
+            db.query(JobModel)
+            .filter(JobModel.id == job_id, JobModel.owner == owner)
+            .first()
+        )
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
-        if job.owner != owner or job.status not in [
-            "ready",
-            "submitted",
-            "running",
-            "cancelled",
-        ]:
-            return NotFoundErrorResponse(
+
+        if job.status not in ["ready", "submitted", "running", "cancelled"]:
+            return BadRequestResponse(
                 message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
             )
+
         if job.status in ["submitted", "ready", "running"]:
             logger.info(
                 "job is in submitted or ready or running state, so it will be marked as cancelled"
             )
             job.status = JobStatus.cancelled
             db.commit()
+
         return SuccessResponse(message="cancel request accepted")
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
-
-
-@router.get(
-    "/jobs/{job_id}/sselog",
-    response_model=GetSselogResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def get_sselog(
-    event: Event,
-    job_id: str,
-    db: Session = Depends(get_db),
-    storage: AbstractStorage = Depends(get_storage),
-) -> GetSselogResponse | ErrorResponse:
-    owner = event.state.owner
-    logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
-    log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
-    zip_name = os.environ["SSE_ZIP_FILE_NAME"]
-
-    try:
-        # Check the job type, status and the owner
-        job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
-        if job_model is None:
-            logger.info("job not found with the given id")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        job = model_to_schema(job_model)
-        if isinstance(job, ValueError):
-            logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        if job.job_type != JobType.sse:
-            logger.info("job is not an SSE job")
-            return BadRequestResponse(message="job is not an SSE job")
-        if job.status != JobStatus.succeeded and job.status != JobStatus.failed:
-            logger.info("job has not finished yet")
-            return BadRequestResponse(message="job has not finished yet")
-
-        # get the logs from the AWS S3 bucket
-        log_object = None
-        try:
-            log_object = storage.get(f"{job_id}/{log_name}")
-
-        except Exception as e:
-            logger.exception(f"Failed to get the log file: {str(e)}")
-
-        if log_object is None:
-            return NotFoundErrorResponse(message="log file not found")
-
-        log_str = log_object.decode()
-        file_name = zip_name.replace("{job_id}", job_id)
-
-        # make a zip stream and encode it to base64
-        zip_stream = io.BytesIO()
-        with zipfile.ZipFile(
-            zip_stream, "w", compression=zipfile.ZIP_DEFLATED
-        ) as zip_data:
-            zip_data.writestr(log_name, log_str)
-        zip_stream.seek(0)
-        zip_bin = zip_stream.read()
-        zip_base64 = base64.b64encode(zip_bin).decode("utf-8")
-
-        return GetSselogResponse(file=zip_base64, file_name=file_name)
 
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
-
-
-def put_user_program_to_s3(job: Job, storage: AbstractStorage) -> bool:
-    if job.job_type != JobType.sse:
-        return True
-
-    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
-    try:
-        job_info = decode_job_info(json.loads(job.job_info))
-        if isinstance(job_info, ValueError):
-            return False
-        if (
-            job_info.program is None
-            or len(job_info.program) == 0
-            or job_info.program[0] == ""
-        ):
-            logger.error("the job has no program")
-            return False
-
-        # decode the base64 encoded program
-        decoded_program = base64.b64decode(job_info.program[0])
-
-        # upload the program to storage
-        storage.put(f"{job.id}/{file_name}", decoded_program)
-
-        return True
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Failed to upload the user program to S3: {str(e)}")
-        return False
-
-
-def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
-    if job.job_type != JobType.sse:
-        return True
-
-    def delete_by_key(key: str) -> bool:
-        try:
-            storage.delete(key)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete {key}: {str(e)}")
-            return False
-
-    try:
-        prefix = f"{job.id}/"
-        results = storage.traverse_prefix(prefix, delete_by_key)
-        return all(results)
-
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Failed to delete folder for job {job.id}: {str(e)}")
-        return False
-
-
-def set_job_failure(job: Job) -> None:
-    job.status = JobStatus.failed
-    job.ended_at = datetime.now(utc)
-
-
-# TODO: match parameter names of model and schema
-MAP_MODEL_TO_SCHEMA = {
-    "id": "job_id",
-    "owner": "owner",
-    "status": "status",
-    "name": "name",
-    "description": "description",
-    "device_id": "device_id",
-    "job_info": "job_info",
-    "transpiler_info": "transpiler_info",
-    "simulator_info": "simulator_info",
-    "mitigation_info": "mitigation_info",
-    "job_type": "job_type",
-    "shots": "shots",
-    "execution_time": "execution_time",
-    "submitted_at": "submitted_at",
-    "ready_at": "ready_at",
-    "running_at": "running_at",
-    "ended_at": "ended_at",
-    "created_at": "created_at",
-    "updated_at": "updated_at",
-}
-
-
-def decode_job_info(j: Any) -> JobInfo | ValueError:
-    try:
-        jobinfo = JobInfo.model_validate(j)
-        return jobinfo
-    except Exception as e:
-        return ValueError(f"Failed to decode job_info: {str(e)}")
-
-
-def model_to_schema(
-    model: Job, fields: Optional[list[str]] = None
-) -> JobDef | GetJobsResponse | ValueError:
-    def is_object_field(fld: str) -> bool:
-        if fld == "transpiler_info":
-            return True
-        elif fld == "mitigation_info":
-            return True
-        elif fld == "simulator_info":
-            return True
-
-        return False
-
-    job_info = decode_job_info(json.loads(model.job_info))
-
-    if fields is None:
-        job_info = decode_job_info(json.loads(model.job_info))
-        if isinstance(job_info, ValueError):
-            return job_info
-        return JobDef(
-            job_id=model.id,
-            name=model.name,
-            description=model.description,
-            device_id=model.device_id,
-            shots=model.shots,
-            job_type=JobType(model.job_type),
-            job_info=job_info,
-            status=JobStatus(model.status),
-            transpiler_info=json.loads(model.transpiler_info),
-            mitigation_info=json.loads(model.mitigation_info),
-            simulator_info=json.loads(model.simulator_info),
-            execution_time=model.execution_time,
-            submitted_at=model.submitted_at,
-            ready_at=model.ready_at,
-            running_at=model.running_at,
-            ended_at=model.ended_at,
-        )
-    elif fields is not None:
-        dict_schema: dict[str, Any] = {}
-        for k in fields:
-            if k == "job_id":
-                dict_schema["job_id"] = model.id
-            elif k == "job_type":
-                dict_schema[k] = JobType(model.job_type)
-            elif k == "job_info":
-                job_info = decode_job_info(json.loads(model.job_info))
-                if isinstance(job_info, ValueError):
-                    return job_info
-                else:
-                    dict_schema[k] = job_info
-            elif k == "status":
-                dict_schema[k] = JobStatus(model.status)
-            elif is_object_field(k):
-                dict_schema[k] = json.loads(getattr(model, k))
-            else:
-                dict_schema[k] = getattr(model, k)
-        return GetJobsResponse(**dict_schema)
-    else:
-        return None
-
-
-def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
-    if info.operator is not None:
-        return [JobType.estimation]
-    else:
-        return [JobType.sampling, JobType.multi_manual, JobType.sse]
-
-
-def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
-    try:
-        # username here is the email address registered in Cognito
-        user = db.scalars(select(User).where(User.email == username)).first()
-        if user is None or user.available_devices is None:
-            return False
-
-        if user.available_devices == "*":
-            return True
-
-        available_devices = json.loads(user.available_devices)
-
-        return isinstance(available_devices, list) and device_id in available_devices
-    except Exception:
-        return False
