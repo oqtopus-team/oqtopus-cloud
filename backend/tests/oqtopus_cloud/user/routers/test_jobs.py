@@ -552,19 +552,21 @@ def test_get_jobs_invalid_fields(
     assert actual == expect
 
 
-# TODO: resolve conflict with PR #396
 def test_get_jobs_filtering_start_time(
     test_client,
     test_db,
 ):
     """_summary_
-    filterling startime, expect only testjob2 will be got
+    filterling startime, expect only testjob3 will be got
     """
 
     test_db.flush()
     test_db.add(_get_submitted_model(1))
     test_db.add(_get_registered_model(2))
+    test_db.add(_get_submitted_model(3))
     test_db.commit()
+
+    storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get(
         "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
@@ -572,9 +574,33 @@ def test_get_jobs_filtering_start_time(
     adapter = TypeAdapter(list[Job])
     actual = adapter.validate_python(response.json())
     expect = [
+        # time filtering is done according to submission time
+        # thus registered tasks are ignored
+        # Job(
+        #     job_id="testjob2id",
+        #     status=JobStatus.registered,
+        # ),
         Job(
-            job_id="testjob2id",
-            status=JobStatus.registered,
+            job_id="testjob3id",
+            name="testjob3",
+            description="test job 3",
+            device_id="Kawasaki",
+            job_type=JobType.sampling,
+            job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip"),
+            transpiler_info={"this_is": "transpiler_info"},
+            simulator_info={"this_is": "simulator_info"},
+            mitigation_info={
+                "field1": "value1",
+                "field2": "value2",
+                "field3": "value3",
+            },
+            status=JobStatus.submitted,
+            shots=1000,
+            execution_time=None,
+            submitted_at=datetime(2024, 3, 6, 12, 34, 56, tzinfo=timezone.utc),
+            ready_at=None,
+            running_at=None,
+            ended_at=None,
         ),
     ]
 
@@ -634,39 +660,38 @@ def test_get_jobs_filtering_end_time(
         assert_jobs_equal(act, exp)
 
 
-# TODO: resolve conflict with PR #396
-# def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
-#     test_client,
-#     test_db,
-# ):
-#     """
-#     start_time filter must use submitted_at.
-#     even if created_at is newer, older submitted_at job should be excluded.
-#     """
+def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
+    test_client,
+    test_db,
+):
+    """
+    start_time filter must use submitted_at.
+    even if created_at is newer, older submitted_at job should be excluded.
+    """
 
-#     test_db.flush()
-#     job1 = _get_model(1)
-#     job2 = _get_model(2)
+    test_db.flush()
+    job1 = _get_submitted_model(1)
+    job2 = _get_submitted_model(2)
 
-#     # Keep created_at after filter threshold for both jobs to detect wrong column usage.
-#     shared_created_at = datetime(2024, 3, 6, 12, 34, 56, tzinfo=timezone.utc)
-#     job1.created_at = shared_created_at
-#     job2.created_at = shared_created_at
-#     job1.submitted_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc)
-#     job2.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
+    # Keep created_at after filter threshold for both jobs to detect wrong column usage.
+    shared_created_at = datetime(2024, 3, 6, 12, 34, 56, tzinfo=timezone.utc)
+    job1.created_at = shared_created_at
+    job2.created_at = shared_created_at
+    job1.submitted_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc)
+    job2.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
 
-#     test_db.add(job1)
-#     test_db.add(job2)
-#     test_db.commit()
+    test_db.add(job1)
+    test_db.add(job2)
+    test_db.commit()
 
-#     response = test_client.get(
-#         "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
-#     )
-#     adapter = TypeAdapter(list[GetJobsResponse])
-#     actual = adapter.validate_python(response.json())
+    response = test_client.get(
+        "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
+    )
+    adapter = TypeAdapter(list[Job])
+    actual = adapter.validate_python(response.json())
 
-#     assert response.status_code == 200
-#     assert [job.job_id for job in actual] == ["testjob2id"]
+    assert response.status_code == 200
+    assert [job.job_id for job in actual] == ["testjob2id"]
 
 
 def test_get_jobs_by_status(test_client, test_db):
@@ -859,7 +884,7 @@ def test_get_jobs_pagination(
     for (act, exp) in zip(actual, expect):
         assert_jobs_equal(act, exp)
 
-# TODO: update (add status) & resolve conflict with PR #396
+
 def test_get_jobs_all_parameters(
     test_client,
     test_db,
@@ -873,32 +898,27 @@ def test_get_jobs_all_parameters(
         if i % 2 == 1:
             test_db.add(_get_submitted_model(i))
         else:
-            test_db.add(_get_registered_model(i))
+            test_db.add(_get_succeeded_model(i))
     test_db.commit()
 
     storage_base = os.environ["STORAGE_LOCAL_BASE_PATH"]
 
     response = test_client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=3&order=DESC"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&status=submitted&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=2&size=3&order=DESC"
     )
     adapter = TypeAdapter(list[Job])
     actual = adapter.validate_python(response.json())
 
     expect = [
         Job(
-            job_id="testjob8id",
-            description=None,
-            job_info=None,
+            job_id="testjob3id",
+            description="test job 3",
+            job_info=JobInfo(input=f"{storage_base}/testjob3id/input.zip"),
         ),
         Job(
-            job_id="testjob7id",
-            description="test job 7",
-            job_info=JobInfo(input=f"{storage_base}/testjob7id/input.zip"),
-        ),
-        Job(
-            job_id="testjob6id",
-            description=None,
-            job_info=None,
+            job_id="testjob1id",
+            description="test job 1",
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
         ),
     ]
 
@@ -908,15 +928,15 @@ def test_get_jobs_all_parameters(
         assert_jobs_equal(act, exp)
 
     response = test_client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=4&size=3&order=DESC"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&status=submitted&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-14T16%3A12%3A29%2B09%3A00&q=test&page=3&size=2&order=DESC"
     )
     actual = adapter.validate_python(response.json())
 
     expect = [
         Job(
-            job_id="testjob2id",
-            description=None,
-            job_info=None,
+            job_id="testjob1id",
+            description="test job 1",
+            job_info=JobInfo(input=f"{storage_base}/testjob1id/input.zip"),
         ),
     ]
 
