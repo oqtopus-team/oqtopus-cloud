@@ -617,14 +617,20 @@ def cancel_job(
         if job is None:
             return NotFoundErrorResponse(message="job not found with the given id")
 
-        if job.status not in ["ready", "submitted", "running", "cancelled"]:
+        if job.status not in [
+            "registered",
+            "ready",
+            "submitted",
+            "running",
+            "cancelled",
+        ]:
             return BadRequestResponse(
-                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'ready', 'submitted' and 'running')"
+                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'registered', 'ready', 'submitted' and 'running')"
             )
 
-        if job.status in ["submitted", "ready", "running"]:
+        if job.status in ["registered", "submitted", "ready", "running"]:
             logger.info(
-                "job is in submitted or ready or running state, so it will be marked as cancelled"
+                "job is in registered, submitted or ready or running state, so it will be marked as cancelled"
             )
             job.status = JobStatus.cancelled
             db.commit()
