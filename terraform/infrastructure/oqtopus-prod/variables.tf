@@ -103,4 +103,5 @@ variable "enable_guardduty_s3_protection" {
 variable "s3_cors_allowed_origins" {
   description = "Set of origins from which the bucket can be accessed"
   type        = list(string)
+  default     = []
 }

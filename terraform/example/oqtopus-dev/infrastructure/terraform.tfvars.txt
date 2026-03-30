@@ -14,4 +14,4 @@ cloudtrail_s3_logs_transition_days_deep_archive = 180
 enable_guardduty               = false
 enable_guardduty_s3_protection = false
 
-s3_cors_allowed_origins = ["*"]
+s3_cors_allowed_origins = ["https://app.example.com"]

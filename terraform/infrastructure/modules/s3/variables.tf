@@ -22,5 +22,5 @@ variable "force_destroy_bucket" {
 variable "cors_allowed_origins" {
   description = "Set of origins from which the bucket can be accessed"
   type        = list(string)
+  default     = []
 }
-
