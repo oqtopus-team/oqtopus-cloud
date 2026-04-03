@@ -36,6 +36,7 @@ jobs:
 
       - name: Auto PR
         env:
+          BRANCH_NAME: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TRIGGERED_PUSH_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
         run: |
