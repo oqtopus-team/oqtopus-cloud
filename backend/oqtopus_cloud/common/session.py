@@ -75,7 +75,7 @@ def get_db() -> Generator:
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         connect_args={
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', time_zone='+00:00'"
         },
     )
     SessionLocal = sessionmaker(
@@ -91,3 +91,15 @@ def get_db() -> Generator:
         raise
     finally:
         db.close()
+
+
+def get_cognito_client():
+    region = None
+    if os.getenv("ENV") == "local":
+        region = "ap-northeast-1"
+    else:
+        user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
+        if user_pool_id:
+            region = user_pool_id.split("_")[0]
+
+    return boto3.client("cognito-idp", region_name=region)

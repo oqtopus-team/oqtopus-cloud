@@ -31,6 +31,7 @@ nav:
       - OpenAPI Specification:
           - User API: oas/user/README.md
           - Provider API: oas/provider/README.md
+          - User Signup API: oas/user_signup/README.md
   - Operation:
       - Setup Operation Environment: operation/setup.md
       - Deployment: operation/deployment.md
@@ -104,6 +105,7 @@ plugins:
             OpenAPI Specification: OpenAPI仕様書
             UserAPI: ユーザーAPI
             ProviderAPI: プロバイダーAPI
+            UserSignupAPI: ユーザーサインアップAPI
 
             Operation: 運用
             Setup Operation Environment: 運用環境のセットアップ

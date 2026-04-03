@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import pytz
@@ -51,21 +51,22 @@ def _get_calibration_data() -> CalibrationData:
 """
 
 
-def _get_user_model(n: int, username: str, available_devices="*") -> User:
+def _get_user_model(n: int, available_devices="*") -> User:
     if available_devices != "*":
         available_devices = json.dumps(available_devices)
 
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
-        "username": username,
+        "display_name": f"test_user{n}",
         "userstatus": UserStatus.approved,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": available_devices,
-        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
         "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=utc),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=utc),
     }
@@ -104,11 +105,10 @@ def _get_model(device="SVSim"):
 def test_get_device(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user))
+    test_db.add(_get_user_model(user_no))
     test_db.add(_get_model())
     test_db.commit()
 
@@ -120,14 +120,14 @@ def test_get_device(test_db):
         device_id="SVSim",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=timezone.utc),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -137,11 +137,10 @@ def test_can_get_device_if_in_available_devices(test_db):
     # Arrange
     user_no = 1
     device = "SC"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, available_devices=[device]))
+    test_db.add(_get_user_model(user_no, available_devices=[device]))
     test_db.add(_get_model(device=device))
     test_db.commit()
 
@@ -153,14 +152,14 @@ def test_can_get_device_if_in_available_devices(test_db):
         device_id=device,
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=timezone.utc),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -170,11 +169,10 @@ def test_cannot_get_device_without_permission(test_db):
     # Arrange
     user_no = 1
     device = "SC"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, ["Kawasaki", "SVSim"]))
+    test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
     test_db.add(_get_model(device=device))
     test_db.commit()
 
@@ -193,11 +191,10 @@ def test_cannot_get_device_that_not_exist(test_db):
     # Arrange
     user_no = 1
     device = "SC222"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user))
+    test_db.add(_get_user_model(user_no))
     test_db.commit()
 
     # Act
@@ -212,11 +209,10 @@ def test_cannot_get_device_that_not_exist(test_db):
 def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, ["Test_model", "SVSim"]))
+    test_db.add(_get_user_model(user_no, ["Test_model", "SVSim"]))
     test_db.add(_get_model(device="SC"))
     test_db.add(_get_model(device="SVSim"))
     test_db.add(_get_model(device="Test_model"))
@@ -263,11 +259,10 @@ def test_can_only_get_devices_that_user_can_access(test_db):
 def test_can_return_all_devices_when_user_has_access_to_all_devices(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, "*"))
+    test_db.add(_get_user_model(user_no, "*"))
     test_db.add(_get_model(device="SC"))
     test_db.add(_get_model(device="SVSim"))
     test_db.add(_get_model(device="Test_model"))
@@ -311,7 +306,7 @@ def test_model_to_shema():
 
 def test_get_device_handler(test_client, test_db):
     # Arrange
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_model())
     test_db.commit()
 

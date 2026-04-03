@@ -2,7 +2,7 @@ from datetime import datetime
 
 from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User
 from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
 from oqtopus_cloud.user_signup.lambda_function import app
 from oqtopus_cloud.user_signup.routers.confirm_signup import cleanup_user
@@ -19,7 +19,7 @@ def _get_model_whitelist_users(n: int, is_completed: bool) -> WhitelistUser:
         "email": f"email{n}@example.com",
         "group_id": f"group_id_{n}",
         "is_signup_completed": is_completed,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
@@ -30,16 +30,18 @@ def _get_model_whitelist_users(n: int, is_completed: bool) -> WhitelistUser:
 
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email{n}@example.com",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email{n}@example.com",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": 1,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
-        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56),
+        "mfa_status": MFAStatus.disabled,
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
     }
@@ -48,13 +50,18 @@ def _get_model(n: int) -> User:
 
 def test_confirm_confirm(test_db):
     test_db.flush()
-    test_db.add(_get_model(2))
+    test_db.add(_get_model(1))
     test_db.commit()
     body = ConfirmationSignupRequest(
         email="email1@example.com", confirmation_code="confirmation_code_1"
     )
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 200
+    # confirm mfa_status is enabled
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
+    assert user is not None
+    assert user.mfa_status == MFAStatus.enabled
 
 
 def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
@@ -77,8 +84,9 @@ def test_confirm_signup_cognito_failure(test_db, fake_cognito_client_fixture):
     response = client.put("/confirm_signup", json=body.model_dump())
     assert response.status_code == 400
     # confirm the user is NOT registered
-    user = test_db.query(User).filter(User.email == "email1@example.com").first()
-    assert user.username == "username_1"
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
+    assert user is None
 
 
 def test_confirm_signup_exception(test_db, fake_cognito_client_fixture):
@@ -109,7 +117,8 @@ def test_cleanup_user(test_db, fake_cognito_client_fixture):
     test_db.add(_get_model_whitelist_users(1, True))
     test_db.commit()
     cleanup_user(test_db, fake_cognito_client_fixture, "email1@example.com", "pool_id")
-    user = test_db.query(User).filter(User.email == "email1@example.com").first()
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email1@example.com").first()
     whitelist_user = (
         test_db.query(WhitelistUser)
         .filter(WhitelistUser.email == "email1@example.com")

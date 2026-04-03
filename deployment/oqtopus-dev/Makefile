@@ -2,8 +2,9 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+SNAPSTART_ALIAS := snapstart
 
-.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-all deploy test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
+.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-lambda-version-cleaner deploy-all deploy deploy-aliased-version set-alias test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
 export
@@ -52,60 +53,85 @@ zip-user_signup: ## Build user_signup API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/user_signup
 
-zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker## Build All Lambda Packages
+zip-lambda-version-cleaner: ## Build lambda_version_cleaner Lambda Package
+	@$(MAKE) zip \
+	WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/maintenance/lambda_version_cleaner \
+	BIN=./bin/lambda-version-cleaner
+
+zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner ## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
+	@rm -rf ${DEPLOY_PACKAGES_DIR}
 	@mkdir -p ${DEPLOY_PACKAGES_DIR}
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
 	@poetry export -f requirements.txt --output requirements.txt
-	@docker run --platform linux/x86_64 --user $(id -u):$(id -g) \
-  -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
-  -v ./requirements.txt:/requirements.txt \
-  python:3.12 /bin/bash -c "\
-  curl -fsSL https://astral.sh/uv/install.sh | bash && \
-  /root/.local/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}" --link-mode=copy
-	@cd ${DEPLOY_PACKAGES_DIR} && rm -rf __pycache__ && zip -r ../${BIN}/lambda.zip * -q
+	@docker run --platform linux/x86_64 --user $$(id -u):$$(id -g) \
+	  -e HOME=/tmp \
+	  -e UV_INSTALL_DIR=/tmp/.local/bin \
+	  -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
+	  -v ./requirements.txt:/requirements.txt \
+	  python:3.12 /bin/bash -c "\
+	    curl -fsSL https://astral.sh/uv/install.sh | bash && \
+	    /tmp/.local/bin/uv pip install \
+	      --system \
+	      --no-cache-dir \
+	      --requirement /requirements.txt \
+	      --target /${DEPLOY_PACKAGES_DIR} \
+	      --link-mode=copy"
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
-	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q
+	$(if $(strip ${LIB}), \
+		@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q, \
+	)
 	@echo "Lambda Package Created: ${BIN}/lambda.zip"
 	@rm -rf ${DEPLOY_PACKAGES_DIR}
 	@rm requirements.txt
 
-
 deploy-user: zip-user ## Deploy User API Lambda Package
-	@$(MAKE) deploy \
+	@$(MAKE) deploy-aliased-version \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
-	BIN=./bin/user
+	BIN=./bin/user \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-provider: zip-provider	## Deploy Provider API Lambda Package
-	@$(MAKE) deploy \
+	@$(MAKE) deploy-aliased-version \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
-	BIN=./bin/provider
+	BIN=./bin/provider \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-admin: zip-admin	## Deploy Admin API Lambda Package
-	@$(MAKE) deploy \
+	@$(MAKE) deploy-aliased-version \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
-	BIN=./bin/admin
+	BIN=./bin/admin \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-lambda_auth: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
-	@$(MAKE) deploy \
+	@$(MAKE) deploy-aliased-version \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
-	BIN=./bin/lambda_auth
+	BIN=./bin/lambda_auth \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-user_signup: zip-user_signup	## Deploy user_signup API Lambda Package
-	@$(MAKE) deploy \
+	@$(MAKE) deploy-aliased-version \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
-	BIN=./bin/user_signup
+	BIN=./bin/user_signup \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pending-jobs-updater-worker Lambda Package
 	@$(MAKE) deploy \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
 	BIN=./bin/pending-jobs-updater
 
-deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker ## Deploy All Lambda Packages
+deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-version-cleaner Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda-version-cleaner \
+	BIN=./bin/lambda-version-cleaner
+
+deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
 
 deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
@@ -127,31 +153,78 @@ generate-tag: ## Tag version
   --tags github-sha=$${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 
+deploy-aliased-version: generate-tag
+	@echo "Deploy ${FUNCTION_NAME} ..."
+	@export AWS_PAGER="" && \
+	VERSION=$$(aws lambda update-function-code \
+		--function-name ${FUNCTION_NAME} \
+		--zip-file fileb://${BIN}/lambda.zip \
+		--publish \
+		--query 'Version' \
+		--output text \
+		--profile ${PROFILE}) && \
+	if [ -z "$$VERSION" ]; then \
+		echo "Error: Failed to get version number" && exit 1; \
+	fi && \
+	echo "Published version: ${FUNCTION_NAME}:$$VERSION" && \
+	$(MAKE) set-alias \
+		ALIAS_NAME=$(ALIAS_NAME) \
+		FUNCTION_NAME=$(FUNCTION_NAME) \
+		VERSION=$$VERSION \
+		PROFILE=$(PROFILE)
+	@echo "Deploy Completed."
+
+set-alias: ## Set Alias to Lambda Version
+	@echo "Setting alias '${ALIAS_NAME}' to ${FUNCTION_NAME}:${VERSION} ..."
+	@export AWS_PAGER="" && \
+	if aws lambda get-alias \
+		--function-name ${FUNCTION_NAME} \
+		--name ${ALIAS_NAME} \
+		--profile ${PROFILE} >/dev/null 2>&1; then \
+		aws lambda update-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} \
+			--profile ${PROFILE} && \
+		echo "Updated alias '${ALIAS_NAME}' to version ${FUNCTION_NAME}:${VERSION}"; \
+	else \
+		aws lambda create-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} \
+			--profile ${PROFILE} && \
+		echo "Created alias '${ALIAS_NAME}' pointing to version ${FUNCTION_NAME}:${VERSION}"; \
+	fi
 
 deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
-	BIN=./bin/user
+	BIN=./bin/user \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-provider-via-actions: zip-provider	## Deploy Provider API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
-	BIN=./bin/provider
+	BIN=./bin/provider \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-admin-via-actions: zip-admin	## Deploy Admin API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
-	BIN=./bin/admin
+	BIN=./bin/admin \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-lambda_auth-via-actions: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
-	BIN=./bin/lambda_auth
+	BIN=./bin/lambda_auth \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda Package
-	@$(MAKE) deploy-via-actions \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
-	BIN=./bin/user_signup
+	BIN=./bin/user_signup \
+	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
@@ -168,6 +241,43 @@ generate-tag-via-actions: ## Tag version via Github Actions
   --tags github-sha=${GITHUB_SHA}
 	@echo "🏷️ Tagging Completed"
 
+deploy-aliased-version-via-actions: generate-tag-via-actions
+	@echo "Deploy ${FUNCTION_NAME} ..."
+	@export AWS_PAGER="" && \
+	VERSION=$$(aws lambda update-function-code \
+		--function-name ${FUNCTION_NAME} \
+		--zip-file fileb://${BIN}/lambda.zip \
+		--publish \
+		--query 'Version' \
+		--output text) && \
+	if [ -z "$$VERSION" ]; then \
+		echo "Error: Failed to get version number" && exit 1; \
+	fi && \
+	echo "Published version: ${FUNCTION_NAME}:$$VERSION" && \
+	$(MAKE) set-alias-via-actions \
+		ALIAS_NAME=$(ALIAS_NAME) \
+		FUNCTION_NAME=$(FUNCTION_NAME) \
+		VERSION=$$VERSION
+	@echo "Deploy Completed."
+
+set-alias-via-actions: ## Set Alias to Lambda Version via Github Actions
+	@echo "Setting alias '${ALIAS_NAME}' to ${FUNCTION_NAME}:${VERSION} ..."
+	@export AWS_PAGER="" && \
+	if aws lambda get-alias \
+		--function-name ${FUNCTION_NAME} \
+		--name ${ALIAS_NAME} >/dev/null 2>&1; then \
+		aws lambda update-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} && \
+		echo "Updated alias '${ALIAS_NAME}' to version ${FUNCTION_NAME}:${VERSION}"; \
+	else \
+		aws lambda create-alias \
+			--function-name ${FUNCTION_NAME} \
+			--name ${ALIAS_NAME} \
+			--function-version ${VERSION} && \
+		echo "Created alias '${ALIAS_NAME}' pointing to version ${FUNCTION_NAME}:${VERSION}"; \
+	fi
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \

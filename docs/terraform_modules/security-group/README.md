@@ -34,21 +34,26 @@ module "security_group" {
 
 | Name | Type |
 |------|------|
+| [aws_security_group.cloudtrail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_security_group.cognito_idp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.db](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.db_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.ec2_bastion](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.eic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
-| [aws_security_group_rule.lambda_to_cognito](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_vpc_security_group_egress_rule.db_proxy_to_db](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.ec2_bastion_to_db_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.ec2_bastion_to_secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.eic_to_ec2_bastion](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
+| [aws_vpc_security_group_egress_rule.lambda_to_cloudtrail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
+| [aws_vpc_security_group_egress_rule.lambda_to_cognito_idp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_db_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
+| [aws_vpc_security_group_ingress_rule.cloudtrail_from_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
+| [aws_vpc_security_group_ingress_rule.cognito_from_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
 | [aws_vpc_security_group_ingress_rule.db_proxy_from_ec2_bastion](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
 | [aws_vpc_security_group_ingress_rule.db_proxy_from_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
 | [aws_vpc_security_group_ingress_rule.ec2_bastion_from_eic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
@@ -71,11 +76,12 @@ module "security_group" {
 
 | Name | Description |
 |------|-------------|
+| <a name="output_cloudtrail_security_group_ids"></a> [cloudtrail\_security\_group\_ids](#output\_cloudtrail\_security\_group\_ids) | The security group IDs for the CloudTrail |
+| <a name="output_cognito_security_group_ids"></a> [cognito\_security\_group\_ids](#output\_cognito\_security\_group\_ids) | The security group IDs for the Cognito IdP |
 | <a name="output_db_proxy_security_group_ids"></a> [db\_proxy\_security\_group\_ids](#output\_db\_proxy\_security\_group\_ids) | The security group IDs for the RDS proxy |
 | <a name="output_db_security_group_ids"></a> [db\_security\_group\_ids](#output\_db\_security\_group\_ids) | The security group IDs for the RDS instance |
 | <a name="output_ec2_bastion_security_group_ids"></a> [ec2\_bastion\_security\_group\_ids](#output\_ec2\_bastion\_security\_group\_ids) | The security group IDs for the EC2 instance |
 | <a name="output_eic_security_group_ids"></a> [eic\_security\_group\_ids](#output\_eic\_security\_group\_ids) | The security group IDs for the EIC instance |
 | <a name="output_lambda_security_group_ids"></a> [lambda\_security\_group\_ids](#output\_lambda\_security\_group\_ids) | The security group IDs for the Lambda function |
-| <a name="output_lambda_with_cognito_security_group_ids"></a> [lambda\_with\_cognito\_security\_group\_ids](#output\_lambda\_with\_cognito\_security\_group\_ids) | The security group IDs for the Lambda function |
 | <a name="output_secret_manager_security_group_ids"></a> [secret\_manager\_security\_group\_ids](#output\_secret\_manager\_security\_group\_ids) | The security group IDs for the Secret Manager |
 <!-- END_TF_DOCS -->

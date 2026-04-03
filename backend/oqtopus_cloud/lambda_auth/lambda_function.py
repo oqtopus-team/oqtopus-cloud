@@ -4,15 +4,18 @@ from typing import Optional
 
 import boto3
 import jwt
-from sqlalchemy import select
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
+from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
-from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.lambda_auth.conf import logger
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
+
+ph = PasswordHasher()
 
 
 class AuthError(Exception):
@@ -22,7 +25,7 @@ class AuthError(Exception):
 
 
 def _validate_user_status(
-    email: str | None = None, cognito_id: str | None = None
+    user_id: str | None = None, cognito_id: str | None = None
 ) -> bool:
     try:
         # Get a database session
@@ -31,24 +34,29 @@ def _validate_user_status(
 
         user = None
         # Get the user status from the database
-        if email:
+        if user_id:
             stmt = select(User).where(
-                User.email == email, User.userstatus == "approved"
+                User.id == user_id,
+                User.userstatus == UserStatus.approved,
             )
             user = db.execute(stmt).scalar()
             db.close()
         elif cognito_id:
             stmt = select(User).where(
-                User.cognito_id == cognito_id, User.userstatus == "approved"
+                User.cognito_id == cognito_id, User.userstatus == UserStatus.approved
             )
             user = db.execute(stmt).scalar()
             db.close()
         else:
-            raise AuthError("Username or cognito_id is not given")
+            raise AuthError("user_id or cognito_id is not given")
 
         if user is None:
-            logger.info(f"User {email} or {cognito_id} is not approved")
+            logger.info(f"User {user_id} or {cognito_id} is not approved")
             return False
+        # Get the MFA status from the database
+        # only for the case from oqtopus-frontend
+        if user_id and user.mfa_status != MFAStatus.enabled:
+            raise AuthError("MFA is not enabled for this user")
         return True
     except Exception as e:
         logger.error(f"Failed to get user status: {e}")
@@ -101,7 +109,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
             raise AuthError("Invalid token_use")
 
         # verify the user status
-        if not _validate_user_status(email=token["cognito:username"]):
+        if not _validate_user_status(user_id=token["cognito:username"]):
             raise AuthError("User is not approved")
 
         return token["cognito:username"]
@@ -112,6 +120,11 @@ def _verify_id_token(id_token: Optional[str]) -> str:
 def _verify_api_token(api_token: Optional[str]) -> str:
     if api_token is None or api_token == "":
         raise AuthError("API token is None")
+
+    try:
+        api_token_id, api_token_secret = api_token.split(".")
+    except ValueError:
+        raise AuthError("API token is malformed")
 
     # Get environment variables
     try:
@@ -124,11 +137,34 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         dbs = get_db()
         db = next(dbs)
 
-        # Get the API token expiration from the database
-        stmt_api_token_expiration = select(User.api_token_expiration).where(
-            User.api_token_secret == api_token
-        )
-        api_token_expiration = db.execute(stmt_api_token_expiration).scalars().first()
+        select_stmt = select(
+            User.mfa_status,
+            User.api_token_hash,
+            User.api_token_expiration,
+            User.cognito_id,
+        ).where(User.api_token_id == api_token_id)
+        verification_data = db.execute(select_stmt).first()
+        if verification_data is None:
+            raise AuthError("Invalid API token")
+
+        mfa_status, api_token_hash, api_token_expiration, cognito_id = verification_data
+
+        # Check the API token hash
+        try:
+            ph.verify(api_token_hash, api_token_secret)
+        except VerifyMismatchError:
+            raise AuthError("Invalid API token")
+        except (VerificationError, InvalidHash):
+            raise AuthError("API token verification error")
+
+        if ph.check_needs_rehash(api_token_hash):
+            update_stmt = (
+                update(User)
+                .where(User.api_token_id == api_token_id)
+                .values(api_token_hash=ph.hash(api_token_secret))
+            )
+            db.execute(update_stmt)
+            db.commit()
 
         # Check the API token expiration
         if (api_token_expiration is None) or (
@@ -136,14 +172,12 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         ):
             raise AuthError("API token is expired")
 
-        # Get the Cognito ID from the database
-        stmt_cognito_id = select(User.cognito_id).where(
-            User.api_token_secret == api_token
-        )
-        cognito_id = db.execute(stmt_cognito_id).scalars().first()
         db.close()
     except Exception as e:
         raise AuthError(f"Database error {e}")
+
+    if mfa_status != MFAStatus.enabled:
+        raise AuthError("MFA is not enabled for this user")
 
     if cognito_id is None:
         raise AuthError("Cognito id is not found")
@@ -170,7 +204,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError(f"Failed to list users from Cognito {e}")
 
 
-def _generate_policy_allow(principal_id="", resource="", owner=""):
+def _generate_policy_allow(principal_id="", resource="", user_id=""):
     # Generate allow policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -187,13 +221,13 @@ def _generate_policy_allow(principal_id="", resource="", owner=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "owner": owner,
+            "user_id": user_id,
         }
 
     return auth_response
 
 
-def _generate_policy_deny(principal_id="", resource="", owner=""):
+def _generate_policy_deny(principal_id="", resource="", user_id=""):
     # Generate deny policy for the API Gateway
     auth_response = {"principalId": principal_id}
 
@@ -206,51 +240,52 @@ def _generate_policy_deny(principal_id="", resource="", owner=""):
         }
         auth_response["policyDocument"] = policy_document
         auth_response["context"] = {
-            "owner": owner,
+            "user_id": user_id,
         }
 
     return auth_response
 
 
 def lambda_handler(event, context):
-    headers = event["headers"]
+    headers_raw = event.get("headers", {})
+    headers = {k.lower(): v for k, v in headers_raw.items()}
     method_arn = event["methodArn"]
-    owner = None
-    unknown_owner = "unknown"
+    user_id = None
+    unknown_user_id = "unknown"
 
     try:
         if "q-api-token" in headers:
             # Verify API token
-            owner = _verify_api_token(headers["q-api-token"])
+            user_id = _verify_api_token(headers["q-api-token"])
         elif "authorization" in headers:
             # Verify Cognito ID token
-            owner = _verify_id_token(headers["authorization"])
+            user_id = _verify_id_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
             policy_document = _generate_policy_deny(
-                unknown_owner, method_arn, unknown_owner
+                unknown_user_id, method_arn, unknown_user_id
             )
             return policy_document
-        if not owner:
+        if not user_id:
             # Generate deny policy
             policy_document = _generate_policy_deny(
-                unknown_owner, method_arn, unknown_owner
+                unknown_user_id, method_arn, unknown_user_id
             )
             return policy_document
         else:
             # Generate allow policy
-            policy_document = _generate_policy_allow(owner, method_arn, owner)
+            policy_document = _generate_policy_allow(user_id, method_arn, user_id)
             logger.info(f"Authorization success {policy_document}")
             return policy_document
     except AuthError as e:
         logger.exception(f"Authentication/Authorization failed: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_owner, method_arn, unknown_owner
+            unknown_user_id, method_arn, unknown_user_id
         )
         return policy_document
     except Exception as e:
         logger.exception(f"Unexpected error occurred: {str(e)}")
         policy_document = _generate_policy_deny(
-            unknown_owner, method_arn, unknown_owner
+            unknown_user_id, method_arn, unknown_user_id
         )
         return policy_document

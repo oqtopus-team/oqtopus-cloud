@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 import pytest
-from oqtopus_cloud.common.models.user import User, UserStatus
+from argon2 import PasswordHasher
+from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.lambda_auth.lambda_function import (
     AuthError,
     _generate_policy_allow,
@@ -25,11 +26,11 @@ def fake__verify_id_token(id_token=""):
     return "fake_username"
 
 
-def fake__verify_id_token_none_owner():
+def fake__verify_id_token_none_user_id():
     return ""
 
 
-def fake__generate_policy_allow(principal_id="", resource="", owner=""):
+def fake__generate_policy_allow(principal_id="", resource="", user_id=""):
     const = {
         "principalId": "fake_username",
         "policyDocument": {
@@ -42,13 +43,13 @@ def fake__generate_policy_allow(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_id": "fake_username"},
     }
 
     return const
 
 
-def fake__generate_policy_deny(principal_id="", resource="", owner=""):
+def fake__generate_policy_deny(principal_id="", resource="", user_id=""):
     const = {
         "principalId": "fake_username",
         "policyDocument": {
@@ -61,11 +62,11 @@ def fake__generate_policy_deny(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_id": "fake_username"},
     }
 
 
-def fake__generate_policy_none(principal_id="", resource="", owner=""):
+def fake__generate_policy_none(principal_id="", resource="", user_id=""):
     const = {
         "principalId": "",
         "policyDocument": {
@@ -78,35 +79,33 @@ def fake__generate_policy_none(principal_id="", resource="", owner=""):
                 }
             ],
         },
-        "context": {"owner": ""},
+        "context": {"user_id": ""},
     }
 
     return const
 
 
-def _get_model(
-    n: int, expiration_day=90, username=None, status=UserStatus.approved
-) -> User:
-    if username is None:
-        username = f"username_{n}"
+def _get_model(n: int, expiration_day=90, status=UserStatus.approved) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email{n}@example.com",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email{n}@example.com",
-        "username": username,
+        "display_name": f"test_user_{n}",
         "userstatus": status,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
-        "api_token_expiration": datetime.now().replace(second=0, microsecond=0)
+        "mfa_status": MFAStatus.disabled if n % 2 == 0 else MFAStatus.enabled,
+        "api_token_id": f"api_token_id_{n}",
+        "api_token_hash": PasswordHasher().hash(f"api_token_secret_{n}"),
+        "api_token_expiration": datetime.now(timezone.utc).replace(second=0, microsecond=0)
         + timedelta(days=expiration_day),
     }
     return User(**model_dict)
 
 
 def test__verify_id_token(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username")
+    user = _get_model(1)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -161,7 +160,7 @@ def test__verify_id_token_jwt_decode_failure():
 
 
 def test__verify_suspended(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username", status=UserStatus.suspended)
+    user = _get_model(1, status=UserStatus.suspended)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -173,7 +172,19 @@ def test__verify_suspended(test_session, monkeypatch):
 
 
 def test__verify_unapproved(test_session, monkeypatch):
-    user = _get_model(1, username="fake_username", status=UserStatus.unapproved)
+    user = _get_model(1, status=UserStatus.unapproved)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    pytest.raises(AuthError, _verify_id_token, "id_token")
+
+
+def test__verify_mfa_inactive(test_session, monkeypatch):
+    user = _get_model(2)
     test_session.flush()
     test_session.add(user)
     test_session.commit()
@@ -192,7 +203,7 @@ def test__verify_api_token(test_session, monkeypatch):
     monkeypatch.setattr(
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
-    ret = _verify_api_token("api_token_secret_1")
+    ret = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert ret == "fake_username"
 
@@ -207,7 +218,7 @@ def test__verify_api_token_expired(test_session, monkeypatch):
     )
 
     try:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
     except AuthError as e:
         assert str(e) == "Database error API token is expired"
     else:
@@ -238,9 +249,23 @@ def test__verify_api_token_no_env_variable(test_session, monkeypatch):
     )
     monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Environment variable is not set 'AUTH_USER_POOL_ID'" in str(excinfo.value)
+
+
+def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
+    user = _get_model(2)
+    test_session.flush()
+    test_session.add(user)
+    test_session.commit()
+    monkeypatch.setattr(
+        lambda_function, "get_db", lambda: fake_get_db_client(test_session)
+    )
+
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_2")
+    assert "API token is malformed" in str(excinfo.value)
 
 
 @pytest.mark.usefixtures("override_boto3_client_zero_user")
@@ -253,7 +278,7 @@ def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Failed to list users from Cognito Cognito user is not found" in str(
         excinfo.value
@@ -270,7 +295,7 @@ def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Failed to list users from Cognito Cognito user is duplicated" in str(
         excinfo.value
@@ -286,7 +311,7 @@ def test__verify_api_token_suspended(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
 
 def test__verify_api_token_unapproved(test_session, monkeypatch):
@@ -298,7 +323,7 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
         lambda_function, "get_db", lambda: fake_get_db_client(test_session)
     )
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_1")
+        _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
 
 def test__generate_policy_allow():
@@ -317,7 +342,7 @@ def test__generate_policy_allow():
                 }
             ],
         },
-        "context": {"owner": "fake_username1"},
+        "context": {"user_id": "fake_username1"},
     }
 
     assert actual == expect
@@ -339,7 +364,7 @@ def test__generate_policy_deny():
                 }
             ],
         },
-        "context": {"owner": "fake_username2"},
+        "context": {"user_id": "fake_username2"},
     }
 
     assert actual == expect
@@ -363,7 +388,7 @@ def test_lambda_handler_api_token(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_id": "fake_username"},
     }
     monkeypatch.setattr(lambda_function, "_verify_api_token", fake__verify_api_token)
     monkeypatch.setattr(
@@ -377,7 +402,9 @@ def test_lambda_handler_api_token(monkeypatch):
 
 
 def test_lambda_handler_no_api_token(monkeypatch):
-    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+    def fake__verify_api_token_deny(
+        principal_id=None, resource=None, user_id=None
+    ):
         return "fake_username"
 
     input = {"headers": {"q-api-token": None}, "methodArn": "methodArn"}
@@ -403,7 +430,7 @@ def test_lambda_handler_id_token(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": "fake_username"},
+        "context": {"user_id": "fake_username"},
     }
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
@@ -420,7 +447,7 @@ def test_lambda_handler_id_token(monkeypatch):
     assert actual == event
 
 
-def test_lambda_handler_none_owner(monkeypatch):
+def test_lambda_handler_none_user_id(monkeypatch):
     input = {"headers": {"authorization": "api_token_secret"}, "methodArn": "methodArn"}
 
     ans = {
@@ -435,11 +462,11 @@ def test_lambda_handler_none_owner(monkeypatch):
                 }
             ],
         },
-        "context": {"owner": ""},
+        "context": {"user_id": ""},
     }
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._verify_id_token",
-        fake__verify_id_token_none_owner,
+        fake__verify_id_token_none_user_id,
     )
     monkeypatch.setattr(
         "oqtopus_cloud.lambda_auth.lambda_function._generate_policy_deny",
@@ -453,7 +480,9 @@ def test_lambda_handler_none_owner(monkeypatch):
 
 
 def test_lambda_handler_unexpected_header(monkeypatch):
-    def fake__verify_api_token_deny(principal_id=None, resource=None, owner=None):
+    def fake__verify_api_token_deny(
+        principal_id=None, resource=None, user_id=None
+    ):
         return "fake_username"
 
     input = {"headers": {"q-api-token-unexpected": None}, "methodArn": "methodArn"}

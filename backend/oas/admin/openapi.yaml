@@ -35,15 +35,21 @@ paths:
           required: false
           schema:
             type: string
-        - name: email
+        - name: user_id
           in: query
-          description: query email infomation
+          description: query user id
           required: false
           schema:
             type: string
-        - name: name
+        - name: email
           in: query
-          description: query name information
+          description: query email information
+          required: false
+          schema:
+            type: string
+        - name: display_name
+          in: query
+          description: query display name information
           required: false
           schema:
             type: string
@@ -107,7 +113,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -145,7 +151,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -193,7 +199,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '204':
           description: Success
@@ -814,10 +820,10 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         email:
           type: string
-        name:
+        display_name:
           type: string
         organization:
           type: string
@@ -873,7 +879,7 @@ components:
       properties:
         email:
           type: string
-        name:
+        display_name:
           type: string
         organization:
           type: string
@@ -903,7 +909,7 @@ components:
           example: group1
         email:
           $ref: '#/components/schemas/whitelist_users.Email'
-        username:
+        display_name:
           type: string
           example: exampleuser
         organization:
@@ -928,7 +934,7 @@ components:
         id: 1
         group_id: group1
         email: example@example.com
-        username: exampleuser
+        display_name: exampleuser
         organization: Example Organization
         is_signup_completed: true
     whitelist_users.ListWhitelistUsersResponse:
@@ -945,7 +951,7 @@ components:
           type: string
         email:
           type: string
-        username:
+        display_name:
           type: string
         organization:
           type: string
@@ -998,7 +1004,7 @@ components:
           description: Parameter mandatory and valid for 'unavailable' devices
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         n_pending_jobs:
           type: integer
           example: 8
@@ -1047,7 +1053,7 @@ components:
           description: Parameter available only for `QPU` devices with available calibration data
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         description:
           type: string
           example: State vector-based quantum circuit simulator
@@ -1105,7 +1111,7 @@ components:
                 }
               }
             }
-          calibrated_at: '2022-10-19T11:45:34'
+          calibrated_at: '2022-10-19T11:45:34Z'
           description: State vector-based quantum circuit simulator
     devices.DeviceBase:
       type: object
@@ -1131,11 +1137,11 @@ components:
         available_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         calibrated_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+00:00'
+          example: '2022-10-19T11:45:34Z'
         basis_gates:
           type: array
           items:
@@ -1189,18 +1195,18 @@ components:
         start_time:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         end_time:
           type: string
           format: date-time
-          example: '2022-12-19T11:45:34+09:00'
+          example: '2022-12-19T11:45:34Z'
         publishable:
           type: boolean
           example: true
         updated_at:
           type: string
           format: date-time
-          example: '2022-12-19T11:45:34+09:00'
+          example: '2022-12-19T11:45:34Z'
       required:
         - id
         - title
@@ -1213,8 +1219,8 @@ components:
         id: 0
         title: Example Title
         content: Example Content
-        start_time: '2022-10-19T11:45:34+09:00'
-        end_time: '2022-12-19T11:45:34+09:00'
+        start_time: '2022-10-19T11:45:34Z'
+        end_time: '2022-12-19T11:45:34Z'
         publishable: true
     announcements.GetAnnouncementsListResponse:
       properties:

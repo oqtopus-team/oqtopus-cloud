@@ -274,23 +274,23 @@ jobs.Job:
       format: date-time
       nullable: true
       default: null
-      example: 2022-10-19T11:45:34+09:00
+      example: 2022-10-19T11:45:34Z
     ready_at:
       type: string
       format: date-time
       nullable: true
       default: null
-      example: 2022-10-19T11:45:34+09:00
+      example: 2022-10-19T11:45:34Z
     running_at:
       type: string
       format: date-time
       nullable: true
       default: null
-      example: 2022-10-19T11:45:34+09:00
+      example: 2022-10-19T11:45:34Z
     ended_at:
       type: string
       format: date-time
-      example: 2022-10-19T11:45:34+09:00
+      example: 2022-10-19T11:45:34Z
       nullable: true
       default: null
   required:
@@ -338,10 +338,10 @@ jobs.Job:
       shots: 1000
       status: submitted
       execution_time: 10.123
-      submitted_at: 2022-10-19T11:45:34+09:00
-      ready_at: 2022-10-19T11:45:34+09:00
-      running_at: 2022-10-19T11:45:34+09:00
-      ended_at: 2022-10-19T11:45:34+09:00
+      submitted_at: 2022-10-19T11:45:34Z
+      ready_at: 2022-10-19T11:45:34Z
+      running_at: 2022-10-19T11:45:34Z
+      ended_at: 2022-10-19T11:45:34Z
 
 jobs.JobDef:
   allOf:

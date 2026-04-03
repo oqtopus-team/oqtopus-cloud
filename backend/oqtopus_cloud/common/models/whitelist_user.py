@@ -17,7 +17,7 @@ class WhitelistUser(Base, TimestampMixin):
         id (int): The unique identifier of the whitelist user.
         group_id (str): The identifier of the group.
         email (str): The email of the whitelist user.
-        username (str): The username of the whitelist user.
+        display_name (str): The display name of the whitelist user.
         organization (str): The organization name to which the whitelist user belongs.
         is_signup_completed (bool): Whether or not the whitelist user signup is completed.
         available_devices (string): List of devices allowed for the user.
@@ -39,7 +39,7 @@ class WhitelistUser(Base, TimestampMixin):
         String(255),
         nullable=False,
     )
-    username: Mapped[str] = mapped_column(
+    display_name: Mapped[str] = mapped_column(
         String(255),
         nullable=True,
     )

@@ -70,18 +70,6 @@ standby環境の場合は以下のようにバケットを作成します：
 aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-standby --profile oqtopus-standby --region ap-northeast-3 --create-bucket-configuration LocationConstraint=ap-northeast-3
 ```
 
-次にTerraformのStateフアイルをロックするためのDynamoDBテーブルを作成します。
-
-```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
-```
-
-standby環境の場合：
-
-```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-standby --region ap-northeast-3
-```
-
 次に、terraformの設定ファイルを用意します。以下の2つのファイルを編集します。
 
 ```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
@@ -91,7 +79,7 @@ key            = "infrastructure.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table     = "terraform-lock"
+use_lockfile   = true
 ```
 
 standby環境の場合：
@@ -109,6 +97,9 @@ product="oqtopus"
 org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
+
+enable_guardduty               = false
+enable_guardduty_s3_protection = false
 ```
 
 それぞれ、stateファイルの保存先と、環境変数を設定しています。
@@ -139,7 +130,7 @@ key            = "service.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table     = "terraform-lock"
+use_lockfile   = true
 ```
 
 standby環境の場合：
@@ -160,6 +151,12 @@ region           = "ap-northeast-1"
 state_bucket     = "tfstate.oqtopus-oqtopus-dev"
 remote_state_key = "infrastructure.tfstate"
 profile          = "oqtopus-dev"
+
+waf_enable_common_rules        = false
+waf_enable_rate_limiting       = false
+waf_rate_limit                 = 1000
+waf_cloudwatch_metrics_enabled = false
+waf_sampled_requests_enabled   = false
 
 repository       = "oqtopus-cloud"
 github_user      = "oqtopus-team"
@@ -280,3 +277,21 @@ zip-all                        Build All Lambda Packages
 zip-user                     Build User API Lambda Package
 zip-provider                     Build Provider API Lambda Package
 ```
+
+## GuardDutyの設定
+
+`enable_guardduty` - trueに設定すると、AWS環境の監視および分析機能を提供するGuardDutyサービスが有効になります。不正アクセス試行、侵害されたインスタンスや認証情報、データ流出の試みなどの脅威を検出します。
+
+`enable_guardduty_s3_protection` - trueに設定すると、S3バケットの監視に特化したGuardDutyディテクターの拡張機能が有効になります。不審なダウンロード、侵害された認証情報、または異常なアクセスパターンを検出できます。
+
+## WAFの設定
+
+`waf_enable_common_rules` - SQLインジェクション、XSS、パストラバーサル、悪意のあるヘッダー、不正な形式のリクエストなど、最も一般的なHTTP攻撃に対する包括的な保護を提供します。
+
+`waf_enable_rate_limiting` - レート制限機能を有効にし、ボットやAPIの乱用に対する一般的な保護を提供します。
+
+`waf_rate_limit` - 1つのソース(IP)からの5分間の最大リクエスト数を指定します。この数を超えると、WAFはそれ以降のリクエストをブロックします。
+
+`waf_cloudwatch_metrics_enabled` - trueに設定すると、WAFは処理されたリクエストに関するメトリクスをCloudWatchに送信します。
+
+`waf_sampled_requests_enabled` - trueに設定すると、WAFは処理したサンプルリクエストを保持します。これは分析に使用でき、主にデバッグ目的で使用されます。

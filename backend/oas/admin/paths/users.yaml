@@ -18,14 +18,19 @@ users:
         description: "Limit information"
         required: false
         schema: {type: string}
-      - name: email
+      - name: user_id
         in: query
-        description: "query email infomation"
+        description: "query user id"
         required: false
         schema: {type: string}
-      - name: name
+      - name: email
         in: query
-        description: "query name information"
+        description: "query email information"
+        required: false
+        schema: {type: string}
+      - name: display_name
+        in: query
+        description: "query display name information"
         required: false
         schema: {type: string}
       - name: organization
@@ -86,7 +91,7 @@ users.user_id:
         in: path
         description: "User ID"
         required: true
-        schema: {type: integer}
+        schema: {type: string}
     responses:
       "200":
         description: Success
@@ -123,7 +128,7 @@ users.user_id:
         in: path
         description: "User ID"
         required: true
-        schema: {type: integer}
+        schema: {type: string}
     requestBody:
       required: true
       content:
@@ -170,7 +175,7 @@ users.user_id:
         in: path
         description: "User ID"
         required: true
-        schema: {type: integer}
+        schema: {type: string}
     responses:
       "204":
         description: Success
@@ -209,7 +214,7 @@ users.user_id.mfa_reset:
         in: path
         description: "User ID"
         required: true
-        schema: {type: integer}
+        schema: {type: string}
     responses:
       "200":
         description: Success

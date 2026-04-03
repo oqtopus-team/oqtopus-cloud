@@ -146,7 +146,20 @@ class FakeCognitoClient:
         AuthFlow=None,
         AuthParameters=None,
     ):
-        return {"Response": "Ok"}
+        return {
+            "Response": "Ok",
+            "AuthenticationResult": {"AccessToken": "fake_access_token"},
+        }
+
+    def get_user(self, AccessToken=None):
+        return {
+            "Response": "Ok",
+            "UserAttributes": [
+                {"Name": "email", "Value": "user@example.com"},
+                {"Name": "email_verified", "Value": "true"},
+                {"Name": "sub", "Value": "cognito_id_1"},
+            ],
+        }
 
     def admin_set_user_mfa_preference(
         self,
@@ -156,7 +169,31 @@ class FakeCognitoClient:
     ):
         return {"Response": "Ok"}
 
-    def admin_delete_user(UserPoolId=None, Username=None):
+    def admin_delete_user(self, UserPoolId=None, Username=None):
+        return {"Response": "Ok"}
+
+    def get_user_attribute_verification_code(
+        self, AccessToken=None, AttributeName=None
+    ):
+        return {"Response": "Ok"}
+
+    def verify_user_attribute(self, AccessToken=None, AttributeName=None, Code=None):
+        return {"Response": "Ok"}
+
+    def associate_software_token(self, AccessToken=None):
+        return {"SecretCode": "secret_code_1"}
+
+    def verify_software_token(self, AccessToken=None, UserCode=None):
+        return {"Response": "Ok"}
+
+    def set_user_mfa_preference(
+        self,
+        AccessToken=None,
+        SoftwareTokenMfaSettings=None,
+    ):
+        return {"Response": "Ok"}
+
+    def admin_user_global_sign_out(self, UserPoolId=None, Username=None):
         return {"Response": "Ok"}
 
 
