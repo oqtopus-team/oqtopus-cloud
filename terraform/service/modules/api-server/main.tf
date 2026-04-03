@@ -87,6 +87,7 @@ resource "aws_lambda_function" "this" {
       var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
       var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
       var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
+      var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
   }
 
