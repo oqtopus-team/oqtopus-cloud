@@ -42,7 +42,7 @@ class TestUserMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
-        request.state.owner = "email_1"
+        request.state.user_id = "email_1"
         request.state.username = "test_user"
         response = await call_next(request)
         return response
@@ -73,14 +73,17 @@ def test_client(request):
         test_app.dependency_overrides[get_db] = get_db_for_testing
 
     elif mode == "without_db":
-        # DB 依存性を完全に外す
-        test_app.dependency_overrides.pop(get_db, None)
-        real_app.dependency_overrides.pop(get_db, None)  # 念のため
+        # Always fail DB access to make 500-path tests deterministic.
+        def get_db_for_testing_failure():
+            raise SQLAlchemyError("DB is unavailable for this test mode")
+            yield
+
+        test_app.dependency_overrides[get_db] = get_db_for_testing_failure
 
     else:
         raise ValueError(f"unknown mode: {mode}")
     test_app.add_middleware(TestUserMiddleware)
-    return TestClient(test_app)
+    return TestClient(test_app, raise_server_exceptions=(mode != "without_db"))
 
 
 class FakeCognitoClient:

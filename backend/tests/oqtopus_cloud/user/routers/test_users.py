@@ -1,38 +1,39 @@
 import json
 from datetime import datetime, timezone
-import pytz
-from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
-from starlette.requests import Request
 from typing import Any, Dict
-from sqlalchemy import select
 
+import pytz
 from fastapi.testclient import TestClient
+from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.models.user import User
+from oqtopus_cloud.common.models.whitelist_user import WhitelistUser
+from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
 from oqtopus_cloud.user.lambda_function import app
-from oqtopus_cloud.user.schemas.users import (
-    LoginEvent,
-    GetOneUserResponse,
-    UpdateUserRequest,
-)
+from oqtopus_cloud.user.routers.users import delete_user, get_user, update_user
 from oqtopus_cloud.user.schemas.errors import (
+    BadRequestResponse,
+    ForbiddenErrorResponse,
     InternalServerErrorResponse,
     NotFoundErrorResponse,
-    BadRequestResponse,
     UnauthorizedResponse,
-    ForbiddenErrorResponse,
 )
-from oqtopus_cloud.common.models.user import User
-from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.user.routers.users import get_user, update_user, delete_user
-from oqtopus_cloud.user.common.validation_utils import LEN_VARCHAR
+from oqtopus_cloud.user.schemas.users import (
+    GetOneUserResponse,
+    LoginEvent,
+    UpdateUserRequest,
+)
+from sqlalchemy import select
+from starlette.requests import Request
 
 client = TestClient(app)
 
+
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": "approved",
         "api_token_id": f"api_token_id{n}",
         "api_token_hash": f"api_token_hash{n}",
@@ -53,7 +54,7 @@ def _get_model_whitelist(n: int, is_completed: bool) -> WhitelistUser:
         "email": f"email_{n}",
         "group_id": f"group_id_{n}",
         "is_signup_completed": is_completed,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58),
@@ -84,15 +85,15 @@ def _get_job_model(n: int, email: str, job_type: str = "sampling") -> Job:
 
 
 def _create_request(
-        method="GET",
-        headers=[("Authorization".lower().encode(), "Bearer some_access_token".encode())]
+    method="GET",
+    headers=[("Authorization".lower().encode(), "Bearer some_access_token".encode())],
 ) -> Request:
     scope: Dict[str, Any] = {
         "type": "http",
         "method": method,
         "path": "/test",
         "headers": headers,
-        "state": { "region": "test_region" }
+        "state": {"region": "test_region"},
     }
 
     request = Request(scope=scope)
@@ -105,24 +106,27 @@ def _create_cloud_trail_event(
     cognito_id: str,
     event_name: str = "RespondToAuthChallenge",
     user_agent: str = "test_user_agent",
-    token: str | None = "some_token"
+    token: str | None = "some_token",
 ):
     return {
-        "CloudTrailEvent": json.dumps({
-            "eventName": event_name,
-            "additionalEventData": {
-                "sub": cognito_id
-            },
-            "responseElements": {
-                "authenticationResult": {
-                    "accessToken": token,
-                }
-            },
-            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
-            "userAgent": user_agent,
-            "sourceIPAddress": "127.0.0.1"
-        })
+        "CloudTrailEvent": json.dumps(
+            {
+                "eventName": event_name,
+                "additionalEventData": {"sub": cognito_id},
+                "responseElements": {
+                    "authenticationResult": {
+                        "accessToken": token,
+                    }
+                },
+                "eventTime": datetime(
+                    2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc
+                ).isoformat(),
+                "userAgent": user_agent,
+                "sourceIPAddress": "127.0.0.1",
+            }
+        )
     }
+
 
 def test_get_user(test_db):
     n = 1
@@ -131,16 +135,16 @@ def test_get_user(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
         created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
-        login_events=[]
+        login_events=[],
     )
 
     assert actual == expected
@@ -155,22 +159,26 @@ def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id),
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id),
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -179,25 +187,27 @@ def test_get_user_with_login_events(test_db, fake_cloud_trails_client_fixture):
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_3",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_include_login_events_only_from_given_user(test_db, fake_cloud_trails_client_fixture):
+def test_get_user_should_include_login_events_only_from_given_user(
+    test_db, fake_cloud_trails_client_fixture
+):
     n = 1
     user_cognito_id = "test_cognito_id"
     test_db.flush()
@@ -206,22 +216,28 @@ def test_get_user_should_include_login_events_only_from_given_user(test_db, fake
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id),
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event("different_user_cognito_id", user_agent="different_user_agent"),
-            _create_cloud_trail_event(user_cognito_id)
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id),
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(
+                    "different_user_cognito_id", user_agent="different_user_agent"
+                ),
+                _create_cloud_trail_event(user_cognito_id),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -230,20 +246,22 @@ def test_get_user_should_include_login_events_only_from_given_user(test_db, fake
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="test_user_agent",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_include_only_auth_events(test_db, fake_cloud_trails_client_fixture):
+def test_get_user_should_include_only_auth_events(
+    test_db, fake_cloud_trails_client_fixture
+):
     n = 1
     user_cognito_id = "test_cognito_id"
     test_db.flush()
@@ -252,22 +270,28 @@ def test_get_user_should_include_only_auth_events(test_db, fake_cloud_trails_cli
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, event_name="different_event"),
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                _create_cloud_trail_event(
+                    user_cognito_id, event_name="different_event"
+                ),
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -276,20 +300,22 @@ def test_get_user_should_include_only_auth_events(test_db, fake_cloud_trails_cli
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trails_client_fixture):
+def test_get_user_should_skip_events_without_event_data(
+    test_db, fake_cloud_trails_client_fixture
+):
     n = 1
     user_cognito_id = "test_cognito_id"
     test_db.flush()
@@ -299,33 +325,39 @@ def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trai
     test_db.commit()
 
     event_without_event_data = {
-        "CloudTrailEvent": json.dumps({
-            "eventName": "InitiateAuth",
-            "requestParameters": {
-                "authFlow": "USER_SRP_AUTH"
-            },
-            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
-            "userAgent": "user_agent",
-            "sourceIPAddress": "127.0.0.1"
-        })
+        "CloudTrailEvent": json.dumps(
+            {
+                "eventName": "InitiateAuth",
+                "requestParameters": {"authFlow": "USER_SRP_AUTH"},
+                "eventTime": datetime(
+                    2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc
+                ).isoformat(),
+                "userAgent": "user_agent",
+                "sourceIPAddress": "127.0.0.1",
+            }
+        )
     }
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            event_without_event_data,
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                event_without_event_data,
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -334,20 +366,22 @@ def test_get_user_should_skip_events_without_event_data(test_db, fake_cloud_trai
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_skip_events_without_response_auth_results(test_db, fake_cloud_trails_client_fixture):
+def test_get_user_should_skip_events_without_response_auth_results(
+    test_db, fake_cloud_trails_client_fixture
+):
     n = 1
     user_cognito_id = "test_cognito_id"
     test_db.flush()
@@ -357,46 +391,54 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
     test_db.commit()
 
     event_without_response_elements = {
-        "CloudTrailEvent": json.dumps({
-            "eventName": "InitiateAuth",
-            "additionalEventData": {
-                "sub": user_cognito_id
-            },
-            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
-            "userAgent": "user_agent",
-            "sourceIPAddress": "127.0.0.1"
-        })
+        "CloudTrailEvent": json.dumps(
+            {
+                "eventName": "InitiateAuth",
+                "additionalEventData": {"sub": user_cognito_id},
+                "eventTime": datetime(
+                    2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc
+                ).isoformat(),
+                "userAgent": "user_agent",
+                "sourceIPAddress": "127.0.0.1",
+            }
+        )
     }
     event_without_auth_results = {
-        "CloudTrailEvent": json.dumps({
-            "eventName": "InitiateAuth",
-            "additionalEventData": {
-                "sub": user_cognito_id
-            },
-            "responseElements": {},
-            "eventTime": datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc).isoformat(),
-            "userAgent": "user_agent",
-            "sourceIPAddress": "127.0.0.1"
-        })
+        "CloudTrailEvent": json.dumps(
+            {
+                "eventName": "InitiateAuth",
+                "additionalEventData": {"sub": user_cognito_id},
+                "responseElements": {},
+                "eventTime": datetime(
+                    2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc
+                ).isoformat(),
+                "userAgent": "user_agent",
+                "sourceIPAddress": "127.0.0.1",
+            }
+        )
     }
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            event_without_response_elements,
-            event_without_auth_results,
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                event_without_response_elements,
+                event_without_auth_results,
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -405,20 +447,22 @@ def test_get_user_should_skip_events_without_response_auth_results(test_db, fake
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_client_fixture):
+def test_get_user_should_include_events_with_token(
+    test_db, fake_cloud_trails_client_fixture
+):
     n = 1
     user_cognito_id = "test_cognito_id"
     test_db.flush()
@@ -427,22 +471,28 @@ def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_cl
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_test", token=None),
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                _create_cloud_trail_event(
+                    user_cognito_id, user_agent="user_agent_test", token=None
+                ),
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_1"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
@@ -451,20 +501,22 @@ def test_get_user_should_include_events_with_token(test_db, fake_cloud_trails_cl
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_1",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
             LoginEvent(
                 event_date=datetime(2025, 2, 3, 12, 34, 56, tzinfo=timezone.utc),
                 user_agent="user_agent_2",
-                ip="127.0.0.1"
+                ip="127.0.0.1",
             ),
-        ]
+        ],
     )
 
     assert actual == expected
 
 
-def test_get_user_should_skip_login_events_when_disabled(test_db, monkeypatch, fake_cloud_trails_client_fixture):
+def test_get_user_should_skip_login_events_when_disabled(
+    test_db, monkeypatch, fake_cloud_trails_client_fixture
+):
     monkeypatch.setenv("LOGIN_HISTORY_ENABLED", "false")
     n = 1
     user_cognito_id = "test_cognito_id"
@@ -474,27 +526,31 @@ def test_get_user_should_skip_login_events_when_disabled(test_db, monkeypatch, f
     test_db.add(user)
     test_db.commit()
 
-    fake_cloud_trails_client_fixture.events = [{
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id),
-        ]}, {
-        "Events": [
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
-            _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3")
-        ]
-    }]
+    fake_cloud_trails_client_fixture.events = [
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id),
+            ]
+        },
+        {
+            "Events": [
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_2"),
+                _create_cloud_trail_event(user_cognito_id, user_agent="user_agent_3"),
+            ]
+        },
+    ]
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="username_1",
         organization="organization_1",
         created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
-        login_events=None
+        login_events=None,
     )
 
     assert actual == expected
@@ -508,7 +564,7 @@ def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     actual = get_user(request, test_db)
 
     expected = GetOneUserResponse(
@@ -517,7 +573,7 @@ def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
         name=None,
         organization="organization_1",
         created_at=None,
-        login_events=[]
+        login_events=[],
     )
 
     assert actual == expected
@@ -525,15 +581,16 @@ def test_get_user_should_return_only_visible_fields(test_db, monkeypatch):
     monkeypatch.setenv("VISIBLE_FIELDS", '["id", "name", "created_at"]')
     actual2 = get_user(request, test_db)
     expected2 = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email=None,
         name="username_1",
         organization=None,
         created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
-        login_events=[]
+        login_events=[],
     )
 
     assert actual2 == expected2
+
 
 def test_get_user_not_found(test_db):
     test_db.flush()
@@ -541,14 +598,12 @@ def test_get_user_not_found(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_2"
+    request.state.user_id = "email_2"
     response = get_user(request, test_db)
 
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
-    assert json.loads(response.body) == {
-        "message": "user is not found"
-    }
+    assert json.loads(response.body) == {"message": "user is not found"}
 
 
 def test_get_one_user_500_on_unexpected_error(test_db):
@@ -558,14 +613,12 @@ def test_get_one_user_500_on_unexpected_error(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     response = get_user(request)
 
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
-    assert json.loads(response.body) == {
-        "message": "Internal Server Error"
-    }
+    assert json.loads(response.body) == {"message": "Internal Server Error"}
 
 
 def test_update_user(test_db):
@@ -575,17 +628,17 @@ def test_update_user(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     actual = update_user(request, request_body, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="new_name",
         organization="new_organization",
-        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc)
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
     )
 
     assert actual == expected
@@ -598,17 +651,17 @@ def test_update_user_update_only_fields_present_in_request(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name")
     actual = update_user(request, request_body, test_db)
 
     expected = GetOneUserResponse(
-        id=1,
+        id="email_1",
         email="email_1",
         name="new_name",
         organization="organization_1",
-        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc)
+        created_at=datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
     )
 
     assert actual == expected
@@ -620,16 +673,14 @@ def test_update_user_not_found(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_2"
+    request.state.user_id = "email_2"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
 
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
-    assert json.loads(response.body) == {
-        "message": "user not found"
-    }
+    assert json.loads(response.body) == {"message": "user not found"}
 
 
 def test_update_user_name_too_long(test_db):
@@ -639,15 +690,19 @@ def test_update_user_name_too_long(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     too_long_name = "a" * (LEN_VARCHAR + 1)
-    request_body = UpdateUserRequest(name=too_long_name, organization="new_organization")
+    request_body = UpdateUserRequest(
+        name=too_long_name, organization="new_organization"
+    )
     response = update_user(request, request_body, test_db)
 
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
-    assert json.loads(response.body) == {"message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert json.loads(response.body) == {
+        "message": f"The length of {too_long_name} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_update_user_name_update_disabled(test_db, monkeypatch):
@@ -659,14 +714,16 @@ def test_update_user_name_update_disabled(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
 
     assert type(response) is UnauthorizedResponse
     assert response.status_code == 401
-    assert json.loads(response.body) == {"message": "name field is disabled for updates"}
+    assert json.loads(response.body) == {
+        "message": "name field is disabled for updates"
+    }
 
 
 def test_update_user_organization_update_disabled(test_db, monkeypatch):
@@ -678,14 +735,16 @@ def test_update_user_organization_update_disabled(test_db, monkeypatch):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body, test_db)
 
     assert type(response) is UnauthorizedResponse
     assert response.status_code == 401
-    assert json.loads(response.body) == {"message": "organization field is disabled for updates"}
+    assert json.loads(response.body) == {
+        "message": "organization field is disabled for updates"
+    }
 
 
 def test_update_user_organization_too_long(test_db):
@@ -695,15 +754,19 @@ def test_update_user_organization_too_long(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
 
     too_long_organization = "a" * (LEN_VARCHAR + 1)
-    request_body = UpdateUserRequest(name="new_name", organization=too_long_organization)
+    request_body = UpdateUserRequest(
+        name="new_name", organization=too_long_organization
+    )
     response = update_user(request, request_body, test_db)
 
     assert type(response) is BadRequestResponse
     assert response.status_code == 400
-    assert json.loads(response.body) == {"message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"}
+    assert json.loads(response.body) == {
+        "message": f"The length of {too_long_organization} exceeds the limit. Please enter within {LEN_VARCHAR} characters"
+    }
 
 
 def test_update_user_500_on_unexpected_error(test_db):
@@ -713,15 +776,13 @@ def test_update_user_500_on_unexpected_error(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     request_body = UpdateUserRequest(name="new_name", organization="new_organization")
     response = update_user(request, request_body)
 
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
-    assert json.loads(response.body) == {
-        "message": "Internal Server Error"
-    }
+    assert json.loads(response.body) == {"message": "Internal Server Error"}
 
 
 def test_delete_user(test_db, test_cognito_client):
@@ -732,7 +793,7 @@ def test_delete_user(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
@@ -758,7 +819,7 @@ def test_delete_user_should_remove_user_jobs(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     delete_user(request, test_db, client=test_cognito_client)
 
     user_jobs = test_db.scalars(select(Job).where(Job.owner == f"email_{n}")).all()
@@ -779,7 +840,7 @@ def test_delete_user_should_not_delete_other_users_jobs(test_db, test_cognito_cl
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     delete_user(request, test_db, client=test_cognito_client)
 
     user2_jobs = test_db.scalars(select(Job).where(Job.owner == "email_2")).all()
@@ -791,7 +852,9 @@ def test_delete_user_should_not_delete_other_users_jobs(test_db, test_cognito_cl
     assert len(user3_jobs) == 2
 
 
-def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage, test_cognito_client):
+def test_delete_user_should_remove_sse_jobs_from_s3(
+    test_db, test_storage, test_cognito_client
+):
     test_db.flush()
     test_db.add(_get_model_whitelist(1, is_completed=True))
     test_db.add(_get_model(1))
@@ -806,7 +869,7 @@ def test_delete_user_should_remove_sse_jobs_from_s3(test_db, test_storage, test_
     test_storage.put(key="testjob2id/oqtopus_test_log.log", data=b"log2")
 
     request = _create_request()
-    request.state.owner = "email_1"
+    request.state.user_id = "email_1"
     response = delete_user(request, test_db, test_storage, client=test_cognito_client)
 
     assert response is None
@@ -828,7 +891,7 @@ def test_delete_user_with_no_whitelist_user(test_db, test_cognito_client):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert response is None
@@ -843,14 +906,12 @@ def test_delete_user_no_user(test_db, test_cognito_client):
     test_db.flush()
 
     request = _create_request()
-    request.state.owner = f"email_{2}"
+    request.state.user_id = f"email_{2}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is NotFoundErrorResponse
     assert response.status_code == 404
-    assert json.loads(response.body) == {
-        "message": "User not found"
-    }
+    assert json.loads(response.body) == {"message": "User not found"}
 
 
 def test_delete_user_500(test_db):
@@ -861,14 +922,12 @@ def test_delete_user_500(test_db):
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     response = delete_user(request)
 
     assert type(response) is InternalServerErrorResponse
     assert response.status_code == 500
-    assert json.loads(response.body) == {
-        "message": "Internal Server Error"
-    }
+    assert json.loads(response.body) == {"message": "Internal Server Error"}
 
 
 def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_client):
@@ -881,11 +940,9 @@ def test_delete_user_user_deletion_disabled(test_db, monkeypatch, test_cognito_c
     test_db.commit()
 
     request = _create_request()
-    request.state.owner = f"email_{n}"
+    request.state.user_id = f"email_{n}"
     response = delete_user(request, test_db, client=test_cognito_client)
 
     assert type(response) is ForbiddenErrorResponse
     assert response.status_code == 403
-    assert json.loads(response.body) == {
-        "message": "user deletion is disabled"
-    }
+    assert json.loads(response.body) == {"message": "user deletion is disabled"}

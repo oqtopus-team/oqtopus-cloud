@@ -35,15 +35,21 @@ paths:
           required: false
           schema:
             type: string
-        - name: email
+        - name: user_id
           in: query
-          description: query email infomation
+          description: query user id
           required: false
           schema:
             type: string
-        - name: name
+        - name: email
           in: query
-          description: query name information
+          description: query email information
+          required: false
+          schema:
+            type: string
+        - name: display_name
+          in: query
+          description: query display name information
           required: false
           schema:
             type: string
@@ -107,7 +113,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -145,7 +151,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -193,7 +199,7 @@ paths:
           description: User ID
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '204':
           description: Success
@@ -814,10 +820,10 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         email:
           type: string
-        name:
+        display_name:
           type: string
         organization:
           type: string
@@ -873,7 +879,7 @@ components:
       properties:
         email:
           type: string
-        name:
+        display_name:
           type: string
         organization:
           type: string
@@ -903,7 +909,7 @@ components:
           example: group1
         email:
           $ref: '#/components/schemas/whitelist_users.Email'
-        username:
+        display_name:
           type: string
           example: exampleuser
         organization:
@@ -928,7 +934,7 @@ components:
         id: 1
         group_id: group1
         email: example@example.com
-        username: exampleuser
+        display_name: exampleuser
         organization: Example Organization
         is_signup_completed: true
     whitelist_users.ListWhitelistUsersResponse:
@@ -945,7 +951,7 @@ components:
           type: string
         email:
           type: string
-        username:
+        display_name:
           type: string
         organization:
           type: string

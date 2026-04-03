@@ -13,10 +13,10 @@ from sqlalchemy import select
 
 def _get_model(n: int) -> User:
     model_dict = {
-        "id": n,
+        "id": f"email{n}@example.com",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email{n}@example.com",
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "userstatus": UserStatus.approved,
         "api_token_id": f"api_token_id_{n}",
         "api_token_hash": f"api_token_hash_{n}",
@@ -163,8 +163,9 @@ def test_mfa_reset_confirm_totp_cognito_error(test_db, fake_cognito_client_fixtu
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 400
     assert response.json().get("message") == "Invalid TOTP code"
+    # user_id = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        test_db.execute(select(User).where(User.id == "email1@example.com"))
         .scalars()
         .first()
     )
@@ -185,8 +186,9 @@ def test_mfa_reset_confirm_totp_500(test_db, fake_cognito_client_fixture):
     response = client.post("/mfa_reset/confirm_totp", json=body.model_dump())
     assert response.status_code == 500
     assert response.json().get("message") == "Internal server error"
+    # user_id = Cognito username = email
     user = (
-        test_db.execute(select(User).where(User.email == "email1@example.com"))
+        test_db.execute(select(User).where(User.id == "email1@example.com"))
         .scalars()
         .first()
     )

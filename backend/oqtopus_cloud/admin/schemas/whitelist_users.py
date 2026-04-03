@@ -13,7 +13,7 @@ class ListWhitelistUserResponse(BaseModel):
     id: Annotated[int, Field(examples=[1])]
     group_id: Annotated[str, Field(examples=["group1"])]
     email: Annotated[str, Field(examples=["example@example.com"])]
-    username: Annotated[str | None, Field(examples=["exampleuser"])] = None
+    display_name: Annotated[str | None, Field(examples=["exampleuser"])] = None
     organization: Annotated[str | None, Field(examples=["Example Organization"])] = None
     is_signup_completed: Annotated[bool | None, Field(examples=[True])] = None
     available_devices: list[str] | Literal["*"] | None = None
@@ -30,7 +30,7 @@ class RegisterWhitelistUserRequest(BaseModel):
 
     group_id: str | None = None
     email: str | None = None
-    username: str | None = None
+    display_name: str | None = None
     organization: str | None = None
     available_devices: list[str] | Literal["*"] | None = None
 
