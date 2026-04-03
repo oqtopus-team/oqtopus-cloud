@@ -64,28 +64,32 @@ zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pen
 
 zip:
 	@echo "Building ${APP} Lambda Package"
+	@rm -rf ${DEPLOY_PACKAGES_DIR}
 	@mkdir -p ${DEPLOY_PACKAGES_DIR}
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
 	@poetry export -f requirements.txt --output requirements.txt
 	@docker run --platform linux/x86_64 --user $$(id -u):$$(id -g) \
-  -e HOME=/tmp \
-  -e UV_INSTALL_DIR=/tmp/.local/bin \
-  -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
-  -v ./requirements.txt:/requirements.txt \
-  python:3.12 /bin/bash -c "\
-  curl -fsSL https://astral.sh/uv/install.sh | bash && \
-  /tmp/.local/bin/uv pip install --system --no-cache-dir --requirement /requirements.txt --target /${DEPLOY_PACKAGES_DIR}" --link-mode=copy
-	@cd ${DEPLOY_PACKAGES_DIR} && rm -rf __pycache__ && zip -r ../${BIN}/lambda.zip * -q
+	  -e HOME=/tmp \
+	  -e UV_INSTALL_DIR=/tmp/.local/bin \
+	  -v ./${DEPLOY_PACKAGES_DIR}:/${DEPLOY_PACKAGES_DIR} \
+	  -v ./requirements.txt:/requirements.txt \
+	  python:3.12 /bin/bash -c "\
+	    curl -fsSL https://astral.sh/uv/install.sh | bash && \
+	    /tmp/.local/bin/uv pip install \
+	      --system \
+	      --no-cache-dir \
+	      --requirement /requirements.txt \
+	      --target /${DEPLOY_PACKAGES_DIR} \
+	      --link-mode=copy"
 	@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${APP} -q
 	$(if $(strip ${LIB}), \
-		@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q \
+		@cd ${WORKSPACE} && zip -r ../deployment/$(PROFILE)/${BIN}/lambda.zip ${LIB} -q, \
 	)
 	@echo "Lambda Package Created: ${BIN}/lambda.zip"
 	@rm -rf ${DEPLOY_PACKAGES_DIR}
 	@rm requirements.txt
-
 
 deploy-user: zip-user ## Deploy User API Lambda Package
 	@$(MAKE) deploy-aliased-version \
