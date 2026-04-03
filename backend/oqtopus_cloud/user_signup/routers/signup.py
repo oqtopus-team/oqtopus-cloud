@@ -127,7 +127,7 @@ def _register_whitelist_if_not_exists(
         new_whitelist_user = WhitelistUser(
             group_id=group_id,
             email=email,
-            username=email,
+            display_name=email,
             organization=organization,
             is_signup_completed=False,
             available_devices="*",
