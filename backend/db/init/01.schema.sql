@@ -46,10 +46,10 @@ drop table if exists main.users;
 
 CREATE TABLE
   IF NOT EXISTS users (
-    id serial PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     cognito_id VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) NOT NULL,
-    username VARCHAR(100),
+    display_name VARCHAR(100),
     userstatus VARCHAR(10),
     organization VARCHAR(255),
     group_id VARCHAR(255),
@@ -70,7 +70,7 @@ CREATE TABLE
     email VARCHAR(255) NOT NULL UNIQUE,
     group_id VARCHAR(255) NOT NULL,
     is_signup_completed BOOLEAN DEFAULT FALSE,
-    username VARCHAR(255),
+    display_name VARCHAR(255),
     organization VARCHAR(255),
     available_devices TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -22,7 +22,7 @@ class GetOneUserResponse(BaseModel):
     detail of user response
     """
 
-    id: int | None = None
+    id: str | None = None
     email: str | None = None
     name: str | None = None
     organization: str | None = None

@@ -83,7 +83,7 @@ def get_jobs(
     db: Session = Depends(get_db),
 ) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         # Order Control
@@ -198,7 +198,7 @@ def submit_jobs(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SubmitJobResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         if not can_user_access_device(owner, request.device_id, db):
             logger.error(
                 f"user={owner} is not allowed to create job for device={request.device_id}"
@@ -270,7 +270,7 @@ def get_job(
     db: Session = Depends(get_db),
 ) -> JobDef | GetJobsResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
@@ -303,7 +303,7 @@ def delete_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
         job = db.get(Job, job_id)
 
@@ -345,7 +345,7 @@ def get_job_status(
     job_id: str,
     db: Session = Depends(get_db),
 ) -> GetJobStatusResponse | ErrorResponse:
-    owner = event.state.owner
+    owner = event.state.user_id
     logger.info("invoked!", extra={"owner": owner})
     job = (
         db.query(Job.id, Job.status)
@@ -376,7 +376,7 @@ def cancel_job(
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job = db.get(Job, job_id)
@@ -421,7 +421,7 @@ def get_sselog(
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> GetSselogResponse | ErrorResponse:
-    owner = event.state.owner
+    owner = event.state.user_id
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     zip_name = os.environ["SSE_ZIP_FILE_NAME"]
@@ -633,10 +633,9 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
         return [JobType.sampling, JobType.multi_manual, JobType.sse]
 
 
-def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
+def can_user_access_device(user_id: str, device_id: str, db: Session) -> bool:
     try:
-        # username here is the email address registered in Cognito
-        user = db.scalars(select(User).where(User.email == username)).first()
+        user = db.scalars(select(User).where(User.id == user_id)).first()
         if user is None or user.available_devices is None:
             return False
 
