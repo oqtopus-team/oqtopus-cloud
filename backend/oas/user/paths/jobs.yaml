@@ -6,7 +6,7 @@ jobs:
     description: |-
         By default, all available job's properties are returned. Use 'fields' parameter to specify exact list of properties to get for each job.
 
-        List of jobs can be filtered by job creation time or search text with 'start_time', 'end_time' and 'q' parameters.
+        List of jobs can be filtered by submission time, status or search text with 'start_time', 'end_time', 'status' and 'q' parameters.
 
         Jobs are fetched with the pagination mechanism. This can be configured with 'page' and 'perPage' parameters. Check response's 'Link' header for pagination details.
     operationId: list_jobs
@@ -29,21 +29,27 @@ jobs:
       - name: start_time
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by creation time. If specified only jobs with creation time  (createdAt property) >= start_time are returned.
+          Allows to filter the list of jobs to fetch by submission time. If specified only jobs with submission time (submitted_at property) >= start_time are returned.
         required: false
         schema:
           type: string
           format: date-time
-          example: "2022-10-19T11:45:34+09:00"
-      - name: end_tiime
+          example: "2022-10-19T11:45:34Z"
+      - name: end_time
         in: query
         description: |-
-          Allows to filter the list of jobs to fetch by to creation time. If specified only jobs with creation time (createdAt property) <= end_time are returned.
+          Allows to filter the list of jobs to fetch by to submission time. If specified only jobs with submission time (submitted_at property) <= end_time are returned.
         required: false
         schema:
           type: string
           format: date-time
-          example: "2022-10-19T11:45:34+09:00"
+          example: "2022-10-19T11:45:34Z"
+      - name: status
+        in: query
+        description: Allows to filter the list of jobs to fetch by job's status. If specified only jobs which status is equal to provided status are returned.
+        required: false
+        schema:
+          $ref: "../schemas/jobs.yaml#/jobs.JobStatus"
       - name: q
         in: query
         description: |-

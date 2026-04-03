@@ -23,7 +23,7 @@ def _get_model(n: int, is_completed: bool) -> WhitelistUser:
         "email": f"email_{n}",
         "group_id": f"group_id_{n}",
         "is_signup_completed": is_completed,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
@@ -53,7 +53,7 @@ def test_get_whitelist_users_simple(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -62,7 +62,7 @@ def test_get_whitelist_users_simple(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -96,7 +96,7 @@ def test_get_whitelist_users_offset1_limit1(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -122,7 +122,7 @@ def test_get_whitelist_users_filtering(
     test_db.commit()
 
     response = client.get(
-        "/whitelist_users?email=email_&group_id=group_id_2&organization=organization_2&username=username"
+        "/whitelist_users?email=email_&group_id=group_id_2&organization=organization_2&display_name=username"
     )
     adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
@@ -132,7 +132,7 @@ def test_get_whitelist_users_filtering(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -156,7 +156,7 @@ def test_get_whitelist_users_ordered_ascending(
     test_db.add(_get_model(3, False))
     test_db.commit()
 
-    response = client.get("/whitelist_users?sort=username,asc")
+    response = client.get("/whitelist_users?sort=display_name,asc")
     adapter = TypeAdapter(ListWhitelistUsersResponse)
     actual = adapter.validate_python(response.json())
     expect = ListWhitelistUsersResponse(
@@ -165,7 +165,7 @@ def test_get_whitelist_users_ordered_ascending(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -174,7 +174,7 @@ def test_get_whitelist_users_ordered_ascending(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -183,7 +183,7 @@ def test_get_whitelist_users_ordered_ascending(
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -216,7 +216,7 @@ def test_get_whitelist_users_ordered_descending(
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -225,7 +225,7 @@ def test_get_whitelist_users_ordered_descending(
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -234,7 +234,7 @@ def test_get_whitelist_users_ordered_descending(
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -250,13 +250,13 @@ def test_get_whitelist_users_invalid_sort_query_parameter():
     """_summary_
     Simple GET /whitelist_users 400 tests when invalid sort query parameter
     """
-    response = client.get("/whitelist_users?sort=username")
+    response = client.get("/whitelist_users?sort=display_name")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: username"}
+    assert response.json() == {"message": "Invalid sort parameter: display_name"}
 
-    response = client.get("/whitelist_users?sort=username,desc,something_else")
+    response = client.get("/whitelist_users?sort=display_name,desc,something_else")
     assert response.status_code == 400
-    assert response.json() == {"message": "Invalid sort parameter: username,desc,something_else"}
+    assert response.json() == {"message": "Invalid sort parameter: display_name,desc,something_else"}
 
 
 def test_get_whitelist_users_invalid_column_name():
@@ -272,7 +272,7 @@ def test_get_whitelist_users_invalid_order():
     """_summary_
     Simple GET /whitelist_users 400 tests when invalid order in sort query parameter
     """
-    response = client.get("/whitelist_users?sort=username,invalid_order")
+    response = client.get("/whitelist_users?sort=display_name,invalid_order")
     assert response.status_code == 400
     assert response.json() == {"message": "Invalid order to sort: invalid_order"}
 
@@ -299,14 +299,14 @@ def test_post_whitelist_users(test_db):
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
             RegisterWhitelistUserRequest(
                 email="email_4",
                 group_id="group_id_4",
-                username="username_4",
+                display_name="username_4",
                 organization="organization_4",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -328,7 +328,7 @@ def test_post_whitelist_users(test_db):
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -337,7 +337,7 @@ def test_post_whitelist_users(test_db):
                 id=2,
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -346,7 +346,7 @@ def test_post_whitelist_users(test_db):
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -355,7 +355,7 @@ def test_post_whitelist_users(test_db):
                 id=4,
                 email="email_4",
                 group_id="group_id_4",
-                username="username_4",
+                display_name="username_4",
                 organization="organization_4",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -377,14 +377,14 @@ def test_post_whitelist_users_with_all_available_devices(test_db):
             RegisterWhitelistUserRequest(
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 available_devices="*",
             ),
             RegisterWhitelistUserRequest(
                 email="email_2",
                 group_id="group_id_2",
-                username="username_2",
+                display_name="username_2",
                 organization="organization_2",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -396,8 +396,8 @@ def test_post_whitelist_users_with_all_available_devices(test_db):
     )
     assert response.status_code == 200
 
-    whitelist_user_1 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.username == "username_1")).first()
-    whitelist_user_2 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.username == "username_2")).first()
+    whitelist_user_1 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.display_name == "username_1")).first()
+    whitelist_user_2 = test_db.scalars(select(WhitelistUser).where(WhitelistUser.display_name == "username_2")).first()
 
     assert whitelist_user_1.available_devices == '*'
     assert whitelist_user_2.available_devices == json.dumps(["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"])
@@ -416,7 +416,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             RegisterWhitelistUserRequest(
                 email=None,
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -427,7 +427,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id=None,
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -438,7 +438,7 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             RegisterWhitelistUserRequest(
                 email="a" * 256,
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -449,18 +449,18 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="a" * 256,
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
-    request_body_username_too_long = RegisterWhitelistUsersRequest(
+    request_body_display_name_too_long = RegisterWhitelistUsersRequest(
         users=[
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="group_id_3",
-                username="a" * 256,
+                display_name="a" * 256,
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -471,18 +471,18 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="a" * 256,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
         ]
     )
-    request_body_overlap_username = RegisterWhitelistUsersRequest(
+    request_body_overlap_display_name = RegisterWhitelistUsersRequest(
         users=[
             RegisterWhitelistUserRequest(
                 email="email_1",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
             ),
@@ -508,21 +508,21 @@ def test_post_whitelist_users_invalid_request_contents(test_db):
         json=request_body_group_id_too_long.model_dump(),
     )
     assert request_body_group_id_too_long.status_code == 400
-    request_body_username_too_long = client.post(
+    request_body_display_name_too_long = client.post(
         "/whitelist_users",
-        json=request_body_username_too_long.model_dump(),
+        json=request_body_display_name_too_long.model_dump(),
     )
-    assert request_body_username_too_long.status_code == 400
+    assert request_body_display_name_too_long.status_code == 400
     request_body_organization_too_long = client.post(
         "/whitelist_users",
         json=request_body_organization_too_long.model_dump(),
     )
     assert request_body_organization_too_long.status_code == 400
-    request_body_overlap_username = client.post(
+    request_body_overlap_display_name = client.post(
         "/whitelist_users",
-        json=request_body_overlap_username.model_dump(),
+        json=request_body_overlap_display_name.model_dump(),
     )
-    assert request_body_overlap_username.status_code == 400
+    assert request_body_overlap_display_name.status_code == 400
 
 
 def test_post_whitelist_users_no_userlist_in_request(test_db):
@@ -570,7 +570,7 @@ def test_post_whitelist_users_no_available_devices(test_db):
             RegisterWhitelistUserRequest(
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="a" * 256,
             ),
         ]
@@ -612,7 +612,7 @@ def test_delete_whitelist_users(test_db):
                 id=1,
                 email="email_1",
                 group_id="group_id_1",
-                username="username_1",
+                display_name="username_1",
                 organization="organization_1",
                 is_signup_completed=True,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],
@@ -621,7 +621,7 @@ def test_delete_whitelist_users(test_db):
                 id=3,
                 email="email_3",
                 group_id="group_id_3",
-                username="username_3",
+                display_name="username_3",
                 organization="organization_3",
                 is_signup_completed=False,
                 available_devices=["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"],

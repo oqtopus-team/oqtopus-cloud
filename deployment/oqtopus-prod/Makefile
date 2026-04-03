@@ -125,7 +125,7 @@ deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-versi
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
 
-deploy:
+deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \
@@ -207,7 +207,7 @@ deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda
 	BIN=./bin/user_signup \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
-deploy-via-actions: ## Deploy Lambda Package via Github Actions
+deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
 	aws lambda update-function-code \

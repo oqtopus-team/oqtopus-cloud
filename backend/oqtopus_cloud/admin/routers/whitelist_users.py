@@ -33,7 +33,7 @@ from oqtopus_cloud.common.available_devices import (
     parse_available_devices_string,
 )
 from oqtopus_cloud.admin.common.validation_utils import (
-    EMAIL_ALREADY_EXISTS_MESSAGE,
+    ALREADY_EXISTS_MESSAGE,
     FIELD_REQUIRED_MESSAGE,
     FIELD_TOO_LONG_MESSAGE,
     FormatError,
@@ -47,7 +47,7 @@ COLUMNS_POSSIBLE_TO_ORDER_BY_DICT = {
     "id": WhitelistUser.id,
     "group_id": WhitelistUser.group_id,
     "email": WhitelistUser.email,
-    "username": WhitelistUser.username,
+    "display_name": WhitelistUser.display_name,
     "organization": WhitelistUser.organization,
     "is_signup_completed": WhitelistUser.is_signup_completed,
     "available_devices": WhitelistUser.available_devices,
@@ -70,18 +70,18 @@ def validated_whitelist_user(
         raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.email, LEN_VARCHAR))
     if len(str(user.group_id)) > LEN_VARCHAR:
         raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.group_id, LEN_VARCHAR))
-    if user.username and len(str(user.username)) > LEN_VARCHAR:
-        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.username, LEN_VARCHAR))
+    if user.display_name and len(str(user.display_name)) > LEN_VARCHAR:
+        raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.display_name, LEN_VARCHAR))
     if user.organization and len(str(user.organization)) > LEN_VARCHAR:
         raise FormatError(FIELD_TOO_LONG_MESSAGE.format(user.organization, LEN_VARCHAR))
 
     if not is_unique_email(db, WhitelistUser, user.email):
-        raise FormatError(EMAIL_ALREADY_EXISTS_MESSAGE.format(user.email))
+        raise FormatError(ALREADY_EXISTS_MESSAGE.format(user.email))
 
     validated_user = {
         "email": str(user.email),
         "group_id": str(user.group_id),
-        "username": str(user.username),
+        "display_name": str(user.display_name),
         "organization": str(user.organization),
         "available_devices": convert_available_devices_to_string(
             user.available_devices
@@ -101,7 +101,7 @@ def get_whitelist_users(
     offset: Optional[int] = 0,
     limit: Optional[int] = 10,
     email: Optional[str] = None,
-    username: Optional[str] = None,
+    display_name: Optional[str] = None,
     organization: Optional[str] = None,
     group_id: Optional[str] = None,
     sort: Optional[str] = None,
@@ -113,8 +113,8 @@ def get_whitelist_users(
         stmt = select(WhitelistUser)
         if email:
             stmt = stmt.where(WhitelistUser.email.ilike(f"%{email}%"))
-        if username:
-            stmt = stmt.where(WhitelistUser.username.ilike(f"%{username}%"))
+        if display_name:
+            stmt = stmt.where(WhitelistUser.display_name.ilike(f"%{display_name}%"))
         if organization:
             stmt = stmt.where(WhitelistUser.organization == organization)
         if group_id:
@@ -197,7 +197,7 @@ def register_whitelist_user(
             new_whitelist_user = WhitelistUser(
                 group_id=user.group_id,
                 email=user.email,
-                username=user.username,
+                display_name=user.display_name,
                 organization=user.organization,
                 is_signup_completed=user.is_signup_completed,
                 available_devices=user.available_devices,
@@ -250,7 +250,7 @@ def model_to_schema(model: WhitelistUser) -> ListWhitelistUserResponse:
         id=model.id,
         group_id=model.group_id,
         email=model.email,
-        username=getattr(model, "username", None),
+        display_name=getattr(model, "display_name", None),
         organization=getattr(model, "organization", None),
         is_signup_completed=getattr(model, "is_signup_completed", None),
         available_devices=parse_available_devices_string(

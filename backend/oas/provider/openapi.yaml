@@ -232,7 +232,8 @@ paths:
           description: Additional search parameter:<br/> Jobs created after the specified timetsamp
           schema:
             type: string
-            example: '2022-12-15 15:54:46'
+            format: date-time
+            example: '2022-12-15T15:54:46Z'
       responses:
         '200':
           description: List of jobs for a device
@@ -623,7 +624,7 @@ components:
           description: Parameter mandatory and valid if calibrationData not null
           type: string
           format: date-time
-          example: '2023-09-10T14:00:00'
+          example: '2023-09-10T14:00:00Z'
           nullable: true
       required:
         - device_info
@@ -862,23 +863,23 @@ components:
           format: date-time
           nullable: true
           default: null
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ready_at:
           type: string
           format: date-time
           nullable: true
           default: null
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         running_at:
           type: string
           format: date-time
           nullable: true
           default: null
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
         ended_at:
           type: string
           format: date-time
-          example: '2022-10-19T11:45:34+09:00'
+          example: '2022-10-19T11:45:34Z'
           nullable: true
           default: null
       required: []
@@ -917,10 +918,10 @@ components:
         shots: 1000
         status: submitted
         execution_time: 10.123
-        submitted_at: '2022-10-19T11:45:34+09:00'
-        ready_at: '2022-10-19T11:45:34+09:00'
-        running_at: '2022-10-19T11:45:34+09:00'
-        ended_at: '2022-10-19T11:45:34+09:00'
+        submitted_at: '2022-10-19T11:45:34Z'
+        ready_at: '2022-10-19T11:45:34Z'
+        running_at: '2022-10-19T11:45:34Z'
+        ended_at: '2022-10-19T11:45:34Z'
     jobs.JobDef:
       allOf:
         - $ref: '#/components/schemas/jobs.Job'

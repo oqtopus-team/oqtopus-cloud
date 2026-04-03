@@ -5,13 +5,13 @@ CREATE TABLE
     id VARCHAR(64) PRIMARY KEY,
     device_type VARCHAR(32) DEFAULT 'QPU' NOT NULL,
     status VARCHAR(64) DEFAULT 'available' NOT NULL,
-    available_at DATETIME,
+    available_at TIMESTAMP,
     pending_jobs INT DEFAULT 0 NOT NULL,
     n_qubits INT DEFAULT 1 NOT NULL,
     basis_gates VARCHAR(256) NOT NULL,
     instructions VARCHAR(64) NOT NULL,
     device_info TEXT,
-    calibrated_at DATETIME,
+    calibrated_at TIMESTAMP,
     description VARCHAR(128) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -34,10 +34,10 @@ CREATE TABLE
     transpiler_info TEXT,
     simulator_info TEXT,
     mitigation_info TEXT,
-    submitted_at DATETIME,
-    ready_at DATETIME,
-    running_at DATETIME,
-    ended_at DATETIME,
+    submitted_at TIMESTAMP,
+    ready_at TIMESTAMP,
+    running_at TIMESTAMP,
+    ended_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   );
@@ -46,10 +46,10 @@ drop table if exists main.users;
 
 CREATE TABLE
   IF NOT EXISTS users (
-    id serial PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     cognito_id VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) NOT NULL,
-    username VARCHAR(100),
+    display_name VARCHAR(100),
     userstatus VARCHAR(10),
     organization VARCHAR(255),
     group_id VARCHAR(255),
@@ -70,7 +70,7 @@ CREATE TABLE
     email VARCHAR(255) NOT NULL UNIQUE,
     group_id VARCHAR(255) NOT NULL,
     is_signup_completed BOOLEAN DEFAULT FALSE,
-    username VARCHAR(255),
+    display_name VARCHAR(255),
     organization VARCHAR(255),
     available_devices TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -84,8 +84,8 @@ CREATE TABLE
     id serial PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
     publishable BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

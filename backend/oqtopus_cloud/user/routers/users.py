@@ -7,7 +7,6 @@ from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.user.common.settings import get_editable_fields, get_visible_fields
 from oqtopus_cloud.user.schemas.jobs import JobType
-import pytz
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
@@ -52,7 +51,7 @@ def get_user(
 ) -> GetOneUserResponse | NotFoundErrorResponse | InternalServerErrorResponse:
     logger.info("invoked get user")
     try:
-        user = db.scalars(select(User).where(User.email == event.state.owner)).first()
+        user = db.scalars(select(User).where(User.id == event.state.user_id)).first()
 
         if user is None:
             message = "user is not found"
@@ -96,7 +95,7 @@ def update_user(
     try:
         logger.info("invoked update user")
         # search the user
-        stmt = select(User).where(User.email == event.state.owner)
+        stmt = select(User).where(User.id == event.state.user_id)
         query = db.execute(stmt).scalars().first()
         if not query:
             logger.error("user not found")
@@ -114,7 +113,7 @@ def update_user(
                 raise FormatError(
                     FIELD_TOO_LONG_MESSAGE.format(update_user_request.name, LEN_VARCHAR)
                 )
-            query.username = update_user_request.name
+            query.display_name = update_user_request.name
 
         if update_user_request.organization:
             if "organization" not in editable_fields:
@@ -175,9 +174,10 @@ def delete_user(
             return ForbiddenErrorResponse(message="user deletion is disabled")
 
         # query
-        stmt = select(User).where(User.email == event.state.owner)
+        stmt = select(User).where(User.id == event.state.user_id)
         # pagination
         query_result = db.execute(stmt).scalars().first()
+
         if not query_result:
             logger.error("User not found")
             return NotFoundErrorResponse(message="User not found")
@@ -188,10 +188,10 @@ def delete_user(
         )
         query_result_whitelist = db.execute(stmt_whitelist).scalars().first()
         stmt_sse_jobs = select(Job).where(
-            Job.owner == query_result.email, Job.job_type == JobType.sse
+            Job.owner == query_result.id, Job.job_type == JobType.sse
         )
         user_sse_jobs = db.scalars(stmt_sse_jobs).all()
-        stmt_delete_user_jobs = delete(Job).where(Job.owner == query_result.email)
+        stmt_delete_user_jobs = delete(Job).where(Job.owner == query_result.id)
 
         # delete from RDS
         db.execute(stmt_delete_user_jobs)
@@ -215,7 +215,7 @@ def delete_user(
         # delete from cognito
         client.admin_delete_user(
             UserPoolId=user_pool_id,
-            Username=query_result.email,
+            Username=query_result.id,
         )
 
         return None
@@ -292,12 +292,6 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
         return False
 
 
-def localize(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return pytz.utc.localize(dt)
-
-
 def model_to_schema(
     model: User, login_events: list[LoginEvent] | None = None
 ) -> GetOneUserResponse:
@@ -306,11 +300,13 @@ def model_to_schema(
     dict = {
         "id": model.id if "id" in visible_fields else None,
         "email": getattr(model, "email", None) if "email" in visible_fields else None,
-        "name": getattr(model, "username", None) if "name" in visible_fields else None,
+        "name": getattr(model, "display_name", None)
+        if "name" in visible_fields
+        else None,
         "organization": getattr(model, "organization", None)
         if "organization" in visible_fields
         else None,
-        "created_at": localize(getattr(model, "created_at", None))
+        "created_at": getattr(model, "created_at", None)
         if "created_at" in visible_fields
         else None,
         "login_events": login_events,

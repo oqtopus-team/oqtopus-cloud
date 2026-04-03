@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     Generator,
     Any,
@@ -42,7 +42,7 @@ class TestUserMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
-        request.state.owner = "email_1"
+        request.state.user_id = "email_1"
         request.state.username = "test_user"
         response = await call_next(request)
         return response
@@ -73,14 +73,17 @@ def test_client(request):
         test_app.dependency_overrides[get_db] = get_db_for_testing
 
     elif mode == "without_db":
-        # DB 依存性を完全に外す
-        test_app.dependency_overrides.pop(get_db, None)
-        real_app.dependency_overrides.pop(get_db, None)  # 念のため
+        # Always fail DB access to make 500-path tests deterministic.
+        def get_db_for_testing_failure():
+            raise SQLAlchemyError("DB is unavailable for this test mode")
+            yield
+
+        test_app.dependency_overrides[get_db] = get_db_for_testing_failure
 
     else:
         raise ValueError(f"unknown mode: {mode}")
     test_app.add_middleware(TestUserMiddleware)
-    return TestClient(test_app)
+    return TestClient(test_app, raise_server_exceptions=(mode != "without_db"))
 
 
 class FakeCognitoClient:
@@ -155,15 +158,15 @@ def insert_initial_data(db: Session):
             id="Kawasaki",
             device_type="QPU",
             status="available",
-            available_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            available_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             pending_jobs=2,
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
             device_info="{}",
-            calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             description="Superconducting quantum computer",
-            created_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            created_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         ),
         # Job(
         #     id="7af020f6-2e38-4d70-8cf0-4349650ea08c",

@@ -6,7 +6,6 @@ import zipfile
 from datetime import datetime
 from typing import Any, Optional
 
-import pytz
 from fastapi import (
     APIRouter,
     Depends,
@@ -51,7 +50,6 @@ from oqtopus_cloud.user.schemas.success import SuccessResponse
 
 from . import LoggerRouteHandler
 
-jst = ZoneInfo("Asia/Tokyo")
 utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
@@ -77,6 +75,7 @@ def get_jobs(
     fields: Optional[str] = None,
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
+    status: Optional[JobStatus] = None,
     q: Optional[str] = None,
     order: Optional[str] = None,
     size: Optional[str] = None,
@@ -84,7 +83,7 @@ def get_jobs(
     db: Session = Depends(get_db),
 ) -> list[GetJobsResponse | JobDef] | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         # Order Control
@@ -128,11 +127,13 @@ def get_jobs(
 
         # Filtering Jobs
         if start_time is not None:
-            stime = datetime.fromisoformat(start_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at >= stime)
+            stime = datetime.fromisoformat(start_time).astimezone(utc)
+            stmt = stmt.filter(Job.submitted_at >= stime)
         if end_time is not None:
-            etime = datetime.fromisoformat(end_time).astimezone(jst)
-            stmt = stmt.filter(Job.created_at <= etime)
+            etime = datetime.fromisoformat(end_time).astimezone(utc)
+            stmt = stmt.filter(Job.submitted_at <= etime)
+        if status is not None:
+            stmt = stmt.filter(Job.status == status)
         if q is not None:
             stmt = stmt.filter(
                 or_(
@@ -197,7 +198,7 @@ def submit_jobs(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SubmitJobResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         if not can_user_access_device(owner, request.device_id, db):
             logger.error(
                 f"user={owner} is not allowed to create job for device={request.device_id}"
@@ -235,7 +236,7 @@ def submit_jobs(
             mitigation_info=json.dumps(request.mitigation_info),
             job_type=request.job_type,
             shots=shots,
-            submitted_at=datetime.now(),
+            submitted_at=datetime.now(utc),
         )
 
         # put the user program to S3 when SSE
@@ -269,7 +270,7 @@ def get_job(
     db: Session = Depends(get_db),
 ) -> JobDef | GetJobsResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = db.query(Job).filter(Job.id == job_id, Job.owner == owner).first()
         if job_model is None:
@@ -302,7 +303,7 @@ def delete_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
         job = db.get(Job, job_id)
 
@@ -344,7 +345,7 @@ def get_job_status(
     job_id: str,
     db: Session = Depends(get_db),
 ) -> GetJobStatusResponse | ErrorResponse:
-    owner = event.state.owner
+    owner = event.state.user_id
     logger.info("invoked!", extra={"owner": owner})
     job = (
         db.query(Job.id, Job.status)
@@ -375,7 +376,7 @@ def cancel_job(
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job = db.get(Job, job_id)
@@ -420,7 +421,7 @@ def get_sselog(
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> GetSselogResponse | ErrorResponse:
-    owner = event.state.owner
+    owner = event.state.user_id
     logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
     log_name = os.environ["SSE_CONTAINER_LOG_NAME"]
     zip_name = os.environ["SSE_ZIP_FILE_NAME"]
@@ -529,7 +530,7 @@ def delete_storage_folder(job: Job, storage: AbstractStorage) -> bool:
 
 def set_job_failure(job: Job) -> None:
     job.status = JobStatus.failed
-    job.ended_at = datetime.now()
+    job.ended_at = datetime.now(utc)
 
 
 # TODO: match parameter names of model and schema
@@ -567,22 +568,6 @@ def decode_job_info(j: Any) -> JobInfo | ValueError:
 def model_to_schema(
     model: Job, fields: Optional[list[str]] = None
 ) -> JobDef | GetJobsResponse | ValueError:
-    def is_datetime_field(fld: str) -> bool:
-        if fld == "submitted_at":
-            return True
-        elif fld == "ready_at":
-            return True
-        elif fld == "running_at":
-            return True
-        elif fld == "ended_at":
-            return True
-        elif fld == "created_at":
-            return True
-        elif fld == "updated_at":
-            return True
-
-        return False
-
     def is_object_field(fld: str) -> bool:
         if fld == "transpiler_info":
             return True
@@ -592,11 +577,6 @@ def model_to_schema(
             return True
 
         return False
-
-    def localize(dt: datetime | None) -> datetime | None:
-        if dt is None:
-            return None
-        return pytz.utc.localize(dt)
 
     job_info = decode_job_info(json.loads(model.job_info))
 
@@ -617,10 +597,10 @@ def model_to_schema(
             mitigation_info=json.loads(model.mitigation_info),
             simulator_info=json.loads(model.simulator_info),
             execution_time=model.execution_time,
-            submitted_at=localize(model.submitted_at),
-            ready_at=localize(model.ready_at),
-            running_at=localize(model.running_at),
-            ended_at=localize(model.ended_at),
+            submitted_at=model.submitted_at,
+            ready_at=model.ready_at,
+            running_at=model.running_at,
+            ended_at=model.ended_at,
         )
     elif fields is not None:
         dict_schema: dict[str, Any] = {}
@@ -639,8 +619,6 @@ def model_to_schema(
                 dict_schema[k] = JobStatus(model.status)
             elif is_object_field(k):
                 dict_schema[k] = json.loads(getattr(model, k))
-            elif is_datetime_field(k):
-                dict_schema[k] = localize(getattr(model, k))
             else:
                 dict_schema[k] = getattr(model, k)
         return GetJobsResponse(**dict_schema)
@@ -655,10 +633,9 @@ def jobtype_of_jobinfo(info: SubmitJobInfo) -> list[JobType]:
         return [JobType.sampling, JobType.multi_manual, JobType.sse]
 
 
-def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
+def can_user_access_device(user_id: str, device_id: str, db: Session) -> bool:
     try:
-        # username here is the email address registered in Cognito
-        user = db.scalars(select(User).where(User.email == username)).first()
+        user = db.scalars(select(User).where(User.id == user_id)).first()
         if user is None or user.available_devices is None:
             return False
 

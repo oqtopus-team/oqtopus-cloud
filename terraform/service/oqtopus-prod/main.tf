@@ -19,7 +19,7 @@ module "lambda_auth" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.lambda_auth.lambda_function.lambda_handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   client_cognito_user_pool_arn           = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
@@ -45,7 +45,7 @@ module "user_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "LAMBDA"
   lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
@@ -69,6 +69,12 @@ module "user_api" {
   visible_fields                         = var.visible_fields
   login_history_enabled                  = var.login_history_enabled
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+
+  storage_driver      = "s3"
+  storage_env_vars_s3 = {
+    "STORAGE_S3_REGION"      = var.region
+    "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
 }
 
 module "provider_api" {
@@ -96,6 +102,11 @@ module "provider_api" {
   sse_user_program_name          = "userprogram.py"
   sse_zip_file_name              = "sselog_{job_id}.zip"
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  storage_driver                 = "s3"
+  storage_env_vars_s3 = {
+    "STORAGE_S3_REGION"      = var.region
+    "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
 }
 
 module "admin_api" {
@@ -109,7 +120,7 @@ module "admin_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.admin.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.admin_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
@@ -138,7 +149,7 @@ module "user_signup_api" {
   db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
   db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
   lambda_handler                         = "oqtopus_cloud.user_signup.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_with_cognito_security_group_ids
+  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
   lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   authorizer_type                        = "NONE"
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
@@ -153,6 +164,12 @@ module "user_signup_api" {
   allow_headers                          = "Content-type,Accept"
   log_level                              = "INFO"
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+  lambda_additional_env = {
+    "NO_SIGNUP_RESTRICTION"          = "true"
+    "DEFAULT_WHITELIST_GROUP_ID"     = "playground"
+    "DEFAULT_WHITELIST_GROUP_NAME"   = "playground"
+    "DEFAULT_WHITELIST_ORGANIZATION" = "guest"
+  }
 }
 
 module "pending_jobs_updater" {
@@ -200,21 +217,18 @@ module "vpc_endpoint" {
   vpc_id                            = data.terraform_remote_state.infrastructure.outputs.network.vpc_id
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
+  cognito_security_group_ids        = data.terraform_remote_state.infrastructure.outputs.security_group.cognito_security_group_ids
+  cloudtrail_security_group_ids      = data.terraform_remote_state.infrastructure.outputs.security_group.cloudtrail_security_group_ids
   s3_bucket_name                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
 
-  identifiers = [
-    module.user_api.iam_role_arn,
-    module.provider_api.iam_role_arn,
-    module.admin_api.iam_role_arn,
-    module.user_signup_api.iam_role_arn,
-    module.pending_jobs_updater.iam_role_arn,
-    module.lambda_auth.iam_role_arn,
-  ]
-
-  s3_lambda_iam_role_arns = [
-    module.user_api.iam_role_arn,
-    module.provider_api.iam_role_arn,
-  ]
+  identifiers = {
+    user_api = module.user_api.iam_role_arn,
+    provider_api = module.provider_api.iam_role_arn,
+    admin_api = module.admin_api.iam_role_arn,
+    user_signup_api = module.user_signup_api.iam_role_arn,
+    pending_jobs_updater = module.pending_jobs_updater.iam_role_arn,
+    lambda_auth = module.lambda_auth.iam_role_arn,
+  }
 
   depends_on = [
     module.user_api,
