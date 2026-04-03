@@ -86,6 +86,7 @@ module "network" {
 | <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | A map of public subnets | <pre>map(object({<br>    name = string<br>    cidr = string<br>    az   = string<br>  }))</pre> | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region name | `string` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | The CIDR block for the VPC | `string` | n/a | yes |
+| <a name="input_vpc_flow_log_retention_days"></a> [vpc\_flow\_log\_retention\_days](#input\_vpc\_flow\_log\_retention\_days) | Number of days for which VPC flow logs are retained | `number` | `14` | no |
 
 ## Outputs
 
