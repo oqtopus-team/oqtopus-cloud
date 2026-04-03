@@ -10,13 +10,17 @@ FIELD_REQUIRED_MESSAGE = "{} is required."
 FIELD_TOO_LONG_MESSAGE = (
     "The length of {} exceeds the limit. Please enter within {} characters"
 )
-EMAIL_ALREADY_EXISTS_MESSAGE = "{} is already registered."
+ALREADY_EXISTS_MESSAGE = "{} is already registered."
 
 
 class FormatError(Exception):
     """Custom exception for formatting errors"""
 
     pass
+
+
+def is_unique_user_id(session: Session, entity: type[User], user_id: str) -> bool:
+    return session.query(entity).filter_by(id=user_id).first() is None
 
 
 def is_unique_email(

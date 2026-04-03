@@ -82,7 +82,7 @@ def register_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> RegisterJobResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
@@ -138,7 +138,7 @@ def submit_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job = (
@@ -242,7 +242,7 @@ def get_jobs(
     storage: AbstractStorage = Depends(get_storage),
 ) -> list[Job] | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         # Order Control
@@ -352,7 +352,7 @@ def get_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> RegisteredJob | SubmittedJob | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner, "job_id": job_id})
         job_model = (
             db.query(JobModel)
@@ -509,7 +509,7 @@ def delete_job(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job = (
@@ -575,7 +575,7 @@ def get_job_status(
     job_id: str,
     db: Session = Depends(get_db),
 ) -> GetJobStatusResponse | ErrorResponse:
-    owner = event.state.owner
+    owner = event.state.user_id
     logger.info("invoked!", extra={"owner": owner})
     job = (
         db.query(JobModel.id, JobModel.status)
@@ -606,7 +606,7 @@ def cancel_job(
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        owner = event.state.owner
+        owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
 
         job = (

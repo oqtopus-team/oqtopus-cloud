@@ -51,15 +51,15 @@ def _get_calibration_data() -> CalibrationData:
 """
 
 
-def _get_user_model(n: int, username: str, available_devices="*") -> User:
+def _get_user_model(n: int, available_devices="*") -> User:
     if available_devices != "*":
         available_devices = json.dumps(available_devices)
 
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
-        "username": username,
+        "display_name": f"test_user{n}",
         "userstatus": UserStatus.approved,
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -105,11 +105,10 @@ def _get_model(device="SVSim"):
 def test_get_device(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user))
+    test_db.add(_get_user_model(user_no))
     test_db.add(_get_model())
     test_db.commit()
 
@@ -138,11 +137,10 @@ def test_can_get_device_if_in_available_devices(test_db):
     # Arrange
     user_no = 1
     device = "SC"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, available_devices=[device]))
+    test_db.add(_get_user_model(user_no, available_devices=[device]))
     test_db.add(_get_model(device=device))
     test_db.commit()
 
@@ -171,11 +169,10 @@ def test_cannot_get_device_without_permission(test_db):
     # Arrange
     user_no = 1
     device = "SC"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, ["Kawasaki", "SVSim"]))
+    test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
     test_db.add(_get_model(device=device))
     test_db.commit()
 
@@ -194,11 +191,10 @@ def test_cannot_get_device_that_not_exist(test_db):
     # Arrange
     user_no = 1
     device = "SC222"
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user))
+    test_db.add(_get_user_model(user_no))
     test_db.commit()
 
     # Act
@@ -213,11 +209,10 @@ def test_cannot_get_device_that_not_exist(test_db):
 def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, ["Test_model", "SVSim"]))
+    test_db.add(_get_user_model(user_no, ["Test_model", "SVSim"]))
     test_db.add(_get_model(device="SC"))
     test_db.add(_get_model(device="SVSim"))
     test_db.add(_get_model(device="Test_model"))
@@ -264,11 +259,10 @@ def test_can_only_get_devices_that_user_can_access(test_db):
 def test_can_return_all_devices_when_user_has_access_to_all_devices(test_db):
     # Arrange
     user_no = 1
-    user = "test_user"
     request = _create_request()
-    request.state.owner = f"email_{user_no}"
+    request.state.user_id = f"email_{user_no}"
 
-    test_db.add(_get_user_model(user_no, user, "*"))
+    test_db.add(_get_user_model(user_no, "*"))
     test_db.add(_get_model(device="SC"))
     test_db.add(_get_model(device="SVSim"))
     test_db.add(_get_model(device="Test_model"))
@@ -312,7 +306,7 @@ def test_model_to_shema():
 
 def test_get_device_handler(test_client, test_db):
     # Arrange
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_model())
     test_db.commit()
 

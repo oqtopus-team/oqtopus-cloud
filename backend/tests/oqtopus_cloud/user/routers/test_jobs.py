@@ -25,17 +25,16 @@ from sqlalchemy import select
 
 def _get_user_model(
         n: int,
-        username: str,
         available_devices: str | list[str]="*"
 ) -> User:
     if available_devices != "*":
         available_devices = json.dumps(available_devices)
 
     model_dict = {
-        "id": n,
+        "id": f"email_{n}",
         "cognito_id": f"cognito_id_{n}",
         "email": f"email_{n}",
-        "username": username,
+        "display_name": f"test_user_{n}",
         "userstatus": UserStatus.approved,
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
@@ -174,7 +173,7 @@ def test_submit_job(
     Complete job submission with POST /jobs/{job_id}/submit test
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin", available_devices=["Kawasaki", "SVSim"]))
+    test_db.add(_get_user_model(1, available_devices=["Kawasaki", "SVSim"]))
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
@@ -224,7 +223,7 @@ def test_submit_job_400_invalid_status(
     Complete job submission with POST /jobs/{job_id}/submit test, job already submitted
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_submitted_model(1))
     test_db.commit()
 
@@ -242,7 +241,7 @@ def test_submit_job_400_invalid_device(
     """
     test_db.flush()
     test_db.get(Device, "Kawasaki").status = "unavailable"
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
@@ -267,7 +266,7 @@ def test_submit_job_403_forbidden_device(
     user is not allowed to use device
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin", available_devices=["SVSim"]))
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
@@ -285,7 +284,7 @@ def test_submit_job_400_missing_job_info(
     Complete job submission with POST /jobs/{job_id}/submit test, no S3 job_info file
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
@@ -303,7 +302,7 @@ def test_submit_job_422_invalid_input(
     Complete job submission with POST /jobs/{job_id}/submit test: try submit values valid only for newly registered jobs
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.add(_get_registered_model(1))
     test_db.commit()
 
@@ -543,9 +542,7 @@ def test_get_jobs_invalid_fields(
     response = test_client.get("/jobs?fields=XXX%2Cstatus%2CYYY&order=ASC")
     actual = response.json()
     expect = json.loads(
-        BadRequestResponse(
-            message=f"fields {["XXX", "YYY"]} is invalid"
-        ).body.decode()
+        BadRequestResponse(message=f"fields {["XXX", "YYY"]} is invalid").body.decode()
     )
 
     assert response.status_code == 400
@@ -1008,7 +1005,7 @@ def test_register_submit_get(
             test_db (_type_): _description_
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     # Registering
@@ -1062,7 +1059,7 @@ def test_register_submit_cancel_delete(
             test_db (_type_): _description_
     """
     test_db.flush()
-    test_db.add(_get_user_model(1, "admin"))
+    test_db.add(_get_user_model(1))
     test_db.commit()
 
     sql = select(JobModel).order_by(JobModel.created_at)

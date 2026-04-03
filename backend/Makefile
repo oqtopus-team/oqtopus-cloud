@@ -71,6 +71,10 @@ export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
+export USER_API_PORT ?= 8080
+export PROVIDER_API_PORT ?= 8888
+export ADMIN_API_PORT ?= 8889
+export USER_SIGNUP_API_PORT ?= 8890
 export STORAGE_DRIVER=local:minio
 export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
@@ -84,22 +88,22 @@ export LOCAL_WORKER_SCHEDULING_RATE_S=60
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
-	poetry run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port 8080 --reload --log-level debug
+	poetry run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port ${USER_API_PORT} --reload --log-level debug
 
 run-provider: ## Start the Provider API
 	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port ${PROVIDER_API_PORT} --reload --log-level debug
 
 run-admin: ## Start the Admin API
 	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
-	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port ${ADMIN_API_PORT} --reload --log-level debug
 
 run-user_signup: ## Start the user_signup API
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
-	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
 
 run-worker:
 	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \

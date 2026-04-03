@@ -15,7 +15,7 @@ def _get_model(n: int) -> WhitelistUser:
         "email": f"email_{n}",
         "group_id": f"group_id_{n}",
         "is_signup_completed": False,
-        "username": f"username_{n}",
+        "display_name": f"username_{n}",
         "organization": f"organization_{n}",
         "available_devices": '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]',
         "created_at": datetime(2024, 3, 4, 12, 34, 57),
@@ -32,16 +32,21 @@ def test_signup_success(test_db):
     body = SignupRequest(email="email_1", password="password_1")
     response = client.post("/signup", json=body.model_dump())
     assert response.status_code == 201
-    user = test_db.query(User).filter(User.email == "email_1").first()
+    # user_id = Cognito username = email
+    user = test_db.query(User).filter(User.id == "email_1").first()
     whitelist_user = (
         test_db.query(WhitelistUser).filter(WhitelistUser.email == "email_1").first()
     )
+    assert user.id == "email_1"
     assert user.email == "email_1"
-    assert user.username == "username_1"
+    assert user.display_name == "username_1"
     assert user.organization == "organization_1"
     assert user.group_id == "group_id_1"
     assert user.userstatus == "approved"
-    assert user.available_devices == '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]'
+    assert (
+        user.available_devices
+        == '["SC", "SVSim", "Kawasaki", "01927422-86d4-7597-b724-b08a5e7781fc"]'
+    )
     assert whitelist_user.is_signup_completed is True
 
 

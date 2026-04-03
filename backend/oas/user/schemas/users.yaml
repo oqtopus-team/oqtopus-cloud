@@ -15,7 +15,7 @@ users.GetOneUserResponse:
   type: object
   properties:
     id:
-      type: integer
+      type: string
     email:
       type: string
     name:

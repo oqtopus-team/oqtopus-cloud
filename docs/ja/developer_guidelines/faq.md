@@ -31,7 +31,7 @@ key            = "xxxxxxxxxxxxxx"
 encrypt        = true
 profile        = "myprofile-tf"
 region         = "ap-northeast-1"
-dynamodb_table  = "xxxxxxxxxxxxx"
+use_lockfile   = true
 ```
 
 ```bash

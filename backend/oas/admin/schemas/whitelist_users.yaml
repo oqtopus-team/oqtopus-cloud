@@ -10,7 +10,7 @@ whitelist_users.RegisterWhitelistUserRequest:
       type: string
     email:
       type: string
-    username:
+    display_name:
       type: string
     organization:
       type: string
@@ -34,7 +34,7 @@ whitelist_users.ListWhitelistUserResponse:
       example: group1
     email:
       $ref: "#/whitelist_users.Email"
-    username:
+    display_name:
       type: string
       example: exampleuser
     organization:
@@ -59,7 +59,7 @@ whitelist_users.ListWhitelistUserResponse:
     id: 1
     group_id: group1
     email: example@example.com
-    username: exampleuser
+    display_name: exampleuser
     organization: Example Organization
     is_signup_completed: true
 
