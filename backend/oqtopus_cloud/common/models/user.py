@@ -10,7 +10,6 @@ from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.models.common import TimestampMixin, current_time_utc
-from oqtopus_cloud.common.model_util import DateTimeTz
 
 
 class UserStatus(str, Enum):
