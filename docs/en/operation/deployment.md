@@ -67,18 +67,6 @@ For standby environment, create the bucket as follows:
 aws s3api create-bucket --bucket tfstate.oqtopus-oqtopus-standby --profile oqtopus-standby --region ap-northeast-3 --create-bucket-configuration LocationConstraint=ap-northeast-3
 ```
 
-Next, create a DynamoDB table to lock the Terraform state file.
-
-```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-dev --region ap-northeast-1
-```
-
-For standby environment:
-
-```bash
-aws dynamodb create-table --table-name terraform-lock --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --profile oqtopus-standby --region ap-northeast-3
-```
-
 Next, prepare the Terraform configuration files. Edit the following two files.
 
 ```hcl:infrastructure/oqtopus-dev/oqtopus-dev.tfbackend
@@ -88,7 +76,7 @@ key            = "infrastructure.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
+use_lockfile   = true
 ```
 
 For standby environment:
@@ -146,7 +134,7 @@ key            = "service.tfstate"
 encrypt        = true
 profile        = "oqtopus-dev"
 region         = "ap-northeast-1"
-dynamodb_table = "terraform-lock"
+use_lockfile   = true
 ```
 
 For standby environment:
