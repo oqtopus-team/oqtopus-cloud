@@ -1,3 +1,5 @@
+import os
+
 import boto3
 from fastapi import APIRouter, Depends, status
 from fastapi import Request as Event
@@ -38,14 +40,15 @@ def signup(
     user_pool_id = event.state.pool_id
     try:
         logger.info("invoked pre signup confirmation")
-        # check if user exists in whitelist_users table
+
+        # confirm user does exist in whitelist_users table
+        whitelist_user = _confirm_whitelist(request, db)
+        if not isinstance(whitelist_user, WhitelistUser):
+            # Something has gone wrong. whitelist_user is either badRequest of InternalServerError Response.
+            return whitelist_user
+
         email = request.email
         password = request.password
-        stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
-        whitelist_user = db.execute(stmt_whitelist).scalars().first()
-        if not whitelist_user:
-            logger.error(f"Not in whitelist_users: {email}")
-            return BadRequestResponse(message="Not in whitelist_users")
         # cognito sign up
         client = boto3.client("cognito-idp")
         response = client.sign_up(
@@ -90,3 +93,45 @@ def signup(
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
+
+
+def _confirm_whitelist(
+    request: SignupRequest, db: Session
+) -> BadRequestResponse | InternalServerErrorResponse | WhitelistUser:
+    if os.getenv("NO_SIGNUP_RESTRICTION") != "true":
+        return _check_in_whitelist(email=request.email, db=db)
+    else:
+        return _register_whitelist_if_not_exists(email=request.email, db=db)
+
+
+def _check_in_whitelist(email: str, db: Session) -> BadRequestResponse | WhitelistUser:
+    stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
+    whitelist_user = db.execute(stmt_whitelist).scalars().first()
+    if not whitelist_user:
+        logger.error(f"Not in whitelist_users: {email}")
+        return BadRequestResponse(message="Not in whitelist_users")
+    return whitelist_user
+
+
+def _register_whitelist_if_not_exists(
+    email: str, db: Session
+) -> InternalServerErrorResponse | WhitelistUser:
+    stmt_whitelist = select(WhitelistUser).where(WhitelistUser.email == email)
+    whitelist_user = db.execute(stmt_whitelist).scalars().first()
+    if whitelist_user is not None:
+        return whitelist_user
+    else:
+        logger.info(f"Registering {email} to whitelist_users")
+        group_id = os.getenv("DEFAULT_WHITELIST_GROUP_ID")
+        organization = os.getenv("DEFAULT_WHITELIST_ORGANIZATION")
+        new_whitelist_user = WhitelistUser(
+            group_id=group_id,
+            email=email,
+            username=email,
+            organization=organization,
+            is_signup_completed=False,
+            available_devices="*",
+        )
+        db.add(new_whitelist_user)
+        logger.info(f"Successfully registered {email} to whitelist_users.")
+        return new_whitelist_user
