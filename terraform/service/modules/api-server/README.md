@@ -35,7 +35,7 @@ module "user_api" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.57.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.57.0 |
 
 ## Resources
 
@@ -99,6 +99,7 @@ module "user_api" {
 | <a name="input_allow_headers"></a> [allow\_headers](#input\_allow\_headers) | The allowed headers for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | `null` | no |
+| <a name="input_api_gateway_log_retention_days"></a> [api\_gateway\_log\_retention\_days](#input\_api\_gateway\_log\_retention\_days) | Number of days for which API Gateway logs are retained | `number` | `14` | no |
 | <a name="input_authorizer_type"></a> [authorizer\_type](#input\_authorizer\_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required. | `string` | `"COGNITO"` | no |
 | <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | The ID of the Cognito user pool | `string` | `""` | no |
 | <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | The web client ID of the Cognito user pool | `string` | `""` | no |

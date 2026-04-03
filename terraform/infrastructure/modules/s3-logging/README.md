@@ -51,12 +51,15 @@ module "s3-logging" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_cloudtrail_s3_logs_expiration_days"></a> [cloudtrail\_s3\_logs\_expiration\_days](#input\_cloudtrail\_s3\_logs\_expiration\_days) | Number of days after which objects in the log bucket expire | `number` | `365` | no |
+| <a name="input_cloudtrail_s3_logs_transition_days_deep_archive"></a> [cloudtrail\_s3\_logs\_transition\_days\_deep\_archive](#input\_cloudtrail\_s3\_logs\_transition\_days\_deep\_archive) | Number of days after which objects in the log bucket are moved to DEEP\_ARCHIVE storage | `number` | `180` | no |
+| <a name="input_cloudtrail_s3_logs_transition_days_glacier_ir"></a> [cloudtrail\_s3\_logs\_transition\_days\_glacier\_ir](#input\_cloudtrail\_s3\_logs\_transition\_days\_glacier\_ir) | Number of days after which objects in the log bucket are moved to GLACIER\_IR storage | `number` | `90` | no |
+| <a name="input_cloudtrail_s3_logs_transition_days_standard_ia"></a> [cloudtrail\_s3\_logs\_transition\_days\_standard\_ia](#input\_cloudtrail\_s3\_logs\_transition\_days\_standard\_ia) | Number of days after which objects in the log bucket are moved to STANDARD\_IA storage | `number` | `30` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_force_destroy_bucket"></a> [force\_destroy\_bucket](#input\_force\_destroy\_bucket) | Should allow S3 log bucket to be destroyed even if it contains objects? | `bool` | `false` | no |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_s3_api_trail_cloudwatch_retention_in_days"></a> [s3\_api\_trail\_cloudwatch\_retention\_in\_days](#input\_s3\_api\_trail\_cloudwatch\_retention\_in\_days) | Number of days to retain S3 API CloudTrail events in CloudWatch | `number` | `30` | no |
-| <a name="input_s3_logs_expiration_in_days"></a> [s3\_logs\_expiration\_in\_days](#input\_s3\_logs\_expiration\_in\_days) | Number of days after which objects in the log bucket expire | `number` | `365` | no |
 | <a name="input_s3_target_bucket_arn"></a> [s3\_target\_bucket\_arn](#input\_s3\_target\_bucket\_arn) | ARN of the S3 target bucket to be monitored by the trail | `string` | n/a | yes |
 | <a name="input_s3_target_bucket_name"></a> [s3\_target\_bucket\_name](#input\_s3\_target\_bucket\_name) | name of the S3 target bucket to be monitored by the trail | `string` | n/a | yes |
 <!-- END_TF_DOCS -->
