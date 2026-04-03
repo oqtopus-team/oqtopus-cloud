@@ -69,6 +69,12 @@ module "user_api" {
   visible_fields                         = var.visible_fields
   login_history_enabled                  = var.login_history_enabled
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+
+  storage_driver      = "s3"
+  storage_env_vars_s3 = {
+    "STORAGE_S3_REGION"      = var.region
+    "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
 }
 
 module "provider_api" {
@@ -96,6 +102,11 @@ module "provider_api" {
   sse_user_program_name          = "userprogram.py"
   sse_zip_file_name              = "sselog_{job_id}.zip"
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  storage_driver                 = "s3"
+  storage_env_vars_s3 = {
+    "STORAGE_S3_REGION"      = var.region
+    "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
 }
 
 module "admin_api" {
@@ -153,6 +164,12 @@ module "user_signup_api" {
   allow_headers                          = "Content-type,Accept"
   log_level                              = "INFO"
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+  lambda_additional_env = {
+    "NO_SIGNUP_RESTRICTION"          = "true"
+    "DEFAULT_WHITELIST_GROUP_ID"     = "playground"
+    "DEFAULT_WHITELIST_GROUP_NAME"   = "playground"
+    "DEFAULT_WHITELIST_ORGANIZATION" = "guest"
+  }
 }
 
 module "pending_jobs_updater" {
