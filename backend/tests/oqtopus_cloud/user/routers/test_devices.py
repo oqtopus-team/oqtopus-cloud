@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import pytz
@@ -61,11 +61,12 @@ def _get_user_model(n: int, username: str, available_devices="*") -> User:
         "email": f"email_{n}",
         "username": username,
         "userstatus": UserStatus.approved,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": available_devices,
-        "api_token_expiration": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
         "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=utc),
         "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=utc),
     }
@@ -120,14 +121,14 @@ def test_get_device(test_db):
         device_id="SVSim",
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=timezone.utc),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
@@ -153,14 +154,14 @@ def test_can_get_device_if_in_available_devices(test_db):
         device_id=device,
         device_type=DeviceType.simulator,
         status=Status.available,
-        available_at=pytz.utc.localize(datetime(2023, 1, 2, 12, 34, 56)),
+        available_at=datetime(2023, 1, 2, 12, 34, 56, tzinfo=timezone.utc),
         n_pending_jobs=8,
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
         device_info="{}",
-        calibrated_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected

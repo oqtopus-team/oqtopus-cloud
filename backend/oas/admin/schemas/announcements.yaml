@@ -53,18 +53,18 @@ announcements.GetAnnouncementResponse:
     start_time:
       type: string
       format: date-time
-      example: "2022-10-19T11:45:34+09:00"
+      example: "2022-10-19T11:45:34Z"
     end_time:
       type: string
       format: date-time
-      example: "2022-12-19T11:45:34+09:00"
+      example: "2022-12-19T11:45:34Z"
     publishable:
       type: boolean
       example: true
     updated_at:
       type: string
       format: date-time
-      example: "2022-12-19T11:45:34+09:00"
+      example: "2022-12-19T11:45:34Z"
   required:
     - id
     - title
@@ -78,8 +78,8 @@ announcements.GetAnnouncementResponse:
     id: 0
     title: Example Title
     content: Example Content
-    start_time: "2022-10-19T11:45:34+09:00"
-    end_time: "2022-12-19T11:45:34+09:00"
+    start_time: "2022-10-19T11:45:34Z"
+    end_time: "2022-12-19T11:45:34Z"
     publishable: true
 
 announcements.GetAnnouncementsListResponse:

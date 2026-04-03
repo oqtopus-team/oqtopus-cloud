@@ -1,13 +1,14 @@
 import datetime
 import enum
 
-from sqlalchemy import TIMESTAMP, Enum, Float, String
+from sqlalchemy import Enum, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.models.common import TimestampMixin
+from oqtopus_cloud.common.model_util import DateTimeTz
 
 
 class Job(Base, TimestampMixin):
@@ -80,10 +81,10 @@ class Job(Base, TimestampMixin):
         Float,
         nullable=True,
     )
-    submitted_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    ready_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    running_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
-    ended_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    submitted_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
+    ready_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
+    running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
+    ended_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
 
 
 class Error(Exception):

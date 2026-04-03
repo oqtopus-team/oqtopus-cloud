@@ -13,14 +13,17 @@
 *   product = "oqtopus"
 *   org = "example"
 *   env = "dev"
-*   identifiers = ["arn:aws:iam::123"]
+*   identifiers = {user_api = "arn:aws:iam::123"}
 *   vpc_id = "vpc-123"
 *   secret_manager_security_group_ids = ["sg-123"]
+*   cognito_security_group_ids = ["sg-459"]
+*   cloudtrail_security_group_ids = ["sg-789"]
 *   lambda_subnet_ids = ["subnet-123"]
 * }
 * ```
 *
 */
+
 resource "aws_vpc_endpoint" "secret_manager" {
   dns_options {
     dns_record_ip_type                             = "ipv4"
@@ -45,7 +48,99 @@ resource "aws_vpc_endpoint" "secret_manager" {
         Action   = ["secretsmanager:GetSecretValue"]
         Resource = ["*"]
         Principal = {
-          AWS = var.identifiers
+          # allow access to all Lambda functions specified in identifiers variable
+          AWS = [ for key, lambda_role_arn in var.identifiers: lambda_role_arn ]
+        }
+      }
+    ]
+  })
+  lifecycle {
+    ignore_changes = [policy]
+  }
+  vpc_endpoint_type = "Interface"
+  vpc_id            = var.vpc_id
+}
+
+resource "aws_vpc_endpoint" "cognito" {
+  dns_options {
+    dns_record_ip_type                             = "ipv4"
+    private_dns_only_for_inbound_resolver_endpoint = "false"
+  }
+
+  ip_address_type = "ipv4"
+
+  private_dns_enabled = "true"
+  security_group_ids  = var.cognito_security_group_ids
+  service_name        = "com.amazonaws.${var.region}.cognito-idp"
+  subnet_ids          = var.lambda_subnet_ids
+
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cognito-vpc-endpoint"
+  }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "cognito-idp:SignUp",
+          "cognito-idp:ConfirmSignUp",
+          "cognito-idp:ListUsers",
+          "cognito-idp:VerifySoftwareToken",
+          "cognito-idp:AdminInitiateAuth",
+          "cognito-idp:GetUserAttributeVerificationCode",
+          "cognito-idp:VerifyUserAttribute",
+          "cognito-idp:AssociateSoftwareToken",
+          "cognito-idp:GetUser",
+          "cognito-idp:SetUserMFAPreference",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminDeleteUser",
+          "cognito-idp:AdminSetUserMFAPreference",
+          "cognito-idp:AdminUserGlobalSignOut"
+        ]
+        Resource = "*"
+        Principal = "*"
+      }
+    ]
+  })
+  lifecycle {
+    ignore_changes = [policy]
+  }
+  vpc_endpoint_type = "Interface"
+  vpc_id            = var.vpc_id
+}
+
+resource "aws_vpc_endpoint" "cloudtrail" {
+  dns_options {
+    dns_record_ip_type                             = "ipv4"
+    private_dns_only_for_inbound_resolver_endpoint = "false"
+  }
+
+  ip_address_type = "ipv4"
+
+  private_dns_enabled = "true"
+  security_group_ids  = var.cloudtrail_security_group_ids
+  service_name        = "com.amazonaws.${var.region}.cloudtrail"
+  subnet_ids          = var.lambda_subnet_ids
+
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cloudtrail-vpc-endpoint"
+  }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "cloudtrail:LookupEvents"
+        ]
+        Resource = "*"
+        # allow access only to user_api Lambda functions
+        Principal = {
+          "AWS": [
+            for key, lambda_role_arn in var.identifiers: lambda_role_arn
+            if contains(["user_api"], key)
+          ]
         }
       }
     ]
@@ -69,8 +164,6 @@ data "aws_route_tables" "private" {
 }
 
 resource "aws_vpc_endpoint" "s3" {
-  # only create the VPC endpoint if there are Lambda functions connected to the S3 bucket
-  count        = (length(var.s3_lambda_iam_role_arns) > 0 && var.s3_bucket_name != "") ? 1 : 0
   vpc_id       = var.vpc_id
   service_name = "com.amazonaws.${var.region}.s3"
   # attach the VPC endpoint to the private route tables
@@ -99,15 +192,15 @@ resource "aws_vpc_endpoint" "s3" {
         "Condition" : {
           "ArnLike" : {
             "aws:PrincipalArn" = [
-              for lambda_role in var.s3_lambda_iam_role_arns : "${lambda_role}"
+              # allow access only to user_api and provider_api Lambda functions
+              for key, lambda_role_arn in var.identifiers: lambda_role_arn
+              if contains(["user_api", "provider_api"], key)
             ]
           }
         }
       }
     ]
   })
-  lifecycle {
-    ignore_changes = [policy]
-  }
+
   vpc_endpoint_type = "Gateway"
 }

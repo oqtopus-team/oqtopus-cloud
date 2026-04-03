@@ -44,6 +44,7 @@ By using it in conjunction with various OSS provided by [@oqtopus-team](https://
 
 - [User API](./oas/user/openapi.yaml)
 - [Provider API](./oas/provider/openapi.yaml)
+- [User Signup API](./oas/user_signup/openapi.yaml)
 
 ### Operations
 

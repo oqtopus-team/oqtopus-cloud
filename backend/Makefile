@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -60,6 +60,7 @@ generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user-schema
 	@$(MAKE) generate-provider-schema
 	@$(MAKE) generate-admin-schema
+	@$(MAKE) generate-user_signup-schema
 
 export ENV=local
 export DB_HOST=localhost
@@ -75,6 +76,11 @@ export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
 export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+export ALLOW_DELETION=true # flag to control whether users can delete their accounts
+export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
+export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
+export LOGIN_HISTORY_ENABLED=true # flag to control whether user login history should be included in GET user API response
+export LOCAL_WORKER_SCHEDULING_RATE_S=60
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
@@ -94,6 +100,11 @@ run-user_signup: ## Start the user_signup API
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port 8888 --reload --log-level debug
+
+run-worker:
+	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
+	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
+	poetry run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB
 	@docker compose up
@@ -120,10 +131,13 @@ fmt-admin: ## Format admin code
 fmt-lambda_auth: ## Format lambda_auth code
 	@poetry run ruff format oqtopus_cloud/lambda_auth
 
+fmt-maintenance: ## Format maintenance code
+	@poetry run ruff format oqtopus_cloud/maintenance
+
 fmt-user_signup: ## Format user_signup code
 	@poetry run ruff format oqtopus_cloud/user_signup
 
-fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-user_signup fmt-worker ## Format all code
+fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-maintenance fmt-user_signup fmt-worker ## Format all code
 
 lint-common: ## Run common linters
 	@poetry run ruff check oqtopus_cloud/common
@@ -149,11 +163,15 @@ lint-lambda_auth:
 	@poetry run ruff check ./oqtopus_cloud/lambda_auth
 	@poetry run mypy -p oqtopus_cloud.lambda_auth
 
+lint-maintenance:
+	@poetry run ruff check ./oqtopus_cloud/maintenance
+	@poetry run mypy -p oqtopus_cloud.maintenance
+
 lint-user_signup: ## Run user_signup linters
 	@poetry run ruff check oqtopus_cloud/user_signup
 	@poetry run mypy -p oqtopus_cloud.user_signup
 
-lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-user_signup lint-worker ## Run all linters
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \

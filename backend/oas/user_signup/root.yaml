@@ -19,6 +19,12 @@ paths:
     $ref: ./paths/confirm_signup.yaml#/confirm_signup
   /mfa_reset_request:
     $ref: ./paths/mfa_reset_request.yaml#/mfa_reset_request
+  /mfa_reset/start:
+    $ref: ./paths/mfa_reset.yaml#/mfa_reset.start
+  /mfa_reset/verify_code:
+    $ref: ./paths/mfa_reset.yaml#/mfa_reset.verify_code
+  /mfa_reset/confirm_totp:
+    $ref: ./paths/mfa_reset.yaml#/mfa_reset.confirm_totp
 
 components:
   securitySchemes:

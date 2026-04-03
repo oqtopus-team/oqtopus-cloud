@@ -33,6 +33,7 @@ python-multipart = "^0.0.20"
 slack_sdk = "^3.35.0"
 fsspec = "^2025.5.1"
 s3fs = "^2025.5.1"
+argon2-cffi = "^25.1.0"
 
 
 [tool.poetry.group.dev.dependencies]

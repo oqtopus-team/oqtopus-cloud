@@ -49,7 +49,7 @@ resource "aws_lambda_function" "this" {
   ephemeral_storage {
     size = "512"
   }
-  filename                       = "./bin/lambda.zip"
+  filename                       = "./bin/${var.identifier}/lambda.zip"
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-worker"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
@@ -208,13 +208,13 @@ resource "aws_iam_role_policy_attachment" "event_bridge" {
 }
 
 resource "aws_iam_policy" "event_bridge" {
-  name   = "${var.product}-${var.org}-${var.env}-${var.identifier}-evnet_bridge"
+  name = "${var.product}-${var.org}-${var.env}-${var.identifier}-evnet_bridge"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["lambda:InvokeFunction"]
+        Effect   = "Allow"
+        Action   = ["lambda:InvokeFunction"]
         Resource = [aws_lambda_function.this.arn]
       }
     ]

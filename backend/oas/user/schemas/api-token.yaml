@@ -1,11 +1,23 @@
 api-token.ApiToken:
   type: object
   properties:
+    api_token_id:
+      type: string
+      description: "The api token id"
     api_token_secret:
       type: string
       description: "The api token secret"
     api_token_expiration:
-      type: string
-      format: date-time
-      example: "2025-01-09T12:34:56"
-      description: "The expiration date of the api token"
+      $ref: "#/api-token.Expiration"
+
+api-token.ApiTokenStatus:
+  type: object
+  properties:
+    api_token_expiration:
+      $ref: "#/api-token.Expiration"
+
+api-token.Expiration:
+  type: string
+  format: date-time
+  example: "2025-01-09T12:34:56Z"
+  description: "The expiration date of the api token"

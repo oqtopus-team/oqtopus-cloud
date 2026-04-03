@@ -5,6 +5,7 @@ on:
       - develop
     paths:
       - 'backend/oqtopus_cloud/**'
+  workflow_dispatch:
 
 jobs:
   deployment:
@@ -54,7 +55,7 @@ jobs:
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         run: |
-          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions 2> ../../error.log
+          sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
 
 
       - name: On Success

@@ -49,7 +49,8 @@ sequenceDiagram
     AG->>L: Forward request
     L->>DB: Check the Email listed in whitelist
     DB-->>L: No Record
-    L-->>U: Error response
+    L-->>AG: Error response
+    AG-->>U: Forward response
 ```
 
 ## User Sign-up Sequence (Email confirmation failure case)
@@ -78,7 +79,8 @@ sequenceDiagram
     C-->>L: Error response
     L->>C: Rollback user registration (delete the Cognito user)
     L->>DB: Rollback user registration (delete the user record)
-    L-->>U: Error response
+    L-->>AG: Error response
+    AG-->>U: Forward response
 ```
 
 ## User Sign-in Sequence
@@ -92,6 +94,8 @@ sequenceDiagram
     participant C as Cognito
 
     U->>C: Sign-in request (Send Email and password)
+    C-->>U: TOTP secret
+    U->>C: Verify the TOTP code
     C-->>U: Session
 ```
 
@@ -106,14 +110,17 @@ sequenceDiagram
     participant AG as API Gateway
     participant L as Lambda
     participant C as Cognito
+    participant DB as RDS
 
     U->>AG: MFA reset request (Email and password)
     AG->>L: Forward request
     L->>C: Check User registration
     C-->>L: Success response
+    L->>DB: Update MFA status from "enabled" to "disabled"
     L->>C: MFA reset
     C-->>L: Success response
-    L-->>U: Success response
+    L-->>AG: Success response
+    AG-->>U: Forward response
 ```
 
 ## Sequence of Password Reset

@@ -3,10 +3,9 @@ import io
 import json
 import os
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
-import pytz
 from oqtopus_cloud.common.models.job import Job
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.user.schemas.errors import (
@@ -43,8 +42,8 @@ def _get_model(n: int, should_change_owner_num: bool = False) -> Job:
         ),
         "status": "submitted",
         "shots": 1000,
-        "submitted_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
-        "created_at": pytz.utc.localize(datetime(2024, 3, 3 + n, 12, 34, 56)),
+        "submitted_at": datetime(2024, 3, 3 + n, 12, 34, 56, tzinfo=timezone.utc),
+        "created_at": datetime(2024, 3, 3 + n, 12, 34, 56, tzinfo=timezone.utc),
     }
     return Job(**model_dict)
 
@@ -59,13 +58,14 @@ def _get_user_model(n: int, username: str, available_devices="*") -> User:
         "email": f"email_{n}",
         "username": username,
         "userstatus": UserStatus.approved,
-        "api_token_secret": f"api_token_secret_{n}",
         "organization": f"organization_{n}",
         "group_id": f"group_id_{n}",
         "available_devices": available_devices,
-        "api_token_expiration": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
-        "created_at": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 57)),
-        "updated_at": pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 58)),
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
+        "created_at": datetime(2024, 3, 4, 12, 34, 57, tzinfo=timezone.utc),
+        "updated_at": datetime(2024, 3, 4, 12, 34, 58, tzinfo=timezone.utc),
     }
     return User(**model_dict)
 
@@ -122,7 +122,7 @@ def test_get_jobs_simple(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -144,7 +144,7 @@ def test_get_jobs_simple(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -270,7 +270,7 @@ def test_get_jobs_filtering_start_time(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?start_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+        "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -292,7 +292,7 @@ def test_get_jobs_filtering_start_time(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -317,7 +317,7 @@ def test_get_jobs_filtering_end_time(
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?end_time=2024-03-05T07%3A04%3A24%2B09%3A00&order=ASC"
+        "/jobs?end_time=2024-03-05T07%3A04%3A24Z&order=ASC"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -339,7 +339,7 @@ def test_get_jobs_filtering_end_time(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -348,6 +348,65 @@ def test_get_jobs_filtering_end_time(
 
     assert response.status_code == 200
     assert actual == expect
+
+
+def test_get_jobs_filtering_start_time_uses_submitted_at_not_created_at(
+    test_client,
+    test_db,
+):
+    """
+    start_time filter must use submitted_at.
+    even if created_at is newer, older submitted_at job should be excluded.
+    """
+
+    test_db.flush()
+    job1 = _get_model(1)
+    job2 = _get_model(2)
+
+    # Keep created_at after filter threshold for both jobs to detect wrong column usage.
+    shared_created_at = datetime(2024, 3, 6, 12, 34, 56, tzinfo=timezone.utc)
+    job1.created_at = shared_created_at
+    job2.created_at = shared_created_at
+    job1.submitted_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc)
+    job2.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
+
+    test_db.add(job1)
+    test_db.add(job2)
+    test_db.commit()
+
+    response = test_client.get(
+        "/jobs?start_time=2024-03-05T07%3A04%3A24Z&order=ASC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert [job.job_id for job in actual] == ["testjob2id"]
+
+
+def test_get_jobs_by_status(test_client, test_db):
+    """_summary_
+    filtering by status, expect only testjob1 to be retrieved
+    """
+    test_db.flush()
+    job1 = _get_model(1)
+    job2 = _get_model(2)
+
+    job1.status = JobStatus.ready
+    job2.status = JobStatus.submitted
+
+    test_db.add(job1)
+    test_db.add(job2)
+    test_db.commit()
+
+    response = test_client.get(
+        "/jobs?status=ready&order=ASC"
+    )
+    adapter = TypeAdapter(List[GetJobsResponse])
+    actual = adapter.validate_python(response.json())
+
+    assert response.status_code == 200
+    assert [job.job_id for job in actual] == ["testjob1id"]
 
 
 def test_get_jobs_filtering_search_string(
@@ -384,7 +443,7 @@ def test_get_jobs_filtering_search_string(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -429,7 +488,7 @@ def test_get_jobs_desc_order(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 5, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -451,7 +510,7 @@ def test_get_jobs_desc_order(
             status=JobStatus.submitted,
             shots=1000,
             execution_time=None,
-            submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+            submitted_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             ready_at=None,
             running_at=None,
             ended_at=None,
@@ -499,16 +558,22 @@ def test_get_jobs_all_parameters(
     test_db,
 ):
     """_summary_
-    filtering start_time, end_time, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
+    filtering start_time, end_time, status, search string, and desc order, expect only testjob3 and testjob2 will be got in this order
     """
 
     test_db.flush()
     for i in range(1, 10):
         test_db.add(_get_model(i))
+
+    cancelledJob = _get_model(11)
+    cancelledJob.status = JobStatus.cancelled
+    cancelledJob.submitted_at = datetime(2024, 3, 5, 12, 34, 56, tzinfo=timezone.utc)
+    test_db.add(cancelledJob)
+
     test_db.commit()
 
     response = test_client.get(
-        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29%2B09%3A00&end_time=2024-03-08T16%3A12%3A29%2B09%3A00&q=test&order=DESC&page=2&size=2"
+        "/jobs?fields=job_id%2Cdescription%2Cjob_info&start_time=2024-03-04T16%3A12%3A29Z&end_time=2024-03-08T16%3A12%3A29Z&status=submitted&q=test&order=DESC&page=2&size=2"
     )
     adapter = TypeAdapter(List[GetJobsResponse])
     actual = adapter.validate_python(response.json())
@@ -591,7 +656,7 @@ def test_get_jobs_handler(
         status=JobStatus.submitted,
         shots=1000,
         execution_time=None,
-        submitted_at=pytz.utc.localize(datetime(2024, 3, 4, 12, 34, 56)),
+        submitted_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         ready_at=None,
         running_at=None,
         ended_at=None,

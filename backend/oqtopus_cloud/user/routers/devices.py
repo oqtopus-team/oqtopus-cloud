@@ -26,7 +26,6 @@ from oqtopus_cloud.user.schemas.errors import (
 from . import LoggerRouteHandler
 
 utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
@@ -156,5 +155,6 @@ def get_user_available_devices(username: str, db: Session) -> list[str] | str:
             return available_devices
         else:
             return []
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to list available devices: {e}")
         return []

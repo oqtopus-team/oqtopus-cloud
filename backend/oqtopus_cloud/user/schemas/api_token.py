@@ -10,12 +10,25 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class ApiToken(BaseModel):
+    api_token_id: str | None = None
+    """
+    The api token id
+    """
     api_token_secret: str | None = None
     """
     The api token secret
     """
     api_token_expiration: Annotated[
-        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56"])
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56Z"])
+    ] = None
+    """
+    The expiration date of the api token
+    """
+
+
+class ApiTokenStatus(BaseModel):
+    api_token_expiration: Annotated[
+        AwareDatetime | None, Field(examples=["2025-01-09T12:34:56Z"])
     ] = None
     """
     The expiration date of the api token

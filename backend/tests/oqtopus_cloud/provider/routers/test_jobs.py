@@ -19,7 +19,7 @@ from oqtopus_cloud.provider.routers.jobs import (
     update_job_status,
 )
 from oqtopus_cloud.provider.schemas.errors import (
-    InternalServerErrorResponse,
+    BadRequestResponse,
 )
 from oqtopus_cloud.provider.schemas.jobs import (
     EstimationResult,
@@ -44,9 +44,7 @@ from sqlalchemy.orm.session import Session
 from zoneinfo import ZoneInfo
 
 # sqlite does not support jst timezone
-# utc = ZoneInfo("UTC")
 utc = ZoneInfo("UTC")
-jst = ZoneInfo("Asia/Tokyo")
 
 client = TestClient(app)
 
@@ -258,7 +256,7 @@ def test_get_jobs_invalid_fields(
     response = client.get("/jobs?device_id=SC2&fields=XXX,status,YYY")
     actual = response.json()
     expect = json.loads(
-        InternalServerErrorResponse(
+        BadRequestResponse(
             message=f"fields {["XXX", "YYY"]} is invalid"
         ).body.decode()
     )
@@ -276,7 +274,7 @@ def test_get_jobs_timestamp(test_db: Session):
     test_db.commit()
 
     response = client.get(
-        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24%2B09%3A00"
+        "/jobs?device_id=SC2&timestamp=2024-03-11T07%3A04%3A24Z"
     )
     adapter = TypeAdapter(List[JobDef])
     actual = adapter.validate_python(response.json())
@@ -420,7 +418,7 @@ def test_update_job_info_transpile_result(test_db: Session):
     job_model = _get_job_model(1, JobType.sampling)
     test_db.add(_get_device_model())
     # Set ready
-    job_model.ready_at = datetime.now()
+    job_model.ready_at = datetime.now(utc)
     job_model.status = JobStatus.ready
     test_db.add(job_model)
     test_db.commit()

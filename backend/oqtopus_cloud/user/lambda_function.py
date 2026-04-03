@@ -24,6 +24,8 @@ from oqtopus_cloud.user.routers import (
 from oqtopus_cloud.user.routers import (
     jobs as job_router,
     announcements as announcements_router,
+    users as users_router,
+    settings as system_settings,
 )
 
 app: FastAPI = add_pagination(FastAPI())
@@ -60,6 +62,14 @@ app.include_router(
 app.include_router(
     announcements_router.router,
     tags=["announcements"],
+)
+app.include_router(
+    users_router.router,
+    tags=["users"],
+)
+app.include_router(
+    system_settings.router,
+    tags=["system-settings"],
 )
 
 handler: Mangum = Mangum(

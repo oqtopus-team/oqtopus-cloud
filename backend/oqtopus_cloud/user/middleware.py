@@ -23,12 +23,18 @@ class CustomMiddleware(BaseHTTPMiddleware):
 
         try:
             if os.getenv("ENV") == "local":
-                request.state.owner = "admin"
+                request.state.owner = "admin-email"
+                request.state.user_pool_id = "ap-northeast-1_XXXXXXXXX"
+                request.state.region = "ap-northeast-1"
             else:
                 owner = APIGatewayProxyEvent(
                     request.scope["aws.event"]
                 ).request_context.authorizer["owner"]
                 request.state.owner = owner
+                user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
+                request.state.user_pool_id = user_pool_id
+                if user_pool_id:
+                    request.state.region = user_pool_id.split("_")[0]
         except KeyError:
             logger.error("No AWS event found in request scope")
             raise HTTPException(

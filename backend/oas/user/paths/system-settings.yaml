@@ -1,0 +1,24 @@
+system.settings:
+  get:
+    tags:
+      - Settings
+    summary: Get current settings
+    description: Get current settings
+    operationId: get_current_settings
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: Return current settings
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/system-settings.yaml#/settings.GetSettingsResponse'
+      '401':
+        description: Unauthorized
+      '500':
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml#/error.InternalServerError'

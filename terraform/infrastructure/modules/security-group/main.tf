@@ -74,13 +74,32 @@ resource "aws_security_group" "secret_manager" {
     Name = "${var.product}-${var.org}-${var.env}-secret-manager"
   }
 }
+
 # Cognito
-resource "aws_security_group" "cognito" {
+resource "aws_security_group" "cognito" {  #TODO: can be deleted but need to remove ENI first from the environments already in operation
   name        = "${var.product}-${var.org}-${var.env}-to-cognito"
   vpc_id      = var.vpc_id
   description = "access to Cognito through Nat Gateway"
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-to-cognito"
+  }
+}
+resource "aws_security_group" "cognito_idp" {
+  name        = "${var.product}-${var.org}-${var.env}-cognito-idp"
+  vpc_id      = var.vpc_id
+  description = "Cognito VPC endpoint"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cognito-idp"
+  }
+}
+
+# CloudTrail
+resource "aws_security_group" "cloudtrail" {
+  name        = "${var.product}-${var.org}-${var.env}-cloudtrail"
+  vpc_id      = var.vpc_id
+  description = "CloudTrail VPC endpoint"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cloudtrail"
   }
 }
 
@@ -150,6 +169,30 @@ resource "aws_vpc_security_group_ingress_rule" "secret_manager_from_ec2_bastion"
   description                  = "ec2 access"
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-secret-manager-from-ec2-bastion"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "cognito_from_lambda" {
+  security_group_id            = aws_security_group.cognito_idp.id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "Lambda access"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cognito-from-lambda"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "cloudtrail_from_lambda" {
+  security_group_id            = aws_security_group.cloudtrail.id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "Lambda access"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-cloudtrail-from-lambda"
   }
 }
 
@@ -227,6 +270,28 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_db_proxy" {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-db-proxy"
   }
 }
+resource "aws_vpc_security_group_egress_rule" "lambda_to_cognito_idp" {
+  security_group_id            = aws_security_group.lambda.id
+  referenced_security_group_id = aws_security_group.cognito_idp.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "Cognito-idp access"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-lambda-to-cognito-idp"
+  }
+}
+resource "aws_vpc_security_group_egress_rule" "lambda_to_cloudtrail" {
+  security_group_id            = aws_security_group.lambda.id
+  referenced_security_group_id = aws_security_group.cloudtrail.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "CloudTrail access"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-lambda-to-cloudtrail"
+  }
+}
 
 
 data "aws_prefix_list" "s3" {
@@ -243,16 +308,4 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_s3" {
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-s3-egress"
   }
-}
-
-# Security group rule using cidr_blocks
-
-resource "aws_security_group_rule" "lambda_to_cognito" {
-  type              = "egress"
-  security_group_id = aws_security_group.cognito.id
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Cognito access from Lambda"
 }

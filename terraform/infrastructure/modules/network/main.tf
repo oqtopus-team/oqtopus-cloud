@@ -50,7 +50,7 @@ resource "aws_vpc" "this" {
 
 resource "aws_cloudwatch_log_group" "vpc_flow_log_group" {
   name              = "/aws/vpc-flow-log/${var.product}-${var.org}-${var.env}"
-  retention_in_days = 14
+  retention_in_days = var.vpc_flow_log_retention_days
   kms_key_id        = aws_kms_key.vpc_flow_log.arn
 }
 
@@ -170,30 +170,6 @@ resource "aws_internet_gateway" "this" {
   }
 }
 
-# Elastic IP for NAT Gateway
-resource "aws_eip" "nat_eip" {
-  for_each = var.public_subnets
-  domain   = "vpc"
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-eip-${each.key}"
-  }
-}
-
-## Nat Gateway
-resource "aws_nat_gateway" "nat_gw" {
-  for_each      = var.public_subnets
-  allocation_id = aws_eip.nat_eip[each.key].id
-  subnet_id     = aws_subnet.public[each.key].id
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-nat-gw-${each.key}"
-  }
-  depends_on = [aws_internet_gateway.this]
-}
-
-locals {
-  nat_gateway_per_az = { for k, v in var.public_subnets : v.az => aws_nat_gateway.nat_gw[k].id }
-}
-
 ## Public Route Table
 resource "aws_route_table" "public" {
   for_each = var.public_subnets
@@ -227,19 +203,31 @@ resource "aws_route_table" "private" {
   }
 }
 
-resource "aws_route" "private_default_route" {
-  for_each = {
-    for k, rt in aws_route_table.private : k => rt
-    if contains(keys(local.nat_gateway_per_az), var.private_subnets[k].az)
-  }
-  route_table_id         = each.value.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = local.nat_gateway_per_az[var.private_subnets[each.key].az]
-}
-
 ## Route Table Associations
 resource "aws_route_table_association" "private" {
   for_each       = var.private_subnets
   subnet_id      = aws_subnet.private[each.key].id
   route_table_id = aws_route_table.private[each.key].id
+}
+
+## S3 VPC Endpoint (Gateway)
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-s3-vpc-endpoint"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      policy
+    ]
+  }
+}
+
+resource "aws_vpc_endpoint_route_table_association" "private_s3" {
+  for_each        = aws_route_table.private
+  route_table_id  = each.value.id
+  vpc_endpoint_id = aws_vpc_endpoint.s3.id
 }
