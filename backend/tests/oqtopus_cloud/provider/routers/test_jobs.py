@@ -369,13 +369,27 @@ def test_update_job_info_result(test_db: Session):
         ),
         (
             3,
+            JobType.sse,
+            JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
+            9.8,
+            200,
+        ),
+        (
+            4,
+            JobType.sse,
+            JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
+            7.6,
+            200,
+        ),
+        (
+            5,
             JobType.sampling,
             JobResult(estimation=EstimationResult(exp_value=1.0, stds=0.0)),
             7.89,
             400,
         ),
         (
-            4,
+            6,
             JobType.estimation,
             JobResult(sampling=SamplingResult(counts={"00": 1, "11": 2})),
             10,
