@@ -438,7 +438,7 @@ def jobtype_of_result(r: JobResult) -> list[JobType | None]:
     if r.sampling is not None:
         return [JobType.sampling, JobType.multi_manual, JobType.sse]
     elif r.estimation is not None:
-        return [JobType.estimation]
+        return [JobType.estimation, JobType.sse]
     return [None]
 
 
