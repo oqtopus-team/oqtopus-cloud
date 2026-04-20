@@ -231,9 +231,15 @@ def submit_jobs(
             description=description,
             device_id=request.device_id,
             job_info=json.dumps(request.job_info.model_dump()),
-            transpiler_info=json.dumps(request.transpiler_info),
-            simulator_info=json.dumps(request.simulator_info),
-            mitigation_info=json.dumps(request.mitigation_info),
+            transpiler_info=json.dumps(
+                request.transpiler_info if request.transpiler_info is not None else {}
+            ),
+            simulator_info=json.dumps(
+                request.simulator_info if request.simulator_info is not None else {}
+            ),
+            mitigation_info=json.dumps(
+                request.mitigation_info if request.mitigation_info is not None else {}
+            ),
             job_type=request.job_type,
             shots=shots,
             submitted_at=datetime.now(utc),
