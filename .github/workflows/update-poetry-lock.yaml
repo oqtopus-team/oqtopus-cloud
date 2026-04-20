@@ -34,6 +34,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Create new branch and switch
+        run: |
+          BRANCH_NAME="chore/auto-update-poetry-lock-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
       - name: Auto PR
         env:
           BRANCH_NAME: ${{ github.ref_name }}
