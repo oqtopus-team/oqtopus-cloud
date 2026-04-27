@@ -68,7 +68,7 @@ zip:
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
-	@poetry export -f requirements.txt --output requirements.txt
+	@uv export --no-dev --no-hashes --no-emit-project --no-editable --format requirements-txt > requirements.txt
 	@docker run --platform linux/x86_64 --user $$(id -u):$$(id -g) \
   -e HOME=/tmp \
   -e UV_INSTALL_DIR=/tmp/.local/bin \

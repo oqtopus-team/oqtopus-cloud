@@ -12,7 +12,7 @@
 | [Docker Compose](https://docs.docker.com/compose/install/) | -            | 複数のDockerコンテナの管理   |
 | [Python](https://www.python.org/downloads/)    | 3.12.3                   | Pythonのプログラミング言語    |
 | [Pyenv](https://github.com/pyenv/pyenv) (Optional) | -              | Pythonのバージョン管理ツール |
-| [Poetry](https://python-poetry.org/)           | -                        | Pythonの依存関係管理ツール    |
+| [uv](https://docs.astral.sh/uv/)               | -                        | Pythonの高速なパッケージ管理ツール   |
 
 開発を始めるには、リポジトリをクローンし依存関係をインストールします：
 
@@ -47,7 +47,7 @@ make doctor
 Checking the environment...
 Aqua version: aqua version 2.29.0 (9ff65378f0c6197e3130a20f6d978b8a3042b463)
 Python version: Python 3.12.3
-Poetry version: Poetry (version 1.8.3)
+uv version: uv 0.7.16 (b6b7409d1 2025-06-27)
 Docker version: Docker version 26.1.4, build 5650f9b
 
 ```
@@ -80,12 +80,12 @@ pyenv install 3.12.3
 pyenv local 3.12.3
 ```
 
-### Poetry
+### uv
 
-環境設定の一環でpoetryを設定するために、以下のコマンドを実行します：
+環境設定の一環で**uv**を設定するために、以下のコマンドを実行します：
 
 ```
-make setup-poetry
+make setup-uv
 ```
 
 このコマンドは、PyenvでインストールされたPythonバージョンの使用、Python環境のセットアップ、依存関係のインストールに必要です。これにより、ルートディレクトリに `.venv` が作成されます。

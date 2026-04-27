@@ -32,21 +32,14 @@ jobs:
       with:
         python-version: 3.12.4
 
-    - name: Install Poetry
-      run: |
-        pip install poetry poetry-plugin-export
-        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-    - name: Install poetry dependencies
-      run: poetry install
-
-    - name: Install make
-      run: sudo apt install make
-
     - name: Set up Aqua
       run: |
+        sudo apt install make
         make setup-aqua
-        make doctor
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+    - name: setup uv
+      run: make setup-uv
 
     - name: Update document
       run: make docs
