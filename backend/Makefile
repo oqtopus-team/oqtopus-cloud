@@ -138,9 +138,6 @@ fmt-lambda_auth: ## Format lambda_auth code
 fmt-maintenance: ## Format maintenance code
 	@uv run ruff format oqtopus_cloud/maintenance
 
-fmt-maintenance: ## Format maintenance code
-	@poetry run ruff format oqtopus_cloud/maintenance
-
 fmt-user_signup: ## Format user_signup code
 	@uv run ruff format oqtopus_cloud/user_signup
 
@@ -169,10 +166,6 @@ lint-admin: ## Run admin linters
 lint-lambda_auth:
 	@uv run ruff check ./oqtopus_cloud/lambda_auth
 	@uv run mypy -p oqtopus_cloud.lambda_auth
-
-lint-maintenance:
-	@uv run ruff check ./oqtopus_cloud/maintenance
-	@uv run mypy -p oqtopus_cloud.maintenance
 
 lint-maintenance:
 	@uv run ruff check ./oqtopus_cloud/maintenance
