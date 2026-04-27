@@ -22,7 +22,7 @@ doctor: ## Check the environment
 	@printf "Checking the environment...\n"
 	@printf "\033[0;34mAqua version:\033[0m %s\n" "$$(aqua --version)"
 	@printf "\033[0;34mPython version:\033[0m %s\n" "$$(python --version)"
-	@printf "\033[0;34mPoetry version:\033[0m %s\n" "$$(poetry --version)"
+	@printf "\033[0;34muv version:\033[0m %s\n" "$$(uv --version)"
 	@printf "\033[0;34mDocker version:\033[0m %s\n" "$$(docker --version)"
 
 copy: generate-oas terraform-docs
@@ -42,10 +42,10 @@ copy: generate-oas terraform-docs
 	@cp .github/SECURITY.md ./docs/en/SECURITY.md
 
 docs: copy ## Build MkDocs
-	@poetry run mkdocs build
+	@uv run mkdocs build
 
 run: copy ## Run MkDocs
-	@poetry run mkdocs serve
+	@uv run mkdocs serve
 
 terraform-docs: ## Generate Terraform Docs
 	@$(MAKE) -C terraform/service docs
@@ -68,7 +68,21 @@ setup-hooks:
 	@bash scripts/setup_hooks.sh
 	@echo "Setup hooks successfully"
 
-setup-poetry:
-	@poetry env use ~/.pyenv/shims/python
-	@poetry config virtualenvs.in-project true
-	@poetry install
+setup-uv:
+	@uv venv
+	@$(MAKE) uv-install-all
+
+uv-install-all:
+	@$(MAKE) uv-install GROUP="dev"
+	@$(MAKE) uv-install GROUP="docs"
+
+uv-install:
+	@uv pip install -r ./src/oqtopus-cloud/$(GROUP)/requirements.txt
+
+uv-convert-all:
+	@$(MAKE) uv-convert GROUP="dev"
+	@$(MAKE) uv-convert GROUP="docs"
+
+uv-convert:
+	@mkdir -p ./src/oqtopus-cloud/$(GROUP)
+	@uv export --group $(GROUP) --no-hashes --no-emit-project --no-editable --format requirements-txt > ./src/oqtopus-cloud/$(GROUP)/requirements.txt

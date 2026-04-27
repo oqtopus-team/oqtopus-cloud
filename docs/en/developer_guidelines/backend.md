@@ -81,13 +81,13 @@ Each of these is defined in the task runner in the Makefile, so please run them 
 ```makefile
 # ./Makefile
 fmt:
-    @poetry run black .
+    @uv run black .
 
 lint:
-    @poetry run ruff check .
+    @uv run ruff check .
 
 test:fmt lint
-    @poetry run pytest -vv --cov
+    @uv run pytest -vv --cov
 ```
 
 ## Tutorial

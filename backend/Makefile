@@ -35,7 +35,7 @@ generate-user_signup-schema: ## Generate user_signup schema
 
 
 generate:
-	@poetry run datamodel-codegen \
+	@uv run datamodel-codegen \
 	--use-schema-description \
 	--target-python-version 3.12 \
 	--field-constraints \
@@ -88,141 +88,141 @@ export LOCAL_WORKER_SCHEDULING_RATE_S=60
 run-user: ## Start the User API
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
-	poetry run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port ${USER_API_PORT} --reload --log-level debug
+	uv run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port ${USER_API_PORT} --reload --log-level debug
 
 run-provider: ## Start the Provider API
 	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	poetry run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port ${PROVIDER_API_PORT} --reload --log-level debug
+	uv run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port ${PROVIDER_API_PORT} --reload --log-level debug
 
 run-admin: ## Start the Admin API
 	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
-	poetry run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port ${ADMIN_API_PORT} --reload --log-level debug
+	uv run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port ${ADMIN_API_PORT} --reload --log-level debug
 
 run-user_signup: ## Start the user_signup API
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
-	poetry run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
+	uv run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
 
 run-worker:
 	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
 	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
-	poetry run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
+	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB
 	@docker compose up
-	@poetry run python storage/init_storage.py
+	@uv run python storage/init_storage.py
 
 down: ## Stop the DB
 	@docker compose down
 
 fmt-common: ## Format common code
-	@poetry run ruff format oqtopus_cloud/common
+	@uv run ruff format oqtopus_cloud/common
 
 fmt-user: ## Format user code
-	@poetry run ruff format oqtopus_cloud/user
+	@uv run ruff format oqtopus_cloud/user
 
 fmt-provider: ## Format provider code
-	@poetry run ruff format oqtopus_cloud/provider
+	@uv run ruff format oqtopus_cloud/provider
 
 fmt-worker: ## Format worker code
-	@poetry run ruff format oqtopus_cloud/worker
+	@uv run ruff format oqtopus_cloud/worker
 
 fmt-admin: ## Format admin code
-	@poetry run ruff format oqtopus_cloud/admin
+	@uv run ruff format oqtopus_cloud/admin
 
 fmt-lambda_auth: ## Format lambda_auth code
-	@poetry run ruff format oqtopus_cloud/lambda_auth
+	@uv run ruff format oqtopus_cloud/lambda_auth
 
 fmt-maintenance: ## Format maintenance code
-	@poetry run ruff format oqtopus_cloud/maintenance
+	@uv run ruff format oqtopus_cloud/maintenance
 
 fmt-user_signup: ## Format user_signup code
-	@poetry run ruff format oqtopus_cloud/user_signup
+	@uv run ruff format oqtopus_cloud/user_signup
 
 fmt-all: fmt-common fmt-user fmt-provider fmt-admin fmt-lambda_auth fmt-maintenance fmt-user_signup fmt-worker ## Format all code
 
 lint-common: ## Run common linters
-	@poetry run ruff check oqtopus_cloud/common
-	@poetry run mypy -p oqtopus_cloud.common
+	@uv run ruff check oqtopus_cloud/common
+	@uv run mypy -p oqtopus_cloud.common
 
 lint-user: ## Run user linters
-	@poetry run mypy -p oqtopus_cloud.user
-	@poetry run ruff check oqtopus_cloud/user
+	@uv run mypy -p oqtopus_cloud.user
+	@uv run ruff check oqtopus_cloud/user
 
 lint-provider: ## Run provider linters
-	@poetry run ruff check oqtopus_cloud/provider
-	@poetry run mypy -p oqtopus_cloud.provider
+	@uv run ruff check oqtopus_cloud/provider
+	@uv run mypy -p oqtopus_cloud.provider
 
 lint-worker: ## Run worker linters
-	@poetry run ruff check oqtopus_cloud/worker
-	@poetry run mypy -p oqtopus_cloud.worker
+	@uv run ruff check oqtopus_cloud/worker
+	@uv run mypy -p oqtopus_cloud.worker
 
 lint-admin: ## Run admin linters
-	@poetry run ruff check oqtopus_cloud/admin
-	@poetry run mypy -p oqtopus_cloud.admin
+	@uv run ruff check oqtopus_cloud/admin
+	@uv run mypy -p oqtopus_cloud.admin
 
 lint-lambda_auth:
-	@poetry run ruff check ./oqtopus_cloud/lambda_auth
-	@poetry run mypy -p oqtopus_cloud.lambda_auth
+	@uv run ruff check ./oqtopus_cloud/lambda_auth
+	@uv run mypy -p oqtopus_cloud.lambda_auth
 
 lint-maintenance:
-	@poetry run ruff check ./oqtopus_cloud/maintenance
-	@poetry run mypy -p oqtopus_cloud.maintenance
+	@uv run ruff check ./oqtopus_cloud/maintenance
+	@uv run mypy -p oqtopus_cloud.maintenance
 
 lint-user_signup: ## Run user_signup linters
-	@poetry run ruff check oqtopus_cloud/user_signup
-	@poetry run mypy -p oqtopus_cloud.user_signup
+	@uv run ruff check oqtopus_cloud/user_signup
+	@uv run mypy -p oqtopus_cloud.user_signup
 
 lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
 	export POWERTOOLS_SERVICE_NAME=common && \
-	poetry run pytest tests/oqtopus_cloud/common/ -vv --cov=oqtopus_cloud/common --cov-report=xml:coverage-common.xml --cov-report=html:htmlcov-common
+	uv run pytest tests/oqtopus_cloud/common/ -vv --cov=oqtopus_cloud/common --cov-report=xml:coverage-common.xml --cov-report=html:htmlcov-common
 	@mv .coverage .coverage-common
 
 test-user: fmt-user lint-user ## Run User API tests
 	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
 	export POWERTOOLS_SERVICE_NAME=user-api && \
-	poetry run pytest tests/oqtopus_cloud/user/ -vv --cov=oqtopus_cloud/user --cov-report=xml:coverage-user.xml --cov-report=html:htmlcov-user
+	uv run pytest tests/oqtopus_cloud/user/ -vv --cov=oqtopus_cloud/user --cov-report=xml:coverage-user.xml --cov-report=html:htmlcov-user
 	@mv .coverage .coverage-user
 
 test-provider: fmt-provider lint-provider ## Run Provider tests
 	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
 	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	poetry run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
+	uv run pytest tests/oqtopus_cloud/provider/ -vv --cov=oqtopus_cloud/provider --cov-report=xml:coverage-provider.xml --cov-report=html:htmlcov-provider
 	@mv .coverage .coverage-provider
 
 test-worker: fmt-worker lint-worker ## Run worker tests
 	@export POWERTOOLS_METRICS_NAMESPACE=worker && \
 	export POWERTOOLS_SERVICE_NAME=worker && \
-	poetry run pytest tests/oqtopus_cloud/worker/ -vv --cov=oqtopus_cloud/worker --cov-report=xml:coverage-worker.xml --cov-report=html:htmlcov-worker
+	uv run pytest tests/oqtopus_cloud/worker/ -vv --cov=oqtopus_cloud/worker --cov-report=xml:coverage-worker.xml --cov-report=html:htmlcov-worker
 	@mv .coverage .coverage-worker
 
 test-admin: fmt-admin lint-admin ## Run admin tests
 	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
 	export POWERTOOLS_SERVICE_NAME=admin-api && \
-	poetry run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
+	uv run pytest tests/oqtopus_cloud/admin/ -vv --cov=oqtopus_cloud/admin --cov-report=xml:coverage-admin.xml --cov-report=html:htmlcov-admin
 	@mv .coverage .coverage-admin
 
 test-lambda_auth: fmt-lambda_auth lint-lambda_auth ## Run lambda_auth tests
 	  @export POWERTOOLS_METRICS_NAMESPACE=lambda_auth && \
     export POWERTOOLS_SERVICE_NAME=lambda_auth && \
-    poetry run pytest tests/oqtopus_cloud/lambda_auth/ -vv --cov=oqtopus_cloud/lambda_auth --cov-report=xml:coverage-lambda_auth.xml --cov-report=html:htmlcov-lambda_auth
+    uv run pytest tests/oqtopus_cloud/lambda_auth/ -vv --cov=oqtopus_cloud/lambda_auth --cov-report=xml:coverage-lambda_auth.xml --cov-report=html:htmlcov-lambda_auth
 	  @mv .coverage .coverage-lambda_auth
 
 test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
-	poetry run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
+	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
 	export POWERTOOLS_SERVICE_NAME=all && \
-	poetry run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:coverage.xml --cov-report=html:htmlcov
+	uv run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:coverage.xml --cov-report=html:htmlcov
 
 
 help: ## Show this help message

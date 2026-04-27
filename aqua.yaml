@@ -19,3 +19,4 @@ packages:
 - name: aws/aws-cli@2.17.6
 - name: evilmartians/lefthook@v1.11.2
 - name: trufflesecurity/trufflehog@v3.88.13
+- name: astral-sh/uv@0.7.16
