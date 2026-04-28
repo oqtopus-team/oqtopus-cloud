@@ -90,6 +90,92 @@ make setup-uv
 
 このコマンドは、PyenvでインストールされたPythonバージョンの使用、Python環境のセットアップ、依存関係のインストールに必要です。これにより、ルートディレクトリに `.venv` が作成されます。
 
+## ローカルでのバックエンド起動
+
+### 1. DB・MinIOの起動
+
+```bash
+cd backend
+make up
+```
+
+MySQL (ポート3306) と MinIO (ポート9000/9001) が起動します。
+初回起動時はDBの初期化（テーブル作成・テストデータ投入）が自動で行われます。
+
+### 2. APIの起動
+
+ターミナルを2つ開いて、それぞれで起動します：
+
+```bash
+# ターミナル1: User API（ジョブ投入用）
+make run-user
+```
+
+```bash
+# ターミナル2: Provider API（バックエンドインスタンスとの通信用）
+make run-provider
+```
+
+| API | ポート | 用途 |
+|-----|--------|------|
+| User API | 8080 | ジョブ投入・結果取得 |
+| Provider API | 8888 | バックエンドインスタンスとの通信 |
+
+### 3. 動作確認
+
+APIドキュメント（Swagger UI）で確認できます：
+
+- User API: [http://localhost:8080/docs](http://localhost:8080/docs)
+- Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
+
+## ローカルでのフロントエンド起動
+
+[OQTOPUS Frontend](https://github.com/oqtopus-team/oqtopus-frontend) をローカルで起動し、上記のローカルバックエンドと組み合わせて動作確認ができます。
+
+> [!IMPORTANT]
+> フロントエンドの認証はAWS Cognitoを使用しています。ローカルで起動した場合でも、ログインには **既存のCognito User Pool（例: `oqtopus-dev` 環境）にアカウントが登録されている必要** があります。
+> アカウントを持っていない場合はログイン画面から先に進めません。アカウントが必要な場合は運用担当者に依頼してください。
+
+### 前提条件
+
+- [bun](https://bun.sh/) がインストール済みであること
+- 上記の「ローカルでのバックエンド起動」で User API (ポート8080) が起動済みであること
+- 利用可能なCognito User PoolのID / Web Client ID / 登録済みアカウント
+
+### 1. リポジトリのクローン
+
+```bash
+git clone https://github.com/oqtopus-team/oqtopus-frontend.git
+cd oqtopus-frontend
+```
+
+### 2. 依存関係のインストール
+
+```bash
+bun install
+```
+
+### 3. 環境変数の設定
+
+`.env` ファイルを編集し、ローカルバックエンドを参照する設定と、認証用のCognito設定を行います：
+
+```env
+VITE_APP_API_ENDPOINT=http://localhost:8080
+VITE_APP_AUTH_REGION=ap-northeast-1
+VITE_APP_AUTH_USER_POOL_ID=<利用するCognito User Pool ID>
+VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID=<対応するWeb Client ID>
+```
+
+`VITE_APP_AUTH_USER_POOL_ID` と `VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID` を空のままにするとログインできません。
+
+### 4. 開発サーバーの起動
+
+```bash
+bun run dev
+```
+
+[http://localhost:5173](http://localhost:5173) にアクセスし、Cognitoに登録済みのアカウントでログインするとフロントエンドが表示されます。
+
 ## ドキュメンテーションサーバーの起動
 
 ドキュメンテーションサーバーを起動するには、以下のコマンドを実行します：

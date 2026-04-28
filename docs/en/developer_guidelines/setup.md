@@ -91,6 +91,92 @@ make setup-uv
 
 This command is required to use the Python version installed with Pyenv, to set up the Python environment, and to install dependencies. This will create a `.venv` in the root directory.
 
+## Running the Backend Locally
+
+### 1. Start DB and MinIO
+
+```bash
+cd backend
+make up
+```
+
+MySQL (port 3306) and MinIO (port 9000/9001) will start.
+On the first run, DB initialization (table creation and test data insertion) is performed automatically.
+
+### 2. Start the APIs
+
+Open two terminals and start each API:
+
+```bash
+# Terminal 1: User API (for job submission)
+make run-user
+```
+
+```bash
+# Terminal 2: Provider API (for backend instance communication)
+make run-provider
+```
+
+| API | Port | Purpose |
+|-----|------|---------|
+| User API | 8080 | Job submission and result retrieval |
+| Provider API | 8888 | Communication with backend instances |
+
+### 3. Verify
+
+Check the API documentation (Swagger UI):
+
+- User API: [http://localhost:8080/docs](http://localhost:8080/docs)
+- Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
+
+## Running the Frontend Locally
+
+You can run the [OQTOPUS Frontend](https://github.com/oqtopus-team/oqtopus-frontend) locally and connect it to the local backend started above.
+
+> [!IMPORTANT]
+> The frontend uses AWS Cognito for authentication. Even when running locally, you need an account registered in an existing Cognito User Pool (e.g., the `oqtopus-dev` environment) to log in.
+> Without a registered account, you cannot proceed past the login screen. Please contact the operations team if you need an account.
+
+### Prerequisites
+
+- [bun](https://bun.sh/) installed
+- The User API (port 8080) running, as described in "Running the Backend Locally"
+- An accessible Cognito User Pool ID / Web Client ID and a registered account
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/oqtopus-team/oqtopus-frontend.git
+cd oqtopus-frontend
+```
+
+### 2. Install Dependencies
+
+```bash
+bun install
+```
+
+### 3. Configure Environment Variables
+
+Edit the `.env` file to point to the local backend and configure Cognito for authentication:
+
+```env
+VITE_APP_API_ENDPOINT=http://localhost:8080
+VITE_APP_AUTH_REGION=ap-northeast-1
+VITE_APP_AUTH_USER_POOL_ID=<your Cognito User Pool ID>
+VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID=<corresponding Web Client ID>
+```
+
+If `VITE_APP_AUTH_USER_POOL_ID` and `VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID` are left empty, you will not be able to log in.
+
+### 4. Start the Development Server
+
+```bash
+bun run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) and log in with an account registered in Cognito to access the frontend.
+
 ## Starting the Documentation Server
 
 To start the documentation server, run the following command:
