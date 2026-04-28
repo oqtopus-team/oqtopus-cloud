@@ -93,7 +93,9 @@ This command is required to use the Python version installed with Pyenv, to set 
 
 ## Running the Backend Locally
 
-### 1. Start DB and MinIO
+The following steps each run in a separate terminal. In every terminal, `cd backend` first before running the make commands.
+
+### 1. Start DB and MinIO (Terminal 1)
 
 ```bash
 cd backend
@@ -103,24 +105,40 @@ make up
 MySQL (port 3306) and MinIO (port 9000/9001) will start.
 On the first run, DB initialization (table creation and test data insertion) is performed automatically.
 
+`make up` runs in the foreground, so keep this terminal open (press Ctrl+C to stop).
+
 ### 2. Start the APIs
 
-Open two terminals and start each API:
+> [!NOTE]
+> When the frontend is served from `http://localhost:5173`, you must include that origin in `ALLOW_ORIGINS` to satisfy CORS. The Makefile default (`http://127.0.0.1:8000`) alone will be blocked by the browser.
+
+Open additional terminals and start the User / Provider APIs. Override `ALLOW_ORIGINS` so the local frontend can reach them:
 
 ```bash
-# Terminal 1: User API (for job submission)
-make run-user
+# Terminal 2: User API (for job submission)
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-user
 ```
 
 ```bash
-# Terminal 2: Provider API (for backend instance communication)
-make run-provider
+# Terminal 3: Provider API (for backend instance communication)
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-provider
+```
+
+If you want to exercise the signup flow, also start the User Signup API:
+
+```bash
+# Terminal 4 (optional): User Signup API
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-user_signup
 ```
 
 | API | Port | Purpose |
 |-----|------|---------|
 | User API | 8080 | Job submission and result retrieval |
 | Provider API | 8888 | Communication with backend instances |
+| User Signup API | 8890 | Sign-up and user registration (optional) |
 
 ### 3. Verify
 
@@ -128,6 +146,7 @@ Check the API documentation (Swagger UI):
 
 - User API: [http://localhost:8080/docs](http://localhost:8080/docs)
 - Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
+- User Signup API: [http://localhost:8890/docs](http://localhost:8890/docs) (if started)
 
 ## Running the Frontend Locally
 
@@ -140,8 +159,9 @@ You can run the [OQTOPUS Frontend](https://github.com/oqtopus-team/oqtopus-front
 ### Prerequisites
 
 - [bun](https://bun.sh/) installed
-- The User API (port 8080) running, as described in "Running the Backend Locally"
+- The User API (port 8080) running, as described in "Running the Backend Locally", with `ALLOW_ORIGINS` including `http://localhost:5173`
 - An accessible Cognito User Pool ID / Web Client ID and a registered account
+- The User Signup API (port 8890) running if you want to exercise the signup flow
 
 ### 1. Clone the Repository
 
@@ -162,10 +182,13 @@ Edit the `.env` file to point to the local backend and configure Cognito for aut
 
 ```env
 VITE_APP_API_ENDPOINT=http://localhost:8080
+VITE_APP_API_SIGNUP_ENDPOINT=http://localhost:8890
 VITE_APP_AUTH_REGION=ap-northeast-1
 VITE_APP_AUTH_USER_POOL_ID=<your Cognito User Pool ID>
 VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID=<corresponding Web Client ID>
 ```
+
+If `VITE_APP_API_ENDPOINT` or `VITE_APP_API_SIGNUP_ENDPOINT` is unset, the frontend will throw at startup. Set these even if you do not run the User Signup API (no traffic will be sent to it unless you trigger a signup action).
 
 If `VITE_APP_AUTH_USER_POOL_ID` and `VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID` are left empty, you will not be able to log in.
 

@@ -92,7 +92,9 @@ make setup-uv
 
 ## ローカルでのバックエンド起動
 
-### 1. DB・MinIOの起動
+以降のステップは別々のターミナルで実行します。各ターミナルで `cd backend` してから make コマンドを実行してください。
+
+### 1. DB・MinIOの起動（ターミナル1）
 
 ```bash
 cd backend
@@ -102,24 +104,40 @@ make up
 MySQL (ポート3306) と MinIO (ポート9000/9001) が起動します。
 初回起動時はDBの初期化（テーブル作成・テストデータ投入）が自動で行われます。
 
+`make up` は foreground で動作するため、このターミナルはそのまま開いておいてください（停止させたい場合は Ctrl+C）。
+
 ### 2. APIの起動
 
-ターミナルを2つ開いて、それぞれで起動します：
+> [!NOTE]
+> フロントエンドを `http://localhost:5173` から呼ぶ場合、CORS のため `ALLOW_ORIGINS` に当該オリジンを含める必要があります。Makefile の既定値 (`http://127.0.0.1:8000`) のままだとブラウザでブロックされます。
+
+別のターミナルで User API / Provider API を起動します。フロントエンドからアクセスする場合は `ALLOW_ORIGINS` を上書きしてください：
 
 ```bash
-# ターミナル1: User API（ジョブ投入用）
-make run-user
+# ターミナル2: User API（ジョブ投入用）
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-user
 ```
 
 ```bash
-# ターミナル2: Provider API（バックエンドインスタンスとの通信用）
-make run-provider
+# ターミナル3: Provider API（バックエンドインスタンスとの通信用）
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-provider
+```
+
+サインアップ機能を試す場合はさらに User Signup API を起動します：
+
+```bash
+# ターミナル4（必要な場合のみ）: User Signup API
+cd backend
+ALLOW_ORIGINS=http://127.0.0.1:8000,http://localhost:5173 make run-user_signup
 ```
 
 | API | ポート | 用途 |
 |-----|--------|------|
 | User API | 8080 | ジョブ投入・結果取得 |
 | Provider API | 8888 | バックエンドインスタンスとの通信 |
+| User Signup API | 8890 | サインアップ・ユーザー登録（任意） |
 
 ### 3. 動作確認
 
@@ -127,6 +145,7 @@ APIドキュメント（Swagger UI）で確認できます：
 
 - User API: [http://localhost:8080/docs](http://localhost:8080/docs)
 - Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
+- User Signup API: [http://localhost:8890/docs](http://localhost:8890/docs)（起動した場合）
 
 ## ローカルでのフロントエンド起動
 
@@ -139,8 +158,9 @@ APIドキュメント（Swagger UI）で確認できます：
 ### 前提条件
 
 - [bun](https://bun.sh/) がインストール済みであること
-- 上記の「ローカルでのバックエンド起動」で User API (ポート8080) が起動済みであること
+- 上記の「ローカルでのバックエンド起動」で User API (ポート8080) が起動済みで、`ALLOW_ORIGINS` に `http://localhost:5173` が含まれていること
 - 利用可能なCognito User PoolのID / Web Client ID / 登録済みアカウント
+- サインアップ機能を試す場合は User Signup API (ポート8890) も起動済みであること
 
 ### 1. リポジトリのクローン
 
@@ -161,10 +181,13 @@ bun install
 
 ```env
 VITE_APP_API_ENDPOINT=http://localhost:8080
+VITE_APP_API_SIGNUP_ENDPOINT=http://localhost:8890
 VITE_APP_AUTH_REGION=ap-northeast-1
 VITE_APP_AUTH_USER_POOL_ID=<利用するCognito User Pool ID>
 VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID=<対応するWeb Client ID>
 ```
+
+`VITE_APP_API_ENDPOINT` および `VITE_APP_API_SIGNUP_ENDPOINT` が未設定だとフロントエンドが起動時にエラーになります。User Signup API を起動しない場合でも、上記のように値を入れておく必要があります（サインアップ操作を行わなければ実際の通信は発生しません）。
 
 `VITE_APP_AUTH_USER_POOL_ID` と `VITE_APP_AUTH_USER_POOL_WEB_CLIENT_ID` を空のままにするとログインできません。
 
