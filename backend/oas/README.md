@@ -47,8 +47,8 @@ type: object
 properties:
   job_id:
     $ref: "job.JobId.yaml"
-  code: {type: string, example: "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
-  device: {type: string, example: "Kawasaki"}
+  code: {type: string, example: "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"}
+  device: {type: string, example: "qulacs"}
   n_qubits:
     type: integer
     example: null

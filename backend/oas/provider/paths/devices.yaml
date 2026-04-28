@@ -14,7 +14,7 @@ devices.device:
           required: true
           schema:
             type: string
-            example: "Kawasaki"
+            example: "qulacs"
       requestBody:
         description: "Chagens to the specified device."
         content:
@@ -71,7 +71,7 @@ devices.device_status:
           required: true
           schema:
             type: string
-            example: "Kawasaki"
+            example: "qulacs"
       requestBody:
         description: "New device status. "
         content:
@@ -129,7 +129,7 @@ devices.device_info:
           schema:
             type: string
             nullable: false
-            example: "Kawasaki"
+            example: "qulacs"
       requestBody:
         description: "New device info. "
         content:

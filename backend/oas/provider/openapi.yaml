@@ -31,7 +31,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: Chagens to the specified device.
         content:
@@ -87,7 +87,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: 'New device status. '
         content:
@@ -144,7 +144,7 @@ paths:
           schema:
             type: string
             nullable: false
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: 'New device info. '
         content:
@@ -199,7 +199,7 @@ paths:
           schema:
             type: string
             nullable: false
-            example: Kawasaki
+            example: qulacs
         - in: query
           name: status
           required: false
@@ -758,7 +758,7 @@ components:
           items:
             type: string
           nullable: false
-          example: '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+          example: '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
         combined_program:
           type: string
           description: For multiprogramming jobs, this field contains the combined circuit.
@@ -804,7 +804,7 @@ components:
           nullable: false
         device_id:
           type: string
-          example: Kawasaki
+          example: qulacs
           nullable: false
         shots:
           type: integer
@@ -887,11 +887,11 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: Kawasaki
+        device_id: qulacs
         job_type: sampling
         job_info:
           program:
-            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+            - OPENQASM 3; include "stdgates.inc"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
           transpiled_program: null
           result: null
           reason: null

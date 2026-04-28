@@ -134,7 +134,7 @@ jobs.JobInfo:
       items:
         type: string
       example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+          [ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
 
     combined_program:
       type: string
@@ -198,7 +198,7 @@ jobs.JobDef:
       $ref: "#/jobs.JobStatus"
     device_id:
       type: string
-      example: "Kawasaki"
+      example: "qulacs"
     shots:
       type: integer
       minimum: 1
@@ -271,11 +271,11 @@ jobs.JobDef:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
       description: Bell State Sampling Example
-      device_id: Kawasaki
+      device_id: qulacs
       job_type: estimation
       job_info:
         program:
-          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+          - "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
         operator:
           - pauli: "X 0 Y 1 Z 5 I 2"
             coeff: 1.0
@@ -325,7 +325,7 @@ jobs.SubmitJobInfo:
       items:
         type: string
       example: >-
-          [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+          [ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
     operator:
       type: array
       x-see-also:
@@ -346,7 +346,7 @@ jobs.SubmitJobRequest:
       example: An example of Bell state sampling job
     device_id:
       type: string
-      example: Kawasaki
+      example: qulacs
     job_type:
       $ref: "#/jobs.JobType"
     job_info:
@@ -413,7 +413,7 @@ jobs.GetJobsResponse:
       $ref: "#/jobs.JobStatus"
     device_id:
       type: string
-      example: "Kawasaki"
+      example: "qulacs"
     shots:
       type: integer
       minimum: 1
@@ -479,11 +479,11 @@ jobs.GetJobsResponse:
       job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
       name: Bell State Sampling
       description: Bell State Sampling Example
-      device_id: Kawasaki
+      device_id: qulacs
       job_type: estimation
       job_info:
         program:
-          - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+          - "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
         operator:
           - pauli: "X 0 Y 1 Z 5 I 2"
         transpiled_code: "{}"

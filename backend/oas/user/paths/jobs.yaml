@@ -128,11 +128,11 @@ jobs:
                 {
                   name: "Bell State Sampling",
                   description: "Bell State Sampling Example",
-                  device_id: "Kawasaki",
+                  device_id: "qulacs",
                   job_type: "sampling",
                   job_info: {
                     program:
-                      [ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
+                      [ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]
                   },
                   transpiler_info: {},
                   simulator_info: {
@@ -159,7 +159,7 @@ jobs:
                   job_type: "estimation",
                   job_info: {
                     program: [
-                      "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
+                      "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;",
                     ],
                     operator: [
                       {
