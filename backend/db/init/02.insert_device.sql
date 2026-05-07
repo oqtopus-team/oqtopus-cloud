@@ -13,3 +13,7 @@ WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = 'Kawasaki');
 INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
 SELECT '01927422-86d4-7597-b724-b08a5e7781fc', 'QPU','unavailable', CURRENT_TIMESTAMP, 0, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
 WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = '01927422-86d4-7597-b724-b08a5e7781fc');
+
+INSERT INTO main.devices (id, device_type, status, available_at, pending_jobs, n_qubits, basis_gates, instructions, device_info, calibrated_at, description)
+SELECT 'qulacs', 'simulator','available', CURRENT_TIMESTAMP, 0, 16, '["sx", "x", "rz", "cx"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Qulacs Simulator'
+WHERE NOT EXISTS (SELECT * FROM main.devices WHERE id = 'qulacs');
