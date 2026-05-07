@@ -83,7 +83,7 @@ class DeviceInfo(BaseModel):
 
 class DeviceBase(BaseModel):
     device_info: Annotated[
-        str | None, Field(examples=['{"device_id": "Kawasaki", "qubits": []}'])
+        str | None, Field(examples=['{"device_id": "qulacs", "qubits": []}'])
     ] = None
     device_type: Annotated[DeviceType | None, Field(examples=["simulator"])] = None
     status: Annotated[Status | None, Field(examples=["available"])] = None

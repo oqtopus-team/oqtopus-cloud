@@ -102,7 +102,7 @@ class JobInfo(BaseModel):
         list[str],
         Field(
             examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+                '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
             ]
         ),
     ]
@@ -137,7 +137,7 @@ class GetJobsResponse(BaseModel):
     ] = None
     job_type: JobType | None = None
     status: JobStatus | None = None
-    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    device_id: Annotated[str | None, Field(examples=["qulacs"])] = None
     shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
     job_info: JobInfo | None = None
     transpiler_info: Annotated[
@@ -198,7 +198,7 @@ class SubmitJobInfo(BaseModel):
         list[str],
         Field(
             examples=[
-                '[ "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+                '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
             ]
         ),
     ]
@@ -213,7 +213,7 @@ class SubmitJobRequest(BaseModel):
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    device_id: Annotated[str, Field(examples=["qulacs"])]
     job_type: JobType
     job_info: SubmitJobInfo
     transpiler_info: Annotated[
@@ -269,7 +269,7 @@ class JobDef(BaseModel):
     ] = None
     job_type: JobType
     status: JobStatus
-    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    device_id: Annotated[str, Field(examples=["qulacs"])]
     shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
     job_info: JobInfo
     transpiler_info: Annotated[
