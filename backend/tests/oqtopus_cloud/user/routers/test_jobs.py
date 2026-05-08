@@ -740,6 +740,33 @@ def test_submit_get(
     assert resp_job.job_info.result is None
 
 
+def test_submit_jobs_default_json_fields(test_client, test_db):
+    """
+    When transpiler_info, mitigation_info, and simulator_info are omitted from the request,
+    the job saved to DB should have default value {} for each of those fields.
+    """
+    test_db.flush()
+    test_db.add(_get_user_model(1))
+    test_db.commit()
+
+    body = SubmitJobRequest(
+        name="submit-job-test",
+        device_id="Kawasaki",
+        job_type=JobType.sampling,
+        job_info=SubmitJobInfo(program=["code"]),
+        shots=1000,
+    )
+
+    submit_resp = test_client.post("/jobs", content=body.model_dump_json(exclude_none=True))
+    assert submit_resp.status_code == 200
+    resp_job_id = SubmitJobResponse.model_validate(submit_resp.json()).job_id
+
+    saved_job = test_db.get(Job, resp_job_id)
+    assert json.loads(saved_job.transpiler_info) == {}
+    assert json.loads(saved_job.mitigation_info) == {}
+    assert json.loads(saved_job.simulator_info) == {}
+
+
 def test_submit_cancel_delete(test_client, test_db):
     """_summary_
     Test for **the invariance of submit and delete**:
