@@ -184,6 +184,13 @@ class Job(BaseModel):
     ended_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+09:00"])
     ] = None
+    traceparent: Annotated[
+        str | None,
+        Field(examples=["00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"]),
+    ] = None
+    """
+    W3C Trace Context traceparent captured at submit, used for distributed trace propagation.
+    """
 
 
 class JobDef(Job):

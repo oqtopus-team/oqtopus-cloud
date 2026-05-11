@@ -429,6 +429,7 @@ MAP_MODEL_TO_SCHEMA = {
     "ready_at": "ready_at",
     "running_at": "running_at",
     "ended_at": "ended_at",
+    "traceparent": "traceparent",
     "created_at": "created_at",
     "updated_at": "updated_at",
 }
@@ -537,6 +538,7 @@ def model_to_schema(
         ready_at=model.ready_at,
         running_at=model.running_at,
         ended_at=model.ended_at,
+        traceparent=model.traceparent,
     )
 
 

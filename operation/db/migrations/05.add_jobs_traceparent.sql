@@ -1,0 +1,2 @@
+ALTER TABLE main.jobs
+ADD COLUMN traceparent VARCHAR(64) DEFAULT NULL;

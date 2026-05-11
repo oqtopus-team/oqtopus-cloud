@@ -13,6 +13,7 @@ from mangum import (
 )
 from starlette.middleware.cors import CORSMiddleware
 
+from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.user.conf import logger, metrics, tracer
 from oqtopus_cloud.user.middleware import CustomMiddleware
 from oqtopus_cloud.user.routers import (
@@ -46,6 +47,10 @@ app.add_middleware(
     allow_methods=ALLOW_METHODS,
     allow_headers=ALLOW_HEADERS,
 )
+
+# Install OpenTelemetry instrumentation last so the tracing middleware wraps
+# all other middleware in the request/response cycle.
+setup_tracing(app, "oqtopus-cloud-user")
 
 app.include_router(
     device_router.router,

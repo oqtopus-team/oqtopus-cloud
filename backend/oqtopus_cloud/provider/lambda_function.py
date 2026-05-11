@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from mangum import (
     Mangum,
 )
+from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.provider.conf import logger, metrics, tracer
 from oqtopus_cloud.provider.middleware import CustomMiddleware
 from oqtopus_cloud.provider.routers import (
@@ -41,6 +42,10 @@ app.add_middleware(
     allow_methods=ALLOW_METHODS,
     allow_headers=ALLOW_HEADERS,
 )
+
+# Install OpenTelemetry instrumentation last so the tracing middleware wraps
+# all other middleware in the request/response cycle.
+setup_tracing(app, "oqtopus-cloud-provider")
 
 app.include_router(
     hello_router.router,
