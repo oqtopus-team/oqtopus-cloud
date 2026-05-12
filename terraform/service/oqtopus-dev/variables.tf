@@ -118,3 +118,15 @@ variable "waf_sampled_requests_enabled" {
   type        = bool
   default     = false
 }
+
+variable "otel_enabled" {
+  description = "Enable OpenTelemetry tracing on user-api / provider-api Lambdas."
+  type        = bool
+  default     = false
+}
+
+variable "otel_exporter_otlp_endpoint" {
+  description = "OTLP HTTP endpoint when otel_enabled = true."
+  type        = string
+  default     = ""
+}

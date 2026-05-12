@@ -21,8 +21,6 @@ x-api-common: &api-common
     EDITABLE_FIELDS: '["name", "organization"]'
     VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
     LOGIN_HISTORY_ENABLED: "true"
-    OTEL_ENABLED: ${OTEL_ENABLED:-false}
-    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://172.17.0.1:4318}
   depends_on:
     db:
       condition: service_started
@@ -98,8 +96,6 @@ services:
       EDITABLE_FIELDS: '["name", "organization"]'
       VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
       LOGIN_HISTORY_ENABLED: "true"
-      OTEL_ENABLED: ${OTEL_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://172.17.0.1:4318}
       POWERTOOLS_METRICS_NAMESPACE: user-api
       POWERTOOLS_SERVICE_NAME: user-api
     command: uv run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port 8080 --log-level debug
@@ -128,8 +124,6 @@ services:
       EDITABLE_FIELDS: '["name", "organization"]'
       VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
       LOGIN_HISTORY_ENABLED: "true"
-      OTEL_ENABLED: ${OTEL_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://172.17.0.1:4318}
       POWERTOOLS_METRICS_NAMESPACE: provider-api
       POWERTOOLS_SERVICE_NAME: provider-api
     command: uv run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --log-level debug

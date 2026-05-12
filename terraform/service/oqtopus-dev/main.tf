@@ -74,6 +74,8 @@ module "user_api" {
   visible_fields                 = var.visible_fields
   login_history_enabled          = var.login_history_enabled
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  otel_enabled                   = var.otel_enabled
+  otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
 }
 
 module "provider_api" {
@@ -110,6 +112,8 @@ module "provider_api" {
   visible_fields                 = "[]"
   login_history_enabled          = "false"
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  otel_enabled                   = var.otel_enabled
+  otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
 }
 
 module "admin_api" {

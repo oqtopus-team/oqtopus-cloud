@@ -2,17 +2,6 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-# Local overrides from backend/.env (gitignored).
-# Copy backend/.env.local to backend/.env and edit to opt in to optional
-# features (OTel etc.). docker compose also auto-loads this file.
--include .env
-
-# OpenTelemetry (optional, off by default).
-# When OTEL_ENABLED=true, FastAPI/SQLAlchemy/logging are auto-instrumented and
-# traces are exported to OTEL_EXPORTER_OTLP_ENDPOINT.
-export OTEL_ENABLED ?= false
-export OTEL_EXPORTER_OTLP_ENDPOINT ?= http://localhost:4318
-
 .PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down fmt lint test help
 
 generate-user-schema: ## Generate user schema
