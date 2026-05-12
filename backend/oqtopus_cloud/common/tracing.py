@@ -11,7 +11,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
-_initialized = False
 _provider: TracerProvider | None = None
 
 
@@ -29,19 +28,18 @@ def setup_tracing(app: FastAPI, service_name: str) -> None:
     extra plain-text log line per record from the OTel default formatter;
     that duplication is acceptable for the log<>trace correlation benefit.
     """
-    global _initialized, _provider
+    global _provider
     if os.getenv("OTEL_ENABLED", "false").lower() != "true":
         return
 
-    if not _initialized:
-        resource = Resource.create({SERVICE_NAME: service_name})
-        provider = TracerProvider(resource=resource)
-        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-        trace.set_tracer_provider(provider)
-        _provider = provider
+    if _provider is None:
+        _provider = TracerProvider(
+            resource=Resource.create({SERVICE_NAME: service_name})
+        )
+        _provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        trace.set_tracer_provider(_provider)
         SQLAlchemyInstrumentor().instrument()
         LoggingInstrumentor().instrument(set_logging_format=True)
-        _initialized = True
 
     FastAPIInstrumentor.instrument_app(app)
 
