@@ -12,6 +12,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
 _initialized = False
+_provider: TracerProvider | None = None
 
 
 def setup_tracing(app: FastAPI, service_name: str) -> None:
@@ -28,7 +29,7 @@ def setup_tracing(app: FastAPI, service_name: str) -> None:
     extra plain-text log line per record from the OTel default formatter;
     that duplication is acceptable for the log<>trace correlation benefit.
     """
-    global _initialized
+    global _initialized, _provider
     if os.getenv("OTEL_ENABLED", "false").lower() != "true":
         return
 
@@ -37,8 +38,17 @@ def setup_tracing(app: FastAPI, service_name: str) -> None:
         provider = TracerProvider(resource=resource)
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
         trace.set_tracer_provider(provider)
+        _provider = provider
         SQLAlchemyInstrumentor().instrument()
         LoggingInstrumentor().instrument(set_logging_format=True)
         _initialized = True
 
     FastAPIInstrumentor.instrument_app(app)
+
+
+def force_flush(timeout_millis: int = 5000) -> None:
+    # BatchSpanProcessor runs on a daemon thread that the Lambda runtime
+    # freezes between invocations, so spans never reach the exporter unless
+    # flushed synchronously before returning. No-op when OTel is disabled.
+    if _provider is not None:
+        _provider.force_flush(timeout_millis)

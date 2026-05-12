@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from mangum import (
     Mangum,
 )
+from oqtopus_cloud.common.tracing import force_flush as _otel_force_flush
 from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.provider.conf import logger, metrics, tracer
 from oqtopus_cloud.provider.middleware import CustomMiddleware
@@ -69,3 +70,12 @@ handler.__name__ = "handler"
 handler = tracer.capture_lambda_handler(handler)
 handler = logger.inject_lambda_context(handler, clear_state=True)
 handler = metrics.log_metrics(handler)
+
+_inner_handler = handler
+
+
+def handler(event, context):  # type: ignore[no-redef]
+    try:
+        return _inner_handler(event, context)
+    finally:
+        _otel_force_flush()
