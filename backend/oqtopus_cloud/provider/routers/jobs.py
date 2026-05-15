@@ -221,6 +221,8 @@ def update_job_info(
         f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
     )
 
+    model: Optional[JobModel] = None
+
     def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
         status = request.overwrite_status
         incoming = request.job_info
@@ -295,6 +297,16 @@ def update_job_info(
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
+        # When something went wrong, we try our best to
+        try:
+            db.rollback()
+            if model is not None:
+                model.status = JobStatus.failed
+                db.commit()
+        except Exception as e:
+            logger.exception(
+                f"An error occurred on updating job status to `failed`: {e}"
+            )
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
