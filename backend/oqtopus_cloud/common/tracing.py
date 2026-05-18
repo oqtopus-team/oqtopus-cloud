@@ -44,9 +44,16 @@ def setup_tracing(app: FastAPI, service_name: str) -> None:
     FastAPIInstrumentor.instrument_app(app)
 
 
-def force_flush(timeout_millis: int = 5000) -> None:
+def force_flush(timeout_millis: int | None = None) -> None:
     # BatchSpanProcessor runs on a daemon thread that the Lambda runtime
     # freezes between invocations, so spans never reach the exporter unless
     # flushed synchronously before returning. No-op when OTel is disabled.
-    if _provider is not None:
-        _provider.force_flush(timeout_millis)
+    #
+    # Default 500ms caps the worst-case user-visible delay when the collector
+    # is slow or unreachable. Override with OTEL_FORCE_FLUSH_TIMEOUT_MS in
+    # environments that prefer to wait longer.
+    if _provider is None:
+        return
+    if timeout_millis is None:
+        timeout_millis = int(os.getenv("OTEL_FORCE_FLUSH_TIMEOUT_MS", "500"))
+    _provider.force_flush(timeout_millis)

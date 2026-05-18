@@ -243,4 +243,9 @@ variable "otel_exporter_otlp_endpoint" {
   type        = string
   default     = ""
   description = "OTLP HTTP endpoint when otel_enabled = true (e.g. http://10.0.1.100:4318)."
+
+  validation {
+    condition     = !var.otel_enabled || length(var.otel_exporter_otlp_endpoint) > 0
+    error_message = "otel_exporter_otlp_endpoint must be set when otel_enabled = true."
+  }
 }
