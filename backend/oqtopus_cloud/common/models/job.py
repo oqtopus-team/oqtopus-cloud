@@ -85,7 +85,6 @@ class Job(Base, TimestampMixin):
     ready_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     ended_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
-    traceparent: Mapped[str] = mapped_column(String(64), nullable=True)
 
 
 class Error(Exception):

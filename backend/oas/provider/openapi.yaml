@@ -882,12 +882,6 @@ components:
           example: '2022-10-19T11:45:34Z'
           nullable: true
           default: null
-        traceparent:
-          type: string
-          description: W3C Trace Context traceparent captured at submit, used for distributed trace propagation.
-          nullable: true
-          default: null
-          example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
       required: []
       example:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
