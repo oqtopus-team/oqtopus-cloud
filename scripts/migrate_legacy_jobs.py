@@ -172,6 +172,10 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _add_schema_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
+        "--target-dsn",
+        help="SQLAlchemy DSN for the target jobs DB; defaults to the environment-backed current DB",
+    )
+    parser.add_argument(
         "--target-table",
         default=JOBS_TABLE_NAME,
         help="Target jobs table name for schema operations",
@@ -183,12 +187,16 @@ def main() -> int:
     apply_default_source(args)
     target_db: Session | None = None
     db_generator = None
+    target_engine = None
     storage: AbstractStorage | None = None
 
     try:
         if should_open_target_db(args):
-            db_generator = get_db()
-            target_db = next(db_generator)
+            if args.target_dsn:
+                target_engine, target_db = open_db_session_from_dsn(args.target_dsn)
+            else:
+                db_generator = get_db()
+                target_db = next(db_generator)
 
         if should_open_storage(args):
             storage = get_storage()
@@ -213,6 +221,8 @@ def main() -> int:
     finally:
         if target_db is not None:
             target_db.close()
+        if target_engine is not None:
+            target_engine.dispose()
         if db_generator is not None:
             db_generator.close()
 
@@ -248,6 +258,16 @@ def require_target_db(target_db: Session | None) -> Session:
     if target_db is None:
         raise MigrationError("target DB session is required for this command")
     return target_db
+
+
+def open_db_session_from_dsn(dsn: str) -> tuple[Any, Session]:
+    engine = create_engine(
+        dsn,
+        connect_args={
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', time_zone='+00:00'"
+        },
+    )
+    return engine, Session(bind=engine)
 
 
 def validate_source_args(args: argparse.Namespace) -> None:
