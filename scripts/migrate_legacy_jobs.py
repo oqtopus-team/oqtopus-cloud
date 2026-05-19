@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import ast
 import base64
+import boto3
 import json
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -195,6 +197,7 @@ def main() -> int:
             if args.target_dsn:
                 target_engine, target_db = open_db_session_from_dsn(args.target_dsn)
             else:
+                apply_current_db_env_aliases()
                 db_generator = get_db()
                 target_db = next(db_generator)
 
@@ -225,6 +228,32 @@ def main() -> int:
             target_engine.dispose()
         if db_generator is not None:
             db_generator.close()
+
+
+def apply_current_db_env_aliases() -> None:
+    env_aliases = (
+        ("SECRET_ID", "SECRET_NAME"),
+        ("PROFILE", "AWS_PROFILE"),
+        ("MYSQL_PORT", "DB_PORT"),
+    )
+    for source_name, target_name in env_aliases:
+        if os.environ.get(target_name) in (None, ""):
+            source_value = os.environ.get(source_name)
+            if source_value is not None and source_value != "":
+                os.environ[target_name] = source_value
+
+    if os.environ.get("DB_HOST") in (None, ""):
+        os.environ["DB_HOST"] = "localhost"
+
+    if os.environ.get("AWS_REGION") in (None, ""):
+        default_region = os.environ.get("AWS_DEFAULT_REGION")
+        if default_region is not None and default_region != "":
+            os.environ["AWS_REGION"] = default_region
+        else:
+            profile = os.environ.get("AWS_PROFILE")
+            session = boto3.session.Session(profile_name=profile)
+            if session.region_name not in (None, ""):
+                os.environ["AWS_REGION"] = session.region_name
 
 
 def should_open_target_db(args: argparse.Namespace) -> bool:
