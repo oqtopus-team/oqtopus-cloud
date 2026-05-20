@@ -68,11 +68,11 @@ def lambda_handler(event: EventBridgeEvent, context):
         return Response.error(str(e))
 
 
-def update_pending_jobs(db):
+def update_pending_jobs(db, current=datetime.now(tz=timezone.utc)):
     logger.info("invoked update_pending_jobs")
     devices = db.scalars(select(Device)).all()
     device_ids = [device.id for device in devices]
-    since = parse_since(os.environ["COUNT_PENDING_JOBS_SINCE"])
+    since = parse_since(os.environ["COUNT_PENDING_JOBS_SINCE"], current)
     logger.info(f"device list is {device_ids}")
     for device_id in device_ids:
         n_pending_jobs = db.execute(
@@ -101,7 +101,7 @@ def update_pending_jobs(db):
     return Response.success(body)
 
 
-def parse_since(since_str: str) -> datetime:
+def parse_since(since_str: str, current: datetime) -> datetime:
     units = {
         "second": "seconds",
         "seconds": "seconds",
@@ -130,6 +130,5 @@ def parse_since(since_str: str) -> datetime:
     amount, unit = int(m.group(1)), m.group(2).lower()
     if unit not in units:
         raise ValueError(f"Unknown unit: {unit!r}")
-
-    delta = relativedelta(**{units[unit]: amount})
-    return datetime.now(tz=timezone.utc) - delta
+    delta = relativedelta(**{units[unit]: amount})  # type: ignore[arg-type]
+    return current - delta
