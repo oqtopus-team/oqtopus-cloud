@@ -134,12 +134,13 @@ OAS_DIR := $(abspath ../../backend/oas)
 .PHONY: publish-user-schema publish-schema publish-user-schema-via-actions publish-schema-via-actions
 
 publish-user-schema: ## Publish user OpenAPI spec to S3
-	@$(MAKE) publish-schema API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080
+	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
+		echo "⏭  PUBLISH_OPENAPI_S3_BUCKET is not set — skipping publish-user-schema"; \
+	else \
+		$(MAKE) publish-schema API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080; \
+	fi
 
 publish-schema:
-	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
-		echo "❌ PUBLISH_OPENAPI_S3_BUCKET is not set (define it in .env)"; exit 1; \
-	fi
 	@docker pull -q redocly/cli >/dev/null
 	@TMPDIR=$$(mktemp -d); \
 	 trap 'rm -rf "$$TMPDIR"' EXIT; \
@@ -166,12 +167,13 @@ publish-schema:
 # Github Actions variants — same as the targets above but without --profile
 # (AWS credentials come from configure-aws-credentials via env vars).
 publish-user-schema-via-actions: ## Publish user OpenAPI spec to S3 via Github Actions
-	@$(MAKE) publish-schema-via-actions API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080
+	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
+		echo "⏭  PUBLISH_OPENAPI_S3_BUCKET is not set — skipping publish-user-schema-via-actions"; \
+	else \
+		$(MAKE) publish-schema-via-actions API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080; \
+	fi
 
 publish-schema-via-actions:
-	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
-		echo "❌ PUBLISH_OPENAPI_S3_BUCKET is not set"; exit 1; \
-	fi
 	@docker pull -q redocly/cli >/dev/null
 	@TMPDIR=$$(mktemp -d); \
 	 trap 'rm -rf "$$TMPDIR"' EXIT; \
