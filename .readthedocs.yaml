@@ -12,13 +12,11 @@ build:
     python: "3.12"
   jobs:
     post_create_environment:
-      # Install poetry
-      # https://python-poetry.org/docs/#installing-manually
-      - python -m pip install poetry
+      - curl -Ls https://astral.sh/uv/install.sh | bash
     post_install:
       # Install dependencies with 'docs' dependency group
       # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
-      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
+      - $HOME/.cargo/bin/uv pip install --with docs
 
 # Build documentation with mkdocs
 mkdocs:

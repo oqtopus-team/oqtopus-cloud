@@ -61,7 +61,7 @@ paths:
           required: true
           schema:
             type: string
-          example: Kawasaki
+          example: qulacs
       responses:
         '200':
           description: job response

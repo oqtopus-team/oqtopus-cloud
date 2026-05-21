@@ -21,7 +21,8 @@ SELECT * FROM (
   SELECT 'SC', 'QPU', 'available', CURRENT_TIMESTAMP AS available_at, 9, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP AS calibrated_at, 'Superconducting quantum computer' UNION ALL
   SELECT 'SVSim', 'simulator','available', CURRENT_TIMESTAMP, 0, 39, '["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]', '["measure", "barrier", "reset"]', '', CURRENT_TIMESTAMP, 'State vector-based quantum circuit simulator' UNION ALL
   SELECT 'Kawasaki', 'QPU','available', CURRENT_TIMESTAMP, 2, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer' UNION ALL
-  SELECT '01927422-86d4-7597-b724-b08a5e7781fc', 'QPU','unavailable', CURRENT_TIMESTAMP, 0, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer'
+  SELECT '01927422-86d4-7597-b724-b08a5e7781fc', 'QPU','unavailable', CURRENT_TIMESTAMP, 0, 64, '["sx", "rz", "rzx90", "id"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Superconducting quantum computer' UNION ALL
+  SELECT 'qulacs', 'simulator','available', CURRENT_TIMESTAMP, 0, 16, '["sx", "x", "rz", "cx"]', '["measure", "barrier"]', '', CURRENT_TIMESTAMP, 'Qulacs Simulator'
 ) AS SampleData
 WHERE NOT EXISTS (SELECT 1 FROM main.devices LIMIT 1);
 
@@ -51,8 +52,8 @@ CREATE TABLE IF NOT EXISTS main.jobs (
 -- Insert jobs (only into new/empty table)
 INSERT INTO main.jobs (id, owner, name, description, device_id, job_info, transpiler_info, simulator_info, mitigation_info, job_type, shots, status, submitted_at)
 SELECT * FROM (
-  SELECT '01927422-86d4-73d6-abb4-f2de6a4f5910', 'admin', 'Test job 1', 'Test job 1 description', 'Kawasaki', '{\'code\': \'todo\'}', '' AS transpiler_info, '' AS simulator_info, '' AS mitigation_info, 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP UNION ALL
-  SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'Kawasaki', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
+  SELECT '01927422-86d4-73d6-abb4-f2de6a4f5910', 'admin', 'Test job 1', 'Test job 1 description', 'qulacs', '{\'code\': \'todo\'}', '' AS transpiler_info, '' AS simulator_info, '' AS mitigation_info, 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP UNION ALL
+  SELECT '01927422-86d4-7cbf-98d3-32f5f1263cd9', 'admin', 'Test job 2', 'Test job 2 description', 'qulacs', '{\'code\': \'todo\'}', '', '', '', 'sampling', 1000, 'submitted', CURRENT_TIMESTAMP
 ) AS SampleData
 WHERE NOT EXISTS (SELECT 1 FROM main.jobs LIMIT 1);
 

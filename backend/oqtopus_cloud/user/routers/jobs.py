@@ -173,9 +173,9 @@ def submit_job(
             )
         job.device_id = request.device_id
 
-        job.transpiler_info = json.dumps(request.transpiler_info)
-        job.simulator_info = json.dumps(request.simulator_info)
-        job.mitigation_info = json.dumps(request.mitigation_info)
+        job.transpiler_info = json.dumps(request.transpiler_info or {})
+        job.simulator_info = json.dumps(request.simulator_info or {})
+        job.mitigation_info = json.dumps(request.mitigation_info or {})
         job.job_type = JobType(request.job_type)
         job.shots = request.shots
         job.status = JobStatus.submitted

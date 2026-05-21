@@ -1098,6 +1098,39 @@ def test_register_submit_cancel_delete(
         assert bef == aft
 
 
+def test_submit_job_defaults_optional_infos_to_empty_objects(
+    test_client,
+    test_db,
+    test_storage,
+):
+    test_db.flush()
+    test_db.add(_get_user_model(1))
+    test_db.commit()
+
+    reg_response = test_client.post("/jobs")
+    adapter = TypeAdapter(RegisterJobResponse)
+    reg_response_json = adapter.validate_python(reg_response.json())
+
+    job_id = reg_response_json.job_id
+    test_storage.put(key=f"{job_id}/input.zip", data=b"dummy_job_info")
+
+    submit_body = _get_submit_body()
+    submit_body.pop("transpiler_info")
+    submit_body.pop("simulator_info")
+    submit_body.pop("mitigation_info")
+
+    submit_resp = test_client.post(
+        f"/jobs/{job_id}/submit", content=json.dumps(submit_body)
+    )
+    assert submit_resp.status_code == 200
+
+    saved_job = test_db.get(JobModel, job_id)
+    assert saved_job is not None
+    assert json.loads(saved_job.transpiler_info) == {}
+    assert json.loads(saved_job.simulator_info) == {}
+    assert json.loads(saved_job.mitigation_info) == {}
+
+
 def test_submit_job_shots_boundary():
     """_summary_
     Test for checking out of range shots

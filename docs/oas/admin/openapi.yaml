@@ -416,7 +416,7 @@ paths:
           required: true
           schema:
             type: string
-          example: Kawasaki
+          example: qulacs
       responses:
         '200':
           description: device response
@@ -451,7 +451,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: New calibration data
         content:
@@ -510,7 +510,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       responses:
         '204':
           description: Device deleted
@@ -1118,7 +1118,7 @@ components:
       properties:
         device_info:
           type: string
-          example: '{"device_id": "Kawasaki", "qubits": []}'
+          example: '{"device_id": "qulacs", "qubits": []}'
         device_type:
           type: string
           enum:

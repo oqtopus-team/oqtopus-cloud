@@ -31,7 +31,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: Chagens to the specified device.
         content:
@@ -87,7 +87,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: 'New device status. '
         content:
@@ -144,7 +144,7 @@ paths:
           schema:
             type: string
             nullable: false
-            example: Kawasaki
+            example: qulacs
       requestBody:
         description: 'New device info. '
         content:
@@ -199,7 +199,7 @@ paths:
           schema:
             type: string
             nullable: false
-            example: Kawasaki
+            example: qulacs
         - in: query
           name: status
           required: false

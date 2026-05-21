@@ -13,7 +13,7 @@ jobs:
         schema:
           type: string
           nullable: false
-          example: "Kawasaki"
+          example: "qulacs"
       - in: query
         name: status
         required: false
