@@ -61,14 +61,14 @@ def lambda_handler(event: EventBridgeEvent, context):
     logger.info("invoke worker lambda_handler")
     try:
         db = next(get_db())
-        response = update_pending_jobs(db)
+        response = update_pending_jobs(db, datetime.now(tz=timezone.utc))
         return response
     except Exception as e:
         logger.exception("Error occurred")
         return Response.error(str(e))
 
 
-def update_pending_jobs(db, current=datetime.now(tz=timezone.utc)):
+def update_pending_jobs(db, current: datetime):
     logger.info("invoked update_pending_jobs")
     devices = db.scalars(select(Device)).all()
     device_ids = [device.id for device in devices]
