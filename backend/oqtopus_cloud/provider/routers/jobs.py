@@ -2,6 +2,7 @@ import base64
 import json
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Form, UploadFile
@@ -288,7 +289,7 @@ def update_job_info(
                 return BadRequestResponse(
                     message="Execution time should not be negative."
                 )
-            model.execution_time = request.execution_time
+            model.execution_time = Decimal(str(request.execution_time))
 
         db.commit()
         return UpdateJobInfoResponse(message="Job info updated")
@@ -532,7 +533,9 @@ def model_to_schema(
         transpiler_info=json.loads(model.transpiler_info),
         mitigation_info=json.loads(model.mitigation_info),
         simulator_info=json.loads(model.simulator_info),
-        execution_time=model.execution_time,
+        execution_time=(
+            float(model.execution_time) if model.execution_time is not None else None
+        ),
         submitted_at=model.submitted_at,
         ready_at=model.ready_at,
         running_at=model.running_at,
