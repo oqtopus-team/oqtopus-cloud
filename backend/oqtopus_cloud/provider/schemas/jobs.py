@@ -99,7 +99,7 @@ class JobInfo(BaseModel):
         list[str],
         Field(
             examples=[
-                '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+                '[ "OPENQASM 3; include "stdgates.inc"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
             ]
         ),
     ]

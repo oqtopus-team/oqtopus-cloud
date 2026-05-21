@@ -169,14 +169,14 @@ def get_jobs(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-def validate_name(request: JobDef) -> str | None:
+def validate_name(request: JobDef | SubmitJobRequest) -> str | None:
     if request.name is not None:
         return request.name
     return ""
 
 
 def validate_description(
-    request: JobDef,
+    request: JobDef | SubmitJobRequest,
 ) -> str | None:
     return request.description if (request.description is not None) else ""
 
@@ -602,7 +602,11 @@ def model_to_schema(
             transpiler_info=json.loads(model.transpiler_info),
             mitigation_info=json.loads(model.mitigation_info),
             simulator_info=json.loads(model.simulator_info),
-            execution_time=model.execution_time,
+            execution_time=(
+                float(model.execution_time)
+                if model.execution_time is not None
+                else None
+            ),
             submitted_at=model.submitted_at,
             ready_at=model.ready_at,
             running_at=model.running_at,
