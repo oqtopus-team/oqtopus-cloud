@@ -1,2 +1,0 @@
-ALTER TABLE users
-ADD COLUMN mfa_status VARCHAR(255) NOT NULL DEFAULT 'disabled';
