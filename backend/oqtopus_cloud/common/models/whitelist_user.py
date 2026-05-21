@@ -1,4 +1,7 @@
-from sqlalchemy import Boolean, Integer, String
+from typing import Optional
+
+from sqlalchemy import Boolean, Integer, String, Text, text
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -28,8 +31,9 @@ class WhitelistUser(Base, TimestampMixin):
     __tablename__ = "whitelist_users"
 
     id: Mapped[int] = mapped_column(
-        Integer,
+        Integer().with_variant(BIGINT(unsigned=True), "mysql"),
         primary_key=True,
+        autoincrement=True,
     )
     group_id: Mapped[str] = mapped_column(
         String(255),
@@ -38,18 +42,20 @@ class WhitelistUser(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+        unique=True,
     )
-    display_name: Mapped[str] = mapped_column(
+    display_name: Mapped[Optional[str]] = mapped_column(
         String(255),
         nullable=True,
     )
-    organization: Mapped[str] = mapped_column(
+    organization: Mapped[Optional[str]] = mapped_column(
         String(255),
         nullable=True,
     )
-    is_signup_completed: Mapped[bool] = mapped_column(
+    is_signup_completed: Mapped[Optional[bool]] = mapped_column(
         Boolean,
         nullable=True,
         default=False,
+        server_default=text("0"),
     )
-    available_devices: Mapped[str] = mapped_column(String, nullable=True)
+    available_devices: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

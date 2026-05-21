@@ -1,6 +1,7 @@
 import datetime
 from typing import Any, Dict
 
+from sqlalchemy.dialects.mysql import TIMESTAMP as MYSQL_TIMESTAMP
 from sqlalchemy.types import DateTime, TypeDecorator
 
 
@@ -24,6 +25,13 @@ def model_to_schema_dict(
 class DateTimeTz(TypeDecorator):
     impl = DateTime
     cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        # Operational schema uses MySQL TIMESTAMP for all timestamp columns.
+        # Fall back to DATETIME for other dialects (SQLite used in tests).
+        if dialect.name == "mysql":
+            return dialect.type_descriptor(MYSQL_TIMESTAMP())
+        return dialect.type_descriptor(DateTime())
 
     def process_bind_param(self, value, dialect):
         # When storing data to DB, we change the timezone to UTC
