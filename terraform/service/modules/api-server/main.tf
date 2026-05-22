@@ -87,6 +87,11 @@ resource "aws_lambda_function" "this" {
       var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
       var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
       var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
+      var.otel_enabled ? {
+        OTEL_ENABLED                = "true"
+        OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
+        OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+      } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
   }

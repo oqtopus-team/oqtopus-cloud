@@ -13,6 +13,7 @@ from fastapi import (
 from fastapi import Request as Event
 from fastapi_pagination import Page, Params, set_page, set_params
 from fastapi_pagination.ext.sqlalchemy import paginate
+from opentelemetry import trace
 from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
@@ -224,6 +225,12 @@ def submit_jobs(
         # description is optional
         description = validate_description(request)
 
+        # Annotate the active span with searchable attributes (no-ops when
+        # OTel is disabled).
+        current_span = trace.get_current_span()
+        if current_span.is_recording():
+            current_span.set_attribute("oqtopus.device_id", request.device_id)
+
         job = Job(
             id=uuid7(as_type="str"),
             owner=owner,
@@ -244,6 +251,8 @@ def submit_jobs(
             shots=shots,
             submitted_at=datetime.now(utc),
         )
+        if current_span.is_recording():
+            current_span.set_attribute("oqtopus.job_id", job.id)
 
         # put the user program to S3 when SSE
         is_success_put_s3 = put_user_program_to_s3(job, storage)

@@ -13,6 +13,8 @@ from mangum import (
 )
 from starlette.middleware.cors import CORSMiddleware
 
+from oqtopus_cloud.common.tracing import force_flush as _otel_force_flush
+from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.user.conf import logger, metrics, tracer
 from oqtopus_cloud.user.middleware import CustomMiddleware
 from oqtopus_cloud.user.routers import (
@@ -46,6 +48,10 @@ app.add_middleware(
     allow_methods=ALLOW_METHODS,
     allow_headers=ALLOW_HEADERS,
 )
+
+# Install OpenTelemetry instrumentation last so the tracing middleware wraps
+# all other middleware in the request/response cycle.
+setup_tracing(app, "oqtopus-cloud-user")
 
 app.include_router(
     device_router.router,
@@ -81,3 +87,12 @@ handler.__name__ = "handler"
 handler = tracer.capture_lambda_handler(handler)
 handler = logger.inject_lambda_context(handler, clear_state=True)
 handler = metrics.log_metrics(handler)
+
+_inner_handler = handler
+
+
+def handler(event, context):  # type: ignore[no-redef]
+    try:
+        return _inner_handler(event, context)
+    finally:
+        _otel_force_flush()
