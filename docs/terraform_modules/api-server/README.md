@@ -121,6 +121,8 @@ module "user_api" {
 | <a name="input_login_history_enabled"></a> [login\_history\_enabled](#input\_login\_history\_enabled) | Flag to control whether user login history should be included in GET user API response | `string` | `"false"` | no |
 | <a name="input_manage_cognito_user_pool"></a> [manage\_cognito\_user\_pool](#input\_manage\_cognito\_user\_pool) | Set `true` if the module should manage the Cognito user pool | `bool` | `false` | no |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
+| <a name="input_otel_enabled"></a> [otel\_enabled](#input\_otel\_enabled) | Enable OpenTelemetry tracing for this Lambda. | `bool` | `false` | no |
+| <a name="input_otel_exporter_otlp_endpoint"></a> [otel\_exporter\_otlp\_endpoint](#input\_otel\_exporter\_otlp\_endpoint) | OTLP HTTP endpoint when otel\_enabled = true (e.g. http://10.0.1.100:4318). | `string` | `""` | no |
 | <a name="input_power_tools_metrics_namespace"></a> [power\_tools\_metrics\_namespace](#input\_power\_tools\_metrics\_namespace) | The namespace for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_power_tools_service_name"></a> [power\_tools\_service\_name](#input\_power\_tools\_service\_name) | The service name for the PowerTools metrics | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
