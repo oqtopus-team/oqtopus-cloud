@@ -269,11 +269,13 @@ dependencies = [
     { name = "pyjwt" },
     { name = "pymysql" },
     { name = "pytest-env" },
+    { name = "python-dateutil" },
     { name = "python-multipart" },
     { name = "pytz" },
     { name = "s3fs" },
     { name = "setuptools" },
     { name = "sqlalchemy" },
+    { name = "types-python-dateutil" },
     { name = "types-pytz" },
     { name = "types-setuptools" },
     { name = "uuid-v7" },
@@ -333,11 +335,13 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pymysql", specifier = ">=1.1.0" },
     { name = "pytest-env", specifier = ">=1.1.5" },
+    { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "pytz", specifier = ">=2025.1" },
     { name = "s3fs", specifier = ">=2025.5.1" },
     { name = "setuptools", specifier = ">=75.1.0" },
     { name = "sqlalchemy", specifier = ">=2.0.28" },
+    { name = "types-python-dateutil", specifier = ">=2.9.0.20260508" },
     { name = "types-pytz", specifier = ">=2025.1.0.20250204" },
     { name = "types-setuptools", specifier = ">=75.1.0.20240917" },
     { name = "uuid-v7", specifier = ">=1.0.0" },
@@ -2107,6 +2111,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/36/6c/583522cfb3c330e92e726af517a91c13247e555e021791a60f1b03c6ff16/types_awscrt-0.27.2.tar.gz", hash = "sha256:acd04f57119eb15626ab0ba9157fc24672421de56e7bd7b9f61681fedee44e91", size = 16304, upload-time = "2025-05-16T03:10:08.712Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4c/82/1ee2e5c9d28deac086ab3a6ff07c8bc393ef013a083f546c623699881715/types_awscrt-0.27.2-py3-none-any.whl", hash = "sha256:49a045f25bbd5ad2865f314512afced933aed35ddbafc252e2268efa8a787e4e", size = 37761, upload-time = "2025-05-16T03:10:07.466Z" },
+]
+
+[[package]]
+name = "types-python-dateutil"
+version = "2.9.0.20260508"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/9b/ee1674cbe9ec50bb824f35a5dc0ce5fd1f1b6196ba1213e3fe6f33b4ce32/types_python_dateutil-2.9.0.20260508.tar.gz", hash = "sha256:596a6d63d81f587bf04c8254fb78df9d2344e915ce67948d7400512e3a6206d5", size = 17033, upload-time = "2026-05-08T04:47:08.248Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/7c/1788ff10edf56031d74ad3fba40947e0e8b82e3a529b30e6b7d71c191dec/types_python_dateutil-2.9.0.20260508-py3-none-any.whl", hash = "sha256:bfc6fd2d81aa86e5ac97206a64304f6bd247426eedbca9b98619bbc48c6a1c10", size = 18425, upload-time = "2026-05-08T04:47:07.207Z" },
 ]
 
 [[package]]
