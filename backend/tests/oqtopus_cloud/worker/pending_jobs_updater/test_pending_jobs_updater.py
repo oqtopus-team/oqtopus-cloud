@@ -49,7 +49,6 @@ def _get_job(
         "description": f"test job {n}",
         "device_id": device_id,
         "job_type": "sampling",
-        "job_info": json.dumps({"program": ["code"]}),
         "transpiler_info": json.dumps({"this_is": "transpiler_info"}),
         "simulator_info": json.dumps({"this_is": "simulator_info"}),
         "mitigation_info": json.dumps(

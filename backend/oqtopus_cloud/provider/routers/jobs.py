@@ -1,14 +1,19 @@
-import base64
 import json
-import os
+import re
 from datetime import datetime
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Form, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
+    JOB_INFO_INPUT_PARAM,
+    JOB_INFO_COMBINED_PROGRAM_PARAM,
+    JOB_INFO_TRANSPILE_RESULT_PARAM,
+    JOB_INFO_RESULT_PARAM,
+    JOB_INFO_SSE_LOG_PARAM,
+)
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
@@ -21,17 +26,13 @@ from oqtopus_cloud.provider.schemas.errors import (
 from oqtopus_cloud.provider.schemas.jobs import (
     Job,
     JobDef,
-    JobInfo,
-    JobResult,
+    JobInfoUploadPresignedURL,
     JobStatus,
     JobStatusUpdate,
     JobStatusUpdateResponse,
     JobType,
-    UpdateJobInfoRequest,
-    UpdateJobInfoResponse,
     UpdateJobTranspilerInfoRequest,
     UpdateJobTranspilerInfoResponse,
-    UploadSselogResponse,
 )
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session, load_only
@@ -44,6 +45,8 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
 
 JobId = str
+
+s3_key_pattern = r"^(?P<id>[\w-]+)/(?P<name>input|combined_program|result|transpile_result|sse_log)\.zip$"
 
 
 @router.get(
@@ -60,29 +63,34 @@ def get_jobs(
     limit: Optional[int] = None,
     timestamp: Optional[str] = None,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[Job] | ErrorResponse:
     logger.info("invoked get_jobs")
     try:
+        select_stmt = select(JobModel).filter(
+            JobModel.device_id == device_id, JobModel.status != "registered"
+        )
+
         # Fields Control
         fields_list = None
         if fields is not None:
             fields_list = fields.split(",")
             valid_fields_list = [field in Job.model_fields for field in fields_list]
             if all(valid_fields_list):
-                MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
                 converted_fields_list = [
-                    MAP_SCHEMA_TO_MODEL[field] for field in fields_list
+                    MAP_SCHEMA_TO_MODEL[field]
+                    for field in fields_list
+                    if field in MAP_SCHEMA_TO_MODEL
                 ]
-                columns = [getattr(JobModel, field) for field in converted_fields_list]
+                arg_select = [
+                    getattr(JobModel, field) for field in converted_fields_list
+                ]
 
                 # remove duplicated fields
-                arg_select = list(dict.fromkeys(columns))
-                select_stmt = (
-                    select(JobModel)
-                    .filter(JobModel.device_id == device_id)
-                    .options(load_only(*arg_select))
-                    .order_by(asc(JobModel.submitted_at), asc(JobModel.id))
-                )
+                arg_select = list(dict.fromkeys(arg_select))
+
+                if arg_select:
+                    select_stmt = select_stmt.options(load_only(*arg_select))
             else:
                 invalid_indices = [
                     i for i, field in enumerate(valid_fields_list) if field is False
@@ -91,12 +99,8 @@ def get_jobs(
                 return BadRequestResponse(
                     message=f"fields {invalid_fields_list} is invalid"
                 )
-        else:
-            select_stmt = (
-                select(JobModel)
-                .filter(JobModel.device_id == device_id)
-                .order_by(asc(JobModel.submitted_at), asc(JobModel.id))
-            )
+
+        select_stmt = select_stmt.order_by(asc(JobModel.submitted_at), asc(JobModel.id))
 
         # Filtering Jobs
         if status is not None:
@@ -112,14 +116,14 @@ def get_jobs(
         results: list[Job] = []
         # for model, update_status in zip(models, update_statuses):
         for model in models:
-            job = model_to_filtered_schema(model, fields_list)
+            job = model_to_filtered_schema(model, storage, fields_list)
             if isinstance(job, ValueError):
                 logger.warning(str(job))
                 # ignore illegal jobs
                 continue
             else:
                 # if status is "submitted", then update status to "ready"
-                if decode_job_status(model.status) == JobStatus.submitted:
+                if parse_job_status(model.status) == JobStatus.submitted:
                     set_job_status(model, JobStatus.ready)
                 # checking model objects has status attribute
                 if (fields is None) or (fields is not None and "status" in fields):
@@ -147,18 +151,79 @@ def get_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> JobDef | ErrorResponse:
     logger.info("invoked get_job")
     try:
         model = db.get(JobModel, job_id)
         if model is None:
             return NotFoundErrorResponse("Job not found")
-        job = model_to_schema(model)
+        job = model_to_schema(model, storage)
         if isinstance(job, ValueError):
             logger.warning(str(job))
             return NotFoundErrorResponse("Job not found")
         else:
             return job
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/jobs/{job_id}/upload",
+    response_model=list[JobInfoUploadPresignedURL],
+    responses={
+        404: {"model": Message},
+        400: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_upload(
+    job_id: str,
+    items: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> list[JobInfoUploadPresignedURL] | ErrorResponse:
+    logger.info("invoked get_job")
+    try:
+        model = db.get(JobModel, job_id)
+        if model is None:
+            return NotFoundErrorResponse("Job not found")
+
+        items_list = items.split(",")
+        diff = set(items_list).difference(
+            {
+                JOB_INFO_COMBINED_PROGRAM_PARAM,
+                JOB_INFO_TRANSPILE_RESULT_PARAM,
+                JOB_INFO_RESULT_PARAM,
+                JOB_INFO_SSE_LOG_PARAM,
+            }
+        )
+        if diff:
+            return BadRequestResponse(f"Unsupported item(s) for upload: {list(diff)}")
+
+        if (
+            JOB_INFO_COMBINED_PROGRAM_PARAM in items_list
+            and model.job_type != "multi_manual"
+        ):
+            return BadRequestResponse(
+                f"Unsupported item: {JOB_INFO_COMBINED_PROGRAM_PARAM} for job type: {model.job_type}"
+            )
+
+        if JOB_INFO_SSE_LOG_PARAM in items_list and model.job_type != "sse":
+            return BadRequestResponse(
+                f"Unsupported item: {JOB_INFO_SSE_LOG_PARAM} for job type: {model.job_type}"
+            )
+
+        return [
+            JobInfoUploadPresignedURL(
+                **storage.get_upload_presigned_url_data(key=f"{model.id}/{item}.zip")
+            )
+            for item in items_list
+        ]
+
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -179,6 +244,7 @@ def update_job_status(
     job_id: str,
     request: JobStatusUpdate,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> JobStatusUpdateResponse | ErrorResponse:
     logger.info("invoked get_job")
     try:
@@ -187,111 +253,59 @@ def update_job_status(
         if model is None:
             return NotFoundErrorResponse("Job not found")
 
-        if decode_job_status(model.status) != JobStatus.ready:
-            return ConflictErrorResponse(
-                f"The specified job is not a status that allows transition to the status {request.status}"
-            )
+        model_status = parse_job_status(model.status)
+        if request.status == JobStatus.running:
+            if model_status != JobStatus.ready:
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        elif request.status == JobStatus.failed:
+            if model_status not in [JobStatus.ready, JobStatus.running]:
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        elif request.status in [
+            JobStatus.succeeded,
+            JobStatus.cancelled,
+        ]:
+            if model_status != JobStatus.running:
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        else:
+            return BadRequestResponse(f"Invalid status: {request.status}")
 
         set_job_status(model, request.status)
-        db.commit()
-        return JobStatusUpdateResponse(message="Job status updated")
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
 
+        if request.output_files:
+            output_files = []
+            for s3_key in request.output_files:
+                match = re.match(s3_key_pattern, s3_key)
+                if match:
+                    if match.group("id") == job_id:
+                        if storage.does_exist(key=s3_key):
+                            output_files.append(match.group("name"))
+                        else:
+                            return BadRequestResponse(f"{s3_key} not found")
+                    else:
+                        return ConflictErrorResponse(
+                            f"Invalid output file key: {s3_key} for job_id: {job_id}"
+                        )
+                else:
+                    return BadRequestResponse(f"Invalid output file key: {s3_key}")
+            model.output_files = json.dumps(output_files)
 
-@router.patch(
-    "/jobs/{job_id}/job_info",
-    response_model=UpdateJobInfoResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def update_job_info(
-    job_id: str,
-    request: UpdateJobInfoRequest,
-    db: Session = Depends(get_db),
-) -> UpdateJobInfoResponse | ErrorResponse:
-    logger.info("invoked: update_job_info")
-    logger.info(
-        f"with parameters: job_id={job_id}, request={request.model_dump_json()}"
-    )
+        if request.message:
+            model.message = request.message
 
-    def patch_job_info(job_info: JobInfo) -> tuple[Optional[JobStatus], JobInfo]:
-        status = request.overwrite_status
-        incoming = request.job_info
-        if incoming is None:
-            return (status, job_info)
-
-        if incoming.combined_program is not None:
-            job_info.combined_program = incoming.combined_program
-
-        if incoming.transpile_result is not None:
-            job_info.transpile_result = incoming.transpile_result
-
-        if incoming.result is not None:
-            job_info.result = incoming.result
-            if status is None:
-                status = JobStatus.succeeded
-
-        if incoming.message is not None:
-            job_info.message = incoming.message
-
-        return (status, job_info)
-
-    try:
-        stmt = select(JobModel).where(JobModel.id == job_id)
-        model = db.execute(stmt).scalar_one_or_none()
-        if model is None:
-            return NotFoundErrorResponse("Job not found")
-
-        job_info = JobInfo.model_validate(json.loads(model.job_info))
-
-        # The job result must be compatible with the job info.
-        if (
-            request.job_info is not None
-            and request.job_info.result is not None
-            and model.job_type not in jobtype_of_result(request.job_info.result)
-        ):
-            return BadRequestResponse(
-                message="The job result type is not compatible with job info."
-            )
-
-        # Calculate upodated job_info.
-        (status, job_info) = patch_job_info(job_info)
-
-        # Validate the consitency of patched job_info and status
-        if (
-            # Job with non-null result should be succeeded
-            job_info.result is not None and status != JobStatus.succeeded
-            # Job cannot go back to status of submitted or ready.
-        ):
-            return BadRequestResponse(
-                message="The overwritten status and job_info is inconsistent"
-            )
-
-        status0 = decode_job_status(model.status)
-        assert isinstance(status0, JobStatus)
-        if status is not None and stage_of_status(status) < stage_of_status(status0):
-            return BadRequestResponse(message="Job cannot go back to previous status.")
-
-        model.job_info = JobInfo.model_dump_json(job_info)
-        if status is not None:
-            set_job_status(model, status)
-        # execution time
-        if request.execution_time is not None:
+        if request.execution_time:
             if request.execution_time < 0:
-                return BadRequestResponse(
-                    message="Execution time should not be negative."
-                )
+                return BadRequestResponse("Execution time should not be negative.")
             model.execution_time = request.execution_time
 
         db.commit()
-        return UpdateJobInfoResponse(message="Job info updated")
+        return JobStatusUpdateResponse(message="Job status updated")
+
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -336,80 +350,6 @@ def update_job_transpiler_info(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
-@router.get(
-    "/jobs/{job_id}/ssesrc",
-    response_model=None,
-    response_class=PlainTextResponse,
-    responses={
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def get_ssesrc(
-    job_id: str,
-    storage: AbstractStorage = Depends(get_storage),
-) -> PlainTextResponse | ErrorResponse:
-    file_name = os.environ["SSE_USER_PROGRAM_NAME"]
-    try:
-        # get the program file from storage
-        key = f"{job_id}/{file_name}"
-        program = storage.get(key)
-        if program is None:
-            e = f"SSE user program not found: {key}"
-            tracer.put_annotation("error", str(e))
-            logger.exception(f"Internal Server Error: {e}")
-            return InternalServerErrorResponse(message="Internal Server Error")
-        # encode the file to base64
-        program_base64 = base64.b64encode(program).decode("utf-8")
-        return PlainTextResponse(content=program_base64)
-
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
-
-
-@router.patch(
-    "/jobs/{job_id}/sselog",
-    response_model=UploadSselogResponse,
-    responses={
-        400: {"model": Message},
-        404: {"model": Message},
-        500: {"model": Message},
-    },
-)
-@tracer.capture_method
-def upload_sselog(
-    job_id: str,
-    file: UploadFile = Form(...),
-    db: Session = Depends(get_db),
-    storage: AbstractStorage = Depends(get_storage),
-) -> UploadSselogResponse | ErrorResponse:
-    file_name = os.environ["SSE_CONTAINER_LOG_NAME"]
-
-    try:
-        # Check that the job exists
-        job_model = db.query(JobModel).filter(JobModel.id == job_id).first()
-        if job_model is None:
-            logger.info("job not found with the given id")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        job = model_to_schema(job_model)
-        if isinstance(job, ValueError):
-            logger.warning("warn: Failed to encode job model to schema.")
-            return NotFoundErrorResponse(message="job not found with the given id")
-        if job.job_type != JobType.sse:
-            logger.info("job is not an SSE job")
-            return BadRequestResponse(message="job is not an SSE job")
-
-        binary = file.file.read()
-        storage.put(key=f"{job_id}/{file_name}", data=binary)
-        return UploadSselogResponse(message="SSE log uploaded")
-    except Exception as e:
-        tracer.put_annotation("error", str(e))
-        logger.exception(f"Internal Server Error: {e}")
-        return InternalServerErrorResponse(message="Internal Server Error")
-
-
 # TODO: match parameter names of model and schema
 MAP_MODEL_TO_SCHEMA = {
     "id": "job_id",
@@ -418,7 +358,6 @@ MAP_MODEL_TO_SCHEMA = {
     "name": "name",
     "description": "description",
     "device_id": "device_id",
-    "job_info": "job_info",
     "transpiler_info": "transpiler_info",
     "simulator_info": "simulator_info",
     "mitigation_info": "mitigation_info",
@@ -434,27 +373,14 @@ MAP_MODEL_TO_SCHEMA = {
 }
 
 
-def jobtype_of_result(r: JobResult) -> list[JobType | None]:
-    if r.sampling is not None:
-        return [JobType.sampling, JobType.multi_manual, JobType.sse]
-    elif r.estimation is not None:
-        return [JobType.estimation]
-    return [None]
+MAP_SCHEMA_TO_MODEL = {v: k for k, v in MAP_MODEL_TO_SCHEMA.items()}
 
 
-def decode_job_status(s: str) -> JobStatus | ValueError:
+def parse_job_status(s: str) -> JobStatus | ValueError:
     try:
         return JobStatus(s)
-    except Exception as err:
-        return ValueError(f"Failed to decode JobStatus: {str(err)}")
-
-
-def decode_job_info(j: Any) -> JobInfo | ValueError:
-    try:
-        jobinfo = JobInfo.model_validate(j)
-        return jobinfo
-    except Exception as e:
-        return ValueError(f"Failed to decode job_info: {str(e)}")
+    except Exception:
+        return ValueError(f"{s} is not a valid JobStatus")
 
 
 def parse_job_type(jt: str) -> JobType | ValueError:
@@ -496,30 +422,14 @@ def set_job_status(model: JobModel, status: str | JobStatus) -> None:
     return
 
 
-def stage_of_status(st: JobStatus) -> int:
-    match st:
-        case JobStatus.submitted:
-            return 0
-        case JobStatus.ready:
-            return 1
-        case JobStatus.running:
-            return 2
-        case _:
-            return 3
-
-
-def model_to_schema(
-    model: JobModel,
-) -> JobDef | ValueError:
-    status = decode_job_status(model.status)
+def model_to_schema(model: JobModel, storage: AbstractStorage) -> JobDef | ValueError:
+    status = parse_job_status(model.status)
     if isinstance(status, ValueError):
         return status
-    job_info = decode_job_info(json.loads(model.job_info))
-    if isinstance(job_info, ValueError):
-        return job_info
     job_type = parse_job_type(str(model.job_type))
     if isinstance(job_type, ValueError):
         return job_type
+
     return JobDef(
         job_id=model.id,
         name=model.name,
@@ -527,7 +437,9 @@ def model_to_schema(
         device_id=model.device_id,
         shots=model.shots,
         job_type=job_type,
-        job_info=job_info,
+        input=storage.get_download_presigned_url(
+            key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+        ),
         status=status,
         transpiler_info=json.loads(model.transpiler_info),
         mitigation_info=json.loads(model.mitigation_info),
@@ -541,10 +453,10 @@ def model_to_schema(
 
 
 def model_to_filtered_schema(
-    model: JobModel, fields: Optional[list[str]] = None
+    model: JobModel, storage: AbstractStorage, fields: Optional[list[str]] = None
 ) -> Job | ValueError:
     if fields is None:
-        return model_to_schema(model)
+        return model_to_schema(model, storage)
     else:
         dict_schema: dict[str, Any] = {}
         for k in fields:
@@ -556,14 +468,12 @@ def model_to_filtered_schema(
                     return job_type
                 else:
                     dict_schema[k] = job_type
-            elif k == "job_info":
-                job_info = decode_job_info(json.loads(model.job_info))
-                if isinstance(job_info, ValueError):
-                    return job_info
-                else:
-                    dict_schema[k] = job_info
+            elif k == "input":
+                dict_schema[k] = storage.get_download_presigned_url(
+                    key=f"{model.id}/{JOB_INFO_INPUT_PARAM}.zip"
+                )
             elif k == "status":
-                status = decode_job_status(model.status)
+                status = parse_job_status(model.status)
                 if isinstance(status, ValueError):
                     return status
                 else:
