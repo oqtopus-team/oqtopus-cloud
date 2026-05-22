@@ -69,6 +69,8 @@ module "user_api" {
   visible_fields                         = var.visible_fields
   login_history_enabled                  = var.login_history_enabled
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+  otel_enabled                           = var.otel_enabled
+  otel_exporter_otlp_endpoint            = var.otel_exporter_otlp_endpoint
 
   storage_driver = "s3"
   storage_env_vars_s3 = {
@@ -102,6 +104,8 @@ module "provider_api" {
   sse_user_program_name          = "userprogram.py"
   sse_zip_file_name              = "sselog_{job_id}.zip"
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  otel_enabled                   = var.otel_enabled
+  otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
   storage_driver                 = "s3"
   storage_env_vars_s3 = {
     "STORAGE_S3_REGION"      = var.region

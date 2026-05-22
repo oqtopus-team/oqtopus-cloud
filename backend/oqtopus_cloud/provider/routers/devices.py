@@ -149,7 +149,7 @@ def update_device_calibration(
         DeviceDataUpdateResponse: The response object indicating the success of the update.
 
     Raises:
-        BadRequest: If the device is not a QPU device, or if the calibration data or calibrated timestamp is missing.
+        BadRequest: If the calibration data or calibrated timestamp is missing.
     """
     logger.info("invoked update_device")
     try:
@@ -159,8 +159,6 @@ def update_device_calibration(
         device_info = request.device_info
         calibrated_at = request.calibrated_at
         logger.info(f"{calibrated_at}")
-        if device.device_type != DeviceType.QPU.value:
-            return BadRequestResponse("Calibration is only supported for QPU devices")
         if device_info is None:
             return BadRequestResponse(message="device_info is required")
         if calibrated_at is None:
