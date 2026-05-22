@@ -9,6 +9,7 @@ from fastapi import (
 from fastapi import Request as Event
 from fastapi_pagination import Page, Params, set_page, set_params
 from fastapi_pagination.ext.sqlalchemy import paginate
+from opentelemetry import trace
 from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
@@ -67,6 +68,15 @@ class BadRequest(Exception):
         self.message = message
 
 
+def annotate_current_span(**attributes: str) -> None:
+    current_span = trace.get_current_span()
+    if not current_span.is_recording():
+        return
+
+    for key, value in attributes.items():
+        current_span.set_attribute(key, value)
+
+
 @router.post(
     "/jobs",
     response_model=RegisterJobResponse,
@@ -86,6 +96,7 @@ def register_job(
         logger.info("invoked!", extra={"owner": owner})
 
         job_id = cast(str, uuid7(as_type="str"))  # cast to avoid mypy error
+        annotate_current_span(**{"oqtopus.job_id": job_id})
 
         job = JobModel(
             id=job_id,
@@ -140,6 +151,12 @@ def submit_job(
     try:
         owner = event.state.user_id
         logger.info("invoked!", extra={"owner": owner})
+        annotate_current_span(
+            **{
+                "oqtopus.job_id": job_id,
+                "oqtopus.device_id": request.device_id,
+            }
+        )
 
         job = (
             db.query(JobModel)
