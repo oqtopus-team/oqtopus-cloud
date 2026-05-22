@@ -198,6 +198,7 @@ test-provider: fmt-provider lint-provider ## Run Provider tests
 test-worker: fmt-worker lint-worker ## Run worker tests
 	@export POWERTOOLS_METRICS_NAMESPACE=worker && \
 	export POWERTOOLS_SERVICE_NAME=worker && \
+	export COUNT_PENDING_JOBS_SINCE=10d && \
 	uv run pytest tests/oqtopus_cloud/worker/ -vv --cov=oqtopus_cloud/worker --cov-report=xml:coverage-worker.xml --cov-report=html:htmlcov-worker
 	@mv .coverage .coverage-worker
 

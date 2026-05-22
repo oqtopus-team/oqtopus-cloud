@@ -327,7 +327,6 @@ def get_jobs(
         ]:
             results.append(job)
         return results
-
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

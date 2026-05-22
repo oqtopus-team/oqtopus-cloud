@@ -1,11 +1,11 @@
 import json
+import os
+import re
+from datetime import datetime, timezone
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import EventBridgeEvent, event_source
-from oqtopus_cloud.common.models.device import Device
-from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.common.session import get_db
-from oqtopus_cloud.worker.pending_jobs_updater.conf import logger
+from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
 from sqlalchemy import (
     and_,
@@ -13,6 +13,11 @@ from sqlalchemy import (
     or_,
     select,
 )
+
+from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.worker.pending_jobs_updater.conf import logger
 
 
 class BaseResponse(BaseModel):
@@ -56,17 +61,18 @@ def lambda_handler(event: EventBridgeEvent, context):
     logger.info("invoke worker lambda_handler")
     try:
         db = next(get_db())
-        response = update_pending_jobs(db)
+        response = update_pending_jobs(db, datetime.now(tz=timezone.utc))
         return response
     except Exception as e:
         logger.exception("Error occurred")
         return Response.error(str(e))
 
 
-def update_pending_jobs(db):
+def update_pending_jobs(db, current: datetime):
     logger.info("invoked update_pending_jobs")
     devices = db.scalars(select(Device)).all()
     device_ids = [device.id for device in devices]
+    since = parse_since(os.environ["COUNT_PENDING_JOBS_SINCE"], current)
     logger.info(f"device list is {device_ids}")
     for device_id in device_ids:
         n_pending_jobs = db.execute(
@@ -78,6 +84,7 @@ def update_pending_jobs(db):
                         Job.status == "running",
                     ),
                     Job.device_id == device_id,
+                    Job.submitted_at >= since,
                 )
             )
         ).scalar_one()
@@ -92,3 +99,36 @@ def update_pending_jobs(db):
     logger.info("finish update_pending_jobs")
     body = json.dumps({"message": "update_pending_jobs process is succeeded"})
     return Response.success(body)
+
+
+def parse_since(since_str: str, current: datetime) -> datetime:
+    units = {
+        "second": "seconds",
+        "seconds": "seconds",
+        "sec": "seconds",
+        "minute": "minutes",
+        "minutes": "minutes",
+        "min": "minutes",
+        "hour": "hours",
+        "hours": "hours",
+        "h": "hours",
+        "day": "days",
+        "days": "days",
+        "d": "days",
+        "week": "weeks",
+        "weeks": "weeks",
+        "month": "months",
+        "months": "months",
+        "year": "years",
+        "years": "years",
+    }
+
+    m = re.fullmatch(r"(\d+)\s*([a-zA-Z]+)", since_str.strip())
+    if not m:
+        raise ValueError(f"Invalid since format: {since_str!r}")
+
+    amount, unit = int(m.group(1)), m.group(2).lower()
+    if unit not in units:
+        raise ValueError(f"Unknown unit: {unit!r}")
+    delta = relativedelta(**{units[unit]: amount})  # type: ignore[arg-type]
+    return current - delta
