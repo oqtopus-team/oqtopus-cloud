@@ -53,6 +53,15 @@ zip-user_signup: ## Build user_signup API Lambda Package
 	LIB=oqtopus_cloud/common \
 	BIN=./bin/user_signup
 
+zip-openapi: ## Build OpenAPI yaml Lambda Package
+	@mkdir -p ./deploy-packages
+	@envsubst '$$OPENAPI_URL $$OPENAPI_DESCRIPTION' < ../../backend/oas/user/root.yaml > ./deploy-packages/openapi.yaml
+	@$(MAKE) zip WORKSPACE=../../backend \
+	DEPLOY_PACKAGES_DIR=./deploy-packages \
+	APP=oqtopus_cloud/openapi \
+	LIB=oqtopus_cloud/common \
+	BIN=./bin/openapi
+
 zip-lambda-version-cleaner: ## Build lambda_version_cleaner Lambda Package
 	@$(MAKE) zip \
 	WORKSPACE=../../backend \
@@ -60,7 +69,7 @@ zip-lambda-version-cleaner: ## Build lambda_version_cleaner Lambda Package
 	APP=oqtopus_cloud/maintenance/lambda_version_cleaner \
 	BIN=./bin/lambda-version-cleaner
 
-zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner ## Build All Lambda Packages
+zip-all: zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-openapi zip-lambda-version-cleaner ## Build All Lambda Packages
 
 zip:
 	@echo "Building ${APP} Lambda Package"
@@ -122,12 +131,17 @@ deploy-pending-jobs-updater-worker: zip-pending-jobs-updater-worker	## Deploy pe
 	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
 	BIN=./bin/pending-jobs-updater
 
+deploy-openapi: ## Deploy OpenAPI yaml Lambda Package
+	@$(MAKE) deploy \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-openapi \
+	BIN=./bin/openapi
+
 deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-version-cleaner Lambda Package
 	@$(MAKE) deploy \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda-version-cleaner \
 	BIN=./bin/lambda-version-cleaner
 
-deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
+deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-openapi deploy-lambda-version-cleaner ## Deploy All Lambda Packages
 
 deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."
