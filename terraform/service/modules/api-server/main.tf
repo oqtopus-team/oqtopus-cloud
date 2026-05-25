@@ -91,6 +91,9 @@ resource "aws_lambda_function" "this" {
         OTEL_ENABLED                = "true"
         OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
         OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+        # Cap each export attempt; unreachable endpoint must not push Lambda
+        # past API Gateway/Lambda timeout. 1s × ~2 retries ≒ 2s worst case.
+        OTEL_EXPORTER_OTLP_TIMEOUT = "1"
       } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
