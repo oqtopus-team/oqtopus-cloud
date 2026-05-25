@@ -7,6 +7,11 @@ output "private_subnet_ids" {
   description = "The IDs of the private subnets"
 }
 
+output "private_route_table_ids" {
+  value       = [for k, v in aws_route_table.private : v.id]
+  description = "The IDs of the private route tables (one per AZ)"
+}
+
 output "public_subnet_ids" {
   value       = { for k, v in aws_subnet.public : k => v.id }
   description = "The IDs of the public subnets"

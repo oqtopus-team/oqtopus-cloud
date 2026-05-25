@@ -24,12 +24,13 @@ module "network" {
 }
 
 module "security_group" {
-  source  = "../modules/security-group"
-  product = var.product
-  org     = var.org
-  env     = var.env
-  vpc_id  = module.network.vpc_id
-  region  = var.region
+  source                     = "../modules/security-group"
+  product                    = var.product
+  org                        = var.org
+  env                        = var.env
+  vpc_id                     = module.network.vpc_id
+  region                     = var.region
+  lambda_otlp_collector_cidr = data.aws_vpc.monitoring.cidr_block
 }
 
 module "db" {
@@ -110,6 +111,6 @@ module "s3-logging" {
 module "guardduty_detector" {
   source = "../modules/guardduty"
 
-  enable_guardduty = var.enable_guardduty
+  enable_guardduty               = var.enable_guardduty
   enable_guardduty_s3_protection = var.enable_guardduty_s3_protection
 }
