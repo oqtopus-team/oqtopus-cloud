@@ -5,6 +5,7 @@ on:
       - develop
     paths:
       - 'backend/oqtopus_cloud/**'
+      - 'backend/oas/**'
   workflow_dispatch:
 
 jobs:
@@ -55,6 +56,15 @@ jobs:
         run: |
           sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
 
+      - name: Publish user OpenAPI spec to S3
+        if: matrix.deploy-target == 'user'
+        working-directory: ./deployment/oqtopus-dev
+        env:
+          PUBLISH_OPENAPI_S3_BUCKET: ${{ vars.PUBLISH_OPENAPI_S3_BUCKET }}
+          USER_API_SERVER_URL: ${{ vars.USER_API_SERVER_URL }}
+          USER_API_SERVER_DESCRIPTION: ${{ vars.USER_API_SERVER_DESCRIPTION }}
+        run: |
+          sudo -E env PATH="$PATH" make publish-${{ matrix.deploy-target }}-schema-via-actions
 
       - name: On Success
         if: ${{ success() }}
