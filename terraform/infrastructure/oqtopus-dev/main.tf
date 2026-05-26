@@ -90,6 +90,7 @@ module "s3" {
   org                  = var.org
   env                  = var.env
   force_destroy_bucket = true
+  cors_allowed_origins = var.s3_cors_allowed_origins
 }
 
 module "s3-logging" {

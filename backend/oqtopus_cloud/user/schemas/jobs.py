@@ -7,10 +7,24 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+
+
+class S3TranspileResult(BaseModel):
+    transpiled_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
+            ]
+        ),
+    ] = None
+    stats: Annotated[dict[str, Any] | None, Field(...)]
+    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
 
 
 class JobStatus(str, Enum):
+    registered = "registered"
     submitted = "submitted"
     ready = "ready"
     running = "running"
@@ -26,108 +40,86 @@ class JobType(str, Enum):
     sse = "sse"
 
 
-class OperatorItem(BaseModel):
-    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
-    """
-    The Pauli string.
-    """
-    coeff: Annotated[float | None, Field(examples=[1])] = None
-    """
-    Coefficient number in the Pauli string representation.
-    """
-
-
-class SamplingResult(BaseModel):
-    """
-    *(Only for sampling jobs)* JSON string representing the sampling result
-    """
-
-    counts: Annotated[
-        dict[str, Any] | None,
-        Field(examples=[{"10": 454, "11": 387, "00": 84, "01": 75}]),
-    ] = None
-    divided_counts: Annotated[
-        dict[str, Any] | None,
-        Field(
-            examples=[
-                {
-                    "0": {"10": 454, "11": 387, "00": 84, "01": 75},
-                    "1": {"10": 454, "11": 387, "00": 84, "01": 75},
-                }
-            ]
-        ),
-    ] = None
-
-
-class EstimationResult(BaseModel):
-    """
-    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
-    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-
-    """
-
-    exp_value: float | None = None
-    """
-    The estimated expectation value
-    """
-    stds: float | None = None
-    """
-    The standard deviation value
-    """
-
-
-class JobResult(BaseModel):
-    model_config = ConfigDict(
-        extra="allow",
-    )
-    sampling: SamplingResult | None = None
-    estimation: EstimationResult | None = None
-
-
-class TranspileResult(BaseModel):
-    transpiled_program: Annotated[
-        str | None,
-        Field(
-            examples=[
-                'OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];'
-            ]
-        ),
-    ] = None
-    stats: Annotated[dict[str, Any] | None, Field(...)]
-    virtual_physical_mapping: Annotated[dict[str, Any] | None, Field(...)]
-
-
 class JobInfo(BaseModel):
-    program: Annotated[
-        list[str],
+    """
+    Presigned URLs for downloading relevant job information .zip files from OQTOPUS cloud.
+    """
+
+    input: Annotated[
+        str,
         Field(
             examples=[
-                '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
             ]
         ),
     ]
     """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    Presigned URL for downloading a file from OCTOPUS cloud.
     """
-    combined_program: str | None = None
+    combined_program: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
     """
-    For multiprogramming jobs, this field contains the combined circuit.
+    Presigned URL for downloading a file from OCTOPUS cloud.
     """
-    operator: list[OperatorItem] | None = None
+    result: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
     """
-    *(Only for estimation jobs)* The operator (or observable) for which the expectation
-    value is to be estimated.
-
+    Presigned URL for downloading a file from OCTOPUS cloud.
     """
-    result: JobResult | None = None
-    transpile_result: TranspileResult | None = None
+    transpile_result: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
+    sse_log: Annotated[
+        str | None,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+            ]
+        ),
+    ] = None
+    """
+    Presigned URL for downloading a file from OCTOPUS cloud.
+    """
     message: str | None = None
-    """
-    Describing the reason why there is no result
-    """
 
 
-class GetJobsResponse(BaseModel):
+class Job(BaseModel):
+    """
+    Represents a quantum job.
+
+    Newly registered jobs (status=registered) must provide:
+       - job_id,
+       - status (registered)
+
+    Fully defined jobs must also provide:
+      - name
+      - device_id
+      - job_type,
+      - shots
+      - job_info
+    Other properties and optional and depend on job type and status.
+    """
+
     job_id: Annotated[
         str | None, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])
     ] = None
@@ -137,8 +129,8 @@ class GetJobsResponse(BaseModel):
     ] = None
     job_type: JobType | None = None
     status: JobStatus | None = None
-    device_id: Annotated[str | None, Field(examples=["qulacs"])] = None
-    shots: Annotated[int | None, Field(examples=["1000"], ge=1, le=10000000)] = None
+    device_id: Annotated[str | None, Field(examples=["Kawasaki"])] = None
+    shots: Annotated[int | None, Field(examples=[1000], ge=1, le=10000000)] = None
     job_info: JobInfo | None = None
     transpiler_info: Annotated[
         dict[str, Any] | None,
@@ -174,7 +166,7 @@ class GetJobsResponse(BaseModel):
         dict[str, Any] | None,
         Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
-    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
+    execution_time: Annotated[float | None, Field(examples=[10.123])] = None
     submitted_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
@@ -189,23 +181,34 @@ class GetJobsResponse(BaseModel):
     ] = None
 
 
-class SubmitJobInfo(BaseModel):
+class Fields(BaseModel):
+    key: Annotated[
+        str, Field(examples=["jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip"])
+    ]
+    AWSAccessKeyId: str | None = None
+    x_amz_security_token: Annotated[str | None, Field(alias="x-amz-security-token")] = (
+        None
+    )
+    policy: str | None = None
+    signature: str | None = None
+
+
+class JobInfoUploadPresignedURL(BaseModel):
     """
-    All fields in this schema also exist in the `JobInfo` schema and have the same meaning as their counterparts in the `JobInfo` schema.
+    Presigned URL for uploading file to OCTOPUS cloud.
     """
 
-    program: Annotated[
-        list[str],
-        Field(
-            examples=[
-                '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-            ]
-        ),
-    ]
+    url: Annotated[str, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])]
+    fields: Fields
+
+
+class RegisterJobResponse(BaseModel):
     """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    Register new job
     """
-    operator: list[OperatorItem] | None = None
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    presigned_url: JobInfoUploadPresignedURL
 
 
 class SubmitJobRequest(BaseModel):
@@ -213,9 +216,8 @@ class SubmitJobRequest(BaseModel):
     description: Annotated[
         str | None, Field(examples=["An example of Bell state sampling job"])
     ] = None
-    device_id: Annotated[str, Field(examples=["qulacs"])]
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
     job_type: JobType
-    job_info: SubmitJobInfo
     transpiler_info: Annotated[
         dict[str, Any] | None,
         Field(
@@ -253,74 +255,6 @@ class SubmitJobRequest(BaseModel):
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
 
 
-class SubmitJobResponse(BaseModel):
-    """
-    submit a job
-    """
-
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-
-
-class JobDef(BaseModel):
-    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
-    name: Annotated[str, Field(examples=["Bell State Sampling"])]
-    description: Annotated[
-        str | None, Field(examples=["Bell State Sampling Example"])
-    ] = None
-    job_type: JobType
-    status: JobStatus
-    device_id: Annotated[str, Field(examples=["qulacs"])]
-    shots: Annotated[int, Field(examples=["1000"], ge=1, le=10000000)]
-    job_info: JobInfo
-    transpiler_info: Annotated[
-        dict[str, Any] | None,
-        Field(
-            examples=[
-                {
-                    "qubit_allocation": {"0": 12, "1": 16},
-                    "skip_transpilation": False,
-                    "seed_transpilation": 873,
-                }
-            ]
-        ),
-    ] = None
-    simulator_info: Annotated[
-        dict[str, Any] | None,
-        Field(
-            examples=[
-                {
-                    "n_qubits": 5,
-                    "n_nodes": 12,
-                    "n_per_node": 2,
-                    "seed_simulation": 39058567,
-                    "simulation_opt": {
-                        "optimization_method": "light",
-                        "optimization_block_size": 1,
-                        "optimization_swap_level": 1,
-                    },
-                }
-            ]
-        ),
-    ] = None
-    mitigation_info: Annotated[
-        dict[str, Any] | None,
-        Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
-    ] = None
-    execution_time: Annotated[float | None, Field(examples=["10.123"])] = None
-    submitted_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
-    ] = None
-    ready_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
-    ] = None
-    running_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
-    ] = None
-    ended_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
-    ] = None
-
-
 class GetJobStatusResponse(BaseModel):
     """
     job status
@@ -330,12 +264,100 @@ class GetJobStatusResponse(BaseModel):
     status: JobStatus
 
 
-class GetSselogResponse(BaseModel):
+class S3OperatorItem(BaseModel):
+    pauli: Annotated[str, Field(examples=["X 0 X 1"])]
     """
-    sse log file
+    The Pauli string.
+    """
+    coeff: Annotated[float | None, Field(examples=[1])] = None
+    """
+    Coefficient number in the Pauli string representation.
     """
 
-    file: str | None = None
-    file_name: Annotated[
-        str | None, Field(examples=["sselog_7af020f6-2e38-4d70-8cf0-4349650ea08c.zip"])
+
+class S3SamplingResult(BaseModel):
+    """
+    *(Only for sampling jobs)* JSON string representing the sampling result
+    """
+
+    counts: Annotated[
+        dict[str, Any] | None,
+        Field(examples=[{"10": 454, "11": 387, "00": 84, "01": 75}]),
     ] = None
+    divided_counts: Annotated[
+        dict[str, Any] | None,
+        Field(
+            examples=[
+                {
+                    "0": {"10": 454, "11": 387, "00": 84, "01": 75},
+                    "1": {"10": 454, "11": 387, "00": 84, "01": 75},
+                }
+            ]
+        ),
+    ] = None
+
+
+class S3EstimationResult(BaseModel):
+    """
+    *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+    of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+
+    """
+
+    exp_value: float | None = None
+    """
+    The estimated expectation value
+    """
+    stds: float | None = None
+    """
+    The standard deviation value
+    """
+
+
+class SubmittedJob(Job):
+    """
+    Represents a fully submitted quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    name: Annotated[str, Field(examples=["Bell State Sampling"])]
+    job_type: JobType
+    status: JobStatus
+    device_id: Annotated[str, Field(examples=["Kawasaki"])]
+    shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
+    job_info: JobInfo
+    submitted_at: Annotated[AwareDatetime, Field(examples=["2022-10-19T11:45:34Z"])]
+
+
+class RegisteredJob(Job):
+    """
+    Represents a newly registered quantum job.
+    """
+
+    job_id: Annotated[str, Field(examples=["7af020f6-2e38-4d70-8cf0-4349650ea08c"])]
+    status: JobStatus
+
+
+class S3SubmitJobInfo(BaseModel):
+    program: Annotated[
+        list[str],
+        Field(
+            examples=[
+                [
+                    "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
+                ]
+            ]
+        ),
+    ]
+    """
+    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    """
+    operator: list[S3OperatorItem] | None = None
+
+
+class S3JobResult(BaseModel):
+    model_config = ConfigDict(
+        extra="allow",
+    )
+    sampling: S3SamplingResult | None = None
+    estimation: S3EstimationResult | None = None

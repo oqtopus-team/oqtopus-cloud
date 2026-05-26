@@ -85,9 +85,10 @@ module "admin_cognito" {
 module "s3" {
   source = "../modules/s3"
 
-  product = var.product
-  org     = var.org
-  env     = var.env
+  product              = var.product
+  org                  = var.org
+  env                  = var.env
+  cors_allowed_origins = var.s3_cors_allowed_origins
 }
 
 module "s3-logging" {
@@ -108,6 +109,6 @@ module "s3-logging" {
 module "guardduty_detector" {
   source = "../modules/guardduty"
 
-  enable_guardduty = var.enable_guardduty
+  enable_guardduty               = var.enable_guardduty
   enable_guardduty_s3_protection = var.enable_guardduty_s3_protection
 }

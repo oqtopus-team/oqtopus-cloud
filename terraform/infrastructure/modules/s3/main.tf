@@ -70,3 +70,14 @@ resource "aws_s3_bucket_policy" "this" {
     ]
   })
 }
+
+resource "aws_s3_bucket_cors_configuration" "this" {
+  count  = length(var.cors_allowed_origins) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.this.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "POST"]
+    allowed_origins = var.cors_allowed_origins
+  }
+}

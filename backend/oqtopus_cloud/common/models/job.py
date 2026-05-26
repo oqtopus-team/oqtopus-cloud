@@ -1,5 +1,6 @@
 import datetime
 import enum
+from typing import Optional
 
 from sqlalchemy import Enum, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -24,13 +25,14 @@ class Job(Base, TimestampMixin):
         description (str): Additional notes for the job.
         device_id (str): The device used for the job.
         n_qubits (int): The number of qubits used in the job.
-        job_info(str): The information of the job.
         transpiler_info(str): The information about the transpiler.
         simulator_info(str): The information about the simulator.
         mitigation_info(str): The information about the error mitigation.
         job_type (str): The action to be performed by the job (sampling or estimation).
         shots (int): The number of shots for the job.
-        status (str): The status of the job (submitted, ready, running, succeeded, failed, cancelled).
+        status (str): The status of the job (registered, submitted, ready, running, succeeded, failed, cancelled).
+        output_files (str): List of job output files uploaded by provider.
+        message (str): Message set by provider.
         execution_time(float): The duration of the QPU execution.
         submitted_at(datetime): The timestamp when the job was submitted.
         ready_at(datetime): The timestamp when the job became ready.
@@ -56,12 +58,12 @@ class Job(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    job_info: Mapped[str]
     transpiler_info: Mapped[str]
     simulator_info: Mapped[str]
     mitigation_info: Mapped[str]
     job_type: Mapped[enum.Enum] = mapped_column(
         Enum(
+            "none",
             "sampling",
             "estimation",
             "sse",
@@ -81,6 +83,8 @@ class Job(Base, TimestampMixin):
         Float,
         nullable=True,
     )
+    output_files: Mapped[Optional[str]]
+    message: Mapped[Optional[str]]
     submitted_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     ready_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)

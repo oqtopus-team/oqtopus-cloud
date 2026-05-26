@@ -297,10 +297,61 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: job not found
+  /jobs/{job_id}/upload:
+    get:
+      summary: Get presigned URLs for upload
+      description: Get presigned URLs for job information items upload
+      operationId: get_upload
+      tags:
+        - jobs
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: Job identifier
+          schema:
+            type: string
+            nullable: false
+        - name: items
+          in: query
+          required: true
+          description: |-
+            A list of job information items to upload
+
+            Available job information items are: `combined_program`, `transpile_result`, `result`, `sse_log`
+          schema:
+            type: string
+            maxLength: 1024
+            example: result,sse_log
+      responses:
+        '200':
+          description: Return the list of presigned URL data for upload, arranged in the order specified by the items parameter.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/jobs.JobInfoUploadPresignedURL'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: job not found
   /jobs/{job_id}/status:
     patch:
-      summary: Modify selected quantum job (update status).
-      description: Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created
+      summary: Update job status
+      description: Update job status and status related data
       operationId: patch_job
       tags:
         - jobs
@@ -313,7 +364,7 @@ paths:
             type: string
             nullable: false
       requestBody:
-        description: 'New job status. '
+        description: New job status and status related data
         content:
           application/json:
             schema:
@@ -336,61 +387,13 @@ paths:
               example:
                 message: Job not found
         '409':
-          description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+          description: Returned when the specified job is not in a status that allows transition to the requested status.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.ConflictError'
               example:
-                message: The specified job is not in a status thatt allows transition to the requested status.
-  /jobs/{job_id}/job_info:
-    patch:
-      summary: Update selected quantum job's job_info by placing job results
-      description: |
-        Used by device to set results or error details in job_info、accompanied by appropriate status updating.
-        Note that job info descriptor (sampling, estimation, etc) cannot be modified.
-      operationId: patch_job_info
-      tags:
-        - jobs
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-            nullable: false
-      requestBody:
-        description: Modifications applied to Job info
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/jobs.UpdateJobInfoRequest'
-      responses:
-        '200':
-          description: job info updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/jobs.UpdateJobInfoResponse'
-              example:
-                message: Job info updated.
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: Job not found
+                message: The specified job is not in a status that allows transition to the requested status.
   /jobs/{job_id}/transpiler_info:
     put:
       summary: Overwrite selected quantum job's traspiler_info
@@ -438,97 +441,6 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: Job not found
-  /jobs/{job_id}/ssesrc:
-    get:
-      tags:
-        - job
-      summary: Get SSE program source file
-      description: Get SSE program source file of selected job
-      operationId: get_ssesrc
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Return SSE program source file
-          content:
-            text/plain:
-              schema:
-                type: string
-                format: binary
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.NotFoundError'
-              example:
-                message: job not found
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
-  /jobs/{job_id}/sselog:
-    patch:
-      tags:
-        - job
-      summary: Upload SSE log file
-      description: Upload SSE log file of selected job
-      operationId: patch_sselog
-      parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: Job identifier
-          schema:
-            type: string
-      requestBody:
-        description: Log file to be uploaded
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/jobs.UploadSselogRequest'
-      responses:
-        '200':
-          description: Log uploaded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/jobs.UploadSselogResponse'
-              example:
-                message: Log uploaded
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.BadRequest'
-              example:
-                message: Bad request malformed input data
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.InternalServerError'
-              example:
-                message: Internal server error
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -536,6 +448,56 @@ components:
       in: header
       name: X-Api-Key
   schemas:
+    jobs.S3SubmitJobInfo:
+      type: object
+      properties:
+        program:
+          type: array
+          description: A list of OPENQASM3 program. Required for sampling, estimation and multiprogramming jobs. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          items:
+            type: string
+          example:
+            - OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
+        operator:
+          type: array
+          items:
+            $ref: '#/components/schemas/jobs.S3OperatorItem'
+          description: Estimation operator. Required for estimation jobs.
+        sse_program:
+          type: string
+          description: SSE user program. Required for SSE jobs.
+    jobs.S3JobResult:
+      type: object
+      nullable: true
+      properties:
+        sampling:
+          $ref: '#/components/schemas/jobs.S3SamplingResult'
+        estimation:
+          $ref: '#/components/schemas/jobs.S3EstimationResult'
+      additionalProperties: true
+      required: []
+    jobs.S3TranspileResult:
+      type: object
+      nullable: true
+      properties:
+        transpiled_program:
+          type: string
+          nullable: true
+          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
+        stats:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+        virtual_physical_mapping:
+          type: object
+          properties: {}
+          additionalProperties: true
+          nullable: true
+      required:
+        - transpiled_program
+        - stats
+        - virtual_physical_mapping
     devices.UpdateDeviceRequest:
       type: object
       properties:
@@ -593,8 +555,8 @@ components:
         message:
           type: string
           nullable: false
-          default: Device's data updated
-          example: Device's data updated
+          default: Device data updated
+          example: Device data updated
       required:
         - message
     devices.DeviceInfoUpdate:
@@ -648,146 +610,11 @@ components:
         - estimation
         - multi_manual
         - sse
-    jobs.OperatorItem:
-      type: object
-      properties:
-        pauli:
-          type: string
-          description: The Pauli string.
-          nullable: false
-          example: X 0 X 1
-        coeff:
-          description: Coefficient number in the Pauli string representation.
-          type: number
-      required:
-        - pauli
-    jobs.SamplingResult:
-      type: object
-      nullable: true
-      description: '*(Only for sampling jobs)* JSON string representing the sampling result'
-      properties:
-        counts:
-          type: object
-          nullable: false
-          properties: {}
-          additionalProperties: true
-          example: |-
-            {
-              "10": 84,
-              "11": 387,
-              "10": 454,
-              "01": 75
-            }
-        divided_counts:
-          type: object
-          nullable: true
-          properties: {}
-          additionalProperties: true
-          example: |-
-            {
-              "0": {
-                "10": 84,
-                "11": 387,
-                "10": 454,
-                "01": 75
-              },
-              "1": {
-                "10": 84,
-                "11": 387,
-                "10": 454,
-                "01": 75
-              }
-      required:
-        - counts
-    jobs.EstimationResult:
-      type: object
-      nullable: true
-      description: |
-        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
-        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
-      properties:
-        exp_value:
-          description: The estimated expection value.
-          nullable: false
-          type: number
-        stds:
-          description: The standard deviation value
-          nullable: false
-          type: number
-      required:
-        - exp_value
-        - stds
-    jobs.JobResult:
-      type: object
-      nullable: true
-      properties:
-        sampling:
-          $ref: '#/components/schemas/jobs.SamplingResult'
-        estimation:
-          $ref: '#/components/schemas/jobs.EstimationResult'
-      additionalProperties: true
-      required: []
-    jobs.TranspileResult:
-      type: object
-      nullable: true
-      properties:
-        transpiled_program:
-          type: string
-          nullable: true
-          example: OPENQASM 3; include "stdgates.inc"; qubit[2] _all_qubits; let q = _all_qubits[0:1]; h q[0]; cx q[0], q[1];
-        stats:
-          type: object
-          properties: {}
-          additionalProperties: true
-          nullable: true
-        virtual_physical_mapping:
-          type: object
-          properties: {}
-          additionalProperties: true
-          nullable: true
-      required:
-        - transpiled_program
-        - stats
-        - virtual_physical_mapping
-    jobs.JobInfo:
-      type: object
-      properties:
-        program:
-          type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
-          items:
-            type: string
-          nullable: false
-          example: '[ "OPENQASM 3; include \"stdgates.inc\"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;" ]'
-        combined_program:
-          type: string
-          description: For multiprogramming jobs, this field contains the combined circuit.
-          nullable: true
-          default: null
-        operator:
-          description: |
-            *(Only for estimation jobs)* The operator (or observable) for which the expectation
-            value is to be estimated.
-          type: array
-          nullable: true
-          default: null
-          items:
-            $ref: '#/components/schemas/jobs.OperatorItem'
-        result:
-          $ref: '#/components/schemas/jobs.JobResult'
-          nullable: true
-          default: null
-        transpile_result:
-          $ref: '#/components/schemas/jobs.TranspileResult'
-          nullable: true
-          default: null
-        message:
-          type: string
-          description: Describing the reason why there is no result
-          nullable: true
-          default: null
-      required:
-        - program
+    jobs.JobInfoDownloadPresignedURL:
+      description: Presigned URL for downloading a file from OCTOPUS cloud.
+      type: string
+      nullable: false
+      example: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
     jobs.Job:
       type: object
       properties:
@@ -802,21 +629,21 @@ components:
           type: string
           example: Bell State Sampling Example
           nullable: false
+        job_type:
+          $ref: '#/components/schemas/jobs.JobType'
+          nullable: false
         device_id:
           type: string
-          example: qulacs
+          example: Kawasaki
           nullable: false
         shots:
           type: integer
           minimum: 1
           maximum: 10000000
-          example: '1000'
+          example: 1000
           nullable: false
-        job_type:
-          $ref: '#/components/schemas/jobs.JobType'
-          nullable: false
-        job_info:
-          $ref: '#/components/schemas/jobs.JobInfo'
+        input:
+          $ref: '#/components/schemas/jobs.JobInfoDownloadPresignedURL'
           nullable: false
         transpiler_info:
           type: object
@@ -848,14 +675,14 @@ components:
           properties: {}
           additionalProperties: true
           example:
-            ro_error_mitigation": pseudo_inverse
+            ro_error_mitigation: pseudo_inverse
           nullable: true
         status:
           $ref: '#/components/schemas/jobs.JobStatus'
           nullable: false
         execution_time:
           type: number
-          example: '10.123'
+          example: 10.123
           nullable: true
           default: null
         submitted_at:
@@ -887,34 +714,26 @@ components:
         job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
         name: Bell State Sampling
         description: Bell State Sampling Example
-        device_id: qulacs
+        device_id: Kawasaki
         job_type: sampling
-        job_info:
-          program:
-            - OPENQASM 3; include "stdgates.inc"; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;
-          transpiled_program: null
-          result: null
-          reason: null
+        input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         transpiler_info:
           qubit_allocation:
             '0': 12
             '1': 16
           skip_transpilation: false
           seed_transpilation: 873
-        simulator_info: |-
-          {
-            "n_qubits": 5,
-            "n_nodes": 12,
-            "n_per_node": 2,
-            "seed_simulation": 39058567,
-            "simulation_opt": {
-              "optimization_method": "light",
-              "optimization_block_size": 1,
-              "optimization_swap_level": 1
-            }
-          }
-        mitigation_info: |
-          { "ro_error_mitigation": "pseudo_inverse" }
+        simulator_info:
+          n_qubits: 5
+          n_nodes: 12
+          n_per_node: 2
+          seed_simulation: 39058567
+          simulation_opt:
+            optimization_method: light
+            optimization_block_size: 1
+            optimization_swap_level: 1
+        mitigation_info:
+          ro_error_mitigation: pseudo_inverse
         shots: 1000
         status: submitted
         execution_time: 10.123
@@ -927,13 +746,32 @@ components:
         - $ref: '#/components/schemas/jobs.Job'
       required:
         - job_id
-        - name
-        - job_type
-        - status
         - device_id
+        - job_type
+        - input
         - shots
-        - job_info
-        - submitted_at
+        - status
+    jobs.JobInfoUploadPresignedURL:
+      description: Presigned URL for uploading file to OCTOPUS cloud.
+      type: object
+      properties:
+        url:
+          type: string
+          example: https://oqtopus-cloud.s3.amazonaws.com/
+        fields:
+          type: object
+          properties:
+            key:
+              type: string
+              example: jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/filename.zip
+            AWSAccessKeyId:
+              type: string
+            x-amz-security-token:
+              type: string
+            policy:
+              type: string
+            signature:
+              type: string
     jobs.JobStatusUpdate:
       type: object
       properties:
@@ -941,8 +779,30 @@ components:
           type: string
           enum:
             - running
-          example: running
+            - succeeded
+            - failed
+            - cancelled
+          example: succeeded
           nullable: false
+        output_files:
+          description: List of all S3 file keys uploaded by provider during job execution.
+          type: array
+          items:
+            type: string
+          nullable: true
+          example:
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip
+            - 7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
+        message:
+          type: string
+          nullable: true
+          example: Execution successful
+        execution_time:
+          type: number
+          description: Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
+          nullable: true
+          example: 1256.58
       required:
         - status
     jobs.JobStatusUpdateResponse:
@@ -954,43 +814,6 @@ components:
       required:
         - message
     error.ConflictError:
-      type: object
-      properties:
-        message:
-          type: string
-          nullable: false
-      required:
-        - message
-    jobs.UpdateJobInfo:
-      type: object
-      properties:
-        combined_program:
-          type: string
-          nullable: true
-        transpile_result:
-          $ref: '#/components/schemas/jobs.TranspileResult'
-          nullable: true
-        result:
-          $ref: '#/components/schemas/jobs.JobResult'
-          nullable: true
-        message:
-          type: string
-          nullable: true
-    jobs.UpdateJobInfoRequest:
-      type: object
-      properties:
-        overwrite_status:
-          description: Overwrite the job status. If this field is not specified, the status will be updated automatically.
-          nullable: true
-          $ref: '#/components/schemas/jobs.JobStatus'
-        execution_time:
-          type: number
-          description: Execution time for quantum computation. Specify the time in seconds, including up to milliseconds.
-          nullable: true
-        job_info:
-          $ref: '#/components/schemas/jobs.UpdateJobInfo'
-          nullable: true
-    jobs.UpdateJobInfoResponse:
       type: object
       properties:
         message:
@@ -1010,18 +833,67 @@ components:
           nullable: false
       required:
         - message
-    jobs.UploadSselogRequest:
+    jobs.S3OperatorItem:
       type: object
       properties:
-        file:
+        pauli:
           type: string
-          format: binary
+          description: The Pauli string.
+          nullable: false
+          example: X 0 X 1
+        coeff:
+          description: Coefficient number in the Pauli string representation.
+          type: number
       required:
-        - file
-    jobs.UploadSselogResponse:
+        - pauli
+    jobs.S3SamplingResult:
       type: object
+      nullable: true
+      description: '*(Only for sampling jobs)* JSON string representing the sampling result'
       properties:
-        message:
-          type: string
+        counts:
+          type: object
+          nullable: false
+          properties: {}
+          additionalProperties: true
+          example:
+            '10': 84
+            '11': 387
+            '00': 454
+            '01': 75
+        divided_counts:
+          type: object
+          nullable: true
+          properties: {}
+          additionalProperties: true
+          example:
+            '0':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
+            '1':
+              '10': 454
+              '11': 387
+              '00': 84
+              '01': 75
       required:
-        - message
+        - counts
+    jobs.S3EstimationResult:
+      type: object
+      nullable: true
+      description: |
+        *(Only for estimation jobs)* The estimated expectation value and the standard deviation
+        of the operators specified in `job_info.operator` field which is intended to be provided for estimation jobs.
+      properties:
+        exp_value:
+          description: The estimated expection value.
+          nullable: false
+          type: number
+        stds:
+          description: The standard deviation value
+          nullable: false
+          type: number
+      required:
+        - exp_value
+        - stds
