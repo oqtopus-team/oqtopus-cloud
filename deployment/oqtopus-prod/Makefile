@@ -147,12 +147,11 @@ publish-schema:
 	   redocly/cli bundle /spec/$(API)/root.yaml -o /out/openapi.yaml; \
 	 var_url="$(API_VAR_PREFIX)_API_SERVER_URL"; \
 	 var_desc="$(API_VAR_PREFIX)_API_SERVER_DESCRIPTION"; \
-	 url="$${!var_url:-$(DEFAULT_URL)}"; \
-	 desc="$${!var_desc:-Local server url}"; \
-	 echo "🔧 servers: url=$$url, description=$$desc"; \
-	 sed -e 's|$${API_SERVER_URL}|'"$$url"'|g' \
-	     -e 's|$${API_SERVER_DESCRIPTION}|'"$$desc"'|g' \
-	     $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
+	 export API_SERVER_URL="$${!var_url:-$(DEFAULT_URL)}"; \
+	 export API_SERVER_DESCRIPTION="$${!var_desc:-Local server url}"; \
+	 echo "🔧 servers: url=$$API_SERVER_URL, description=$$API_SERVER_DESCRIPTION"; \
+	 envsubst '$$API_SERVER_URL $$API_SERVER_DESCRIPTION' \
+	   < $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
 	 echo "☁️  Uploading to s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY) ..."; \
 	 aws s3 cp $$TMPDIR/openapi.final.yaml \
 	   "s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY)" \
@@ -180,12 +179,11 @@ publish-schema-via-actions:
 	   redocly/cli bundle /spec/$(API)/root.yaml -o /out/openapi.yaml; \
 	 var_url="$(API_VAR_PREFIX)_API_SERVER_URL"; \
 	 var_desc="$(API_VAR_PREFIX)_API_SERVER_DESCRIPTION"; \
-	 url="$${!var_url:-$(DEFAULT_URL)}"; \
-	 desc="$${!var_desc:-Local server url}"; \
-	 echo "🔧 servers: url=$$url, description=$$desc"; \
-	 sed -e 's|$${API_SERVER_URL}|'"$$url"'|g' \
-	     -e 's|$${API_SERVER_DESCRIPTION}|'"$$desc"'|g' \
-	     $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
+	 export API_SERVER_URL="$${!var_url:-$(DEFAULT_URL)}"; \
+	 export API_SERVER_DESCRIPTION="$${!var_desc:-Local server url}"; \
+	 echo "🔧 servers: url=$$API_SERVER_URL, description=$$API_SERVER_DESCRIPTION"; \
+	 envsubst '$$API_SERVER_URL $$API_SERVER_DESCRIPTION' \
+	   < $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
 	 echo "☁️  Uploading to s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY) ..."; \
 	 aws s3 cp $$TMPDIR/openapi.final.yaml \
 	   "s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY)" \
