@@ -3,7 +3,7 @@ devices.DeviceBase:
   properties:
     device_info:
       type: string
-      example: '{"device_id": "Kawasaki", "qubits": []}'
+      example: '{"device_id": "qulacs", "qubits": []}'
     device_type:
       type: string
       enum:

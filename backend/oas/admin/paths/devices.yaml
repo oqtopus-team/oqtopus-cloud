@@ -85,7 +85,7 @@ devices.device_id:
         required: true
         schema:
           type: string
-        example: "Kawasaki"
+        example: "qulacs"
     responses:
       "200":
         description: device response
@@ -120,7 +120,7 @@ devices.device_id:
         required: true
         schema:
           type: string
-          example: "Kawasaki"
+          example: "qulacs"
     requestBody:
       description: "New calibration data"
       content:
@@ -179,7 +179,7 @@ devices.device_id:
         required: true
         schema:
           type: string
-          example: "Kawasaki"
+          example: "qulacs"
     responses:
       "204":
         description: Device deleted

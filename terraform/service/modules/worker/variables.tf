@@ -76,3 +76,8 @@ variable "log_level" {
   description = "The log level for the Lambda function"
   type        = string
 }
+
+variable "count_pending_jobs_since" {
+  description = "Time window for counting pending jobs (e.g. '10days', '1month', '2weeks'). Used to filter jobs submitted within the specified duration from the current time."
+  type        = string
+}

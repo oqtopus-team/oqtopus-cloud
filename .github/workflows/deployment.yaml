@@ -5,6 +5,7 @@ on:
       - develop
     paths:
       - 'backend/oqtopus_cloud/**'
+      - 'backend/oas/**'
   workflow_dispatch:
 
 jobs:
@@ -38,17 +39,15 @@ jobs:
         with:
           python-version-file: .python-version
 
-      - name: Install Poetry
+      - name: Set up Aqua
         run: |
-          pip install poetry poetry-plugin-export
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt install make
+          make setup-aqua
+          echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
 
-      - name: Install poetry dependencies
-        run: poetry install
-
-      - name: Install make
-        run: sudo apt install make
-
+      - name: setup uv
+        run: |
+          make setup-uv
 
       - name: Deploy
         working-directory: ./deployment/oqtopus-dev
@@ -57,6 +56,15 @@ jobs:
         run: |
           sudo -E env PATH="$PATH" make deploy-${{ matrix.deploy-target }}-via-actions
 
+      - name: Publish user OpenAPI spec to S3
+        if: matrix.deploy-target == 'user'
+        working-directory: ./deployment/oqtopus-dev
+        env:
+          PUBLISH_OPENAPI_S3_BUCKET: ${{ vars.PUBLISH_OPENAPI_S3_BUCKET }}
+          USER_API_SERVER_URL: ${{ vars.USER_API_SERVER_URL }}
+          USER_API_SERVER_DESCRIPTION: ${{ vars.USER_API_SERVER_DESCRIPTION }}
+        run: |
+          sudo -E env PATH="$PATH" make publish-${{ matrix.deploy-target }}-schema-via-actions
 
       - name: On Success
         if: ${{ success() }}

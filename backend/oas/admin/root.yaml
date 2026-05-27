@@ -10,8 +10,8 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: http://localhost:8080
-    description: Local server url
+  - url: ${API_SERVER_URL}
+    description: ${API_SERVER_DESCRIPTION}
 paths:
   /users:
     $ref: ./paths/users.yaml#/users

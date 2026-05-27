@@ -13,7 +13,7 @@ jobs:
         schema:
           type: string
           nullable: false
-          example: "Kawasaki"
+          example: "qulacs"
       - in: query
         name: status
         required: false
@@ -107,10 +107,62 @@ jobs.job_id:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: job not found
+
+jobs.job_id.upload:
+  get:
+    summary: Get presigned URLs for upload
+    description: Get presigned URLs for job information items upload
+    operationId: get_upload
+    tags:
+      - jobs
+    parameters:
+      - name: job_id
+        in: path
+        required: true
+        description: Job identifier
+        schema: { type: string, nullable: false }
+      - name: items
+        in: query
+        required: true
+        description: |-
+          A list of job information items to upload
+
+          Available job information items are: `combined_program`, `transpile_result`, `result`, `sse_log`
+        schema:
+          type: string
+          maxLength: 1024
+          example: "result,sse_log"
+    responses:
+      "200":
+        description: |-
+          Return the list of presigned URL data for upload, arranged in the order specified by the items parameter.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../schemas/jobs.yaml#/jobs.JobInfoUploadPresignedURL"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: job not found
+
 jobs.job_status:
   patch:
-    summary: "Modify selected quantum job (update status)."
-    description: 'Used by device to set job status to "running".<br/>Other statuses are set by CloudAPI automatically when result is created'
+    summary: Update job status
+    description: Update job status and status related data
     operationId: patch_job
     tags:
       - jobs
@@ -121,7 +173,7 @@ jobs.job_status:
         description: "Job identifier"
         schema: { type: string, nullable: false }
     requestBody:
-      description: "New job status. "
+      description: "New job status and status related data"
       content:
         application/json:
           schema:
@@ -144,59 +196,13 @@ jobs.job_status:
             example:
               message: Job not found
       "409":
-        description: Returned when the specified job is not in a status thatt allows transition to the requested status.
+        description: Returned when the specified job is not in a status that allows transition to the requested status.
         content:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.ConflictError"
             example:
-              message: The specified job is not in a status thatt allows transition to the requested status.
-jobs.job_info:
-  patch:
-    summary: "Update selected quantum job's job_info by placing job results"
-    description: |
-      Used by device to set results or error details in job_info、accompanied by appropriate status updating.
-      Note that job info descriptor (sampling, estimation, etc) cannot be modified.
-    operationId: patch_job_info
-    tags:
-      - jobs
-    parameters:
-      - in: path
-        name: job_id
-        required: true
-        description: "Job identifier"
-        schema: { type: string, nullable: false }
-    requestBody:
-      description: "Modifications applied to Job info"
-      content:
-        application/json:
-          schema:
-            $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoRequest"
-    responses:
-      "200":
-        description: job info updated
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/jobs.yaml#/jobs.UpdateJobInfoResponse"
-            example:
-              message: Job info updated.
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "404":
-        description: Not Found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: Job not found
+              message: The specified job is not in a status that allows transition to the requested status.
 
 jobs.job_id.transpiler_info:
   put:
@@ -243,95 +249,3 @@ jobs.job_id.transpiler_info:
               $ref: "../schemas/error.yaml#/error.NotFoundError"
             example:
               message: Job not found
-
-
-jobs.job_id.sse_src:
-  get:
-    tags:
-      - job
-    summary: "Get SSE program source file"
-    description: "Get SSE program source file of selected job"
-    operationId: get_ssesrc
-    parameters:
-        - in: path
-          name: job_id
-          required: true
-          description: "Job identifier"
-          schema: {type: string}
-    responses:
-      "200":
-        description: "Return SSE program source file"
-        content:
-          text/plain:
-            schema:
-              type: string
-              format: binary
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "404":
-        description: Not Found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-            example:
-              message: job not found
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error
-
-jobs.job_id.sse_log:
-  patch:
-    tags:
-      - job
-    summary: "Upload SSE log file"
-    description: "Upload SSE log file of selected job"
-    operationId: patch_sselog
-    parameters:
-      - in: path
-        name: job_id
-        required: true
-        description: "Job identifier"
-        schema: {type: string}
-    requestBody:
-      description: "Log file to be uploaded"
-      content:
-        multipart/form-data:
-          schema:
-            $ref: "../schemas/jobs.yaml#/jobs.UploadSselogRequest"
-    responses:
-      "200":
-        description: "Log uploaded"
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/jobs.yaml#/jobs.UploadSselogResponse"
-            example:
-              message: Log uploaded
-      "400":
-        description: Bad Request
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.BadRequest"
-            example:
-              message: Bad request malformed input data
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-            example:
-              message: Internal server error

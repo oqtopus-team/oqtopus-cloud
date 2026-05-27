@@ -10,8 +10,8 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: http://localhost:8888
-    description: Local server url
+  - url: ${API_SERVER_URL}
+    description: ${API_SERVER_DESCRIPTION}
 security:
   - ApiKeyAuth: []
 paths:
@@ -25,19 +25,22 @@ paths:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.job_id
+  /jobs/{job_id}/upload:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.upload
   /jobs/{job_id}/status:
     $ref: ./paths/jobs.yaml#/jobs.job_status
-  /jobs/{job_id}/job_info:
-    $ref: ./paths/jobs.yaml#/jobs.job_info
   /jobs/{job_id}/transpiler_info:
     $ref: ./paths/jobs.yaml#/jobs.job_id.transpiler_info
-  /jobs/{job_id}/ssesrc:
-    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_src
-  /jobs/{job_id}/sselog:
-    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-Api-Key
+  schemas:
+    jobs.S3SubmitJobInfo:
+      $ref: './schemas/jobs.yaml#/jobs.S3SubmitJobInfo'
+    jobs.S3JobResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3JobResult'
+    jobs.S3TranspileResult:
+      $ref: './schemas/jobs.yaml#/jobs.S3TranspileResult'

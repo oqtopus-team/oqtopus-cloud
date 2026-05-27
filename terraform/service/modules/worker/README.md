@@ -67,6 +67,7 @@ module "user_api" {
 | <a name="input_allow_headers"></a> [allow\_headers](#input\_allow\_headers) | The allowed headers for the API Gateway | `string` | n/a | yes |
 | <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | n/a | yes |
 | <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | n/a | yes |
+| <a name="input_count_pending_jobs_since"></a> [count\_pending\_jobs\_since](#input\_count\_pending\_jobs\_since) | Time window for counting pending jobs (e.g. '10days', '1month', '2weeks'). Used to filter jobs submitted within the specified duration from the current time. | `string` | n/a | yes |
 | <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |

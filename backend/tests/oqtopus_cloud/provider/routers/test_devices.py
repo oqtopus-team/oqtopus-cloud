@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from typing import Dict
+from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
@@ -20,7 +21,6 @@ from oqtopus_cloud.provider.schemas.devices import (
     UpdateDeviceResponse,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
-from zoneinfo import ZoneInfo
 
 utc = ZoneInfo("UTC")
 client = TestClient(app)
@@ -125,11 +125,27 @@ def test_update_device_status_not_available(test_db):
     assert actual == expected
 
 
-def test_update_device_calibration(test_db):
+def test_update_device_calibration_qpu(test_db):
     # Arrange
     test_db.add(_get_model_qpu())
     test_db.commit()
     device = test_db.get(Device, "SC")
+    # Act
+    request = DeviceInfoUpdate(
+        device_info=json.dumps(_get_calibration_dict()),
+        calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+    )
+    actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
+    # Assert
+    expected = DeviceDataUpdateResponse(message="Device's data updated")
+    assert actual == expected
+
+
+def test_update_device_calibration_sim(test_db):
+    # Arrange
+    test_db.add(_get_model_sim())
+    test_db.commit()
+    device = test_db.get(Device, "SC2")
     # Act
     request = DeviceInfoUpdate(
         device_info=json.dumps(_get_calibration_dict()),

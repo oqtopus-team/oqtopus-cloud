@@ -18,14 +18,17 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version-file: .python-version
-    - name: Install dependencies
+
+    - name: Set up Aqua
       run: |
-        python -m pip install --upgrade pip==24.0
-        python -m pip install poetry
-        poetry install
-    - name: Check version
+        sudo apt install make
+        make setup-aqua
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+    - name: setup uv
       run: |
-        poetry --version
+        make setup-uv
+
     - name: Lint and Format ${{ matrix.target }}
       run: |
         make lint-${{ matrix.target }}
@@ -46,14 +49,17 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version-file: .python-version
-    - name: Install dependencies
+
+    - name: Set up Aqua
       run: |
-        python -m pip install --upgrade pip==24.0
-        python -m pip install poetry
-        poetry install
-    - name: Check version
+        sudo apt install make
+        make setup-aqua
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+    - name: setup uv
       run: |
-        poetry --version
+        make setup-uv
+
     - name: Test ${{ matrix.target }}
       run: |
         make test-${{ matrix.target }}
@@ -104,15 +110,21 @@ jobs:
       with:
         name: .coverage-user_signup
         path: ./
-    - name: Install dependencies
+
+    - name: Set up Aqua
       run: |
-        python -m pip install --upgrade pip==24.0
-        python -m pip install poetry
-        poetry install
+        sudo apt install make
+        make setup-aqua
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+    - name: setup uv
+      run: |
+        make setup-uv
+
     - name: Combine coverage files
       run: |
-        poetry run coverage combine .coverage-common .coverage-user .coverage-provider .coverage-admin .coverage-lambda_auth .coverage-user_signup
-        poetry run coverage xml
+        uv run coverage combine .coverage-common .coverage-user .coverage-provider .coverage-admin .coverage-lambda_auth .coverage-user_signup
+        uv run coverage xml
     - name: Upload combined coverage to Codecov
       uses: codecov/codecov-action@v5
       with:

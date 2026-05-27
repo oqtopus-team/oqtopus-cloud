@@ -10,8 +10,8 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: http://localhost:8080
-    description: Local server url
+  - url: ${API_SERVER_URL}
+    description: ${API_SERVER_DESCRIPTION}
 paths:
   /devices:
     $ref: ./paths/devices.yaml#/devices
@@ -19,14 +19,14 @@ paths:
     $ref: ./paths/devices.yaml#/devices.device_id
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
+  /jobs/{job_id}/submit:
+    $ref: ./paths/jobs.yaml#/jobs.job_id.submit
   /jobs/{job_id}:
     $ref: ./paths/jobs.yaml#/jobs.job_id
   /jobs/{job_id}/status:
     $ref: ./paths/jobs.yaml#/jobs.job_id.status
   /jobs/{job_id}/cancel:
     $ref: ./paths/jobs.yaml#/jobs.job_id.cancel
-  /jobs/{job_id}/sselog:
-    $ref: ./paths/jobs.yaml#/jobs.job_id.sse_log
   /api-token:
     $ref: ./paths/api-token.yaml#/api-token
   /api-token/status:
@@ -42,4 +42,17 @@ paths:
 components:
   securitySchemes:
     BearerAuth:
-      $ref: './schemas/security.yaml#/BearerAuth'
+      $ref: ./schemas/security.yaml#/BearerAuth
+  schemas:
+    # below schemas are not used directly in OAS,
+    # but the generated classed definitions are used in API and SDK implementation
+    jobs.SubmittedJob:
+      $ref: ./schemas/jobs.yaml#/jobs.SubmittedJob
+    jobs.RegisteredJob:
+      $ref: ./schemas/jobs.yaml#/jobs.RegisteredJob
+    jobs.S3SubmitJobInfo:
+      $ref: ./schemas/jobs.yaml#/jobs.S3SubmitJobInfo
+    jobs.S3JobResult:
+      $ref: ./schemas/jobs.yaml#/jobs.S3JobResult
+    jobs.S3TranspileResult:
+      $ref: ./schemas/jobs.yaml#/jobs.S3TranspileResult

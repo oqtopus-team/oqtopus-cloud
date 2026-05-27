@@ -74,6 +74,8 @@ module "user_api" {
   visible_fields                 = var.visible_fields
   login_history_enabled          = var.login_history_enabled
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  otel_enabled                   = var.otel_enabled
+  otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
 }
 
 module "provider_api" {
@@ -110,6 +112,8 @@ module "provider_api" {
   visible_fields                 = "[]"
   login_history_enabled          = "false"
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
+  otel_enabled                   = var.otel_enabled
+  otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
 }
 
 module "admin_api" {
@@ -189,6 +193,7 @@ module "pending_jobs_updater" {
   allow_methods                 = "*"
   allow_headers                 = "*"
   log_level                     = "INFO"
+  count_pending_jobs_since      = "10 days"
 }
 
 module "lambda_version_cleaner" {
@@ -215,16 +220,16 @@ module "vpc_endpoint" {
   lambda_subnet_ids                 = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
   secret_manager_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.secret_manager_security_group_ids
   cognito_security_group_ids        = data.terraform_remote_state.infrastructure.outputs.security_group.cognito_security_group_ids
-  cloudtrail_security_group_ids      = data.terraform_remote_state.infrastructure.outputs.security_group.cloudtrail_security_group_ids
+  cloudtrail_security_group_ids     = data.terraform_remote_state.infrastructure.outputs.security_group.cloudtrail_security_group_ids
   s3_bucket_name                    = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
 
   identifiers = {
-    user_api = module.user_api.iam_role_arn,
-    provider_api = module.provider_api.iam_role_arn,
-    admin_api = module.admin_api.iam_role_arn,
-    user_signup_api = module.user_signup_api.iam_role_arn,
+    user_api             = module.user_api.iam_role_arn,
+    provider_api         = module.provider_api.iam_role_arn,
+    admin_api            = module.admin_api.iam_role_arn,
+    user_signup_api      = module.user_signup_api.iam_role_arn,
     pending_jobs_updater = module.pending_jobs_updater.iam_role_arn,
-    lambda_auth = module.lambda_auth.iam_role_arn,
+    lambda_auth          = module.lambda_auth.iam_role_arn,
   }
 
   depends_on = [
@@ -253,10 +258,10 @@ module "deployment_roles" {
 module "waf" {
   source = "../modules/waf"
 
-  product              = var.product
-  org                  = var.org
-  env                  = var.env
-  resource_arn_list    = [
+  product = var.product
+  org     = var.org
+  env     = var.env
+  resource_arn_list = [
     module.user_api.api_gateway_stage_arn,
     module.provider_api.api_gateway_stage_arn,
     module.admin_api.api_gateway_stage_arn,

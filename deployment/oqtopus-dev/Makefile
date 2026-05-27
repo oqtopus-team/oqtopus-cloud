@@ -68,7 +68,7 @@ zip:
 	@mkdir -p ${BIN}
 	@echo "Project Location: ${WORKSPACE}/${APP}"
 	@echo "Library Location: ${DEPLOY_PACKAGES_DIR}"
-	@poetry export -f requirements.txt --output requirements.txt
+	@uv export --no-dev --no-hashes --no-emit-project --no-editable --format requirements-txt > requirements.txt
 	@docker run --platform linux/x86_64 --user $$(id -u):$$(id -g) \
   -e HOME=/tmp \
   -e UV_INSTALL_DIR=/tmp/.local/bin \
@@ -128,6 +128,71 @@ deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-versi
 	BIN=./bin/lambda-version-cleaner
 
 deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
+
+OAS_DIR := $(abspath ../../backend/oas)
+
+.PHONY: publish-user-schema publish-schema publish-user-schema-via-actions publish-schema-via-actions
+
+publish-user-schema: ## Publish user OpenAPI spec to S3
+	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
+		echo "⏭  PUBLISH_OPENAPI_S3_BUCKET is not set — skipping publish-user-schema"; \
+	else \
+		$(MAKE) publish-schema API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080; \
+	fi
+
+publish-schema:
+	@docker pull -q redocly/cli >/dev/null
+	@TMPDIR=$$(mktemp -d); \
+	 trap 'rm -rf "$$TMPDIR"' EXIT; \
+	 echo "📄 Bundling $(API) OpenAPI spec ..."; \
+	 docker run --rm \
+	   -v $(OAS_DIR):/spec \
+	   -v $$TMPDIR:/out \
+	   redocly/cli bundle /spec/$(API)/root.yaml -o /out/openapi.yaml; \
+	 var_url="$(API_VAR_PREFIX)_API_SERVER_URL"; \
+	 var_desc="$(API_VAR_PREFIX)_API_SERVER_DESCRIPTION"; \
+	 export API_SERVER_URL="$${!var_url:-$(DEFAULT_URL)}"; \
+	 export API_SERVER_DESCRIPTION="$${!var_desc:-Local server url}"; \
+	 echo "🔧 servers: url=$$API_SERVER_URL, description=$$API_SERVER_DESCRIPTION"; \
+	 envsubst '$$API_SERVER_URL $$API_SERVER_DESCRIPTION' \
+	   < $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
+	 echo "☁️  Uploading to s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY) ..."; \
+	 aws s3 cp $$TMPDIR/openapi.final.yaml \
+	   "s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY)" \
+	   --content-type application/yaml \
+	   --profile $(PROFILE); \
+	 echo "✅ Published $(API) OpenAPI spec"
+
+# Github Actions variants — same as the targets above but without --profile
+# (AWS credentials come from configure-aws-credentials via env vars).
+publish-user-schema-via-actions: ## Publish user OpenAPI spec to S3 via Github Actions
+	@if [ -z "$(PUBLISH_OPENAPI_S3_BUCKET)" ]; then \
+		echo "⏭  PUBLISH_OPENAPI_S3_BUCKET is not set — skipping publish-user-schema-via-actions"; \
+	else \
+		$(MAKE) publish-schema-via-actions API=user API_VAR_PREFIX=USER OPENAPI_S3_OBJECT_KEY=openapi.yaml DEFAULT_URL=http://localhost:8080; \
+	fi
+
+publish-schema-via-actions:
+	@docker pull -q redocly/cli >/dev/null
+	@TMPDIR=$$(mktemp -d); \
+	 trap 'rm -rf "$$TMPDIR"' EXIT; \
+	 echo "📄 Bundling $(API) OpenAPI spec ..."; \
+	 docker run --rm \
+	   -v $(OAS_DIR):/spec \
+	   -v $$TMPDIR:/out \
+	   redocly/cli bundle /spec/$(API)/root.yaml -o /out/openapi.yaml; \
+	 var_url="$(API_VAR_PREFIX)_API_SERVER_URL"; \
+	 var_desc="$(API_VAR_PREFIX)_API_SERVER_DESCRIPTION"; \
+	 export API_SERVER_URL="$${!var_url:-$(DEFAULT_URL)}"; \
+	 export API_SERVER_DESCRIPTION="$${!var_desc:-Local server url}"; \
+	 echo "🔧 servers: url=$$API_SERVER_URL, description=$$API_SERVER_DESCRIPTION"; \
+	 envsubst '$$API_SERVER_URL $$API_SERVER_DESCRIPTION' \
+	   < $$TMPDIR/openapi.yaml > $$TMPDIR/openapi.final.yaml; \
+	 echo "☁️  Uploading to s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY) ..."; \
+	 aws s3 cp $$TMPDIR/openapi.final.yaml \
+	   "s3://$(PUBLISH_OPENAPI_S3_BUCKET)/$(OPENAPI_S3_OBJECT_KEY)" \
+	   --content-type application/yaml; \
+	 echo "✅ Published $(API) OpenAPI spec"
 
 deploy: generate-tag
 	@echo "Deploy ${FUNCTION_NAME} ..."

@@ -30,8 +30,8 @@ class DeviceStatusUpdate(BaseModel):
 
 
 class DeviceDataUpdateResponse(BaseModel):
-    message: Annotated[str, Field(examples=["Device's data updated"])] = (
-        "Device's data updated"
+    message: Annotated[str, Field(examples=["Device data updated"])] = (
+        "Device data updated"
     )
 
 
@@ -48,7 +48,7 @@ class DeviceInfoUpdate(BaseModel):
     Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
     """
     calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00"])
+        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00Z"])
     ] = None
     """
     Parameter mandatory and valid if calibrationData not null

@@ -96,7 +96,7 @@ class LocalFilePresignStrategy(GeneralPresignStrategy):
         self, key: str, expires: timedelta = timedelta(hours=1)
     ) -> dict[str, Any]:
         full_path = os.path.join(self._storage_path, key)
-        return {"url": f"file://{full_path}", "fields": {}}
+        return {"url": f"file://{full_path}", "fields": {"key": f"file://{full_path}"}}
 
     def get_download_presigned_url(
         self, key: str, expires: timedelta = timedelta(hours=1)
