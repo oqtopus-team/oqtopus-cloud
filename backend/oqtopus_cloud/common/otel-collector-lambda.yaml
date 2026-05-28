@@ -1,0 +1,19 @@
+# Config for the ADOT collector running as a Lambda layer extension.
+# The function's OTel SDK exports to localhost:4318 (this collector); the
+# collector forwards to OTEL_BACKEND_OTLP_ENDPOINT. This keeps the function's
+# request latency independent of the monitoring backend's reachability.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlphttp:
+    endpoint: ${env:OTEL_BACKEND_OTLP_ENDPOINT}
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp]
