@@ -60,13 +60,23 @@ module "management" {
   eic_security_group_ids         = module.security_group.eic_security_group_ids
 }
 
+module "user_cognito_signup_notifier" {
+  source = "../modules/cognito-signup-notifier"
+
+  product = var.product
+  org     = var.org
+  env     = var.env
+  region  = var.region
+}
+
 module "user_cognito" {
   source = "../modules/cognito"
 
-  product    = var.product
-  org        = var.org
-  env        = var.env
-  identifier = "user"
+  product                      = var.product
+  org                          = var.org
+  env                          = var.env
+  identifier                   = "user"
+  post_confirmation_lambda_arn = module.user_cognito_signup_notifier.lambda_arn
 }
 
 module "admin_cognito" {
