@@ -1,7 +1,7 @@
 # VPC peering: Lambda VPC (this stack) ↔ monitoring VPC (orphan, lives in the
 # same account as oqtopus-monitoring EC2).
 #
-# Needed so Lambda OTLP exporter can reach the otel-collector at 10.3.2.5:4318
+# Needed so Lambda OTLP exporter can reach the otel-collector at 10.3.2.5:34318
 # over a private path. Lambda VPC has no NAT, so a public-IP target hangs the
 # exporter for 20s and bursts past the 15s Lambda timeout.
 

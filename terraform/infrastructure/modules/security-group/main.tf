@@ -315,8 +315,8 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_s3" {
 resource "aws_vpc_security_group_egress_rule" "lambda_to_otlp_collector" {
   count             = var.lambda_otlp_collector_cidr == "" ? 0 : 1
   security_group_id = aws_security_group.lambda.id
-  from_port         = 4318
-  to_port           = 4318
+  from_port         = 34318
+  to_port           = 34318
   ip_protocol       = "tcp"
   cidr_ipv4         = var.lambda_otlp_collector_cidr
   description       = "OTLP HTTP to otel-collector (peering)"
