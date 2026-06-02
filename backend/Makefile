@@ -105,9 +105,12 @@ run-user_signup: ## Start the user_signup API
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	uv run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
 
+COUNT_PENDING_JOBS_SINCE ?= 10d
+
 run-worker:
 	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
 	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
+	export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB
