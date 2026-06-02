@@ -52,9 +52,6 @@ data "aws_caller_identity" "current" {}
 resource "aws_lambda_function" "this" {
   architectures = ["x86_64"]
 
-  # AWS-published ADOT collector layer (region-pinned); bump ver-X-Y-Z to upgrade.
-  layers = var.otel_enabled ? ["arn:aws:lambda:${var.region}:901920570463:layer:aws-otel-collector-amd64-ver-0-117-0:1"] : null
-
   environment { # TODO :Add module input variables
     variables = merge(
       {
@@ -91,16 +88,15 @@ resource "aws_lambda_function" "this" {
       var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
       var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
       var.otel_enabled ? {
-        OTEL_ENABLED = "true"
-        # The function SDK exports to the in-process ADOT collector (Lambda
-        # layer extension) on localhost; the collector forwards to
-        # OTEL_BACKEND_OTLP_ENDPOINT. A broken backend can no longer add to
-        # the function's request latency.
-        OTEL_EXPORTER_OTLP_ENDPOINT        = "http://localhost:4318"
-        OTEL_EXPORTER_OTLP_PROTOCOL        = "http/protobuf"
-        OTEL_EXPORTER_OTLP_TIMEOUT         = "1"
-        OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/oqtopus_cloud/common/otel-collector-lambda.yaml"
-        OTEL_BACKEND_OTLP_ENDPOINT         = var.otel_exporter_otlp_endpoint
+        OTEL_ENABLED                = "true"
+        OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
+        OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+        # Cap each export attempt so an unreachable collector cannot push the
+        # function past the API Gateway/Lambda timeout. 0.2s × ~2 retries ≒ 0.4s
+        # worst case; kill switch is otel_enabled = false. Direct export beats a
+        # co-located collector layer here: the layer's own retry queue, which
+        # OTEL_EXPORTER_OTLP_TIMEOUT does not bound, billed ~20s storms on freeze.
+        OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
       } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )

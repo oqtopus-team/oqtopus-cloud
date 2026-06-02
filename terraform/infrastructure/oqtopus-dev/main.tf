@@ -30,7 +30,7 @@ module "security_group" {
   env                        = var.env
   vpc_id                     = module.network.vpc_id
   region                     = var.region
-  lambda_otlp_collector_cidr = data.aws_vpc.monitoring.cidr_block
+  lambda_otlp_collector_cidr = module.vpc_peering_monitoring.peer_vpc_cidr
 }
 
 module "db" {
