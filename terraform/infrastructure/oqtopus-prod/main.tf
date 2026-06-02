@@ -24,12 +24,13 @@ module "network" {
 }
 
 module "security_group" {
-  source  = "../modules/security-group"
-  product = var.product
-  org     = var.org
-  env     = var.env
-  vpc_id  = module.network.vpc_id
-  region  = var.region
+  source                     = "../modules/security-group"
+  product                    = var.product
+  org                        = var.org
+  env                        = var.env
+  vpc_id                     = module.network.vpc_id
+  region                     = var.region
+  lambda_otlp_collector_cidr = var.monitoring_vpc_cidr
 }
 
 module "db" {

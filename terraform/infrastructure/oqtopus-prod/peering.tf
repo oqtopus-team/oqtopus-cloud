@@ -2,6 +2,10 @@
 # exporter can reach the otel-collector over a private path. The Lambda VPC has
 # no NAT, so a public-IP target would hang the exporter and risk the Lambda
 # timeout.
+#
+# Disabled until the prod monitoring VPC exists: leave monitoring_vpc_cidr empty
+# and this module (and the OTLP egress rule) is a no-op. Set the CIDR and route
+# table name once monitoring is live to bring up peering in a single apply.
 module "vpc_peering_monitoring" {
   source = "../modules/vpc-peering"
   count  = var.monitoring_vpc_cidr == "" ? 0 : 1

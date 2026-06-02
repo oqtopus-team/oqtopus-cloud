@@ -107,7 +107,7 @@ variable "s3_cors_allowed_origins" {
 }
 
 variable "monitoring_vpc_cidr" {
-  description = "CIDR of the monitoring VPC peered for OTLP egress"
+  description = "CIDR of the monitoring VPC peered for OTLP egress. Empty disables peering and the OTLP egress rule."
   type        = string
   default     = "10.3.0.0/16"
 }
