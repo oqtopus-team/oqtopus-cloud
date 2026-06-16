@@ -1,191 +1,127 @@
 # Sequences of Job Operations
 
-This page shows behavioral sequences of task operations.
-Each sequence shows a series of steps from sending a request of job execution or cancellation to the completion of the operations.
+This page shows the current job-operation sequences.
+Large job inputs and outputs are transferred through object storage with presigned URLs, while the Cloud API stores and updates job metadata.
 
 ## Sequence of Job Execution (Success Case)
 
-The following shows a sequence of successful job execution.
-It shows the steps of job submission by User, job execution by Provider, and retrieval of the execution result by User.
-
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SC')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
+    participant Provider as Provider
 
-    User->>Cloud: POST /jobs { "job_info": "{ \"code\": \"OPENQASM ...\", ... }", ... }
-    Note right of User: User submits a job
-    Note over Cloud: A new job is created.
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1> }
+    User->>Cloud: POST /jobs
+    Note over Cloud: Create job row in registered status
+    Cloud-->>User: 200 { job_id, presigned_url for input.zip }
 
-    User->>Cloud: GET /jobs/<job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "submitted" }
+    User->>Storage: Upload <job_id>/input.zip with presigned URL
+    Storage-->>User: Upload accepted
 
-    Note over Provider: Provider starts getting jobs.
-    Provider->>Cloud: GET /jobs
-    Note over Cloud: The job status is updated to `ready`.
-    Cloud-->>Provider: HTTP 200 OK
+    User->>Cloud: POST /jobs/<job_id>/submit { device_id, job_type, shots, ... }
+    Note over Cloud: Verify input.zip exists and set status to submitted
+    Cloud-->>User: 200 { message: "job submitted" }
 
-    Note over Provider: Provider starts execution of the jobs and sends <br/>  requests to update their statuses to `running`.
-    Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "running" }
-    Note over Cloud: The job status is updated to `running`.
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Cloud: GET /jobs?device_id=<device_id>
+    Note over Cloud: submitted jobs returned to the provider are advanced to ready
+    Cloud-->>Provider: 200 [{ job_id, status: ready, input: download URL, ... }]
 
-    Provider->>Cloud: PATCH /jobs/<job ID-N> { "status": "running" }
-    Note over Cloud: The job status is updated to `running`.
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Storage: Download <job_id>/input.zip
+    Storage-->>Provider: input.zip
 
-    User->>Cloud: GET /jobs/<job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "running" }
+    Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "running" }
+    Note over Cloud: Set status to running
+    Cloud-->>Provider: 200
 
-    Note over Provider: The execution of the job <job ID-1> is successfully completed.
-    Provider->>Cloud: PATCH /jobs/<job ID-N>/job_info { "result": ... }
+    Provider->>Cloud: GET /jobs/<job_id>/upload?items=transpile_result,result
+    Cloud-->>Provider: 200 [upload URL data for output files]
 
-    Note over Cloud: The result of the job is stored in the `job_info` JSON field<br /> in the database, and the job status is updated to `success`.
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Storage: Upload transpile_result.zip and result.zip
+    Storage-->>Provider: Upload accepted
 
-    User->>Cloud: GET /jobs/<job ID-1>
-    Cloud-->>User: HTTP 200 OK <br>{ "job_id": <job ID-1>, "status": "succeeded", "job_info": "{ \"result\": ... }", ... } 
+    Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "succeeded", output_files: ["<job_id>/transpile_result.zip", "<job_id>/result.zip"], execution_time, message }
+    Note over Cloud: Validate uploaded keys, store output file names, and set status to succeeded
+    Cloud-->>Provider: 200
+
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "succeeded", job_info: { input, transpile_result, result, message }, ... }
+
+    User->>Storage: Download result files with job_info URLs
+    Storage-->>User: Result files
 ```
 
-Provider periodically repeats the process of executing the jobs and writting the results.
-The above diagram shows one iteration of the repeated process.
-
-Each sequence shows a series of steps from sending a request of task execution or cancellation to the completion of the operations.
-
-> [!NOTE]
-> The `job_info` field in the job is a JSON serialized string.
-
-### Data in the DB at Each Time Point
-
-The followings show sample data in the database at each point in the sequence diagram,
-where there is one job submission to each of the two endpoints, `/tasks/sampling` and `/tasks/estimation`.
-The numbers below correspond to the circled numbers in the sequence diagram.
-
-- (2)
-  - tasks table: [success-case-tasks-02.csv](../../sample/architecture/success-case-tasks-02.csv)
-  - results table: no data
-- (6)
-  - tasks table: [success-case-tasks-06.csv](../../sample/architecture/success-case-tasks-06.csv)
-  - results table: no data
-- (10)
-  - tasks table: [success-case-tasks-10.csv](../../sample/architecture/success-case-tasks-10.csv)
-  - results table: no data
-- (14)
-  - tasks table: [success-case-tasks-14.csv](../../sample/architecture/success-case-tasks-14.csv)
-  - results table: [success-case-results-14.csv](../../sample/architecture/success-case-results-14.csv)
+Provider polling advances jobs from `submitted` to `ready`. A provider then explicitly changes `ready` to `running`, uploads output files to storage, and reports the uploaded keys when setting a terminal status.
 
 ## Sequence of Job Execution (Failure Case)
 
-The following shows a sequence in which a job execution fails.
-Each step from the beginning until the job status is changed to `running` is the same as in the success case.
-The colored part shows steps specific to the failure case.
+The flow is the same as the success case until the provider reports failure.
+The Provider API accepts failure from either `ready` or `running`, which allows preprocessing failures to be reported before execution starts.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SVSim')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
+    participant Provider as Provider
 
-    User->>Cloud: POST /jobs { "job_info": "{ \"code\": \"OPENQASM ...\", ... }", ... }
+    User->>Cloud: POST /jobs
+    Cloud-->>User: 200 { job_id, presigned_url for input.zip }
+    User->>Storage: Upload <job_id>/input.zip
+    User->>Cloud: POST /jobs/<job_id>/submit { device_id, job_type, shots, ... }
+    Cloud-->>User: 200
 
-    Note right of User: User submits a job
-    Note over Cloud: A new job is created.
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1> }
+    Provider->>Cloud: GET /jobs?device_id=<device_id>
+    Note over Cloud: Set status to ready
+    Cloud-->>Provider: 200 [{ job_id, status: ready, input: download URL, ... }]
 
-    User->>Cloud: GET /jobs/<job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "submitted" }
-
-    Note over Provider: Provider starts getting jobs.
-    Provider->>Cloud: GET /jobs
-    Note over Cloud: Suppose that the job status is set to `ready`.
-    Cloud-->>Provider: HTTP 200 OK
-
-    Note over Provider: Provider starts execution of the jobs and sends <br/>  requests to update their statuses to `running`.
-    Provider->>Cloud: PATCH /jobs/<job ID-1> { "status": "running" }
-    Note over Cloud: The job status is updated to `running`.
-    Cloud-->>Provider: HTTP 200 OK
-
-    Provider->>Cloud: PATCH /jobs/<job ID-N> { "status": "running" }
-    Note over Cloud: The job status is updated to `running`.
-    Cloud-->>Provider: HTTP 200 OK
-
-    User->>Cloud: GET /jobs/<job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "running" }
-
-    rect rgb(255, 240, 240)
-        Note over Provider: The execution of the task <job ID-1> is failed.
-        Provider->>Cloud: PATCH /jobs/{job ID-1}/job_info { "reason": "The reason of failure", ... }
-        Note over Cloud: The error description is stored in the `job_info` JSON <br />field in database, and the job status is set to `failed`.
-        Cloud-->>Provider: HTTP 200 OK
-  
-        User->>Cloud: GET /jobs/<job ID-1>
-        Cloud-->>User: HTTP 200 OK <br />{ "job_id": <job ID-1>, "status": "failed", "job_info": "{ \"reason\": \"The reason of failure\", ... }" }
+    alt failure before execution starts
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "failed", message }
+        Note over Cloud: Set status to failed
+        Cloud-->>Provider: 200
+    else failure after execution starts
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "running" }
+        Cloud-->>Provider: 200
+        Provider->>Cloud: GET /jobs/<job_id>/upload?items=result
+        Cloud-->>Provider: 200 [upload URL data]
+        Provider->>Storage: Upload result.zip
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "failed", output_files: ["<job_id>/result.zip"], message }
+        Note over Cloud: Validate uploaded keys and set status to failed
+        Cloud-->>Provider: 200
     end
+
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "failed", job_info: { input, result, message }, ... }
 ```
 
-### Data in the DB at Each Time Point
-
-The followings show sample data in the DB at each point in the sequence diagram,
-where there is one task submission to the endpoint `/tasks/estimation`.
-The numbers below correspond to the circled numbers in the sequence diagram.
-
-- (2), (6), (10)
-  - Omitted, as they are the same as in the successful case.
-- (14)
-  - tasks table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
-  - results table: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
+Failure details are returned through `job_info.message`. If the provider uploads diagnostic output files and includes them in `output_files`, the User API exposes download presigned URLs for those files.
 
 ## Sequence of Job Cancellation
 
-The following shows a sequence of job cancellation,
-where User tries to cancel a job.
-
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SVSim')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
 
-    User->>Cloud: POST /jobs/<Job ID-1>/cancel
-    Note right of User: User sends a cancel requests for the job <job ID-1>.
-    Note over Cloud: The job status is updated to `cancelled`
-    Cloud-->>User: HTTP 200 OK
+    User->>Cloud: POST /jobs/<job_id>/cancel
+    Note over Cloud: registered, submitted, ready, or running jobs are marked cancelled
+    Cloud-->>User: 200 { message: "cancel request accepted" }
 
-    User->>Cloud: GET /jobs/<job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <job ID-1>, "status": "cancelled" }
+    User->>Cloud: GET /jobs/<job_id>/status
+    Cloud-->>User: 200 { job_id, status: "cancelled" }
 
-    Note over Provider: Provider tries to cancel the executions of the tasks.
-    Note over Provider: The execution of the job  <Job ID-1> is successfully cancelled.
-    Provider->>Cloud: PATCH /jobs/<JOB ID-1>/job_info { "job_id": <Job ID-1>, "reason": ... }
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "cancelled", job_info: { input, message, ... }, ... }
 
-    Note over Cloud: The received result is stored in the `job_info` JSON field of the job.
-    Cloud-->>Provider: HTTP 200 OK
-
-    User->>Cloud: GET /jobs/<Job ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "job_id": <Job ID-1>, "status": "cancelled", "job_info": "{ \"reason\": ... }", ... }
+    User->>Cloud: DELETE /jobs/<job_id>
+    Note over Cloud: Delete DB row and all storage objects under <job_id>/
+    Cloud->>Storage: Delete <job_id>/*
+    Cloud-->>User: 200 { message: "job deleted" }
 ```
 
-Provider periodically repeats the process of cancelling job executions and sending the cancellation results.
-The above diagram shows one iteration of the repeated process.
-
-### Data in the DB at Each Time Point
-
-The followings show sample data in the DB at each point in the sequence diagram,
-where there is one cancellation request to the endpoint `/jobs/{job ID}/cancel`.
-The numbers below correspond to the circled numbers in the sequence diagram.
-
-- (1)
-  - tasks table: [cancel-case-jobs-01.csv](../../sample/architecture/cancel-case-tasks-01.csv)
-  - results table: no data
-- (2)
-  - tasks table: [cancel-case-jobs-02.csv](../../sample/architecture/cancel-case-tasks-02.csv)
-  - results table: no data
-- (6)
-  - tasks table: [cancel-case-jobs-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
-  - results table: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
-
+Users can request cancellation while the job is `registered`, `submitted`, `ready`, or `running`.
+Deletion is allowed only after a job reaches `succeeded`, `failed`, or `cancelled`.

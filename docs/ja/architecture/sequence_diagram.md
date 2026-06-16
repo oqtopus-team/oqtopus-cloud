@@ -1,197 +1,129 @@
-# タスク操作時のシーケンス
+# ジョブ操作時のシーケンス
 
-タスク操作時のシーケンスを以下に示します。
-各シーケンスは、タスクの送信やキャンセルを行ってから操作が完了するまでの一連のステップを示しています。
+現在のジョブ操作シーケンスを示します。
+大きなジョブ入出力は presigned URL を使ってオブジェクトストレージへ直接アップロードまたはダウンロードし、Cloud API はジョブのメタデータと状態を管理します。
 
-> [!NOTE]
-> シーケンス図中に記載している `/tasks`, `/tasks/{taskId}/cancel`, `/results` エンドポイントは、実際には sampling タスク用と estimation タスク用の別々のエンドポイントに分かれています。
-> 例えば、`/tasks` であれば、`/tasks/sampling` と `/tasks/estimation` に分かれています。
-> sampling タスク用と estimation タスク用の両エンドポイントでのシーケンスは共通のため、シーケンス図上ではパス中の `/sampling`, `/estimation` の部分を省略して記載しています。
-
-## タスク実行のシーケンス (成功ケース)
-
-タスクの実行が成功した場合のシーケンスを以下に示します。
-User によるタスクの送信、Provider によるタスクの実行、User による結果の取得の一連の流れを示しています。
+## ジョブ実行のシーケンス (成功ケース)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SC')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
+    participant Provider as Provider
 
-    User->>Cloud: POST /tasks { "code": "OPENQASM ...", ... }
-    Note right of User: User submits a task
-    Note over Cloud: A new task is created.
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
+    User->>Cloud: POST /jobs
+    Note over Cloud: registered 状態のジョブ行を作成
+    Cloud-->>User: 200 { job_id, input.zip 用 presigned_url }
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
+    User->>Storage: presigned URL で <job_id>/input.zip をアップロード
+    Storage-->>User: アップロード成功
 
-    Note over Provider: Provider starts getting the tasks.
-    Provider->>Cloud: GET /jobs
-    Note over Cloud: The task status is updated to ready.
-    Cloud-->>Provider: HTTP 200 OK
+    User->>Cloud: POST /jobs/<job_id>/submit { device_id, job_type, shots, ... }
+    Note over Cloud: input.zip の存在を確認し status を submitted に更新
+    Cloud-->>User: 200 { message: "job submitted" }
 
-    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to running.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "running" }
-    Note over Cloud: The task status is updated to running.
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Cloud: GET /jobs?device_id=<device_id>
+    Note over Cloud: Provider に返した submitted ジョブを ready に更新
+    Cloud-->>Provider: 200 [{ job_id, status: ready, input: download URL, ... }]
 
-    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "running" }
-    Note over Cloud: The task status is updated to running.
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Storage: <job_id>/input.zip をダウンロード
+    Storage-->>Provider: input.zip
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "running" }
-    Note over Provider: The execution of the task <task ID-1> is successfully completed.
-    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "succeeded", result: ... }
+    Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "running" }
+    Note over Cloud: status を running に更新
+    Cloud-->>Provider: 200
 
-    Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to succeeded (via a DB trigger).
-    Cloud-->>Provider: HTTP 200 OK
+    Provider->>Cloud: GET /jobs/<job_id>/upload?items=transpile_result,result
+    Cloud-->>Provider: 200 [出力ファイル用 upload URL data]
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "succeeded" }
+    Provider->>Storage: transpile_result.zip と result.zip をアップロード
+    Storage-->>Provider: アップロード成功
 
-    User->>Cloud: GET /results/<task ID-1>
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "succeeded", "result": ... }
+    Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "succeeded", output_files: ["<job_id>/transpile_result.zip", "<job_id>/result.zip"], execution_time, message }
+    Note over Cloud: アップロード済みキーを検証し、出力ファイル名を保存して status を succeeded に更新
+    Cloud-->>Provider: 200
+
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "succeeded", job_info: { input, transpile_result, result, message }, ... }
+
+    User->>Storage: job_info の URL で結果ファイルをダウンロード
+    Storage-->>User: 結果ファイル
 ```
 
-Provider は定期的に、タスクの実行・実行結果の送信、の流れを繰り返します。
-上図では 1 回分の流れを記載しています。
+Provider が `GET /jobs` でジョブを取得すると、`submitted` のジョブは `ready` に進みます。
+その後 Provider は明示的に `ready` から `running` へ更新し、出力ファイルをストレージへアップロードしてから、終端状態へ更新するときにアップロード済みキーを申告します。
 
-### 各時点における DB 内のデータ
+## ジョブ実行のシーケンス (失敗ケース)
 
-シーケンス図の各時点における、DB 内のデータのサンプルを以下に示します。  
-`/tasks/sampling` と `/tasks/estimation` の 2 つのエンドポイントそれぞれに対して 1 回ずつタスクを送信した場合の例となっています。  
-以下の数字は、シーケンス図中の丸数字と対応しています。
-
-- (2)
-  - tasks テーブル: [success-case-tasks-02.csv](../../sample/architecture/success-case-tasks-02.csv)
-  - results テーブル: データ無し
-- (6)
-  - tasks テーブル: [success-case-tasks-06.csv](../../sample/architecture/success-case-tasks-06.csv)
-  - results テーブル: データ無し
-- (10)
-  - tasks テーブル: [success-case-tasks-10.csv](../../sample/architecture/success-case-tasks-10.csv)
-  - results テーブル: データ無し
-- (14)
-  - tasks テーブル: [success-case-tasks-14.csv](../../sample/architecture/success-case-tasks-14.csv)
-  - results テーブル: [success-case-results-14.csv](../../sample/architecture/success-case-results-14.csv)
-
-## タスク実行のシーケンス (失敗ケース)
-
-タスクの実行に失敗した場合のシーケンスを以下に示します。
-タスクの status が running に変化するまでは成功ケースと同様の流れです。図中の着色部分が、失敗した場合に特有の処理を示しています。
+Provider が失敗を報告する直前までは成功ケースと同じ流れです。
+Provider API は `ready` と `running` のどちらからでも `failed` への更新を受け付けるため、実行開始前の前処理失敗も報告できます。
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SVSim')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
+    participant Provider as Provider
 
-    User->>Cloud: POST /tasks { "code": "OPENQASM ...", ... }
-    Note right of User: User submits a task
-    Note over Cloud: A new task is created.
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1> }
+    User->>Cloud: POST /jobs
+    Cloud-->>User: 200 { job_id, input.zip 用 presigned_url }
+    User->>Storage: <job_id>/input.zip をアップロード
+    User->>Cloud: POST /jobs/<job_id>/submit { device_id, job_type, shots, ... }
+    Cloud-->>User: 200
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "submitted" }
+    Provider->>Cloud: GET /jobs?device_id=<device_id>
+    Note over Cloud: status を ready に更新
+    Cloud-->>Provider: 200 [{ job_id, status: ready, input: download URL, ... }]
 
-    Note over Provider: Provider starts getting the tasks.
-    Provider->>Cloud: GET /jobs
-    Note over Cloud: The task status is updated to ready.
-    Cloud-->>Provider: HTTP 200 OK
-
-    Note over Provider: Provider starts execution of the tasks<br>and sends requests to update their statuses to running.
-    Provider->>Cloud: PATCH /tasks/<task ID-1> { "status": "running" }
-    Note over Cloud: The task status is updated to running.
-    Cloud-->>Provider: HTTP 200 OK
-
-    Provider->>Cloud: PATCH /tasks/<task ID-N> { "status": "running" }
-    Note over Cloud: The task status is updated to running.
-    Cloud-->>Provider: HTTP 200 OK
-
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "running" }
-
-    rect rgb(255, 240, 240)
-        Note over Provider: The execution of the task <task ID-1> is failed.
-        Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "failed", "reason": ... }
-        Note over Cloud: The received result of the task is inserted to the DB,<br> then the task status is changed to failed (via a DB trigger).
-        Cloud-->>Provider: HTTP 200 OK
-  
-        User->>Cloud: GET /tasks/<task ID-1>/status
-        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "failed" }
-  
-        User->>Cloud: GET /results/<task ID-1>
-        Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "failed", "reason": ...}
+    alt 実行開始前に失敗した場合
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "failed", message }
+        Note over Cloud: status を failed に更新
+        Cloud-->>Provider: 200
+    else 実行開始後に失敗した場合
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "running" }
+        Cloud-->>Provider: 200
+        Provider->>Cloud: GET /jobs/<job_id>/upload?items=result
+        Cloud-->>Provider: 200 [upload URL data]
+        Provider->>Storage: result.zip をアップロード
+        Provider->>Cloud: PATCH /jobs/<job_id>/status { status: "failed", output_files: ["<job_id>/result.zip"], message }
+        Note over Cloud: アップロード済みキーを検証し status を failed に更新
+        Cloud-->>Provider: 200
     end
+
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "failed", job_info: { input, result, message }, ... }
 ```
 
-### 各時点における DB 内のデータ
+失敗理由などの説明は `job_info.message` として返されます。
+Provider が診断用の出力ファイルをアップロードし `output_files` に含めた場合、User API はそれらの download presigned URL も返します。
 
-シーケンス図の各時点における、DB 内のデータのサンプルを以下に示します。  
-`/tasks/estimation` エンドポイントに対してタスクを送信した場合の例となっています。  
-以下の数字は、シーケンス図中の丸数字と対応しています。
-
-- (2), (6), (10)
-  - 成功ケースの場合と同様であるため省略。
-- (14)
-  - tasks テーブル: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-tasks-14.csv)
-  - results テーブル: [failure-case-tasks-14.csv](../../sample/architecture/failure-case-results-14.csv)
-
-## タスクキャンセルのシーケンス
-
-タスクをキャンセルした際のシーケンス図を以下に示します。
-`/tasks/{taskId}/cancel` エンドポイントにリクエストを送った場合のシーケンスを示しています。
+## ジョブキャンセルのシーケンス
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User (alice)
-    participant Cloud as Cloud (Backend)
-    participant Provider as Provider (Device ID is 'SVSim')
+    participant User as User
+    participant Cloud as Cloud API
+    participant Storage as Object Storage
 
-    User->>Cloud: POST /tasks/<task ID-1>/cancel
-    Note right of User: User sends a cancel requests for the task <task ID-1>.
-    Note over Cloud: The task status is updated to cancelled
-    Cloud-->>User: HTTP 200 OK
+    User->>Cloud: POST /jobs/<job_id>/cancel
+    Note over Cloud: registered, submitted, ready, running のジョブを cancelled に更新
+    Cloud-->>User: 200 { message: "cancel request accepted" }
 
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled" }
+    User->>Cloud: GET /jobs/<job_id>/status
+    Cloud-->>User: 200 { job_id, status: "cancelled" }
 
-    Note over Provider: Provider tries to cancel the executions of the tasks.
-    Note over Provider: The execution of the task <task ID-1> is successfully cancelled.
-    Provider->>Cloud: POST /results { "taskId": <task ID-1>, "status": "cancelled", "reason": ... }
+    User->>Cloud: GET /jobs/<job_id>
+    Cloud-->>User: 200 { status: "cancelled", job_info: { input, message, ... }, ... }
 
-    Note over Cloud: The received result of the task is inserted to the DB.
-    Cloud-->>Provider: HTTP 200 OK
-
-    User->>Cloud: GET /tasks/<task ID-1>/status
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled" }
-
-    User->>Cloud: GET /results/<task ID-1>
-    Cloud-->>User: HTTP 200 OK { "taskId": <task ID-1>, "status": "cancelled", "reason": ... }
+    User->>Cloud: DELETE /jobs/<job_id>
+    Note over Cloud: DB 行と <job_id>/ 配下のストレージオブジェクトを削除
+    Cloud->>Storage: Delete <job_id>/*
+    Cloud-->>User: 200 { message: "job deleted" }
 ```
 
-Provider は定期的に、タスク実行のキャンセル・キャンセル結果の送信、の流れを繰り返します。
-上図では 1 回分の流れを記載しています。
-
-### 各時点における DB 内のデータ
-
-シーケンス図の各時点における、DB 内のデータのサンプルを以下に示します。  
-`/tasks/sampling/{taskId}/cancel` エンドポイントに対してリクエストした場合の例となっています。  
-以下の数字は、シーケンス図中の丸数字と対応しています。
-
-- (1)
-  - tasks テーブル: [cancel-case-tasks-01.csv](../../sample/architecture/cancel-case-tasks-01.csv)
-  - results テーブル: データ無し
-- (2)
-  - tasks テーブル: [cancel-case-tasks-02.csv](../../sample/architecture/cancel-case-tasks-02.csv)
-  - results テーブル: データ無し
-- (6)
-  - tasks テーブル: [cancel-case-tasks-08.csv](../../sample/architecture/cancel-case-tasks-08.csv)
-  - results テーブル: [cancel-case-results-08.csv](../../sample/architecture/cancel-case-results-08.csv)
-
+User は `registered`, `submitted`, `ready`, `running` のジョブに対してキャンセルを要求できます。
+削除できるのは `succeeded`, `failed`, `cancelled` の終端状態に到達したジョブだけです。

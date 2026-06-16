@@ -90,6 +90,7 @@ plugins:
             Architecture: アーキテクチャ
             AWS System Architecture Diagram: AWSシステムアーキテクチャ図
             Task State Transition Diagram: タスクの状態遷移
+            Quantum Jobs in Detail: 量子ジョブの詳細
             Sequence Diagram: シーケンス図
 
             Developer Guidelines: 開発者ガイドライン
