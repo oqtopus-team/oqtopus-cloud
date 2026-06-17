@@ -17,6 +17,15 @@ x-api-env: &api-env
   EDITABLE_FIELDS: '["name", "organization"]'
   VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
   LOGIN_HISTORY_ENABLED: "true"
+  # OTel: defaults to ON locally so changes to tracing.py / instrumentors are
+  # exercised by every local request. The bundled otel-collector below is a
+  # debug sink (no Tempo/Grafana); for visual trace inspection, run
+  # monitoring-prototype in parallel and override OTEL_EXPORTER_OTLP_ENDPOINT.
+  # Lambda env is still managed by Terraform — these only affect local compose.
+  OTEL_ENABLED: ${OTEL_ENABLED:-true}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_EXPORTER_OTLP_TIMEOUT: ${OTEL_EXPORTER_OTLP_TIMEOUT:-0.2}
 
 x-api-common: &api-common
   build:
@@ -27,6 +36,8 @@ x-api-common: &api-common
       condition: service_started
     minio:
       condition: service_healthy
+    otel-collector:
+      condition: service_started
   restart: unless-stopped
 
 services:
@@ -72,6 +83,14 @@ services:
       mc alias set local http://minio:9000 minioadmin minioadmin && \
       mc mb --ignore-existing local/oqtopus-oqtopus-dev && \
       echo '✅ Bucket created (or already exists)'"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: oqtopus-otel-collector
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    restart: unless-stopped
 
   user-api:
     <<: *api-common

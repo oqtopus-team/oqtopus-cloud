@@ -105,3 +105,15 @@ variable "s3_cors_allowed_origins" {
   type        = list(string)
   default     = []
 }
+
+variable "monitoring_vpc_cidr" {
+  description = "CIDR of the monitoring VPC peered for OTLP egress. Empty disables peering and the OTLP egress rule (set once prod monitoring is live)."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_route_table_name" {
+  description = "Name tag of the monitoring VPC route table that receives the return route"
+  type        = string
+  default     = ""
+}

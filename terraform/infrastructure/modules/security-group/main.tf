@@ -76,7 +76,7 @@ resource "aws_security_group" "secret_manager" {
 }
 
 # Cognito
-resource "aws_security_group" "cognito" {  #TODO: can be deleted but need to remove ENI first from the environments already in operation
+resource "aws_security_group" "cognito" { #TODO: can be deleted but need to remove ENI first from the environments already in operation
   name        = "${var.product}-${var.org}-${var.env}-to-cognito"
   vpc_id      = var.vpc_id
   description = "access to Cognito through Nat Gateway"
@@ -307,5 +307,20 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_s3" {
   description       = "Allow outbound HTTPS traffic to S3 via VPC Endpoint"
   tags = {
     Name = "${var.product}-${var.org}-${var.env}-lambda-to-s3-egress"
+  }
+}
+
+# OTLP HTTP egress to the cross-VPC otel-collector (reached via VPC peering).
+# Skipped when no collector CIDR is configured for the environment.
+resource "aws_vpc_security_group_egress_rule" "lambda_to_otlp_collector" {
+  count             = var.lambda_otlp_collector_cidr == "" ? 0 : 1
+  security_group_id = aws_security_group.lambda.id
+  from_port         = 34318
+  to_port           = 34318
+  ip_protocol       = "tcp"
+  cidr_ipv4         = var.lambda_otlp_collector_cidr
+  description       = "OTLP HTTP to otel-collector (peering)"
+  tags = {
+    Name = "${var.product}-${var.org}-${var.env}-lambda-to-otlp-collector"
   }
 }
