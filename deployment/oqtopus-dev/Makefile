@@ -287,6 +287,11 @@ deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda
 	BIN=./bin/user_signup \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
+deploy-pending-jobs-updater-worker-via-actions: zip-pending-jobs-updater-worker	## Deploy pending-jobs-updater-worker Lambda Package via Github Actions
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-pending-jobs-updater-worker \
+	BIN=./bin/pending-jobs-updater
+
 deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
 	@export AWS_PAGER="" && \
