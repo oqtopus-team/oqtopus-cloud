@@ -6,6 +6,8 @@ on:
     paths:
       - 'backend/oqtopus_cloud/**'
       - 'backend/oas/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
   workflow_dispatch:
 
 jobs:
