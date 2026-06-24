@@ -66,7 +66,7 @@ def _register_snapstart_restore_hook() -> None:
     # It is absent locally and in tests — where there is no snapshot to restore
     # — so a missing import is a no-op.
     try:
-        from snapshot_restore_py import register_after_restore
+        from snapshot_restore_py import register_after_restore  # type: ignore[import-not-found]
     except ImportError:
         return
     register_after_restore(_reseed_random_after_snapstart)
