@@ -105,3 +105,15 @@ variable "lambda_timeout" {
   description = "Lambda execution timeout"
   default     = 15
 }
+
+variable "otel_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable explicit CloudWatch log-group management so the monitoring stack (Loki/Alloy) can ingest this Lambda's logs with a known name and retention."
+}
+
+variable "lambda_log_retention_days" {
+  type        = number
+  default     = 14
+  description = "CloudWatch log retention (days) for the Lambda function log group. Used when otel_enabled = true."
+}

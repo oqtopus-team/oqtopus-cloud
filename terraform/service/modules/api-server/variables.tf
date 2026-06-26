@@ -249,3 +249,9 @@ variable "otel_exporter_otlp_endpoint" {
     error_message = "otel_exporter_otlp_endpoint must be set when otel_enabled = true."
   }
 }
+
+variable "lambda_log_retention_days" {
+  type        = number
+  default     = 14
+  description = "CloudWatch log retention (days) for the Lambda function log group. Used when otel_enabled = true."
+}

@@ -58,15 +58,18 @@ class FakeCognitoClientMultipleUsers:
 
 
 class FakePyJWKClient:
-    def __init__(self, uri):
+    # Mirror jwt.PyJWKClient(uri, timeout=...) so the production call,
+    # which now passes an explicit timeout, can be monkeypatched.
+    def __init__(self, uri, timeout=None, **kwargs):
         self.uri = uri
+        self.timeout = timeout
 
     def get_signing_key_from_jwt(self, token):
         return mock.MagicMock()
 
 
 class FakePyJWKClientFailure:
-    def __init__(self, uri):
+    def __init__(self, uri, timeout=None, **kwargs):
         self.uri = uri
 
     def get_signing_key_from_jwt(self, token):

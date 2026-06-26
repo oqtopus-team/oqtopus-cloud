@@ -85,6 +85,11 @@ resource "aws_lambda_function" "this" {
   }
   publish = true
 
+  # Ensure the explicitly-managed log group (with retention) is created before
+  # the function, so the function does not auto-create it first with infinite
+  # retention. No-op when otel_enabled = false (the group has count = 0).
+  depends_on = [aws_cloudwatch_log_group.lambda]
+
   lifecycle {
     ignore_changes = [tags["github-sha"]]
   }
