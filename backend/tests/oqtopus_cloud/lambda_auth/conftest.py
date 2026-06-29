@@ -97,7 +97,7 @@ def test_session() -> Generator:
 
 @pytest.fixture(autouse=True, scope="function")
 def override_get_db_session(test_session, monkeypatch):
-    def _get_test_db_session():
+    def _get_test_db_session(read_timeout=None):
         yield test_session
 
     monkeypatch.setenv("DB_HOST", "sqlite:///:memory:")

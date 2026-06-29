@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
-from oqtopus_cloud.common.session import get_db
+from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, get_db
 from oqtopus_cloud.lambda_auth.conf import logger, tracer
 
 utc = ZoneInfo("UTC")
@@ -52,7 +52,7 @@ def _validate_user_status(
 ) -> bool:
     try:
         # Get a database session
-        dbs = get_db()
+        dbs = get_db(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
         db = next(dbs)
 
         user = None
@@ -159,7 +159,7 @@ def _verify_api_token(api_token: Optional[str]) -> str:
 
     try:
         # Get a database session
-        dbs = get_db()
+        dbs = get_db(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
         db = next(dbs)
 
         select_stmt = select(

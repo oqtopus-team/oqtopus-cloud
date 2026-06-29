@@ -39,13 +39,21 @@ _BOTO_TIMEOUT_CONFIG = Config(
 # credential-refresh window on the proxy while still failing fast on a
 # true stall (default OS TCP timeout is ~75s, way too long).
 _DB_CONNECT_TIMEOUT_SECONDS = 5
-# MySQL read_timeout (seconds). connect_timeout only bounds establishing the
+# MySQL read_timeout (seconds) for the AUTHORIZER ONLY (passed explicitly via
+# get_db(read_timeout=...)). connect_timeout only bounds establishing the
 # socket; without read_timeout a query that stalls AFTER connect (RDS Proxy
 # pinning, failover, max_connections wait) hangs unbounded and the Lambda is
 # SIGKILL'd at its 15s limit with no log -- exactly the silent timeout we are
 # trying to make traceable. Authorizer queries are single indexed lookups
 # (~tens of ms), so 5s is ~100x headroom while still failing fast.
-_DB_READ_TIMEOUT_SECONDS = 5
+#
+# NOT applied to the shared default: the worker (per-device COUNT aggregates)
+# and list endpoints (paginate/scalars().all()) legitimately run longer than
+# the authorizer and have larger Lambda budgets, so a global 5s read_timeout
+# would turn previously-slow-but-successful queries into 500s / worker failures
+# under the very same RDS Proxy conditions cited above. Those callers keep the
+# original unbounded read behavior.
+AUTH_DB_READ_TIMEOUT_SECONDS = 5
 
 
 def get_secret() -> Any:
@@ -80,7 +88,7 @@ def get_secret() -> Any:
     return json.loads(secret)
 
 
-def get_db() -> Generator:
+def get_db(read_timeout: int | None = None) -> Generator:
     """Returns a database session.
 
     This function creates a database session using the SQLAlchemy engine and sessionmaker.
@@ -104,13 +112,15 @@ def get_db() -> Generator:
     SQLALCHEMY_DATABASE_URL = (
         f"{connector}://{secret['username']}:{secret['password']}@{host}/{db_name}"
     )
+    connect_args = {
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', time_zone='+00:00'",
+        "connect_timeout": _DB_CONNECT_TIMEOUT_SECONDS,
+    }
+    if read_timeout is not None:
+        connect_args["read_timeout"] = read_timeout
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
-        connect_args={
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', time_zone='+00:00'",
-            "connect_timeout": _DB_CONNECT_TIMEOUT_SECONDS,
-            "read_timeout": _DB_READ_TIMEOUT_SECONDS,
-        },
+        connect_args=connect_args,
     )
     SessionLocal = sessionmaker(
         autoflush=False,
