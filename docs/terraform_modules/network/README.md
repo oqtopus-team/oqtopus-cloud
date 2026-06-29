@@ -91,6 +91,7 @@ module "network" {
 |------|-------------|
 | <a name="output_bastion_subnet_id"></a> [bastion\_subnet\_id](#output\_bastion\_subnet\_id) | The ID of the bastion subnet |
 | <a name="output_ec2_bastion_route_table_id"></a> [ec2\_bastion\_route\_table\_id](#output\_ec2\_bastion\_route\_table\_id) | The route table ID for the EC2 instance |
+| <a name="output_private_route_table_ids"></a> [private\_route\_table\_ids](#output\_private\_route\_table\_ids) | The IDs of the private route tables (one per AZ) |
 | <a name="output_private_subnet_ids"></a> [private\_subnet\_ids](#output\_private\_subnet\_ids) | The IDs of the private subnets |
 | <a name="output_public_subnet_ids"></a> [public\_subnet\_ids](#output\_public\_subnet\_ids) | The IDs of the public subnets |
 | <a name="output_s3_vpc_endpoint_id"></a> [s3\_vpc\_endpoint\_id](#output\_s3\_vpc\_endpoint\_id) | The ID of VPC endpoint for S3 |
