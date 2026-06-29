@@ -96,12 +96,12 @@ def test_session() -> Generator:
 
 
 @pytest.fixture(autouse=True, scope="function")
-def override_get_db_session(test_session, monkeypatch):
-    def _get_test_db_session(read_timeout=None):
-        yield test_session
-
+def override_create_session(test_session, monkeypatch):
     monkeypatch.setenv("DB_HOST", "sqlite:///:memory:")
-    monkeypatch.setattr("oqtopus_cloud.common.session.get_db", _get_test_db_session)
+    monkeypatch.setattr(
+        "oqtopus_cloud.lambda_auth.lambda_function._create_session",
+        lambda read_timeout=None: test_session,
+    )
 
 
 @pytest.fixture()
