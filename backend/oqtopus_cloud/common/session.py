@@ -15,7 +15,7 @@ from botocore.exceptions import (
 from sqlalchemy import (
     create_engine,
 )
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 # Per-call timeouts so a stalled AWS API raises a Python exception
 # (visible in CloudWatch + X-Ray) instead of consuming the Lambda timeout
@@ -88,22 +88,12 @@ def get_secret() -> Any:
     return json.loads(secret)
 
 
-def get_db(read_timeout: int | None = None) -> Generator:
-    """Returns a database session.
+def _create_session(read_timeout: int | None = None) -> Session:
+    """Build and return a database session.
 
-    This function creates a database session using the SQLAlchemy engine and sessionmaker.
-    The session is then yielded to the caller, allowing them to perform database operations.
-    If an exception occurs during the database operation, the session is rolled back and the exception is raised.
-    Finally, the session is closed.
-
-    Yields:
-        Generator: A database session.
-
-    Raises:
-        Exception: If an exception occurs during the database operation.
-
-    Returns:
-        Generator: A database session.
+    read_timeout (seconds) is the PyMySQL read_timeout and is passed ONLY by the
+    authorizer (AUTH_DB_READ_TIMEOUT_SECONDS). It is intentionally NOT a parameter
+    of the get_db FastAPI dependency -- see get_db for why.
     """
     secret = get_secret()
     host = os.environ["DB_HOST"]
@@ -126,8 +116,19 @@ def get_db(read_timeout: int | None = None) -> Generator:
         autoflush=False,
         bind=engine,
     )
+    return SessionLocal()
 
-    db = SessionLocal()
+
+def get_db() -> Generator:
+    """FastAPI dependency that yields a database session.
+
+    Kept parameter-less on purpose: FastAPI treats a dependency callable's
+    parameters as request parameters, so adding e.g. read_timeout here would
+    expose a client-controllable `read_timeout` query parameter on every
+    Depends(get_db) endpoint. Callers that need a bounded read (the authorizer)
+    call _create_session directly instead of going through this dependency.
+    """
+    db = _create_session()
     try:
         yield db
     except:

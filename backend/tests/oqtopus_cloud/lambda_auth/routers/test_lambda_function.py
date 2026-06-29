@@ -15,7 +15,7 @@ from oqtopus_cloud.lambda_auth.lambda_function import (
 
 
 def fake_get_db_client(test_session):
-    yield test_session
+    return test_session
 
 
 def fake__verify_api_token(api_token=""):
@@ -112,7 +112,9 @@ def test__verify_id_token(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     actual = _verify_id_token("id_token")
@@ -126,7 +128,9 @@ def test__verify_id_token_no_token(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_id_token(None)
@@ -140,7 +144,9 @@ def test__verify_id_token_no_env_variable(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     monkeypatch.delenv("USER_POOL_WEB_CLIENT_ID", raising=False)
     with pytest.raises(AuthError) as excinfo:
@@ -167,7 +173,9 @@ def test__verify_suspended(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     pytest.raises(AuthError, _verify_id_token, "id_token")
@@ -179,7 +187,9 @@ def test__verify_unapproved(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     pytest.raises(AuthError, _verify_id_token, "id_token")
@@ -191,7 +201,9 @@ def test__verify_mfa_inactive(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     pytest.raises(AuthError, _verify_id_token, "id_token")
@@ -203,7 +215,9 @@ def test__verify_api_token(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     ret = _verify_api_token("api_token_id_1.api_token_secret_1")
 
@@ -216,7 +230,9 @@ def test__verify_api_token_expired(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     try:
@@ -233,7 +249,9 @@ def test__verify_api_token_api_no_token(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token(None)
@@ -247,7 +265,9 @@ def test__verify_api_token_no_env_variable(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     monkeypatch.delenv("AUTH_USER_POOL_ID", raising=False)
     with pytest.raises(AuthError) as excinfo:
@@ -262,7 +282,9 @@ def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
 
     with pytest.raises(AuthError) as excinfo:
@@ -277,7 +299,9 @@ def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
@@ -294,7 +318,9 @@ def test__verify_api_token_multiple_cognito_user(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
@@ -310,7 +336,9 @@ def test__verify_api_token_suspended(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
@@ -322,7 +350,9 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
     test_session.add(user)
     test_session.commit()
     monkeypatch.setattr(
-        lambda_function, "get_db", lambda **kwargs: fake_get_db_client(test_session)
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
     )
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")

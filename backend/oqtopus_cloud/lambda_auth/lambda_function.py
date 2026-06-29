@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
-from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, get_db
+from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, _create_session
 from oqtopus_cloud.lambda_auth.conf import logger, tracer
 
 utc = ZoneInfo("UTC")
@@ -52,26 +52,26 @@ def _validate_user_status(
 ) -> bool:
     try:
         # Get a database session
-        dbs = get_db(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
-        db = next(dbs)
-
-        user = None
-        # Get the user status from the database
-        if user_id:
-            stmt = select(User).where(
-                User.id == user_id,
-                User.userstatus == UserStatus.approved,
-            )
-            user = db.execute(stmt).scalar()
+        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+        try:
+            user = None
+            # Get the user status from the database
+            if user_id:
+                stmt = select(User).where(
+                    User.id == user_id,
+                    User.userstatus == UserStatus.approved,
+                )
+                user = db.execute(stmt).scalar()
+            elif cognito_id:
+                stmt = select(User).where(
+                    User.cognito_id == cognito_id,
+                    User.userstatus == UserStatus.approved,
+                )
+                user = db.execute(stmt).scalar()
+            else:
+                raise AuthError("user_id or cognito_id is not given")
+        finally:
             db.close()
-        elif cognito_id:
-            stmt = select(User).where(
-                User.cognito_id == cognito_id, User.userstatus == UserStatus.approved
-            )
-            user = db.execute(stmt).scalar()
-            db.close()
-        else:
-            raise AuthError("user_id or cognito_id is not given")
 
         if user is None:
             logger.info(f"User {user_id} or {cognito_id} is not approved")
@@ -159,45 +159,46 @@ def _verify_api_token(api_token: Optional[str]) -> str:
 
     try:
         # Get a database session
-        dbs = get_db(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
-        db = next(dbs)
-
-        select_stmt = select(
-            User.mfa_status,
-            User.api_token_hash,
-            User.api_token_expiration,
-            User.cognito_id,
-        ).where(User.api_token_id == api_token_id)
-        verification_data = db.execute(select_stmt).first()
-        if verification_data is None:
-            raise AuthError("Invalid API token")
-
-        mfa_status, api_token_hash, api_token_expiration, cognito_id = verification_data
-
-        # Check the API token hash
+        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
         try:
-            ph.verify(api_token_hash, api_token_secret)
-        except VerifyMismatchError:
-            raise AuthError("Invalid API token")
-        except (VerificationError, InvalidHash):
-            raise AuthError("API token verification error")
+            select_stmt = select(
+                User.mfa_status,
+                User.api_token_hash,
+                User.api_token_expiration,
+                User.cognito_id,
+            ).where(User.api_token_id == api_token_id)
+            verification_data = db.execute(select_stmt).first()
+            if verification_data is None:
+                raise AuthError("Invalid API token")
 
-        if ph.check_needs_rehash(api_token_hash):
-            update_stmt = (
-                update(User)
-                .where(User.api_token_id == api_token_id)
-                .values(api_token_hash=ph.hash(api_token_secret))
+            mfa_status, api_token_hash, api_token_expiration, cognito_id = (
+                verification_data
             )
-            db.execute(update_stmt)
-            db.commit()
 
-        # Check the API token expiration
-        if (api_token_expiration is None) or (
-            api_token_expiration.astimezone(utc) < datetime.now(utc)
-        ):
-            raise AuthError("API token is expired")
+            # Check the API token hash
+            try:
+                ph.verify(api_token_hash, api_token_secret)
+            except VerifyMismatchError:
+                raise AuthError("Invalid API token")
+            except (VerificationError, InvalidHash):
+                raise AuthError("API token verification error")
 
-        db.close()
+            if ph.check_needs_rehash(api_token_hash):
+                update_stmt = (
+                    update(User)
+                    .where(User.api_token_id == api_token_id)
+                    .values(api_token_hash=ph.hash(api_token_secret))
+                )
+                db.execute(update_stmt)
+                db.commit()
+
+            # Check the API token expiration
+            if (api_token_expiration is None) or (
+                api_token_expiration.astimezone(utc) < datetime.now(utc)
+            ):
+                raise AuthError("API token is expired")
+        finally:
+            db.close()
     except Exception as e:
         raise AuthError(f"Database error {e}")
 
