@@ -6,16 +6,38 @@ import boto3
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
+from botocore.config import Config
 from sqlalchemy import select, update
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
-from oqtopus_cloud.common.session import get_db
-from oqtopus_cloud.lambda_auth.conf import logger
+from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, _create_session
+from oqtopus_cloud.lambda_auth.conf import logger, tracer
 
 utc = ZoneInfo("UTC")
 
 ph = PasswordHasher()
+
+# Per-call timeouts so a stalled external dependency raises a Python
+# exception (visible in CloudWatch + X-Ray) instead of consuming the
+# Lambda timeout budget and being SIGKILL'd. Normal latencies observed:
+# Cognito IDP ~120ms, JWKS fetch ~150ms. read_timeout=3s gives ~20x
+# headroom over normal while still failing fast on a real stall; with
+# total_max_attempts=2 (one initial + one retry) the SDK-level worst case
+# is ~7s (3s read + 1s backoff + 3s read), comfortably under the 15s
+# Lambda timeout. connect_timeout=2s bounds the TCP+TLS handshake
+# (anything beyond is anomalous).
+#
+# NB: use total_max_attempts, NOT max_attempts. In a botocore retries
+# config, max_attempts means *retries excluding the initial call*
+# (max_attempts=N -> total_max_attempts=N+1), so max_attempts=2 would be
+# 3 calls (~11s) and blow the worst-case budget above.
+_BOTO_TIMEOUT_CONFIG = Config(
+    connect_timeout=2,
+    read_timeout=3,
+    retries={"total_max_attempts": 2, "mode": "standard"},
+)
+_JWKS_HTTP_TIMEOUT_SECONDS = 5
 
 
 class AuthError(Exception):
@@ -24,31 +46,32 @@ class AuthError(Exception):
     pass
 
 
+@tracer.capture_method
 def _validate_user_status(
     user_id: str | None = None, cognito_id: str | None = None
 ) -> bool:
     try:
         # Get a database session
-        dbs = get_db()
-        db = next(dbs)
-
-        user = None
-        # Get the user status from the database
-        if user_id:
-            stmt = select(User).where(
-                User.id == user_id,
-                User.userstatus == UserStatus.approved,
-            )
-            user = db.execute(stmt).scalar()
+        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+        try:
+            user = None
+            # Get the user status from the database
+            if user_id:
+                stmt = select(User).where(
+                    User.id == user_id,
+                    User.userstatus == UserStatus.approved,
+                )
+                user = db.execute(stmt).scalar()
+            elif cognito_id:
+                stmt = select(User).where(
+                    User.cognito_id == cognito_id,
+                    User.userstatus == UserStatus.approved,
+                )
+                user = db.execute(stmt).scalar()
+            else:
+                raise AuthError("user_id or cognito_id is not given")
+        finally:
             db.close()
-        elif cognito_id:
-            stmt = select(User).where(
-                User.cognito_id == cognito_id, User.userstatus == UserStatus.approved
-            )
-            user = db.execute(stmt).scalar()
-            db.close()
-        else:
-            raise AuthError("user_id or cognito_id is not given")
 
         if user is None:
             logger.info(f"User {user_id} or {cognito_id} is not approved")
@@ -63,6 +86,7 @@ def _validate_user_status(
         raise AuthError("Failed to get user status")
 
 
+@tracer.capture_method
 def _verify_id_token(id_token: Optional[str]) -> str:
     if id_token is None:
         raise AuthError("ID token is not found")
@@ -83,7 +107,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
 
     try:
         # Get the signing key from the JWT
-        jwks_client = jwt.PyJWKClient(jwks_url)
+        jwks_client = jwt.PyJWKClient(jwks_url, timeout=_JWKS_HTTP_TIMEOUT_SECONDS)
         signing_key = jwks_client.get_signing_key_from_jwt(id_token)
     except Exception as e:
         raise AuthError(f"Failed to get signing key from JWT: {e}")
@@ -117,6 +141,7 @@ def _verify_id_token(id_token: Optional[str]) -> str:
         raise AuthError("ID token is invalid")
 
 
+@tracer.capture_method
 def _verify_api_token(api_token: Optional[str]) -> str:
     if api_token is None or api_token == "":
         raise AuthError("API token is None")
@@ -134,45 +159,46 @@ def _verify_api_token(api_token: Optional[str]) -> str:
 
     try:
         # Get a database session
-        dbs = get_db()
-        db = next(dbs)
-
-        select_stmt = select(
-            User.mfa_status,
-            User.api_token_hash,
-            User.api_token_expiration,
-            User.cognito_id,
-        ).where(User.api_token_id == api_token_id)
-        verification_data = db.execute(select_stmt).first()
-        if verification_data is None:
-            raise AuthError("Invalid API token")
-
-        mfa_status, api_token_hash, api_token_expiration, cognito_id = verification_data
-
-        # Check the API token hash
+        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
         try:
-            ph.verify(api_token_hash, api_token_secret)
-        except VerifyMismatchError:
-            raise AuthError("Invalid API token")
-        except (VerificationError, InvalidHash):
-            raise AuthError("API token verification error")
+            select_stmt = select(
+                User.mfa_status,
+                User.api_token_hash,
+                User.api_token_expiration,
+                User.cognito_id,
+            ).where(User.api_token_id == api_token_id)
+            verification_data = db.execute(select_stmt).first()
+            if verification_data is None:
+                raise AuthError("Invalid API token")
 
-        if ph.check_needs_rehash(api_token_hash):
-            update_stmt = (
-                update(User)
-                .where(User.api_token_id == api_token_id)
-                .values(api_token_hash=ph.hash(api_token_secret))
+            mfa_status, api_token_hash, api_token_expiration, cognito_id = (
+                verification_data
             )
-            db.execute(update_stmt)
-            db.commit()
 
-        # Check the API token expiration
-        if (api_token_expiration is None) or (
-            api_token_expiration.astimezone(utc) < datetime.now(utc)
-        ):
-            raise AuthError("API token is expired")
+            # Check the API token hash
+            try:
+                ph.verify(api_token_hash, api_token_secret)
+            except VerifyMismatchError:
+                raise AuthError("Invalid API token")
+            except (VerificationError, InvalidHash):
+                raise AuthError("API token verification error")
 
-        db.close()
+            if ph.check_needs_rehash(api_token_hash):
+                update_stmt = (
+                    update(User)
+                    .where(User.api_token_id == api_token_id)
+                    .values(api_token_hash=ph.hash(api_token_secret))
+                )
+                db.execute(update_stmt)
+                db.commit()
+
+            # Check the API token expiration
+            if (api_token_expiration is None) or (
+                api_token_expiration.astimezone(utc) < datetime.now(utc)
+            ):
+                raise AuthError("API token is expired")
+        finally:
+            db.close()
     except Exception as e:
         raise AuthError(f"Database error {e}")
 
@@ -187,8 +213,9 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError("User is not approved")
 
     try:
-        # Initialize the Cognito client
-        client = boto3.client("cognito-idp")
+        # Initialize the Cognito client with explicit short timeouts so a
+        # stalled IDP call fails fast instead of consuming the Lambda budget.
+        client = boto3.client("cognito-idp", config=_BOTO_TIMEOUT_CONFIG)
         # Get list users in the Cognito user pool with the specified Cognito ID
         response = client.list_users(
             UserPoolId=USER_POOL_ID, Filter=f'sub = "{cognito_id}"'
@@ -246,10 +273,14 @@ def _generate_policy_deny(principal_id="", resource="", user_id=""):
     return auth_response
 
 
+@tracer.capture_lambda_handler
 def lambda_handler(event, context):
+    method_arn = event["methodArn"]
+    # Marker log so that, on a future timeout, we can tell init/import stall
+    # (no marker) from handler-body stall (marker present, no later logs).
+    logger.info("lambda_handler entered", extra={"method_arn": method_arn})
     headers_raw = event.get("headers", {})
     headers = {k.lower(): v for k, v in headers_raw.items()}
-    method_arn = event["methodArn"]
     user_id = None
     unknown_user_id = "unknown"
 
