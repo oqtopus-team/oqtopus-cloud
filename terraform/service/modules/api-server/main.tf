@@ -91,12 +91,18 @@ resource "aws_lambda_function" "this" {
         OTEL_ENABLED                = "true"
         OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
         OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-        # Cap each export attempt so an unreachable collector cannot push the
-        # function past the API Gateway/Lambda timeout. 0.2s × ~2 retries ≒ 0.4s
-        # worst case; kill switch is otel_enabled = false. Direct export beats a
-        # co-located collector layer here: the layer's own retry queue, which
-        # OTEL_EXPORTER_OTLP_TIMEOUT does not bound, billed ~20s storms on freeze.
-        OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
+        # Per-export attempt cap (seconds). This must exceed the *healthy* export
+        # round trip so spans actually land; it is NOT the request-path bound.
+        # The real user-visible/billed bound is the synchronous force_flush in
+        # common/tracing.py (OTEL_FORCE_FLUSH_TIMEOUT_MS, 500ms default), which
+        # returns regardless of this value, so an unreachable collector still
+        # cannot push the function past the API Gateway/Lambda timeout. The old
+        # 0.2s sat *below* the Lambda->NAT->collector round trip, so every batch
+        # tripped "Failed to export span batch due to timeout" and Tempo received
+        # no traces at all (qiqb-dev, 2026-06-30: ~350 failures/hr, zero spans).
+        # Kill switch remains otel_enabled = false; direct export (no collector
+        # layer) keeps freeze billing bounded by force_flush, not a layer queue.
+        OTEL_EXPORTER_OTLP_TIMEOUT = "3"
       } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
