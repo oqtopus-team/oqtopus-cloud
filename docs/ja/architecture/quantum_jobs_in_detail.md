@@ -3,7 +3,7 @@
 OQTOPUS は、大きな量子ジョブのペイロードをオブジェクトストレージに保存し、データベースにはジョブのメタデータだけを保存します。
 User API、Provider API、ストレージは presigned URL で接続され、クライアントは大きなファイルを API サーバー経由ではなくストレージへ直接アップロードまたはダウンロードします。
 
-このページでは、現在動作しているバックエンド実装と `backend/oas` 配下の OpenAPI を正として仕様を説明します。
+このページでは、現在動作しているバックエンドの挙動と、周辺クライアントで使われているストレージ上の慣例を説明します。内容は `backend/oas` 配下の OpenAPI と実装に沿っています。
 
 ## ストレージモデル
 
@@ -17,11 +17,11 @@ User API、Provider API、ストレージは presigned URL で接続され、ク
 <job_id>/sse_log.zip
 ```
 
-バックエンドが扱うオブジェクト名は固定で、各 zip には単一の payload ファイルを入れます。
+バックエンドが扱う `.zip` オブジェクト名は固定です。各 zip には慣例として単一の payload ファイルを入れますが、バックエンドが検証するのはオブジェクトキーであり、archive 内のファイル名ではありません。
 
-| Object | zip 内エントリ名 | 作成者 | 利用者 | payload format | 備考 |
+| Object | 慣例上の zip 内エントリ名 | 作成者 | 利用者 | payload format | 備考 |
 | --- | --- | --- | --- | --- | --- |
-| `input.zip` | `input.json` | User | Provider, User | `jobs.S3SubmitJobInfo` に一致する JSON | submission 完了前に必須です。 |
+| `input.zip` | `input.json` | User | Provider, User | User API の `jobs.S3SubmitJobInfo` に一致する JSON | submission 完了前に必須です。 |
 | `combined_program.zip` | `combined_program.json` | Provider | User | combined program 用 JSON payload | `multi_manual` ジョブでのみ受け付けます。 |
 | `transpile_result.zip` | `transpile_result.json` | Provider | User | `jobs.S3TranspileResult` に一致する JSON | transpile 結果です。 |
 | `result.zip` | `result.json` | Provider | User | `jobs.S3JobResult` に一致する JSON | ジョブ結果です。 |
@@ -30,14 +30,14 @@ User API、Provider API、ストレージは presigned URL で接続され、ク
 デフォルトのストレージドライバーは S3 です。
 ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントはストレージバックエンドへ直接ファイルを転送します。
 
-現在の storage-backed 形式では、zip 内エントリ名の規則は基本的に `<object-stem>.json` で、`sse_log.zip` だけ `sse_log.log` を使います。
+現在の storage-backed 形式では、クライアント側の archive entry は慣例として `<object-stem>.json` を使い、SSE ログでは慣例として `.log` entry を使います。
 
 ## User API の流れ
 
 1. `POST /jobs` でジョブを登録します。
    バックエンドは `registered` 状態の DB 行を作成し、生成した `job_id` と `<job_id>/input.zip` 用の upload presigned URL を返します。
 2. 返された presigned URL に `input.zip` をアップロードします。
-   アップロードする zip には、`jobs.S3SubmitJobInfo` で表現されるジョブ入力を `input.json` として入れます。
+   アップロードする zip には、User API の `jobs.S3SubmitJobInfo` で表現されるジョブ入力を、慣例として `input.json` に入れます。
 3. `POST /jobs/{job_id}/submit` で submission を完了します。
    request body には `device_id`, `job_type`, `shots` と、任意の transpiler, simulator, mitigation, name, description を含めます。バックエンドは `<job_id>/input.zip` が存在することを確認してから status を `submitted` に変更します。
 4. `GET /jobs` または `GET /jobs/{job_id}` でジョブ詳細を取得します。
@@ -82,15 +82,16 @@ DB にはジョブ ID と `.zip` suffix を除いた正規化済みオブジェ�
 
 ## ジョブ入出力スキーマ
 
-`input.zip` の中には、`jobs.S3SubmitJobInfo` に従う `input.json` を入れます。
+`input.zip` の中には、User API の `jobs.S3SubmitJobInfo` に従う payload を、慣例として `input.json` に入れます。
 
 | Field | Required for | 備考 |
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | OpenQASM 3 program の配列です。非 multiprogramming job では通常 1 つの program を含みます。 |
 | `operator` | `estimation` | Pauli operator item の配列です。 |
-| `sse_program` | `sse` | SSE job 用の user program です。 |
 
-Provider の出力 zip とその中の payload 名、schema/format の対応は上のストレージモデル表を参照してください。
+Provider API には、SSE job 用の `sse_program` を含む別の generated `jobs.S3SubmitJobInfo` schema があります。このフィールドは、ここで説明している User API の input upload schema には含まれません。
+
+Provider の出力 zip とその中の慣例上の payload 名、schema/format の対応は上のストレージモデル表を参照してください。
 
 アーカイブ構成の例:
 

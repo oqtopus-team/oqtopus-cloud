@@ -3,7 +3,7 @@
 OQTOPUS stores large quantum-job payloads in object storage and keeps only job metadata in the database.
 The User API, Provider API, and storage service are connected by presigned URLs, so clients upload and download job files directly without sending large payloads through the API server.
 
-This page describes the current implementation contract. It intentionally follows the running backend implementation and OpenAPI files under `backend/oas`.
+This page describes the current backend behavior and the storage conventions used by the surrounding clients. It intentionally follows the running backend implementation and OpenAPI files under `backend/oas`.
 
 ## Storage Model
 
@@ -17,11 +17,11 @@ Each job owns a storage prefix named by its job ID:
 <job_id>/sse_log.zip
 ```
 
-The supported object names are fixed by the backend, and each zip is expected to contain a single payload file:
+The supported `.zip` object names are fixed by the backend. Each zip conventionally contains a single payload file, but the backend validates the object key, not the filename inside the archive:
 
-| Object | Archive entry name | Producer | Consumer | Payload format | Notes |
+| Object | Conventional archive entry name | Producer | Consumer | Payload format | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `input.zip` | `input.json` | User | Provider, User | JSON matching `jobs.S3SubmitJobInfo` | Required before submission can be completed. |
+| `input.zip` | `input.json` | User | Provider, User | JSON matching the User API `jobs.S3SubmitJobInfo` | Required before submission can be completed. |
 | `combined_program.zip` | `combined_program.json` | Provider | User | JSON payload for the combined program | Only accepted for `multi_manual` jobs. |
 | `transpile_result.zip` | `transpile_result.json` | Provider | User | JSON matching `jobs.S3TranspileResult` | Transpilation output. |
 | `result.zip` | `result.json` | Provider | User | JSON matching `jobs.S3JobResult` | Job result. |
@@ -29,14 +29,14 @@ The supported object names are fixed by the backend, and each zip is expected to
 
 The default storage driver is S3. Local development can use `local` or `local:minio`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and the client transfers files directly to the storage backend.
 
-For the current storage-backed format, the zip entry naming rule is effectively `<object-stem>.json`, except `sse_log.zip`, which uses `sse_log.log`.
+For the current storage-backed format, client-side archive entries conventionally use `<object-stem>.json`, except SSE logs, which conventionally use a `.log` entry.
 
 ## User API Flow
 
 1. Register a job with `POST /jobs`.
    The backend creates a DB row in `registered` status with a generated `job_id` and returns an upload presigned URL for `<job_id>/input.zip`.
 2. Upload `input.zip` to the returned presigned URL.
-   The uploaded zip contains the job input as `input.json`, described by `jobs.S3SubmitJobInfo`.
+   The uploaded zip conventionally contains the job input as `input.json`, described by the User API `jobs.S3SubmitJobInfo`.
 3. Complete submission with `POST /jobs/{job_id}/submit`.
    The request body contains DB metadata such as `device_id`, `job_type`, `shots`, and optional transpiler, simulator, mitigation, name, and description fields. The backend verifies that `<job_id>/input.zip` exists before moving the job to `submitted`.
 4. Read job details with `GET /jobs` or `GET /jobs/{job_id}`.
@@ -79,15 +79,16 @@ The `ready -> failed` transition is supported so that provider-side preprocessin
 
 ## Job Input and Output Schemas
 
-`input.zip` contains `input.json`, and that payload matches `jobs.S3SubmitJobInfo`.
+`input.zip` conventionally contains `input.json`, and that payload matches the User API `jobs.S3SubmitJobInfo`.
 
 | Field | Required for | Notes |
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | Array of OpenQASM 3 programs. Non-multiprogramming jobs normally contain one program. |
 | `operator` | `estimation` | Array of Pauli operator items. |
-| `sse_program` | `sse` | User program for SSE jobs. |
 
-For provider output zip files and the payload names/schema inside them, refer to the storage-model table above.
+The Provider API has a separate generated `jobs.S3SubmitJobInfo` schema that includes `sse_program` for SSE jobs. That field is not part of the User API input-upload schema described here.
+
+For provider output zip files and the conventional payload names/schema inside them, refer to the storage-model table above.
 
 Example archive layouts:
 
