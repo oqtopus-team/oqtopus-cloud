@@ -42,10 +42,10 @@ copy: generate-oas terraform-docs
 	@cp .github/SECURITY.md ./docs/en/SECURITY.md
 
 docs: copy ## Build MkDocs
-	@uv run mkdocs build
+	@uv run --group docs mkdocs build
 
 run: copy ## Run MkDocs
-	@uv run mkdocs serve
+	@uv run --group docs mkdocs serve
 
 terraform-docs: ## Generate Terraform Docs
 	@$(MAKE) -C terraform/service docs
