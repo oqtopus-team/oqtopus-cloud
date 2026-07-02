@@ -88,6 +88,16 @@ def get_secret() -> Any:
     return json.loads(secret)
 
 
+# Amazon RDS CA bundle shipped inside this package (see
+# oqtopus_cloud/common/certs/global-bundle.pem). Used to verify the RDS Proxy
+# server certificate when TLS is required. Overridable via the DB_SSL_CA env var
+# (wired through Terraform), with this bundled copy as a safe fallback so a
+# missing env var cannot silently drop TLS or cause an outage.
+_DEFAULT_DB_SSL_CA = os.path.join(
+    os.path.dirname(__file__), "certs", "global-bundle.pem"
+)
+
+
 def _create_session(read_timeout: int | None = None) -> Session:
     """Build and return a database session.
 
@@ -102,12 +112,18 @@ def _create_session(read_timeout: int | None = None) -> Session:
     SQLALCHEMY_DATABASE_URL = (
         f"{connector}://{secret['username']}:{secret['password']}@{host}/{db_name}"
     )
-    connect_args = {
+    connect_args: dict[str, Any] = {
         "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', time_zone='+00:00'",
         "connect_timeout": _DB_CONNECT_TIMEOUT_SECONDS,
     }
     if read_timeout is not None:
         connect_args["read_timeout"] = read_timeout
+    # RDS Proxy rejects non-TLS connections once caching_sha2_password /
+    # require_tls is enabled, so verify the server cert against the RDS CA bundle.
+    # Skipped for ENV=local, where the dev MySQL container is reached over a
+    # trusted network and serves no CA-signed certificate.
+    if os.environ.get("ENV") != "local":
+        connect_args["ssl"] = {"ca": os.environ.get("DB_SSL_CA", _DEFAULT_DB_SSL_CA)}
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         connect_args=connect_args,
