@@ -1,8 +1,7 @@
 import datetime
-import enum
 from typing import Optional
 
-from sqlalchemy import Enum, String
+from sqlalchemy import String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -38,20 +37,17 @@ class Device(Base, TimestampMixin):
         String(64),
         primary_key=True,
     )
-    device_type: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "QPU",
-            "simulator",
-        ),
+    device_type: Mapped[str] = mapped_column(
+        String(32),
         nullable=False,
+        default="QPU",
+        server_default="QPU",
     )
-    status: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "available",
-            "unavailable",
-        ),
+    status: Mapped[str] = mapped_column(
+        String(64),
         nullable=False,
-        default="unavailable",
+        default="available",
+        server_default="available",
     )
     available_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTimeTz(),
@@ -60,9 +56,12 @@ class Device(Base, TimestampMixin):
     pending_jobs: Mapped[int] = mapped_column(
         nullable=False,
         default=0,
+        server_default=text("0"),
     )
     n_qubits: Mapped[int] = mapped_column(
         nullable=False,
+        default=1,
+        server_default=text("1"),
     )
     basis_gates: Mapped[str] = mapped_column(
         String(256),
@@ -72,8 +71,12 @@ class Device(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    device_info: Mapped[str]
-    calibrated_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
+    # NOT NULL even though init/01.schema.sql allows NULL: API handlers
+    # substitute "{}" for missing values before insert (see Lambda handlers).
+    device_info: Mapped[str] = mapped_column(Text, nullable=False)
+    calibrated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(), nullable=True
+    )
     description: Mapped[str] = mapped_column(
         String(128),
         nullable=False,
