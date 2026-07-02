@@ -34,6 +34,14 @@ from oqtopus_cloud.common.session import get_db
 _NOW = datetime.datetime.now(datetime.timezone.utc)
 _EXPIRED_TOKEN = datetime.datetime(2021, 1, 1, 0, 0, 5, tzinfo=datetime.timezone.utc)
 
+# Fixed, monotonically increasing lifecycle timestamps for the succeeded job so
+# submitted -> ready -> running -> ended is internally consistent (and stable
+# across re-seeds, unlike _NOW).
+_SUBMITTED_AT = datetime.datetime(2024, 3, 4, 12, 0, 0, tzinfo=datetime.timezone.utc)
+_READY_AT = datetime.datetime(2024, 3, 4, 12, 0, 30, tzinfo=datetime.timezone.utc)
+_RUNNING_AT = datetime.datetime(2024, 3, 4, 12, 1, 0, tzinfo=datetime.timezone.utc)
+_ENDED_AT = datetime.datetime(2024, 3, 4, 12, 1, 16, tzinfo=datetime.timezone.utc)
+
 
 DEVICES: list[dict[str, Any]] = [
     {
@@ -110,24 +118,6 @@ DEVICES: list[dict[str, Any]] = [
 ]
 
 
-_JOB_PROGRAM = (
-    'OPENQASM 3; include "stdgates.inc"; qubit[2] q; bit[2] c; '
-    "h q[0]; cnot q[0], q[1]; c = measure q;"
-)
-
-_JOB_INFO = json.dumps(
-    {
-        "program": [_JOB_PROGRAM],
-        "result": {
-            "counts": '{ "00": 84, "11": 387, "10": 454, "01": 75 }',
-            "estimation": {"exp_value": [1, 2], "stds": 3},
-            "properties": "properties_tezt",
-            "transpile_result": {
-                "virtual_physical_mapping": "virtual_physical_mapping_text"
-            },
-        },
-    }
-)
 _TRANSPILER_INFO = json.dumps(
     {
         "qubit_allocation": {"0": 12, "1": 16},
@@ -151,44 +141,54 @@ _SIMULATOR_INFO = json.dumps(
 _MITIGATION_INFO = json.dumps({"ro_error_mitigation": "pseudo_inverse"})
 
 
+# NOTE: keep in sync with storage/init_storage.py — it uploads the storage
+# objects (input.zip, plus one <name>.zip per entry in output_files) that the
+# API's get_job_info() dereferences for each of these jobs. A job's DB row and
+# its MinIO objects must agree, or download URLs 404.
 JOBS: list[dict[str, Any]] = [
+    # Job 1: a completed run. execution_time / ended_at are set, and
+    # output_files + message reflect the result artifacts the provider uploaded.
     {
         "id": "21927422-86d4-73d6-abb4-f2de6a4f5910",
         "owner": "admin",
         "name": "Test job 1",
         "description": "Test job 1 description",
         "device_id": "qulacs",
-        "job_info": _JOB_INFO,
         "transpiler_info": _TRANSPILER_INFO,
         "simulator_info": _SIMULATOR_INFO,
         "mitigation_info": _MITIGATION_INFO,
         "job_type": "sampling",
         "shots": 1000,
-        "status": "submitted",
-        "execution_time": Decimal("0.123"),
-        "submitted_at": _NOW,
-        "ready_at": _NOW,
-        "running_at": _NOW,
-        "ended_at": _NOW,
+        "status": "succeeded",
+        "execution_time": Decimal("15.8"),
+        "output_files": json.dumps(["result", "transpile_result"]),
+        "message": "Job completed successfully",
+        "submitted_at": _SUBMITTED_AT,
+        "ready_at": _READY_AT,
+        "running_at": _RUNNING_AT,
+        "ended_at": _ENDED_AT,
     },
+    # Job 2: freshly submitted. It has not run yet, so execution_time and the
+    # ready/running/ended timestamps are NULL and there are no output_files.
     {
         "id": "21927422-86d4-7cbf-98d3-32f5f1263cd9",
         "owner": "admin",
         "name": "Test job 2",
         "description": "Test job 2 description",
         "device_id": "qulacs",
-        "job_info": _JOB_INFO,
         "transpiler_info": _TRANSPILER_INFO,
         "simulator_info": _SIMULATOR_INFO,
         "mitigation_info": _MITIGATION_INFO,
         "job_type": "sampling",
         "shots": 1000,
         "status": "submitted",
-        "execution_time": Decimal("0.123"),
-        "submitted_at": _NOW,
-        "ready_at": _NOW,
-        "running_at": _NOW,
-        "ended_at": _NOW,
+        "execution_time": None,
+        "output_files": None,
+        "message": None,
+        "submitted_at": _SUBMITTED_AT,
+        "ready_at": None,
+        "running_at": None,
+        "ended_at": None,
     },
 ]
 

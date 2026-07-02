@@ -116,7 +116,11 @@ run-worker:
 up: ## Start the DB, apply migrations, seed data, and init storage
 	@docker compose up -d
 	@echo "Waiting for MySQL to be ready..."
-	@until docker compose exec -T db mysql -uadmin -ppassword main -e "SELECT 1" >/dev/null 2>&1; do sleep 2; done
+	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
+	@# fresh volume MySQL first runs a socket-only temporary server for init,
+	@# and a socket probe passes during that phase — then Alembic's TCP connect
+	@# hits the server mid-restart and dies with "Lost connection" (2013).
+	@until docker compose exec -T db mysql -h127.0.0.1 --protocol=tcp -uadmin -ppassword main -e "SELECT 1" >/dev/null 2>&1; do sleep 2; done
 	@echo "MySQL ready, applying Alembic migrations..."
 	@$(MAKE) migrate-up
 	@$(MAKE) seed

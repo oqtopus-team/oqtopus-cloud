@@ -52,14 +52,17 @@ class Job(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(256), nullable=False, server_default="")
-    description: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=True, server_default="")
+    description: Mapped[Optional[str]] = mapped_column(
+        String(1024), nullable=True, server_default=""
+    )
     device_id: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
     )
-    # NOT NULL even though init/01.schema.sql allows NULL: API handlers
-    # substitute "{}" for missing values before insert (see Lambda handlers).
+    # NOT NULL by design (the Alembic migration is the source of truth): API
+    # handlers substitute "{}" for missing values before insert (see Lambda
+    # handlers).
     transpiler_info: Mapped[str] = mapped_column(Text, nullable=False)
     simulator_info: Mapped[str] = mapped_column(Text, nullable=False)
     mitigation_info: Mapped[str] = mapped_column(Text, nullable=False)
@@ -84,8 +87,8 @@ class Job(Base, TimestampMixin):
         Numeric(65, 3),
         nullable=True,
     )
-    output_files: Mapped[Optional[str]]
-    message: Mapped[Optional[str]]
+    output_files: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     ready_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)

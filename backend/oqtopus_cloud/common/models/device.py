@@ -71,8 +71,9 @@ class Device(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    # NOT NULL even though init/01.schema.sql allows NULL: API handlers
-    # substitute "{}" for missing values before insert (see Lambda handlers).
+    # NOT NULL by design (the Alembic migration is the source of truth): API
+    # handlers substitute "{}" for missing values before insert (see Lambda
+    # handlers).
     device_info: Mapped[str] = mapped_column(Text, nullable=False)
     calibrated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTimeTz(), nullable=True
