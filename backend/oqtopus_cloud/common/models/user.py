@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import String
+from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -48,21 +48,24 @@ class User(Base, TimestampMixin):
     """
 
     __tablename__ = "users"
-    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
-    cognito_id: Mapped[str] = mapped_column(String, index=True)
-    email: Mapped[str] = mapped_column(String, index=True)
-    display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    userstatus: Mapped[Optional[UserStatus]] = mapped_column(String, nullable=True)
-    organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    available_devices: Mapped[str] = mapped_column(String, nullable=True)
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    cognito_id: Mapped[str] = mapped_column(String(255), unique=True)
+    email: Mapped[str] = mapped_column(String(255))
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    userstatus: Mapped[Optional[UserStatus]] = mapped_column(String(10), nullable=True)
+    organization: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    group_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    available_devices: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     mfa_status: Mapped[MFAStatus] = mapped_column(
-        String, default=MFAStatus.disabled, nullable=False
+        String(255),
+        default=MFAStatus.disabled,
+        server_default="disabled",
+        nullable=False,
     )
     api_token_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, index=True
+        String(255), nullable=True, unique=True
     )
-    api_token_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    api_token_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     api_token_expiration: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTimeTz(), default=current_time_utc, nullable=True
     )

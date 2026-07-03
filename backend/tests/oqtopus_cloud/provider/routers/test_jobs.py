@@ -455,7 +455,8 @@ def test_update_job_status(
     assert model.status == JobStatus.succeeded
     assert model.output_files == json.dumps(["result", "transpile_result"])
     assert model.message == "job succeeded"
-    assert model.execution_time == 15.8
+    # execution_time is a Numeric(65,3) column -> Python Decimal; compare as float.
+    assert float(model.execution_time) == 15.8
     assert model.running_at == running_at
     assert model.ended_at is not None
 

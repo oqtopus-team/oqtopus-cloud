@@ -24,7 +24,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help port-forward session db-init
+.PHONY: help bastion port-forward db-session migrate-up migrate-stamp
 
 include .env
 
@@ -37,8 +37,15 @@ port-forward:
 db-session:
   @export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .username) && 	export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .password) && mysql --protocol TCP -h localhost -P $(MYSQL_PORT) -u $$MYSQL_USER --password=$$MYSQL_PASSWORD $(DB_NAME)
 
-db-init:
-  @export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .username) && 	export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .password) && mysql --protocol TCP -h localhost -P $(MYSQL_PORT) -u $$MYSQL_USER --password=$$MYSQL_PASSWORD < ./db/init.sql
+migrate-up:
+  @SECRET=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString) && \
+  export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:$(MYSQL_PORT)/$(DB_NAME)" && \
+  $(MAKE) -C ../../backend migrate-up
+
+migrate-stamp:
+  @SECRET=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString) && \
+  export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:$(MYSQL_PORT)/$(DB_NAME)" && \
+  cd ../../backend && uv run alembic stamp head
 ```
 
 Now, run `make bastion` to connect to the bastion server.
@@ -94,31 +101,39 @@ make db-session
 
 Now, you have successfully connected to the RDS.
 
-## Initializing the DB
+## Migrating the DB
 
-Run the following command to initialize the DB.
+The DB schema is managed with Alembic migrations (`backend/alembic/`). With the remote RDS port-forwarded via `make port-forward`, run the following in a separate session to apply any pending migrations.
 
 ```bash
-make db-init
+make migrate-up
 ```
 
 > [!NOTE]
-> `make db-init` runs the following command in the background:
+> `make migrate-up` runs the following in the background. It applies `alembic upgrade head` against the port-forwarded RDS on `localhost` (overriding the connection via `ALEMBIC_DATABASE_URL`):
 >
 > ```bash
-> export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString | jq -r .username) &&     export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString | jq -r .password) &&     mysql --protocol TCP -h localhost -P <MYSQL_PORT> -u $$MYSQL_USER --password=$$MYSQL_PASSWORD <DB_NAME> < ./db/init.sql
->```
+> SECRET=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString) && \
+> export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:<MYSQL_PORT>/<DB_NAME>" && \
+> make -C ../../backend migrate-up
+> ```
 
-Run `make db-session` to connect to the DB and verify that the initialization is complete. If the tables are created, the initialization is complete.
+> [!IMPORTANT]
+> When applying to a database that existed before Alembic was introduced (tables already created), run `make migrate-stamp` **once** instead of `make migrate-up`. It records the current schema as the migration baseline (head) without running any DDL. Subsequent changes are then applied with `make migrate-up`.
+
+Run `make db-session` to connect to the DB and verify the tables exist. If you see the following tables, the migration is complete.
 
 ```sql
 mysql> show tables;
-+---------------------+
-| Tables_in_main      |
-+---------------------+
-| devices             |
-| results             |
-| tasks               |
-+---------------------+
-4 rows in set (0.05 sec)
++-----------------+
+| Tables_in_main  |
++-----------------+
+| alembic_version |
+| announcements   |
+| devices         |
+| jobs            |
+| users           |
+| whitelist_users |
++-----------------+
+6 rows in set (0.05 sec)
 ```

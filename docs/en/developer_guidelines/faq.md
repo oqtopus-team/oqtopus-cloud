@@ -4,7 +4,7 @@ This document provides answers to frequently asked questions during development.
 
 Q. Where do I set the initial values for the development environment database?
 
-A. Initialization scripts are provided under `/backend/db/init`. These scripts are executed when starting the local environment database. If you need to set initial values beforehand, please edit these scripts.
+A. The schema is managed by Alembic migrations (`backend/alembic/`), and seed data by `backend/scripts/seed.py` (database) and `backend/storage/init_storage.py` (object storage / MinIO). Running `make up` applies the migrations and seeds the data automatically. To change initial values, edit these files.
 
 Q. How do I run Terraform when MFA is enabled?
 
