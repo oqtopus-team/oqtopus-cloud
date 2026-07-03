@@ -1,0 +1,20 @@
+# Local stub for the OTel collector used by backend/compose.yaml.
+# Accepts OTLP over HTTP and logs spans to stdout so the export path is
+# exercised end-to-end during local development. For full trace inspection
+# (Tempo/Grafana), run monitoring-prototype in parallel and override
+# OTEL_EXPORTER_OTLP_ENDPOINT.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]

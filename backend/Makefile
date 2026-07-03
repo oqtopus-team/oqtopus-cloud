@@ -105,17 +105,50 @@ run-user_signup: ## Start the user_signup API
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	uv run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
 
+COUNT_PENDING_JOBS_SINCE ?= 10d
+
 run-worker:
 	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
 	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
+	export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
-up: ## Start the DB
-	@docker compose up
-	@uv run python storage/init_storage.py
+up: ## Start the DB, apply migrations, seed data, and init storage
+	@docker compose up -d
+	@echo "Waiting for MySQL to be ready..."
+	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
+	@# fresh volume MySQL first runs a socket-only temporary server for init,
+	@# and a socket probe passes during that phase — then Alembic's TCP connect
+	@# hits the server mid-restart and dies with "Lost connection" (2013).
+	@until docker compose exec -T db mysql -h127.0.0.1 --protocol=tcp -uadmin -ppassword main -e "SELECT 1" >/dev/null 2>&1; do sleep 2; done
+	@echo "MySQL ready, applying Alembic migrations..."
+	@$(MAKE) migrate-up
+	@$(MAKE) seed
+	@if [ -f storage/init_storage.py ]; then uv run python storage/init_storage.py; fi
+
+seed: ## Seed the local DB with test data (idempotent)
+	@uv run python scripts/seed.py
 
 down: ## Stop the DB
 	@docker compose down
+
+migrate-create: ## Generate a migration from current models. Usage: make migrate-create NAME=<slug>
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make migrate-create NAME=<slug>"; exit 1; \
+	fi
+	@uv run alembic revision --autogenerate -m "$(NAME)"
+
+migrate-up: ## Apply all pending migrations to the local DB
+	@uv run alembic upgrade head
+
+migrate-down: ## Roll back the most recent applied migration
+	@uv run alembic downgrade -1
+
+migrate-current: ## Show the currently applied revision
+	@uv run alembic current
+
+migrate-history: ## Show the migration history
+	@uv run alembic history --verbose
 
 fmt-common: ## Format common code
 	@uv run ruff format oqtopus_cloud/common

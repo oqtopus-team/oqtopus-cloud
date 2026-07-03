@@ -32,6 +32,8 @@ module "lambda_auth" {
   allow_headers                          = "*"
   log_level                              = "INFO"
   lambda_timeout                         = 15
+  otel_enabled                           = var.otel_enabled
+  lambda_log_retention_days              = var.lambda_log_retention_days
 }
 
 module "user_api" {
@@ -71,6 +73,7 @@ module "user_api" {
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
   otel_enabled                           = var.otel_enabled
   otel_exporter_otlp_endpoint            = var.otel_exporter_otlp_endpoint
+  lambda_log_retention_days              = var.lambda_log_retention_days
 
   storage_driver = "s3"
   storage_env_vars_s3 = {
@@ -106,6 +109,7 @@ module "provider_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  lambda_log_retention_days      = var.lambda_log_retention_days
   storage_driver                 = "s3"
   storage_env_vars_s3 = {
     "STORAGE_S3_REGION"      = var.region

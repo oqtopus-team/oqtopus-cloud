@@ -58,6 +58,7 @@ resource "aws_lambda_function" "this" {
         DB_HOST                      = var.db_proxy_endpoint
         DB_NAME                      = "main"
         DB_CONNECTOR                 = "mysql+pymysql"
+        DB_SSL_CA                    = "/var/task/oqtopus_cloud/common/certs/global-bundle.pem"
         SECRET_NAME                  = var.db_secret_arn
         POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
         POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
@@ -91,6 +92,12 @@ resource "aws_lambda_function" "this" {
         OTEL_ENABLED                = "true"
         OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
         OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+        # Cap each export attempt so an unreachable collector cannot push the
+        # function past the API Gateway/Lambda timeout. 0.2s × ~2 retries ≒ 0.4s
+        # worst case; kill switch is otel_enabled = false. Direct export beats a
+        # co-located collector layer here: the layer's own retry queue, which
+        # OTEL_EXPORTER_OTLP_TIMEOUT does not bound, billed ~20s storms on freeze.
+        OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
       } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
     )
@@ -125,6 +132,11 @@ resource "aws_lambda_function" "this" {
     apply_on = "PublishedVersions"
   }
   publish = true
+
+  # Ensure the explicitly-managed log group (with retention) is created before
+  # the function, so the function does not auto-create it first with infinite
+  # retention. No-op when otel_enabled = false (the group has count = 0).
+  depends_on = [aws_cloudwatch_log_group.lambda]
 
   lifecycle {
     ignore_changes = [tags["github-sha"]]

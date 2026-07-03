@@ -1,4 +1,5 @@
 import os
+import random
 
 from fastapi import FastAPI
 from opentelemetry import trace
@@ -40,8 +41,35 @@ def setup_tracing(app: FastAPI, service_name: str) -> None:
         trace.set_tracer_provider(_provider)
         SQLAlchemyInstrumentor().instrument()
         LoggingInstrumentor().instrument(set_logging_format=True)
+        _register_snapstart_restore_hook()
 
     FastAPIInstrumentor.instrument_app(app)
+
+
+def _reseed_random_after_snapstart() -> None:
+    # SnapStart takes one memory snapshot at the end of Init and restores it
+    # into every execution environment. The ``random`` module's global state is
+    # frozen into that snapshot, so without re-seeding each restored environment
+    # generates the *same* sequence of values — including OTel trace/span IDs,
+    # because ``RandomIdGenerator`` draws them from ``random.getrandbits``.
+    # Identical sequences make unrelated invocations collide on a single trace
+    # ID (the symptom: distinct requests merged under one multi-hour trace).
+    #
+    # ``random.seed()`` (no argument) reseeds from OS entropy, giving each
+    # restored environment an independent stream. Seeding the module global is
+    # enough: every already-created ``RandomIdGenerator`` reads from it.
+    random.seed()
+
+
+def _register_snapstart_restore_hook() -> None:
+    # ``snapshot_restore_py`` ships with the AWS Lambda managed Python runtime.
+    # It is absent locally and in tests — where there is no snapshot to restore
+    # — so a missing import is a no-op.
+    try:
+        from snapshot_restore_py import register_after_restore  # type: ignore[import-not-found]
+    except ImportError:
+        return
+    register_after_restore(_reseed_random_after_snapstart)
 
 
 def force_flush(timeout_millis: int | None = None) -> None:

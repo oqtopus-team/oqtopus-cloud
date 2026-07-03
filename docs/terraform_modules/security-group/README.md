@@ -50,6 +50,7 @@ module "security_group" {
 | [aws_vpc_security_group_egress_rule.lambda_to_cloudtrail](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_cognito_idp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_db_proxy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
+| [aws_vpc_security_group_egress_rule.lambda_to_otlp_collector](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_egress_rule.lambda_to_secret_manager](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_egress_rule) | resource |
 | [aws_vpc_security_group_ingress_rule.cloudtrail_from_lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_security_group_ingress_rule) | resource |
@@ -67,6 +68,7 @@ module "security_group" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
+| <a name="input_lambda_otlp_collector_cidr"></a> [lambda\_otlp\_collector\_cidr](#input\_lambda\_otlp\_collector\_cidr) | CIDR of the OTLP collector reachable from Lambda (cross-VPC peering target). Empty disables the egress rule. | `string` | `""` | no |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region name | `string` | n/a | yes |

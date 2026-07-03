@@ -1,15 +1,15 @@
 import datetime
-import enum
+import decimal
 from typing import Optional
 
-from sqlalchemy import Enum, Float, String
+from sqlalchemy import Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models.base import (
     Base,
 )
 from oqtopus_cloud.common.models.common import TimestampMixin
-from oqtopus_cloud.common.model_util import DateTimeTz
 
 
 class Job(Base, TimestampMixin):
@@ -52,39 +52,43 @@ class Job(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(256), nullable=True)
-    description: Mapped[str] = mapped_column(String(1024), nullable=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=True, server_default="")
+    description: Mapped[Optional[str]] = mapped_column(
+        String(1024), nullable=True, server_default=""
+    )
     device_id: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
     )
-    transpiler_info: Mapped[str]
-    simulator_info: Mapped[str]
-    mitigation_info: Mapped[str]
-    job_type: Mapped[enum.Enum] = mapped_column(
-        Enum(
-            "none",
-            "sampling",
-            "estimation",
-            "sse",
-            "multi_manual",
-        ),
+    # NOT NULL by design (the Alembic migration is the source of truth): API
+    # handlers substitute "{}" for missing values before insert (see Lambda
+    # handlers).
+    transpiler_info: Mapped[str] = mapped_column(Text, nullable=False)
+    simulator_info: Mapped[str] = mapped_column(Text, nullable=False)
+    mitigation_info: Mapped[str] = mapped_column(Text, nullable=False)
+    job_type: Mapped[str] = mapped_column(
+        String(32),
         nullable=False,
+        default="sampling",
+        server_default="sampling",
     )
     shots: Mapped[int] = mapped_column(
-        nullable=True,
+        nullable=False,
+        default=1000,
+        server_default=text("1000"),
     )
     status: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
         default="submitted",
+        server_default="submitted",
     )
-    execution_time: Mapped[float] = mapped_column(
-        Float,
+    execution_time: Mapped[decimal.Decimal] = mapped_column(
+        Numeric(65, 3),
         nullable=True,
     )
-    output_files: Mapped[Optional[str]]
-    message: Mapped[Optional[str]]
+    output_files: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     ready_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)
     running_at: Mapped[datetime.datetime] = mapped_column(DateTimeTz(), nullable=True)

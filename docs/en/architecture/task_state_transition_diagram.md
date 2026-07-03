@@ -2,7 +2,8 @@
 
 ```mermaid
 stateDiagram-v2
-    [*] --> submitted :job submitted
+    [*] --> registered :job registered
+    registered --> submitted :job submitted
 
     submitted --> ready : job readying
     ready --> running : execution started
@@ -17,6 +18,7 @@ stateDiagram-v2
 
     succeeded --> [*] :deleted
     failed --> [*] :deleted
+    registered --> cancelled :cancel requested
     submitted --> cancelled :cancel requested (cancelled in the cloud PF)
     ready --> cancelled :cancel requested
     cancelled --> [*] :deleted

@@ -23,7 +23,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help port-forward session db-init
+.PHONY: help bastion port-forward db-session migrate-up migrate-stamp
 
 include .env
 
@@ -38,10 +38,15 @@ db-session:
   export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .password) && \
   mysql --protocol TCP -h localhost -P $(MYSQL_PORT) -u $$MYSQL_USER --password=$$MYSQL_PASSWORD $(DB_NAME)
 
-db-init:
-  @export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .username) && \
-  export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .password) && \
-  mysql --protocol TCP -h localhost -P $(MYSQL_PORT) -u $$MYSQL_USER --password=$$MYSQL_PASSWORD < ./db/init.sql
+migrate-up:
+  @SECRET=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString) && \
+  export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:$(MYSQL_PORT)/$(DB_NAME)" && \
+  $(MAKE) -C ../../backend migrate-up
+
+migrate-stamp:
+  @SECRET=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString) && \
+  export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:$(MYSQL_PORT)/$(DB_NAME)" && \
+  cd ../../backend && uv run alembic stamp head
 ```
 
 それでは、`make bastion`を実行して踏み台サーバーに接続してみましょう。
@@ -99,33 +104,39 @@ make db-session
 
 以上で、RDSへの接続が完了しました。
 
-## DBの初期化
+## DBのマイグレーション
 
-以下のコマンドを実行して、DBの初期化を行います。
+DBのスキーマは Alembic マイグレーションで管理しています（`backend/alembic/`）。`make port-forward`でリモートのRDSをポートフォワードした状態で、別のセッションで以下のコマンドを実行して、未適用のマイグレーションを適用します。
 
 ```bash
-make db-init
+make migrate-up
 ```
 
 > [!NOTE]
-> `make db-init`は裏で以下のコマンドを実行しています。
+> `make migrate-up`は裏で以下のコマンドを実行しています。ポートフォワード済みの`localhost`のRDSに対して`alembic upgrade head`を適用します（`ALEMBIC_DATABASE_URL`で接続先を上書き）。
 >
 > ```bash
-> export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString | jq -r .username) && \
-> export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString | jq -r .password) && \
-> mysql --protocol TCP -h localhost -P <MYSQL_PORT> -u $$MYSQL_USER --password=$$MYSQL_PASSWORD <DB_NAME> < ./db/init.sql
+> SECRET=$$(aws secretsmanager get-secret-value --secret-id <SECRET_NAME> --profile <PROFILE> | jq -r .SecretString) && \
+> export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:<MYSQL_PORT>/<DB_NAME>" && \
+> make -C ../../backend migrate-up
 > ```
 
-`make db-session`を実行して、DBに接続して、初期化が完了しているか確認してください。以下のコマンドを実行してテーブルが作成されていれば初期化完了です。
+> [!IMPORTANT]
+> Alembic 導入前から存在するDB（すでにテーブルが作成済み）に初めて適用する場合は、`make migrate-up`ではなく **一度だけ** `make migrate-stamp`を実行してください。DDLを実行せずに現在のスキーマをマイグレーションの baseline（head）として記録します。以降は`make migrate-up`で差分を適用します。
+
+`make db-session`を実行してDBに接続し、テーブルが作成されているか確認してください。以下のようにテーブルが作成されていればマイグレーション完了です。
 
 ```sql
 mysql> show tables;
-+---------------------+
-| Tables_in_main      |
-+---------------------+
-| devices             |
-| results             |
-| tasks               |
-+---------------------+
-4 rows in set (0.05 sec)
++-----------------+
+| Tables_in_main  |
++-----------------+
+| alembic_version |
+| announcements   |
+| devices         |
+| jobs            |
+| users           |
+| whitelist_users |
++-----------------+
+6 rows in set (0.05 sec)
 ```

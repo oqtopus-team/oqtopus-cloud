@@ -1,18 +1,20 @@
 import json
 import re
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
 from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.session import get_db
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
-    JOB_INFO_INPUT_PARAM,
     JOB_INFO_COMBINED_PROGRAM_PARAM,
-    JOB_INFO_TRANSPILE_RESULT_PARAM,
+    JOB_INFO_INPUT_PARAM,
     JOB_INFO_RESULT_PARAM,
     JOB_INFO_SSE_LOG_PARAM,
+    JOB_INFO_TRANSPILE_RESULT_PARAM,
 )
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.errors import (
@@ -36,7 +38,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
 )
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session, load_only
-from zoneinfo import ZoneInfo
 
 from . import LoggerRouteHandler
 
@@ -300,8 +301,10 @@ def update_job_status(
 
         if request.execution_time:
             if request.execution_time < 0:
-                return BadRequestResponse("Execution time should not be negative.")
-            model.execution_time = request.execution_time
+                return BadRequestResponse(
+                    message="Execution time should not be negative."
+                )
+            model.execution_time = Decimal(str(request.execution_time))
 
         db.commit()
         return JobStatusUpdateResponse(message="Job status updated")
@@ -444,7 +447,9 @@ def model_to_schema(model: JobModel, storage: AbstractStorage) -> JobDef | Value
         transpiler_info=json.loads(model.transpiler_info),
         mitigation_info=json.loads(model.mitigation_info),
         simulator_info=json.loads(model.simulator_info),
-        execution_time=model.execution_time,
+        execution_time=(
+            float(model.execution_time) if model.execution_time is not None else None
+        ),
         submitted_at=model.submitted_at,
         ready_at=model.ready_at,
         running_at=model.running_at,

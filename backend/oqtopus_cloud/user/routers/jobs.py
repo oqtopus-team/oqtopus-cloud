@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from typing import Any, Optional, cast
+from zoneinfo import ZoneInfo
 
 from fastapi import (
     APIRouter,
@@ -13,7 +14,6 @@ from opentelemetry import trace
 from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.orm import Session, load_only
 from uuid_extensions import uuid7
-from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job as JobModel
@@ -43,8 +43,8 @@ from oqtopus_cloud.user.schemas.jobs import (
     JobType,
     RegisteredJob,
     RegisterJobResponse,
-    SubmittedJob,
     SubmitJobRequest,
+    SubmittedJob,
 )
 from oqtopus_cloud.user.schemas.success import SuccessResponse
 
@@ -451,7 +451,11 @@ def model_to_schema(
             transpiler_info=json.loads(model.transpiler_info),
             mitigation_info=json.loads(model.mitigation_info),
             simulator_info=json.loads(model.simulator_info),
-            execution_time=model.execution_time,
+            execution_time=(
+                float(model.execution_time)
+                if model.execution_time is not None
+                else None
+            ),
             submitted_at=model.submitted_at,
             ready_at=model.ready_at,
             running_at=model.running_at,

@@ -6,6 +6,8 @@ on:
     paths:
       - 'backend/oqtopus_cloud/**'
       - 'backend/oas/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
   workflow_dispatch:
 
 jobs:
@@ -14,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        deploy-target: [user, provider, admin, lambda_auth, user_signup]
+        deploy-target: [user, provider, admin, lambda_auth, user_signup, pending-jobs-updater-worker]
 
     permissions:
       id-token: write
