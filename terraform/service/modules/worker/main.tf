@@ -35,6 +35,7 @@ resource "aws_lambda_function" "this" {
       DB_HOST                      = var.db_proxy_endpoint
       DB_NAME                      = "main"
       DB_CONNECTOR                 = "mysql+pymysql"
+      DB_SSL_CA                    = "/var/task/oqtopus_cloud/common/certs/global-bundle.pem"
       SECRET_NAME                  = var.db_secret_arn
       POWERTOOLS_METRICS_NAMESPACE = var.power_tools_metrics_namespace
       POWERTOOLS_SERVICE_NAME      = var.power_tools_service_name
