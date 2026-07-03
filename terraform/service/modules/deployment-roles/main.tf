@@ -75,19 +75,29 @@ resource "aws_iam_role_policy" "auto_deployment_policy" {
   role = aws_iam_role.github_actions_role.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "iam:ListAccountAliases",
-        "lambda:UpdateFunctionCode",
-        "lambda:TagResource",
-        "lambda:CreateAlias",
-        "lambda:UpdateAlias",
-        "lambda:GetAlias",
-        "lambda:PublishVersion"
-      ]
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:ListAccountAliases",
+          "lambda:UpdateFunctionCode",
+          "lambda:TagResource",
+          "lambda:CreateAlias",
+          "lambda:UpdateAlias",
+          "lambda:GetAlias",
+          "lambda:PublishVersion"
+        ]
+        Resource = "*"
+      },
+      {
+        # Publish the generated OpenAPI spec (deployment/<env> Makefile
+        # `publish-*-schema-via-actions`) to the frontend-build bucket.
+        Sid      = "PublishOpenApiSpec"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "arn:aws:s3:::${var.product}-${var.org}-${var.env}-frontend-build/*"
+      }
+    ]
   })
   depends_on = [aws_iam_role.github_actions_role]
 }
