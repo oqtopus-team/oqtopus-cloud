@@ -1002,7 +1002,7 @@ components:
         device_info:
           description: Presigned URL for downloading device_info.
           type: string
-          example: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+          example: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         calibrated_at:
           description: Parameter available only for `QPU` devices with available calibration data
           type: string
@@ -1052,7 +1052,7 @@ components:
           - measure
           - barrier
           - reset
-        device_info: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+        device_info: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
         calibrated_at: '2022-10-19T11:45:34Z'
         description: State vector-based quantum circuit simulator
     error.UnauthorizedError:

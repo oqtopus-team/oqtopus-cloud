@@ -44,7 +44,7 @@ class DeviceInfoUpdate(BaseModel):
 
 class DeviceInfoUploadPresignedURL(BaseModel):
     """
-    Presigned URL for uploading device_info to OQTOPUS cloud.
+    Presigned URL for uploading device_info.zip to OQTOPUS cloud.
     """
 
     url: Annotated[str, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])]

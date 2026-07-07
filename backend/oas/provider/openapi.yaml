@@ -612,7 +612,7 @@ components:
         - calibrated_at
     devices.DeviceInfoUploadPresignedURL:
       type: object
-      description: Presigned URL for uploading device_info to OQTOPUS cloud.
+      description: Presigned URL for uploading device_info.zip to OQTOPUS cloud.
       properties:
         url:
           type: string

@@ -70,7 +70,7 @@ class DeviceInfo(BaseModel):
         str | None,
         Field(
             examples=[
-                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
             ]
         ),
     ] = None
