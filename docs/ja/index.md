@@ -26,6 +26,8 @@
 
 - [AWSシステム構成図](./architecture/aws_system_architecture_diagram.md)
 - [シーケンス図](./architecture/sequence_diagram.md)
+- [量子ジョブの詳細](./architecture/quantum_jobs_in_detail.md)
+- [デバイス情報の詳細](./architecture/device_info_in_detail.md)
 - [タスクの状態遷移図](./architecture/task_state_transition_diagram.md)
 
 ### 開発者ガイド
