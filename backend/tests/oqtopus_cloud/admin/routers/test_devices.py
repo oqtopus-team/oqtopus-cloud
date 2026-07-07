@@ -383,7 +383,7 @@ def test_update_device_data_partial(
     assert device.n_qubits == 999
 
 
-def test_update_device_data_with_uploaded_device_info(
+def test_update_device_data_keeps_uploaded_device_info(
     test_db,
 ):
     device_info = {"device_id": "SVSim1"}
@@ -395,7 +395,6 @@ def test_update_device_data_with_uploaded_device_info(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": None,
         "calibrated_at": "2024-03-04T12:34:56+00:00",
     }
 
@@ -432,12 +431,10 @@ def test_update_device_data_timezone_awareness(
     assert device.calibrated_at == datetime(2024, 3, 4, 3, 34, 56, tzinfo=timezone.utc)
 
 
-def test_update_device_data_inconsistent_device_id(
+def test_update_device_data_ignores_legacy_device_info_field(
     test_db,
 ):
-    """_summary_
-    Simple PATCH /devices/{device_id} tests inconsistent device_id
-    """
+    """Legacy device_info fields in PATCH should be ignored."""
 
     device_info = {"device_id": "SVSim1"}
 
@@ -451,10 +448,11 @@ def test_update_device_data_inconsistent_device_id(
         "description": "updated description",
     }
     response = client.patch("/devices/SVSim1", json=body)
-    assert response.status_code == 400
-    assert response.json() == {
-        "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2"
-    }
+    assert response.status_code == 200
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device is not None
+    assert device.n_qubits == 999
+    assert device.description == "updated description"
 
 
 def test_update_device_data_404(test_db):

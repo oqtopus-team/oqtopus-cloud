@@ -103,7 +103,7 @@ devices/qulacs/device_info.zip
 
 - `device_info` is storage-backed on reads. API responses expose a download presigned URL, not the raw JSON payload.
 - The OpenAPI files do not define a typed schema for the contents of `device_info` itself. The write-side contract is effectively “JSON serialized into a string”, and the read-side contract is “string URL to the archived payload”.
-- The Admin API still accepts `device_info: null` as a backward-compatible signal to verify an uploaded object, but the current admin client does not rely on that no-op confirmation anymore.
+- The Admin API PATCH contract is metadata-only. The current admin client uploads `device_info.zip` separately and does not send `device_info` back in `PATCH /devices/{device_id}`.
 - `calibrated_at` remains in the `devices` table and is updated separately from the object upload confirmation.
 - Upload presigned URLs expire according to the storage strategy; the current default in `FSSpecStorage` is one hour.
 - The backend validates object existence, not the archive entry name inside `device_info.zip`.

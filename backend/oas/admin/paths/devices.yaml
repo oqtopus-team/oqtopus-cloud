@@ -122,11 +122,11 @@ devices.device_id:
           type: string
           example: "qulacs"
     requestBody:
-      description: "New calibration data"
+      description: "Updated device metadata"
       content:
         application/json:
           schema:
-            $ref: "../schemas/devices.yaml#/devices.DeviceBase"
+            $ref: "../schemas/devices.yaml#/devices.DevicePatch"
     responses:
       "200":
         description: Device's data updated

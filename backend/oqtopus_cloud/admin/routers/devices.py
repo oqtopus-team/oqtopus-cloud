@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 from fastapi import APIRouter, Body, Depends, status
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -12,6 +13,8 @@ from oqtopus_cloud.admin.schemas.devices import (
     DeviceInfo,
     DeviceInfoUploadPresignedURL,
     DeviceInfoUploadResponse,
+    DeviceType,
+    Status,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
@@ -34,6 +37,53 @@ from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
+
+
+class DevicePatch(BaseModel):
+    device_type: DeviceType | None = Field(default=None, examples=["simulator"])
+    status: Status | None = Field(default=None, examples=["available"])
+    n_qubits: int | None = Field(default=None, examples=[64])
+    available_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    calibrated_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    basis_gates: list[str] | None = Field(
+        default=None,
+        examples=[
+            [
+                "x",
+                "y",
+                "z",
+                "h",
+                "s",
+                "sdg",
+                "t",
+                "tdg",
+                "rx",
+                "ry",
+                "rz",
+                "cx",
+                "cz",
+                "swap",
+                "u1",
+                "u2",
+                "u3",
+                "u",
+                "p",
+                "id",
+                "sx",
+                "sxdg",
+            ]
+        ],
+    )
+    supported_instructions: list[str] | None = Field(
+        default=None, examples=[["measure", "barrier", "reset"]]
+    )
+    description: str | None = Field(
+        default=None, examples=["Superconducting quantum computer"]
+    )
 
 
 @router.get(
@@ -165,9 +215,8 @@ def register_devices(
 @tracer.capture_method
 def update_device_data(
     device_id: str,
-    device_update: DeviceBase = Body(..., description="new status"),
+    device_update: DevicePatch = Body(..., description="new status"),
     db: Session = Depends(get_db),
-    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked update device data")
@@ -177,36 +226,13 @@ def update_device_data(
         if not query:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
-        if device_update.device_info is not None:
-            device_id_from_body = get_device_id(device_update)
-            if device_id != device_id_from_body:
-                logger.error(
-                    f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-                )
-                return BadRequestErrorResponse(
-                    message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-                )
         update_fields = device_update.model_dump(exclude_none=True)
-        if (
-            "device_info" in device_update.model_fields_set
-            and device_update.device_info is None
-        ):
-            update_fields["device_info"] = None
         for field, value in update_fields.items():
             if field == "basis_gates" and isinstance(value, list):
                 value = json.dumps(value)
             if field == "supported_instructions" and isinstance(value, list):
                 value = json.dumps(value)
                 field = "instructions"
-            if field == "device_info" and value is None:
-                device_info_key = get_device_info_key(device_id)
-                if not storage.does_exist(key=device_info_key):
-                    return BadRequestErrorResponse(
-                        message="device_info upload not found"
-                    )
-                continue
-            if field == "device_info":
-                continue
             setattr(query, field, value)
         # commit the transaction
         db.commit()

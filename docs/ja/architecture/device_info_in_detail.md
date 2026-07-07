@@ -104,7 +104,7 @@ devices/qulacs/device_info.zip
 
 - read 時の `device_info` は storage-backed です。API response は raw JSON ではなく download presigned URL を返します。
 - OpenAPI では `device_info` 自体の型付き schema は定義していません。write 側の契約は実質的に「JSON を文字列化して渡す」、read 側の契約は「archive payload を指す URL 文字列を返す」です。
-- Admin API は後方互換のため `device_info: null` を upload 済み object の存在確認シグナルとして受け付け続けますが、現在の admin client はその no-op 確定には依存していません。
+- Admin API の PATCH 契約は metadata 更新専用です。現在の admin client は `device_info.zip` を別途 upload し、`PATCH /devices/{device_id}` に `device_info` を載せ直しません。
 - `calibrated_at` は引き続き `devices` table に保存され、オブジェクト upload 確定とは別に更新されます。
 - upload presigned URL の有効期限は storage strategy に従います。現在の `FSSpecStorage` default は 1 時間です。
 - バックエンドが検証するのは `device_info.zip` の存在であり、archive 内の entry 名ではありません。
