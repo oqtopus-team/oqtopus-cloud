@@ -201,7 +201,6 @@ def update_device_calibration(
         device_info_key = get_device_info_key(device_id)
         if not storage.does_exist(key=device_info_key):
             return BadRequestResponse(message="device_info upload not found")
-        device.device_info = device_info_key
         device.calibrated_at = calibrated_at
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")

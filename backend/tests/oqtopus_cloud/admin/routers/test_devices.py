@@ -20,7 +20,7 @@ client = TestClient(app)
 utc = ZoneInfo("UTC")
 
 
-def _get_model(n, device_info={}):
+def _get_model(n, device_info=None):
     mode_dict = {
         "id": f"SVSim{n}",
         "device_type": "simulator",
@@ -30,7 +30,6 @@ def _get_model(n, device_info={}):
         "n_qubits": 1 + n,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": json.dumps(device_info),
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -64,7 +63,7 @@ def test_get_devices(
             n_qubits=2,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info1),
+            device_info=None,
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -77,7 +76,7 @@ def test_get_devices(
             n_qubits=3,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info2),
+            device_info=None,
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -117,7 +116,7 @@ def test_get_device(
         n_qubits=2,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        device_info=json.dumps(device_info),
+        device_info=None,
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -334,7 +333,6 @@ def test_update_device_data_full(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "QPU",
         "status": "unavailable",
         "n_qubits": 4,
@@ -373,7 +371,6 @@ def test_update_device_data_partial(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "n_qubits": 999,
         "description": "updated description",
     }
@@ -406,7 +403,8 @@ def test_update_device_data_with_uploaded_device_info(
 
     assert response.status_code == 200
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
-    assert device.device_info == device_info_key
+    assert storage.does_exist(key=device_info_key)
+    assert device.calibrated_at == datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc)
 
 
 def test_update_device_data_timezone_awareness(
@@ -422,7 +420,6 @@ def test_update_device_data_timezone_awareness(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "calibrated_at": "2024-03-04T12:34:56+09:00",
         "description": "State vector-based quantum circuit simulator updated",
     }
@@ -470,7 +467,6 @@ def test_update_device_data_404(test_db):
     test_db.commit()
 
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 3,
@@ -488,10 +484,7 @@ def test_update_device_data_500():
     """_summary_
     Simple PATCH /devices/{device_id} tests 500 error
     """
-    device_info = {"device_id": "SVSim1"}
-
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,

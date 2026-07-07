@@ -28,7 +28,6 @@ from oqtopus_cloud.common.session import (
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
     get_device_info_key,
-    is_device_info_key,
 )
 
 from . import LoggerRouteHandler
@@ -200,11 +199,14 @@ def update_device_data(
                 value = json.dumps(value)
                 field = "instructions"
             if field == "device_info" and value is None:
-                value = get_device_info_key(device_id)
-                if not storage.does_exist(key=value):
+                device_info_key = get_device_info_key(device_id)
+                if not storage.does_exist(key=device_info_key):
                     return BadRequestErrorResponse(
                         message="device_info upload not found"
                     )
+                continue
+            if field == "device_info":
+                continue
             setattr(query, field, value)
         # commit the transaction
         db.commit()
@@ -270,10 +272,10 @@ def ensure_timezone(dt):
 
 
 def get_device_info(model: Device, storage: AbstractStorage) -> str | None:
-    device_info = getattr(model, "device_info", None)
-    if is_device_info_key(device_info):
-        return storage.get_download_presigned_url(key=device_info)
-    return device_info
+    device_info_key = get_device_info_key(model.id)
+    if storage.does_exist(key=device_info_key):
+        return storage.get_download_presigned_url(key=device_info_key)
+    return None
 
 
 def model_to_schema(model: Device, storage: AbstractStorage) -> DeviceInfo:
@@ -303,7 +305,6 @@ def schema_to_model(device_id: str, schema: DeviceBase) -> Device | None:
             n_qubits=schema.n_qubits,
             basis_gates=json.dumps(schema.basis_gates),
             instructions=json.dumps(schema.supported_instructions),
-            device_info=schema.device_info,
             calibrated_at=ensure_timezone(schema.calibrated_at),
             description=schema.description,
         )

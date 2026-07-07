@@ -12,7 +12,7 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
-from oqtopus_cloud.common.storages.storage_utils import is_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.devices import (
     DeviceInfo,
@@ -120,7 +120,6 @@ MAP_MODEL_TO_SCHEMA = {
     "n_qubits": "n_qubits",
     "basis_gates": "basis_gates",
     "instructions": "supported_instructions",
-    "device_info": "device_info",
     "calibrated_at": "calibrated_at",
     "description": "description",
 }
@@ -129,10 +128,12 @@ MAP_MODEL_TO_SCHEMA = {
 def get_device_info(
     model: Device, storage: AbstractStorage | None = None
 ) -> str | None:
-    device_info = getattr(model, "device_info", None)
-    if storage is not None and is_device_info_key(device_info):
-        return storage.get_download_presigned_url(key=device_info)
-    return device_info
+    if storage is None or not hasattr(storage, "does_exist"):
+        return None
+    device_info_key = get_device_info_key(model.id)
+    if storage.does_exist(key=device_info_key):
+        return storage.get_download_presigned_url(key=device_info_key)
+    return None
 
 
 def model_to_schema(

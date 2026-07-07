@@ -95,7 +95,6 @@ def _get_model(device="SVSim"):
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
@@ -127,7 +126,6 @@ def test_get_device(test_db):
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -159,7 +157,6 @@ def test_can_get_device_if_in_available_devices(test_db):
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # device_info=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -234,7 +231,6 @@ def test_can_only_get_devices_that_user_can_access(test_db):
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
             # calibrationData=CalibrationData(**_get_calibration_dict()),
-            device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -248,7 +244,6 @@ def test_can_only_get_devices_that_user_can_access(test_db):
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
             # calibrationData=CalibrationData(**_get_calibration_dict()),
-            device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -298,7 +293,6 @@ def test_model_to_shema():
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
         # calibrationData=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -308,13 +302,14 @@ def test_model_to_shema():
 def test_model_to_schema_returns_download_url_for_uploaded_device_info(test_storage):
     device_id = "SVSim"
     model = _get_model(device=device_id)
-    model.device_info = get_device_info_key(device_id)
+    device_info_key = get_device_info_key(device_id)
+    test_storage.put(key=device_info_key, data=b"{}")
 
     actual = model_to_schema(model, test_storage)
 
     assert (
         actual.device_info
-        == f"file://{test_storage.fs_url.removeprefix('file://')}/{model.device_info}"
+        == f"file://{test_storage.fs_url.removeprefix('file://')}/{device_info_key}"
     )
 
 
@@ -338,7 +333,7 @@ def test_get_device_handler(test_client, test_db):
         "basis_gates": ["x", "sx", "rz", "cx"],
         "supported_instructions": ["measure", "barrier", "reset"],
         # "calibrationData": _get_calibration_dict(),
-        "device_info": "{}",
+        "device_info": None,
         "calibrated_at": "2024-03-04T12:34:56Z",
         "description": "State vector-based quantum circuit simulator",
     }

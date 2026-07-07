@@ -53,7 +53,6 @@ def _get_model_sim():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
@@ -71,7 +70,6 @@ def _get_model_qpu():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
@@ -96,7 +94,6 @@ def test_update_device_n_qubits(test_db):
     assert device_aft.status == device_bef.status
     assert device_aft.calibrated_at == device_bef.calibrated_at
     assert device_aft.available_at == device_bef.available_at
-    assert device_aft.device_info == device_bef.device_info
     assert device_aft.basis_gates == device_bef.basis_gates
     assert device_aft.instructions == device_bef.instructions
     assert device_aft.pending_jobs == device_bef.pending_jobs
@@ -147,7 +144,8 @@ def test_update_device_calibration_qpu(test_db, test_storage):
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
-    assert test_db.get(Device, "SC").device_info == device_info_key
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
 
 
 def test_update_device_calibration_sim(test_db, test_storage):
@@ -169,7 +167,8 @@ def test_update_device_calibration_sim(test_db, test_storage):
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
-    assert test_db.get(Device, "SC2").device_info == device_info_key
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC2").calibrated_at == request.calibrated_at
 
 
 def test_get_device_info_upload_url(test_db, test_storage):
@@ -197,7 +196,8 @@ def test_update_device_calibration_with_uploaded_device_info(test_db, test_stora
     actual = update_device_calibration("SC", request, test_db, test_storage)
 
     assert actual == DeviceDataUpdateResponse(message="Device's data updated")
-    assert test_db.get(Device, "SC").device_info == device_info_key
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
 
 
 def test_update_device_info_timezone(test_db, test_storage):

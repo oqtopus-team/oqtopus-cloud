@@ -12,11 +12,3 @@ DEVICE_INFO_ARCHIVE = "device_info.zip"
 
 def get_device_info_key(device_id: str) -> str:
     return f"devices/{device_id}/{DEVICE_INFO_ARCHIVE}"
-
-
-def is_device_info_key(value: str | None) -> bool:
-    return bool(
-        value
-        and value.startswith("devices/")
-        and value.endswith(f"/{DEVICE_INFO_ARCHIVE}")
-    )

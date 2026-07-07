@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
-from oqtopus_cloud.user.routers.jobs import get_jobs
 from oqtopus_cloud.worker.pending_jobs_updater.lambda_function import (
     update_pending_jobs,
 )
@@ -26,7 +25,6 @@ def _get_device(id: str) -> Device:
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
