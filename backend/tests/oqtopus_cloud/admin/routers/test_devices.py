@@ -515,6 +515,27 @@ def test_delete_device(
     assert device is None
 
 
+def test_delete_device_deletes_uploaded_device_info(
+    test_db,
+):
+    """DELETE should remove both the device row and uploaded device_info."""
+    device_info = {"device_id": "SVSim1"}
+    device_info_key = get_device_info_key("SVSim1")
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+
+    response = client.delete("/devices/SVSim1")
+
+    assert response.status_code == 204
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device is None
+    assert not storage.does_exist(key=device_info_key)
+
+
 def test_delete_device_404(
     test_db,
 ):

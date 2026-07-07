@@ -231,6 +231,7 @@ def update_device_data(
 def delete_device(
     device_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked delete device")
@@ -241,6 +242,9 @@ def delete_device(
         if not query_result:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message="Device not found")
+        device_info_key = get_device_info_key(device_id)
+        if storage.does_exist(key=device_info_key):
+            storage.delete(key=device_info_key)
         # delete from RDS
         db.delete(query_result)
         db.commit()
