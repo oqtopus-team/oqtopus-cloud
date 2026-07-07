@@ -10,6 +10,8 @@ from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceBase,
     DeviceInfo,
+    DeviceInfoUploadPresignedURL,
+    DeviceInfoUploadResponse,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
@@ -22,6 +24,11 @@ from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.session import (
     get_db,
+)
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_key,
+    is_device_info_key,
 )
 
 from . import LoggerRouteHandler
@@ -38,11 +45,12 @@ utc = ZoneInfo("UTC")
 @tracer.capture_method
 def get_devices(
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked get_devices")
         devices = db.scalars(select(Device)).all()
-        return [model_to_schema(device) for device in devices]
+        return [model_to_schema(device, storage) for device in devices]
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -61,17 +69,49 @@ def get_devices(
 def get_device(
     device_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfo | ErrorResponse:
     try:
         device = db.scalars(select(Device).where(Device.id == device_id)).first()
         logger.info("invoked get_device")
         if device:
-            response = model_to_schema(device)
+            response = model_to_schema(device, storage)
             return response
         else:
             message = f"device_id={device_id} is not found."
             logger.info(message)
             return NotFoundErrorResponse(message=message)
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/devices/{device_id}/device_info/upload",
+    response_model=DeviceInfoUploadResponse,
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_device_info_upload_url(
+    device_id: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> DeviceInfoUploadResponse | ErrorResponse:
+    try:
+        device = db.scalars(select(Device).where(Device.id == device_id)).first()
+        if device is None:
+            return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
+        return DeviceInfoUploadResponse(
+            presigned_url=DeviceInfoUploadPresignedURL(
+                **storage.get_upload_presigned_url_data(
+                    key=get_device_info_key(device_id)
+                )
+            )
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -128,6 +168,7 @@ def update_device_data(
     device_id: str,
     device_update: DeviceBase = Body(..., description="new status"),
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked update device data")
@@ -137,21 +178,33 @@ def update_device_data(
         if not query:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
-        device_id_from_body = get_device_id(device_update)
-        if device_id != device_id_from_body:
-            logger.error(
-                f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-            )
-            return BadRequestErrorResponse(
-                message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-            )
+        if device_update.device_info is not None:
+            device_id_from_body = get_device_id(device_update)
+            if device_id != device_id_from_body:
+                logger.error(
+                    f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
+                )
+                return BadRequestErrorResponse(
+                    message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
+                )
         update_fields = device_update.model_dump(exclude_none=True)
+        if (
+            "device_info" in device_update.model_fields_set
+            and device_update.device_info is None
+        ):
+            update_fields["device_info"] = None
         for field, value in update_fields.items():
             if field == "basis_gates" and isinstance(value, list):
                 value = json.dumps(value)
             if field == "supported_instructions" and isinstance(value, list):
                 value = json.dumps(value)
                 field = "instructions"
+            if field == "device_info" and value is None:
+                value = get_device_info_key(device_id)
+                if not storage.does_exist(key=value):
+                    return BadRequestErrorResponse(
+                        message="device_info upload not found"
+                    )
             setattr(query, field, value)
         # commit the transaction
         db.commit()
@@ -216,7 +269,14 @@ def ensure_timezone(dt):
     return dt
 
 
-def model_to_schema(model: Device) -> DeviceInfo:
+def get_device_info(model: Device, storage: AbstractStorage) -> str | None:
+    device_info = getattr(model, "device_info", None)
+    if is_device_info_key(device_info):
+        return storage.get_download_presigned_url(key=device_info)
+    return device_info
+
+
+def model_to_schema(model: Device, storage: AbstractStorage) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
         "device_type": getattr(model, "device_type", None),
@@ -226,7 +286,7 @@ def model_to_schema(model: Device) -> DeviceInfo:
         "n_qubits": getattr(model, "n_qubits", None),
         "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
         "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
-        "device_info": getattr(model, "device_info", None),
+        "device_info": get_device_info(model, storage),
         "calibrated_at": ensure_timezone(getattr(model, "calibrated_at", None)),
         "description": model.description,
     }

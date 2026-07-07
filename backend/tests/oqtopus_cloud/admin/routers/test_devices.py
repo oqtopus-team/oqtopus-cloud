@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
@@ -9,6 +10,8 @@ from oqtopus_cloud.admin.schemas.devices import (
     Status,
 )
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.storages import FSSpecStorage
+from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from pydantic.type_adapter import TypeAdapter
 from zoneinfo import ZoneInfo
 
@@ -381,6 +384,29 @@ def test_update_device_data_partial(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.description == "updated description"
     assert device.n_qubits == 999
+
+
+def test_update_device_data_with_uploaded_device_info(
+    test_db,
+):
+    device_info = {"device_id": "SVSim1"}
+    device_info_key = get_device_info_key("SVSim1")
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    body = {
+        "device_info": None,
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
+    }
+
+    response = client.patch("/devices/SVSim1", json=body)
+
+    assert response.status_code == 200
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device.device_info == device_info_key
 
 
 def test_update_device_data_timezone_awareness(

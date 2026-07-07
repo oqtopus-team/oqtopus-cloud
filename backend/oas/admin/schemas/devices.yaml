@@ -42,6 +42,28 @@ devices.DeviceBase:
       type: string
       example: "Superconducting quantum computer"
 
+devices.DeviceInfoUploadPresignedURL:
+  type: object
+  description: Presigned URL for uploading device_info to OQTOPUS cloud.
+  properties:
+    url:
+      type: string
+      example: https://oqtopus-cloud.s3.amazonaws.com/
+    fields:
+      type: object
+      additionalProperties: true
+  required:
+    - url
+    - fields
+
+devices.DeviceInfoUploadResponse:
+  type: object
+  properties:
+    presigned_url:
+      $ref: "#/devices.DeviceInfoUploadPresignedURL"
+  required:
+    - presigned_url
+
 devices.DeviceInfo:
   type: object
   properties:

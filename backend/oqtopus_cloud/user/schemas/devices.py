@@ -70,12 +70,12 @@ class DeviceInfo(BaseModel):
         str | None,
         Field(
             examples=[
-                '{\n  "n_nodes": 512,\n  "calibration_data": {\n    "qubit_connectivity": ["(1,4)", "(4,5)", "(5,8)"],\n    "t1": {\n      "0": 55.51,\n      "1": 37.03,\n      "2": 57.13\n    }\n  }\n}'
+                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
             ]
         ),
     ] = None
     """
-    json format calibration_data and n_nodes etc
+    Presigned URL for downloading device_info.
     """
     calibrated_at: Annotated[
         AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])

@@ -546,6 +546,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
+  /devices/{device_id}/device_info/upload:
+    get:
+      tags:
+        - devices
+      summary: Generate a presigned URL to upload device_info
+      description: Generate a presigned URL to upload device_info for the selected device.
+      operationId: get_device_info_upload_url
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: device_id
+          description: Device ID
+          required: true
+          schema:
+            type: string
+            example: qulacs
+      responses:
+        '200':
+          description: Device_info upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfoUploadResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+              example:
+                message: Device not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+              example:
+                message: Internal server error
   /announcements:
     get:
       tags:
@@ -1180,6 +1226,26 @@ components:
         description:
           type: string
           example: Superconducting quantum computer
+    devices.DeviceInfoUploadPresignedURL:
+      type: object
+      description: Presigned URL for uploading device_info to OQTOPUS cloud.
+      properties:
+        url:
+          type: string
+          example: https://oqtopus-cloud.s3.amazonaws.com/
+        fields:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+        - fields
+    devices.DeviceInfoUploadResponse:
+      type: object
+      properties:
+        presigned_url:
+          $ref: '#/components/schemas/devices.DeviceInfoUploadPresignedURL'
+      required:
+        - presigned_url
     announcements.GetAnnouncementResponse:
       type: object
       properties:

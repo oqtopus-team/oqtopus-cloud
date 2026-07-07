@@ -39,20 +39,9 @@ devices.DeviceInfo:
         type: string
       example: ["measure", "barrier", "reset"]
     device_info:
-      description: "json format calibration_data and n_nodes etc"
+      description: "Presigned URL for downloading device_info."
       type: string
-      example: >-
-          {
-            "n_nodes": 512,
-            "calibration_data": {
-              "qubit_connectivity": ["(1,4)", "(4,5)", "(5,8)"],
-              "t1": {
-                "0": 55.51,
-                "1": 37.03,
-                "2": 57.13
-              }
-            }
-          }
+      example: "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
     calibrated_at:
       description: "Parameter available only for `QPU` devices with available calibration data"
       type: string
@@ -75,20 +64,8 @@ devices.DeviceInfo:
       status: "available"
       n_pending_jobs: 8
       n_qubits: 39
-      n_nodes: 512
       basis_gates: ["x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cz", "swap", "u1", "u2", "u3", "u", "p", "id", "sx", "sxdg"]
       supported_instructions: ["measure", "barrier", "reset"]
-      device_info: >-
-        {
-          "n_nodes": 512,
-          "calibration_data": {
-            "qubit_connectivity": [ "(1,4)", "(4,5)", "(5,8)"],
-            "t1": {
-              "0": 55.51,
-              "1": 37.03,
-              "2": 57.13
-            }
-          }
-        }
+      device_info: "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/device_info.json?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
       calibrated_at: "2022-10-19T11:45:34Z"
       description: "State vector-based quantum circuit simulator"
