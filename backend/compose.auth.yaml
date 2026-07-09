@@ -1,0 +1,111 @@
+# Flexible-auth demonstration overlay.
+#
+# Use together with the base compose file:
+#
+#   docker compose -f compose.yaml -f compose.auth.yaml up -d
+#
+# It layers an OIDC auth stack in front of the User API without changing the
+# default local-dev experience of `compose.yaml`:
+#
+#   Browser
+#     -> oauth2-proxy (:4180)   authentication (OIDC, session cookie)
+#        -> Keycloak (:8081)     OIDC provider, federates ...
+#           -> OpenLDAP (:389)   directory of users (uid=demo / demopassword)
+#        -> user-api (:8080)     verifies the OIDC JWT + authorizes (DB status)
+#
+# The User API is switched to AUTH_MODE=oidc here (ENV stays `local`, so DB /
+# storage behavior is unchanged). It verifies the Bearer JWT that oauth2-proxy
+# forwards, against Keycloak's JWKS, and resolves the caller from the `email`
+# claim -- which must match an approved row in `users` (see scripts/seed.py:
+# demo@oqtopus.local).
+
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    # osixia publishes amd64 only; run under emulation on Apple Silicon.
+    platform: linux/amd64
+    # --copy-service makes the entrypoint pick up the bootstrap LDIF mounted
+    # below and apply it on first init.
+    command: ["--copy-service"]
+    environment:
+      LDAP_ORGANISATION: "OQTOPUS"
+      LDAP_DOMAIN: "oqtopus.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+    volumes:
+      - ./auth-demo/ldap/demo.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-demo.ldif:ro
+    ports:
+      - "389:389"
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Fixed public URL so the `iss` claim and browser redirects are stable
+      # at localhost:8081; backchannel-dynamic lets in-network services still
+      # reach Keycloak at http://keycloak:8080.
+      KC_HOSTNAME: "http://localhost:8081"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./auth-demo/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      openldap:
+        condition: service_started
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    depends_on:
+      keycloak:
+        condition: service_started
+      user-api:
+        condition: service_started
+    command:
+      - --provider=oidc
+      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --skip-oidc-discovery=true
+      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
+      - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
+      - --client-id=oqtopus-oauth2-proxy
+      - --client-secret=oauth2-proxy-secret
+      - --redirect-url=http://localhost:4180/oauth2/callback
+      - --upstream=http://user-api:8080
+      - --http-address=0.0.0.0:4180
+      - --cookie-secret=0123456789abcdef0123456789abcdef
+      - --cookie-secure=false
+      - --email-domain=*
+      - --scope=openid email profile
+      - --insecure-oidc-allow-unverified-email=true
+      - --skip-provider-button=true
+      - --pass-authorization-header=true
+      - --pass-access-token=true
+      - --set-xauthrequest=true
+      - --pass-user-headers=true
+    ports:
+      - "4180:4180"
+    restart: unless-stopped
+
+  # Switch the User API to OIDC auth for the demo. ENV stays `local` so the
+  # DB/MinIO wiring is unchanged; AUTH_MODE is the independent switch that
+  # controls only how the caller identity is resolved.
+  user-api:
+    environment:
+      AUTH_MODE: oidc
+      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
+      OIDC_AUDIENCE: "oqtopus-oauth2-proxy"
+      OIDC_USERNAME_CLAIM: "email"
+      AUTH_ENFORCE_STATUS: "true"
+      # Login history is an AWS-only feature (CloudTrail); disable it in the
+      # non-AWS OIDC deployment so /users/me does not require a region/AWS creds.
+      LOGIN_HISTORY_ENABLED: "false"
+    depends_on:
+      keycloak:
+        condition: service_started

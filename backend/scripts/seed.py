@@ -236,6 +236,25 @@ USERS: list[dict[str, Any]] = [
         "api_token_hash": "$2a$12$srgz4gTm0kBLmDJvkX.XRexiz3VFn5vVtmquYoDLVnNjjDk6LtbPa",
         "api_token_expiration": _EXPIRED_TOKEN,
     },
+    # Demo user for the flexible-auth (AUTH_MODE=oidc) local demonstration.
+    # `id` == the email Keycloak issues for the LDAP-federated user, since the
+    # OIDC middleware resolves user_id from the `email` claim. Provisioned as
+    # `approved` so the in-app authorization check passes. No API token: this
+    # user authenticates interactively via oauth2-proxy + Keycloak, not q-api-token.
+    {
+        "id": "demo@oqtopus.local",
+        "cognito_id": "ldap-demo-0001",
+        "email": "demo@oqtopus.local",
+        "display_name": "OQTOPUS Demo User",
+        "userstatus": "approved",
+        "organization": "OQTOPUS Demo Org",
+        "group_id": "demo-group",
+        "available_devices": "*",
+        "mfa_status": "disabled",
+        "api_token_id": None,
+        "api_token_hash": None,
+        "api_token_expiration": None,
+    },
 ]
 
 

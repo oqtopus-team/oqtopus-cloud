@@ -1,0 +1,20 @@
+# Seed tree for the flexible-auth demo.
+# Applied by bitnami/openldap via LDAP_CUSTOM_LDIF_DIR after the base
+# dc=oqtopus,dc=local suffix and cn=admin bind account are created.
+#
+# The demo user's `mail` is the identity that flows all the way through:
+#   LDAP mail -> Keycloak `email` claim -> oauth2-proxy -> user-api user_id
+#             -> DB users.id (seeded as approved in scripts/seed.py)
+
+dn: ou=people,dc=oqtopus,dc=local
+objectClass: organizationalUnit
+ou: people
+
+dn: uid=demo,ou=people,dc=oqtopus,dc=local
+objectClass: inetOrgPerson
+uid: demo
+cn: OQTOPUS Demo User
+sn: Demo
+givenName: OQTOPUS
+mail: demo@oqtopus.local
+userPassword: demopassword

@@ -1,12 +1,10 @@
 import os
 
-from aws_lambda_powertools.utilities.data_classes import (
-    APIGatewayProxyEvent,
-)
 from fastapi import Request
-from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from oqtopus_cloud.common.auth import AuthError, resolve_identity
 from oqtopus_cloud.user.conf import logger
 
 
@@ -18,27 +16,33 @@ class CustomMiddleware(BaseHTTPMiddleware):
             corr_id = "local-correlation-id"
         if not corr_id:
             corr_id = request.scope["aws.context"].aws_request_id
+        corr_id = str(corr_id)
 
         logger.set_correlation_id(corr_id)
 
+        # NB: this runs OUTSIDE FastAPI's ExceptionMiddleware, so raising
+        # HTTPException here would surface as a 500 (only ServerErrorMiddleware
+        # is further out). Return an explicit Response for auth failures instead.
         try:
-            if os.getenv("ENV") == "local":
-                request.state.user_id = "admin-email"
-                request.state.user_pool_id = "ap-northeast-1_XXXXXXXXX"
-                request.state.region = "ap-northeast-1"
-            else:
-                user_id = APIGatewayProxyEvent(
-                    request.scope["aws.event"]
-                ).request_context.authorizer["user_id"]
-                request.state.user_id = user_id
-                user_pool_id = os.getenv("CLIENT_COGNITO_USER_POOL_ID")
-                request.state.user_pool_id = user_pool_id
-                if user_pool_id:
-                    request.state.region = user_pool_id.split("_")[0]
+            identity = resolve_identity(request)
+            request.state.user_id = identity.user_id
+            request.state.user_pool_id = identity.user_pool_id
+            request.state.region = identity.region
+        except AuthError as e:
+            # OIDC path: caller could not be authenticated/authorized.
+            logger.warning(f"Authentication/authorization failed: {e}")
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Unauthorized"},
+                headers={"X-Correlation-Id": corr_id},
+            )
         except KeyError:
+            # AWS path: the API Gateway authorizer context is missing.
             logger.error("No AWS event found in request scope")
-            raise HTTPException(
-                status_code=500, detail="No AWS event found in request scope"
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "No AWS event found in request scope"},
+                headers={"X-Correlation-Id": corr_id},
             )
 
         response = await call_next(request)
