@@ -250,6 +250,17 @@ variable "otel_exporter_otlp_endpoint" {
   }
 }
 
+variable "otel_collector_layer_arn" {
+  type        = string
+  default     = ""
+  description = "OTel Lambda collector layer ARN. When set, the app exports to the layer's in-environment collector, which forwards to otel_exporter_otlp_endpoint off the response path (decouple processor). Empty = direct export."
+
+  validation {
+    condition     = var.otel_collector_layer_arn == "" || var.otel_enabled
+    error_message = "otel_collector_layer_arn requires otel_enabled = true."
+  }
+}
+
 variable "lambda_log_retention_days" {
   type        = number
   default     = 14

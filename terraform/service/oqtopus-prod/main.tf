@@ -73,6 +73,7 @@ module "user_api" {
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
   otel_enabled                           = var.otel_enabled
   otel_exporter_otlp_endpoint            = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn               = var.otel_collector_layer_arn
   lambda_log_retention_days              = var.lambda_log_retention_days
 
   storage_driver = "s3"
@@ -109,6 +110,7 @@ module "provider_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
   storage_driver                 = "s3"
   storage_env_vars_s3 = {
