@@ -7,6 +7,26 @@
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 10,
+      "config": {}
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 30,
+      "config": {}
+    }
+  ],
   "clients": [
     {
       "clientId": "oqtopus-oauth2-proxy",
@@ -20,10 +40,13 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:4180/oauth2/callback",
-        "http://localhost:4180/*"
+        "http://localhost:4180/*",
+        "http://localhost:4200/oauth2/callback",
+        "http://localhost:4200/*"
       ],
       "webOrigins": [
-        "http://localhost:4180"
+        "http://localhost:4180",
+        "http://localhost:4200"
       ],
       "defaultClientScopes": [
         "openid",

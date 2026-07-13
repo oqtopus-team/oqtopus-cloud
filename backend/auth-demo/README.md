@@ -134,9 +134,121 @@ services agree on. Keycloak is pinned to `KC_HOSTNAME=http://localhost:8081`
   this browser-OIDC demo; that path stays in-app (DB-backed API tokens) and can
   be wired so oauth2-proxy skips requests carrying `Q-API-Token`.
 
+---
+
+# Frontend (SPA) via BFF
+
+The sections above authenticate the **API**. This part puts the **oqtopus-frontend
+SPA** in front of it using the BFF (Backend-For-Frontend) pattern: a single-origin
+reverse proxy (nginx) fronts the SPA and the API, and oauth2-proxy owns the entire
+login lifecycle. **The SPA holds no tokens and is auth-unaware** — it only asks
+"who am I?" via `/oauth2/userinfo` and hands off to the proxy to log in.
+
+```
+Browser ─cookie─▶ nginx :4200 ─┬─ /          → SPA static (oqtopus-frontend/dist)
+                               ├─ /oauth2/*  → oauth2-proxy → Keycloak :8081 → LDAP
+                               └─ /api/*     → (auth_request) → user-api :8080
+                                              nginx injects the id_token oauth2-proxy
+                                              returns, and strips the /api prefix.
+```
+
+## Frontend changes — pluggable auth drivers (`cognito` | `proxy`)
+
+Auth is a **pluggable driver** selected by `VITE_APP_AUTH_MODE`; the rest of the
+app depends only on the driver contract, never on a specific identity provider.
+
+```
+src/auth/
+  contract.ts      # UseAuth (the driver contract), Result, AuthContext
+  hook.ts          # useAuth()
+  Provider.tsx     # registry: lazy-loads the driver for AUTH_MODE (code-split)
+  drivers/
+    cognito.tsx    # CognitoAuthProvider — isolates aws-amplify
+    proxy.tsx      # ProxyAuthProvider — BFF: userinfo/redirect only, no tokens
+```
+
+- The registry picks the driver from a **build-time constant**, so the unused
+  driver (and its deps) is dead-code-eliminated: a `proxy` build ships **no
+  aws-amplify/Cognito code**, a `cognito` build ships no proxy driver. Set
+  `VITE_APP_AUTH_MODE` explicitly at build time for a fully-split bundle.
+- **proxy driver**: login state from `/oauth2/userinfo`; `signIn`/`signOut` are
+  redirects to `/oauth2/start` / `/logout`; sign-up / MFA / password-reset are
+  delegated to Keycloak (see below). No `Authorization` header — the proxy
+  injects the token. API base defaults to same-origin `/api`.
+- **cognito driver**: the original Amplify/Cognito flows, unchanged.
+- Adding a new backend = add `drivers/<name>.tsx` returning a `UseAuth` and a
+  branch in `Provider.tsx`. `src/env/index.ts` also exposes `AUTH_MODE`.
+
+## Run it
+
+```bash
+# 1) Build the SPA in proxy mode (from the frontend repo)
+cd ../../oqtopus-frontend        # adjust to your checkout
+bun install
+VITE_APP_AUTH_MODE=proxy \
+  VITE_APP_ACCOUNT_CONSOLE_URL=http://localhost:8081/realms/oqtopus/account/ \
+  bun run build
+
+# 2) Bring up the full stack incl. nginx + SPA (from backend/)
+cd -                             # back to backend/
+docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml up -d --build
+make migrate-up && make seed     # if not already seeded
+```
+
+Then open <http://localhost:4200/dashboard> in a browser:
+
+1. You're redirected to Keycloak and log in as **`demo` / `demopassword`** (LDAP).
+2. **First login forces TOTP (MFA) enrollment** — scan the QR with an authenticator
+   app (Google Authenticator, etc.) and enter the 6-digit code. Subsequent logins
+   require that code.
+3. You land back in the SPA, authenticated; its API calls flow through nginx →
+   user-api with the proxy-injected token.
+
+MFA is enforced by Keycloak's realm (`requiredActions: CONFIGURE_TOTP`,
+`defaultAction: true` in `auth-demo/keycloak/realm.json`) — no MFA code lives in
+the SPA or the backend anymore.
+
+### Password change & MFA reset (proxy mode)
+
+These are delegated to Keycloak's self-service **Account Console** rather than
+reimplemented in the SPA. In proxy mode, **Settings → Account** shows a
+"Change password in Keycloak" button and **Settings → Security** shows a
+"Manage MFA in Keycloak" button; both open
+`…/realms/oqtopus/account/#/security/signing-in` (via `VITE_APP_ACCOUNT_CONSOLE_URL`),
+where the user can change their password and add/remove their OTP authenticator
+(= MFA reset). The existing Keycloak SSO session is reused, so no re-login is
+needed. Logout uses RP-initiated logout (`/logout` → Keycloak end-session with
+`id_token_hint` captured server-side by nginx+njs) so no confirmation prompt
+appears and both the proxy and IdP sessions end.
+
+## Configuration files
+
+- `compose.frontend.yaml` — adds `nginx`, switches oauth2-proxy to nginx
+  `auth_request` mode (`--set-authorization-header`), and mounts the SPA `dist/`.
+- `auth-demo/nginx/nginx.conf` — the single-origin front door (static + `/oauth2`
+  + `auth_request`-gated `/api` with prefix strip and Bearer injection).
+
+## Mapping to production
+
+- Any single-origin reverse proxy (nginx/ALB/CloudFront+Lambda@Edge, or a custom
+  BFF) can play nginx's role; oauth2-proxy stays the auth layer. The SPA build is
+  provider-agnostic — only `VITE_APP_AUTH_MODE` and the proxy config change.
+- The **Cognito/AWS** path is fully preserved: build without `VITE_APP_AUTH_MODE`
+  (or `=cognito`) and the SPA keeps its Amplify login, MFA and signup screens.
+- Login/sign-up/MFA/password UI is served by **Keycloak** (themeable — see
+  Keycloak themes / `keycloakify` to reproduce the brand). The SPA's
+  `src/pages/auth/**` screens are used only in `cognito` mode.
+
 ## Stop / reset
 
 ```bash
-docker compose -f compose.yaml -f compose.auth.yaml down          # stop
-docker compose -f compose.yaml -f compose.auth.yaml down -v       # + wipe volumes
+# API-only demo
+docker compose -f compose.yaml -f compose.auth.yaml down            # stop
+docker compose -f compose.yaml -f compose.auth.yaml down -v         # + wipe volumes
+
+# Full frontend BFF demo (add -f compose.frontend.yaml)
+docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml down
 ```
+
+> Recreating the `keycloak` container resets its in-memory dev DB, so the demo
+> user must re-enroll TOTP on the next login (expected for this ephemeral demo).

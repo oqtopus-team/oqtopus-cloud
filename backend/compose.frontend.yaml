@@ -1,0 +1,64 @@
+# Frontend (SPA) BFF demo overlay — layers on top of compose.yaml + compose.auth.yaml:
+#
+#   docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml up -d
+#
+# It puts the SPA and the API behind a single-origin front door (nginx :4200)
+# and switches oauth2-proxy into nginx auth_request mode. The SPA is built with
+# VITE_APP_AUTH_MODE=proxy and holds no tokens; nginx injects the id_token that
+# oauth2-proxy returns into the /api requests it forwards to the backend.
+#
+#   Browser -> nginx :4200 ─┬─ /         -> SPA static (oqtopus-frontend/dist)
+#                           ├─ /oauth2/* -> oauth2-proxy -> Keycloak :8081 -> LDAP
+#                           └─ /api/*     -> (auth_request) -> user-api :8080
+#
+# Prereq: build the SPA first (from the oqtopus-frontend repo):
+#   VITE_APP_AUTH_MODE=proxy bun run build
+
+services:
+  # Reconfigure oauth2-proxy for nginx auth_request mode (no direct upstream;
+  # it only validates the session and hands nginx the id_token).
+  oauth2-proxy:
+    command:
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true
+      - --provider=oidc
+      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --skip-oidc-discovery=true
+      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
+      - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
+      - --client-id=oqtopus-oauth2-proxy
+      - --client-secret=oauth2-proxy-secret
+      - --redirect-url=http://localhost:4200/oauth2/callback
+      - --upstream=static://200
+      - --cookie-secret=0123456789abcdef0123456789abcdef
+      - --cookie-secure=false
+      - --email-domain=*
+      - --scope=openid email profile
+      - --insecure-oidc-allow-unverified-email=true
+      # Return the id_token in the Authorization header of the auth subrequest
+      # so nginx can forward it to the backend.
+      - --set-authorization-header=true
+      - --set-xauthrequest=true
+      - --whitelist-domain=localhost:4200
+      # Allow the post-sign_out redirect to Keycloak's end-session endpoint
+      # (RP-initiated logout).
+      - --whitelist-domain=localhost:8081
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      oauth2-proxy:
+        condition: service_started
+      user-api:
+        condition: service_started
+    volumes:
+      - ./auth-demo/nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./auth-demo/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./auth-demo/nginx/logout.js:/etc/nginx/njs/logout.js:ro
+      # SPA build output from the sibling frontend repo (build with
+      # VITE_APP_AUTH_MODE=proxy). Adjust the path if your checkout differs.
+      - ../../oqtopus-frontend/dist:/usr/share/nginx/html:ro
+    ports:
+      - "4200:80"
+    restart: unless-stopped
