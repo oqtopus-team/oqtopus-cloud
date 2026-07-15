@@ -35,6 +35,7 @@ resource "aws_db_instance" "this" {
   db_name                               = var.db_name
   db_subnet_group_name                  = aws_db_subnet_group.this.name
   deletion_protection                   = "true"
+  enabled_cloudwatch_logs_exports       = ["slowquery"]
   engine                                = "mysql"
   engine_version                        = "8.4.8"
   iam_database_authentication_enabled   = "true"
@@ -100,6 +101,24 @@ resource "aws_db_parameter_group" "this" {
   parameter {
     apply_method = "immediate"
     name         = "log_bin_trust_function_creators"
+    value        = "1"
+  }
+
+  parameter {
+    apply_method = "immediate"
+    name         = "log_output"
+    value        = "FILE"
+  }
+
+  parameter {
+    apply_method = "immediate"
+    name         = "long_query_time"
+    value        = "1"
+  }
+
+  parameter {
+    apply_method = "immediate"
+    name         = "slow_query_log"
     value        = "1"
   }
 }
