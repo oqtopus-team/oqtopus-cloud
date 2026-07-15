@@ -43,3 +43,9 @@ variable "db_performance_insights_enabled" {
   description = "DB performance insights enabled"
   type        = bool
 }
+
+variable "db_slow_query_log_retention_days" {
+  description = "Number of days for which slow query logs are retained in CloudWatch Logs"
+  type        = number
+  default     = 14
+}

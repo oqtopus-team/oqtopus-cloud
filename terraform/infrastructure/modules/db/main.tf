@@ -64,6 +64,13 @@ resource "aws_db_instance" "this" {
   lifecycle {
     ignore_changes = [engine_version]
   }
+
+  depends_on = [aws_cloudwatch_log_group.slow_query]
+}
+
+resource "aws_cloudwatch_log_group" "slow_query" {
+  name              = "/aws/rds/instance/${var.product}-${var.org}-${var.env}/slowquery"
+  retention_in_days = var.db_slow_query_log_retention_days
 }
 
 
