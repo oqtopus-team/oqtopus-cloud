@@ -257,6 +257,8 @@ module "deployment_roles" {
   github_user    = var.github_user
   branch         = var.branch
   aws_account_id = var.aws_account_id
+
+  enable_terraform_deploy_role = var.enable_terraform_deploy_role
 }
 
 module "waf" {
