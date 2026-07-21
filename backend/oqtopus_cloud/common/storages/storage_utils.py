@@ -8,7 +8,12 @@ JOB_INFO_SSE_LOG_PARAM = "sse_log"
 # device storage objects
 DEVICE_INFO_FILE = "device_info.json"
 DEVICE_INFO_ARCHIVE = "device_info.zip"
+DEVICE_INFO_UPLOADS_DIR = "uploads"
 
 
 def get_device_info_key(device_id: str) -> str:
     return f"devices/{device_id}/{DEVICE_INFO_ARCHIVE}"
+
+
+def get_device_info_upload_key(device_id: str, upload_id: str) -> str:
+    return f"devices/{device_id}/{DEVICE_INFO_UPLOADS_DIR}/{upload_id}/{DEVICE_INFO_ARCHIVE}"

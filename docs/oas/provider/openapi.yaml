@@ -146,7 +146,7 @@ paths:
             nullable: false
             example: qulacs
       requestBody:
-        description: Calibration timestamp for the uploaded device_info.
+        description: Upload identifier and calibration timestamp for the uploaded device_info.
         content:
           application/json:
             schema:
@@ -603,12 +603,17 @@ components:
     devices.DeviceInfoUpdate:
       type: object
       properties:
+        upload_id:
+          description: Upload identifier returned by the device_info upload URL endpoint.
+          type: string
+          example: 4a955d4fb28b4b699cdb8ad2274d3738
         calibrated_at:
           description: Calibration timestamp for the uploaded device_info.
           type: string
           format: date-time
           example: '2023-09-10T14:00:00Z'
       required:
+        - upload_id
         - calibrated_at
     devices.DeviceInfoUploadPresignedURL:
       type: object
@@ -626,9 +631,13 @@ components:
     devices.DeviceInfoUploadResponse:
       type: object
       properties:
+        upload_id:
+          type: string
+          description: Upload identifier for confirming the specific device_info upload.
         presigned_url:
           $ref: '#/components/schemas/devices.DeviceInfoUploadPresignedURL'
       required:
+        - upload_id
         - presigned_url
     jobs.JobStatus:
       type: string

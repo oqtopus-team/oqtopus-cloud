@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -9,7 +10,10 @@ from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
-from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_key,
+    get_device_info_upload_key,
+)
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceDataUpdateResponse,
@@ -64,12 +68,14 @@ def get_device_info_upload_url(
         device = db.get(Device, device_id)
         if device is None:
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
+        upload_id = uuid4().hex
         return DeviceInfoUploadResponse(
+            upload_id=upload_id,
             presigned_url=DeviceInfoUploadPresignedURL(
                 **storage.get_upload_presigned_url_data(
-                    key=get_device_info_key(device_id)
+                    key=get_device_info_upload_key(device_id, upload_id)
                 )
-            )
+            ),
         )
     except Exception as e:
         tracer.put_annotation("error", str(e))
@@ -198,9 +204,14 @@ def update_device_calibration(
         if calibrated_at is None:
             return BadRequestResponse(message="calibrated_at is required")
 
-        device_info_key = get_device_info_key(device_id)
-        if not storage.does_exist(key=device_info_key):
+        upload_key = get_device_info_upload_key(device_id, request.upload_id)
+        uploaded_device_info = storage.get(key=upload_key)
+        if uploaded_device_info is None:
             return BadRequestResponse(message="device_info upload not found")
+
+        device_info_key = get_device_info_key(device_id)
+        storage.put(key=device_info_key, data=uploaded_device_info)
+        storage.delete(key=upload_key)
         device.calibrated_at = calibrated_at
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
