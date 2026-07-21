@@ -129,11 +129,11 @@ def get_device_info(
     model: Device, storage: AbstractStorage | None = None
 ) -> str | None:
     if storage is None or not hasattr(storage, "does_exist"):
-        return None
+        return getattr(model, "device_info", None)
     device_info_key = get_device_info_key(model.id)
     if storage.does_exist(key=device_info_key):
         return storage.get_download_presigned_url(key=device_info_key)
-    return None
+    return getattr(model, "device_info", None)
 
 
 def model_to_schema(

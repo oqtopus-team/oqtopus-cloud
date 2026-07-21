@@ -305,7 +305,7 @@ def get_device_info(model: Device, storage: AbstractStorage) -> str | None:
     device_info_key = get_device_info_key(model.id)
     if storage.does_exist(key=device_info_key):
         return storage.get_download_presigned_url(key=device_info_key)
-    return None
+    return getattr(model, "device_info", None)
 
 
 def model_to_schema(model: Device, storage: AbstractStorage) -> DeviceInfo:
@@ -335,6 +335,7 @@ def schema_to_model(device_id: str, schema: DeviceBase) -> Device | None:
             n_qubits=schema.n_qubits,
             basis_gates=json.dumps(schema.basis_gates),
             instructions=json.dumps(schema.supported_instructions),
+            device_info=schema.device_info,
             calibrated_at=ensure_timezone(schema.calibrated_at),
             description=schema.description,
         )

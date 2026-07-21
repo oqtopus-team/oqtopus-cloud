@@ -30,6 +30,7 @@ def _get_model(n, device_info=None):
         "n_qubits": 1 + n,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
+        "device_info": json.dumps(device_info) if device_info is not None else None,
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -63,7 +64,7 @@ def test_get_devices(
             n_qubits=2,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=None,
+            device_info=json.dumps(device_info1),
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -76,7 +77,7 @@ def test_get_devices(
             n_qubits=3,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=None,
+            device_info=json.dumps(device_info2),
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -116,7 +117,7 @@ def test_get_device(
         n_qubits=2,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        device_info=None,
+        device_info=json.dumps(device_info),
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -173,6 +174,7 @@ def test_register_devices(
     # confirm the device is registered
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.basis_gates == '["x", "sx", "rz", "cx", "t"]'
+    assert device.device_info == json.dumps(device_info)
 
 
 def test_register_devices_no_utc(

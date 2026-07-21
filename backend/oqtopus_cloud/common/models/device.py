@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import String, text
+from sqlalchemy import String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -69,6 +69,10 @@ class Device(Base, TimestampMixin):
     instructions: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
+    )
+    device_info: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
     )
     calibrated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTimeTz(), nullable=True
