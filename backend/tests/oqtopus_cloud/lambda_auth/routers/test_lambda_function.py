@@ -117,10 +117,28 @@ def test__validate_headers_for_api_token_success():
     _validate_headers_for_api_token(headers)
 
 
-def test__validate_headers_for_api_token_missing_header():
+def test__validate_headers_for_authorization_missing_header():
     headers = {
         "q-api-token": "token-value",
-        "authorization": None,
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authentication header is missing" in str(excinfo.value)
+
+def test__validate_headers_for_q_api_token_missing_header():
+    headers = {
+        "authorization": "token-value",
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authentication header is missing" in str(excinfo.value)
+
+def test__validate_headers_for_both_headers_missing():
+    headers = {
     }
 
     with pytest.raises(AuthError) as excinfo:
