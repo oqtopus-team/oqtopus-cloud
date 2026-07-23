@@ -48,6 +48,11 @@ variable "db_instance_class" {
   description = "The instance class for the RDS instance (e.g. db.t4g.micro, db.t4g.small, db.t4g.medium)"
   type        = string
   default     = "db.t4g.medium"
+
+  validation {
+    condition     = can(regex("^db\\.[a-z0-9]+\\.[a-z0-9]+$", var.db_instance_class))
+    error_message = "db_instance_class must be a valid RDS instance class, e.g. db.t4g.medium or db.r6g.2xlarge."
+  }
 }
 
 variable "db_multi_az" {
