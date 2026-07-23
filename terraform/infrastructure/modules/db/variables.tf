@@ -43,3 +43,15 @@ variable "db_performance_insights_enabled" {
   description = "DB performance insights enabled"
   type        = bool
 }
+
+variable "db_instance_class" {
+  description = "The instance class for the RDS instance (e.g. db.t4g.micro, db.t4g.small, db.t4g.medium)"
+  type        = string
+  default     = "db.t4g.medium"
+}
+
+variable "db_multi_az" {
+  description = "Whether to deploy the RDS instance in Multi-AZ for high availability"
+  type        = bool
+  default     = true
+}
