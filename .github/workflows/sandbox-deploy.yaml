@@ -116,7 +116,7 @@ jobs:
 
       # Saved plan the apply job replays verbatim, so the reviewer approves the
       # exact change that gets applied. May contain resource attribute values -
-      # kept 1 day and only in the sandbox account.
+      # kept 7 days and only in the sandbox account.
       - name: Upload infrastructure plan
         uses: actions/upload-artifact@v4
         with:

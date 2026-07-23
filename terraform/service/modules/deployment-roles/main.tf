@@ -94,8 +94,9 @@ resource "aws_iam_role_policy" "auto_deployment_policy" {
 
 # Terraform Deployment Role (opt-in). Unlike the Lambda role above, this one
 # trusts every ref of the repository so workflow_dispatch can deploy any
-# branch to a sandbox environment, and it carries admin permissions because
-# terraform manages IAM/VPC/RDS/API Gateway across both stacks.
+# branch to a sandbox environment (plus the sandbox environment subject, used
+# by the gated apply job), and it carries admin permissions because terraform
+# manages IAM/VPC/RDS/API Gateway across both stacks.
 resource "aws_iam_role" "github_actions_terraform_role" {
   count = var.enable_terraform_deploy_role ? 1 : 0
   name  = "${var.product}-${var.org}-${var.env}-deploy-terraform"
@@ -113,8 +114,12 @@ resource "aws_iam_role" "github_actions_terraform_role" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         },
         StringLike = {
+          # ref:refs/heads/* covers the plan job (runs on any branch);
+          # environment:sandbox covers the apply job, whose OIDC sub becomes
+          # repo:.../.../:environment:sandbox once it references that environment.
           "token.actions.githubusercontent.com:sub" = [
-            "repo:${var.github_user}/${var.repository}:ref:refs/heads/*"
+            "repo:${var.github_user}/${var.repository}:ref:refs/heads/*",
+            "repo:${var.github_user}/${var.repository}:environment:sandbox"
           ]
         }
       }
