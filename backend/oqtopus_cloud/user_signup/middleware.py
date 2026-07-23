@@ -19,12 +19,8 @@ class CustomMiddleware(BaseHTTPMiddleware):
         logger.set_correlation_id(corr_id)
 
         try:
-            if os.getenv("ENV") == "local":
-                request.state.pool_id = "ap-northeast-1_1110A6PLE"
-                request.state.client_id = "1h57kf5cpq17m0eml12EXAMPLE"
-            else:
-                request.state.pool_id = os.getenv("AUTH_USER_POOL_ID")
-                request.state.client_id = os.getenv("USER_POOL_WEB_CLIENT_ID")
+            request.state.pool_id = os.getenv("AUTH_USER_POOL_ID")
+            request.state.client_id = os.getenv("USER_POOL_WEB_CLIENT_ID")
 
         except Exception as e:
             logger.error("Error while setting client_id", exc_info=e)
