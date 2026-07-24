@@ -2,7 +2,7 @@ import datetime
 import decimal
 from typing import Optional
 
-from sqlalchemy import Numeric, String, Text, text
+from sqlalchemy import Index, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -43,6 +43,15 @@ class Job(Base, TimestampMixin):
     """
 
     __tablename__ = "jobs"
+    __table_args__ = (
+        Index("ix_jobs_status_device_id", "status", "device_id"),
+        Index(
+            "ix_jobs_running_at_device_id_submitted_at",
+            "running_at",
+            "device_id",
+            "submitted_at",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(
         String(64),
