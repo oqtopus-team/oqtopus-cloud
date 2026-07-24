@@ -56,37 +56,32 @@ jobs.Job:
       nullable: true
       properties: {}
       additionalProperties: true
-      example: {
-        qubit_allocation: {
-          "0": 12,
+      example:
+        qubit_allocation:
+          "0": 12
           "1": 16
-        },
-        skip_transpilation: false,
+        skip_transpilation: false
         seed_transpilation: 873
-      }
     simulator_info:
       type: object
       properties: {}
       additionalProperties: true
       nullable: true
-      example: {
-        "n_qubits": 5,
-        "n_nodes": 12,
-        "n_per_node": 2,
-        "seed_simulation": 39058567,
-        "simulation_opt": {
-          "optimization_method": "light",
-          "optimization_block_size": 1,
-          "optimization_swap_level": 1
-        }
-      }
+      example:
+        n_qubits: 5
+        n_nodes: 12
+        n_per_node: 2
+        seed_simulation: 39058567
+        simulation_opt:
+          optimization_method: light
+          optimization_block_size: 1
+          optimization_swap_level: 1
     mitigation_info:
       type: object
       properties: {}
       additionalProperties: true
-      example: {
-        "ro_error_mitigation": "pseudo_inverse"
-      }
+      example:
+        ro_error_mitigation: pseudo_inverse
       nullable: true
     status:
       $ref: "#/jobs.JobStatus"
@@ -120,44 +115,38 @@ jobs.Job:
       example: 2022-10-19T11:45:34Z
       nullable: true
       default: null
-  required:
-    []
+  required: []
   example:
-      job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-      name: Bell State Sampling
-      description: Bell State Sampling Example
-      device_id: Kawasaki
-      job_type: sampling
-      input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-      transpiler_info: {
-        qubit_allocation: {
-          "0": 12,
-          "1": 16
-        },
-        skip_transpilation: false,
-        seed_transpilation: 873
-      }
-      simulator_info: {
-        "n_qubits": 5,
-        "n_nodes": 12,
-        "n_per_node": 2,
-        "seed_simulation": 39058567,
-        "simulation_opt": {
-          "optimization_method": "light",
-          "optimization_block_size": 1,
-          "optimization_swap_level": 1
-        }
-      }
-      mitigation_info: {
-        "ro_error_mitigation": "pseudo_inverse"
-      }
-      shots: 1000
-      status: submitted
-      execution_time: 10.123
-      submitted_at: 2022-10-19T11:45:34Z
-      ready_at: 2022-10-19T11:45:34Z
-      running_at: 2022-10-19T11:45:34Z
-      ended_at: 2022-10-19T11:45:34Z
+    job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+    name: Bell State Sampling
+    description: Bell State Sampling Example
+    device_id: Kawasaki
+    job_type: sampling
+    input: "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
+    transpiler_info:
+      qubit_allocation:
+        "0": 12
+        "1": 16
+      skip_transpilation: false
+      seed_transpilation: 873
+    simulator_info:
+      n_qubits: 5
+      n_nodes: 12
+      n_per_node: 2
+      seed_simulation: 39058567
+      simulation_opt:
+        optimization_method: light
+        optimization_block_size: 1
+        optimization_swap_level: 1
+    mitigation_info:
+      ro_error_mitigation: pseudo_inverse
+    shots: 1000
+    status: submitted
+    execution_time: 10.123
+    submitted_at: 2022-10-19T11:45:34Z
+    ready_at: 2022-10-19T11:45:34Z
+    running_at: 2022-10-19T11:45:34Z
+    ended_at: 2022-10-19T11:45:34Z
 
 jobs.JobDef:
   allOf:
@@ -189,11 +178,10 @@ jobs.JobStatusUpdate:
       items:
         type: string
       nullable: true
-      example: [
-        7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip,
-        7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip,
-        7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
-      ]
+      example:
+        - 7af020f6-2e38-4d70-8cf0-4349650ea08c/combined_program.zip
+        - 7af020f6-2e38-4d70-8cf0-4349650ea08c/transpile_result.zip
+        - 7af020f6-2e38-4d70-8cf0-4349650ea08c/result.zip
     message:
       type: string
       nullable: true
@@ -287,9 +275,8 @@ jobs.S3SubmitJobInfo:
         Otherwise, those programs are combined according to the multiprogramming machinery.
       items:
         type: string
-      example: [
-          "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-        ]
+      example:
+        - "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
     operator:
       type: array
       items:
@@ -313,31 +300,27 @@ jobs.S3SamplingResult:
       nullable: false
       properties: {}
       additionalProperties: true
-      example: {
-        "10": 84,
-        "11": 387,
-        "00": 454,
+      example:
+        "10": 84
+        "11": 387
+        "00": 454
         "01": 75
-      }
     divided_counts:
       type: object
       nullable: true
       properties: {}
       additionalProperties: true
-      example: {
-        "0": {
-          "00": 84,
-          "11": 387,
-          "10": 454,
+      example:
+        "0":
+          "00": 84
+          "11": 387
+          "10": 454
           "01": 75
-        },
-        "1": {
-          "00": 84,
-          "11": 387,
-          "10": 454,
+        "1":
+          "00": 84
+          "11": 387
+          "10": 454
           "01": 75
-        }
-      }
   required:
     - counts
 

@@ -133,6 +133,83 @@ class DeviceBase(BaseModel):
     ] = None
 
 
+class DeviceInfoHistoryEntry(BaseModel):
+    device_id: Annotated[str, Field(examples=["qulacs"])]
+    calibrated_at: Annotated[AwareDatetime, Field(examples=["2024-03-04T12:34:56Z"])]
+    n_qubits: Annotated[int, Field(examples=[64])]
+    n_couplings: Annotated[int, Field(examples=[72])]
+
+
+class DeviceInfoHistoryListResponse(BaseModel):
+    items: list[DeviceInfoHistoryEntry]
+    total: Annotated[int, Field(examples=[3])]
+    limit: Annotated[int, Field(examples=[100])]
+    offset: Annotated[int, Field(examples=[0])]
+
+
+class DeviceInfoHistoryDetail(DeviceInfoHistoryEntry):
+    device_info: Annotated[
+        str,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+            ]
+        ),
+    ]
+    """
+    Presigned URL for downloading the historical device_info.zip.
+    """
+
+
+class DevicePatch(BaseModel):
+    device_type: Annotated[DeviceType | None, Field(examples=["simulator"])] = None
+    status: Annotated[Status | None, Field(examples=["available"])] = None
+    n_qubits: Annotated[int | None, Field(examples=[64])] = None
+    available_at: Annotated[
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
+    ] = None
+    calibrated_at: Annotated[
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
+    ] = None
+    basis_gates: Annotated[
+        list[str] | None,
+        Field(
+            examples=[
+                [
+                    "x",
+                    "y",
+                    "z",
+                    "h",
+                    "s",
+                    "sdg",
+                    "t",
+                    "tdg",
+                    "rx",
+                    "ry",
+                    "rz",
+                    "cx",
+                    "cz",
+                    "swap",
+                    "u1",
+                    "u2",
+                    "u3",
+                    "u",
+                    "p",
+                    "id",
+                    "sx",
+                    "sxdg",
+                ]
+            ]
+        ),
+    ] = None
+    supported_instructions: Annotated[
+        list[str] | None, Field(examples=[["measure", "barrier", "reset"]])
+    ] = None
+    description: Annotated[
+        str | None, Field(examples=["Superconducting quantum computer"])
+    ] = None
+
+
 class DeviceInfoUploadPresignedURL(BaseModel):
     """
     Presigned URL for uploading device_info.zip to OQTOPUS cloud.

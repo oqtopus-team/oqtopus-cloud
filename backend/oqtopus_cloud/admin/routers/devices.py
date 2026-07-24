@@ -1,9 +1,9 @@
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, status
-from pydantic import AwareDatetime, BaseModel, Field
-from sqlalchemy import select
+from fastapi import APIRouter, Body, Depends, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -11,10 +11,12 @@ from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceBase,
     DeviceInfo,
+    DeviceInfoHistoryDetail,
+    DeviceInfoHistoryEntry,
+    DeviceInfoHistoryListResponse,
     DeviceInfoUploadPresignedURL,
     DeviceInfoUploadResponse,
-    DeviceType,
-    Status,
+    DevicePatch,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
@@ -25,11 +27,13 @@ from oqtopus_cloud.admin.schemas.errors import (
 )
 from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
     get_device_info_key,
 )
 
@@ -39,51 +43,42 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
 
 
-class DevicePatch(BaseModel):
-    device_type: DeviceType | None = Field(default=None, examples=["simulator"])
-    status: Status | None = Field(default=None, examples=["available"])
-    n_qubits: int | None = Field(default=None, examples=[64])
-    available_at: AwareDatetime | None = Field(
-        default=None, examples=["2022-10-19T11:45:34Z"]
+def _normalize_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
+    return DeviceInfoHistoryEntry(
+        device_id=history.device_id,
+        calibrated_at=history.calibrated_at,
+        n_qubits=history.n_qubits,
+        n_couplings=history.n_couplings,
     )
-    calibrated_at: AwareDatetime | None = Field(
-        default=None, examples=["2022-10-19T11:45:34Z"]
+
+
+def _get_history_object_key(history: DeviceInfoHistory) -> str:
+    return get_device_info_history_key(history.device_id, history.calibrated_at)
+
+
+def _history_to_detail(
+    history: DeviceInfoHistory, storage: AbstractStorage
+) -> DeviceInfoHistoryDetail:
+    return DeviceInfoHistoryDetail(
+        device_id=history.device_id,
+        calibrated_at=history.calibrated_at,
+        n_qubits=history.n_qubits,
+        n_couplings=history.n_couplings,
+        device_info=storage.get_download_presigned_url(key=_get_history_object_key(history)),
     )
-    basis_gates: list[str] | None = Field(
-        default=None,
-        examples=[
-            [
-                "x",
-                "y",
-                "z",
-                "h",
-                "s",
-                "sdg",
-                "t",
-                "tdg",
-                "rx",
-                "ry",
-                "rz",
-                "cx",
-                "cz",
-                "swap",
-                "u1",
-                "u2",
-                "u3",
-                "u",
-                "p",
-                "id",
-                "sx",
-                "sxdg",
-            ]
-        ],
-    )
-    supported_instructions: list[str] | None = Field(
-        default=None, examples=[["measure", "barrier", "reset"]]
-    )
-    description: str | None = Field(
-        default=None, examples=["Superconducting quantum computer"]
-    )
+
+
+def _get_existing_device(device_id: str, db: Session) -> Device | ErrorResponse:
+    device = db.scalars(select(Device).where(Device.id == device_id)).first()
+    if device is None:
+        return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
+    return device
 
 
 @router.get(
@@ -130,6 +125,107 @@ def get_device(
             message = f"device_id={device_id} is not found."
             logger.info(message)
             return NotFoundErrorResponse(message=message)
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/devices/{device_id}/device_info_history",
+    response_model=DeviceInfoHistoryListResponse,
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def list_device_info_history(
+    device_id: str,
+    from_: Annotated[datetime | None, Query(alias="from")] = None,
+    to: datetime | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    db: Session = Depends(get_db),
+) -> DeviceInfoHistoryListResponse | ErrorResponse:
+    try:
+        device = _get_existing_device(device_id, db)
+        if isinstance(device, ErrorResponse):
+            return device
+
+        stmt = select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
+        count_stmt = (
+            select(func.count())
+            .select_from(DeviceInfoHistory)
+            .where(DeviceInfoHistory.device_id == device_id)
+        )
+        if from_ is not None:
+            from_ = _normalize_utc(from_)
+            stmt = stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+            count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+        if to is not None:
+            to = _normalize_utc(to)
+            stmt = stmt.where(DeviceInfoHistory.calibrated_at <= to)
+            count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at <= to)
+
+        total = db.scalar(count_stmt) or 0
+        histories = db.scalars(
+            stmt.order_by(DeviceInfoHistory.calibrated_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        return DeviceInfoHistoryListResponse(
+            items=[_history_to_entry(history) for history in histories],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/devices/{device_id}/device_info_history/at",
+    response_model=DeviceInfoHistoryDetail,
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_device_info_history_at(
+    device_id: str,
+    timestamp: datetime,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> DeviceInfoHistoryDetail | ErrorResponse:
+    try:
+        device = _get_existing_device(device_id, db)
+        if isinstance(device, ErrorResponse):
+            return device
+
+        timestamp = _normalize_utc(timestamp)
+        history = db.scalars(
+            select(DeviceInfoHistory)
+            .where(
+                DeviceInfoHistory.device_id == device_id,
+                DeviceInfoHistory.calibrated_at <= timestamp,
+            )
+            .order_by(DeviceInfoHistory.calibrated_at.desc())
+            .limit(1)
+        ).first()
+        if history is None:
+            return NotFoundErrorResponse(
+                message=(
+                    f"device_info_history for device_id={device_id} "
+                    f"at timestamp={timestamp.isoformat()} is not found."
+                )
+            )
+        if not storage.does_exist(key=_get_history_object_key(history)):
+            return NotFoundErrorResponse(message="device_info object is not found.")
+        return _history_to_detail(history, storage)
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -271,6 +367,14 @@ def delete_device(
         device_info_key = get_device_info_key(device_id)
         if storage.does_exist(key=device_info_key):
             storage.delete(key=device_info_key)
+        histories = db.scalars(
+            select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
+        ).all()
+        for history in histories:
+            history_key = _get_history_object_key(history)
+            if storage.does_exist(key=history_key):
+                storage.delete(key=history_key)
+            db.delete(history)
         # delete from RDS
         db.delete(query_result)
         db.commit()

@@ -1,4 +1,8 @@
+import datetime
+import json
+import zipfile
 from enum import Enum
+from io import BytesIO
 from uuid import uuid4
 
 from fastapi import (
@@ -6,11 +10,13 @@ from fastapi import (
     Depends,
 )
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
     get_device_info_key,
     get_device_info_upload_key,
 )
@@ -26,6 +32,7 @@ from oqtopus_cloud.provider.schemas.devices import (
 )
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
+    ConflictErrorResponse,
     ErrorResponse,
     InternalServerErrorResponse,
     Message,
@@ -47,6 +54,39 @@ class DeviceType(Enum):
 
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+def _normalize_utc(value: datetime.datetime) -> datetime.datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=datetime.timezone.utc)
+    return value.astimezone(datetime.timezone.utc)
+
+
+def _count_device_info_metadata(device_info: dict) -> tuple[int, int]:
+    qubits = device_info.get("qubits", [])
+    couplings = device_info.get("couplings", [])
+    return len(qubits), len(couplings)
+
+
+def _extract_device_info_metadata(device_info_data: bytes) -> tuple[int, int]:
+    try:
+        with zipfile.ZipFile(BytesIO(device_info_data)) as archive:
+            file_names = [name for name in archive.namelist() if not name.endswith("/")]
+            if not file_names:
+                raise ValueError("device_info.zip does not contain a device info file")
+            with archive.open(file_names[0]) as device_info_file:
+                device_info = json.load(device_info_file)
+        return _count_device_info_metadata(device_info)
+    except zipfile.BadZipFile:
+        pass
+    except (json.JSONDecodeError, KeyError) as exc:
+        raise ValueError("device_info.zip is invalid") from exc
+
+    try:
+        device_info = json.loads(device_info_data.decode())
+        return _count_device_info_metadata(device_info)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("device_info is invalid") from exc
 
 
 @router.get(
@@ -170,6 +210,7 @@ def update_device_status(
     responses={
         400: {"model": Message},
         404: {"model": Message},
+        409: {"model": Message},
         500: {"model": Message},
     },
 )
@@ -203,18 +244,48 @@ def update_device_calibration(
         logger.info(f"{calibrated_at}")
         if calibrated_at is None:
             return BadRequestResponse(message="calibrated_at is required")
+        calibrated_at = _normalize_utc(calibrated_at)
+
+        existing_history = (
+            db.query(DeviceInfoHistory)
+            .filter(
+                DeviceInfoHistory.device_id == device_id,
+                DeviceInfoHistory.calibrated_at == calibrated_at,
+            )
+            .first()
+        )
+        if existing_history is not None:
+            return ConflictErrorResponse(
+                message=(
+                    f"device_info_history for device_id={device_id} and "
+                    f"calibrated_at={calibrated_at.isoformat()} already exists."
+                )
+            )
 
         upload_key = get_device_info_upload_key(device_id, request.upload_id)
         uploaded_device_info = storage.get(key=upload_key)
         if uploaded_device_info is None:
             return BadRequestResponse(message="device_info upload not found")
+        n_qubits, n_couplings = _extract_device_info_metadata(uploaded_device_info)
 
         device_info_key = get_device_info_key(device_id)
+        history_key = get_device_info_history_key(device_id, calibrated_at)
+        storage.put(key=history_key, data=uploaded_device_info)
         storage.put(key=device_info_key, data=uploaded_device_info)
         storage.delete(key=upload_key)
         device.calibrated_at = calibrated_at
+        db.add(
+            DeviceInfoHistory(
+                device_id=device_id,
+                calibrated_at=calibrated_at,
+                n_qubits=n_qubits,
+                n_couplings=n_couplings,
+            )
+        )
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
+    except ValueError as e:
+        return BadRequestResponse(message=str(e))
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

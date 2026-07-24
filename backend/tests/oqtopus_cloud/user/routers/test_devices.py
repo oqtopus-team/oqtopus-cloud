@@ -1,12 +1,17 @@
 import json
+import os
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Any, Dict
+import zipfile
 
 import pytz
 from oqtopus_cloud.common.models.device import (
     Device,
 )
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.models.user import User, UserStatus
+from oqtopus_cloud.common.storages import FSSpecStorage
 from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from oqtopus_cloud.user.routers.devices import get_device, get_devices, model_to_schema
 from oqtopus_cloud.user.schemas.devices import DeviceInfo, DeviceType, Status
@@ -19,6 +24,13 @@ from starlette.requests import Request
 from zoneinfo import ZoneInfo
 
 utc = ZoneInfo("UTC")
+
+
+def _device_info_archive_bytes(device_info: dict) -> bytes:
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("device_info.json", json.dumps(device_info))
+    return buf.getvalue()
 
 
 def _get_calibration_dict() -> Dict:
@@ -95,7 +107,9 @@ def _get_model(device="SVSim", device_info: str | None = None):
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": device_info if device_info is not None else json.dumps({"device_id": device}),
+        "device_info": device_info
+        if device_info is not None
+        else json.dumps({"device_id": device}),
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
@@ -304,7 +318,10 @@ def test_model_to_schema_returns_download_url_for_uploaded_device_info(test_stor
     device_id = "SVSim"
     model = _get_model(device=device_id)
     device_info_key = get_device_info_key(device_id)
-    test_storage.put(key=device_info_key, data=b"{}")
+    test_storage.put(
+        key=device_info_key,
+        data=_device_info_archive_bytes({"device_id": device_id}),
+    )
 
     actual = model_to_schema(model, test_storage)
 
@@ -316,6 +333,13 @@ def test_model_to_schema_returns_download_url_for_uploaded_device_info(test_stor
 
 def test_get_device_handler(test_client, test_db):
     # Arrange
+    device_info_key = get_device_info_key("SVSim")
+    storage_path = os.environ["STORAGE_LOCAL_BASE_PATH"]
+    test_storage = FSSpecStorage(fs_url=f"file://{storage_path}")
+    test_storage.put(
+        key=device_info_key,
+        data=_device_info_archive_bytes({"device_id": "SVSim"}),
+    )
     test_db.add(_get_user_model(1))
     test_db.add(_get_model())
     test_db.commit()
@@ -333,11 +357,85 @@ def test_get_device_handler(test_client, test_db):
         "n_qubits": 39,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "supported_instructions": ["measure", "barrier", "reset"],
-        "device_info": json.dumps({"device_id": "SVSim"}),
+        "device_info": f"file://{storage_path}/{device_info_key}",
         "calibrated_at": "2024-03-04T12:34:56Z",
         "description": "State vector-based quantum circuit simulator",
     }
     assert actual.json() == expected
+
+
+def test_list_device_info_history_handler(test_client, test_db):
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
+    test_db.add(_get_model())
+    test_db.add(
+        DeviceInfoHistory(
+            device_id="SVSim",
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+            n_qubits=2,
+            n_couplings=1,
+        )
+    )
+    test_db.commit()
+
+    actual = test_client.get("/devices/SVSim/device_info_history")
+
+    assert actual.status_code == 200
+    assert actual.json() == {
+        "items": [
+            {
+                "device_id": "SVSim",
+                "calibrated_at": "2024-03-04T12:34:56Z",
+                "n_qubits": 2,
+                "n_couplings": 1,
+            }
+        ],
+        "total": 1,
+        "limit": 100,
+        "offset": 0,
+    }
+
+
+def test_get_device_info_history_at_handler(test_client, test_db, test_storage):
+    history_key = "devices/SVSim/history/20240304T123456000000Z/device_info.zip"
+    test_storage.put(
+        key=history_key,
+        data=_device_info_archive_bytes({"device_id": "SVSim"}),
+    )
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
+    test_db.add(_get_model())
+    test_db.add(
+        DeviceInfoHistory(
+            device_id="SVSim",
+            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
+            n_qubits=2,
+            n_couplings=1,
+        )
+    )
+    test_db.commit()
+
+    actual = test_client.get(
+        "/devices/SVSim/device_info_history/at?timestamp=2024-03-04T12:34:56Z"
+    )
+
+    assert actual.status_code == 200
+    assert actual.json() == {
+        "device_id": "SVSim",
+        "calibrated_at": "2024-03-04T12:34:56Z",
+        "n_qubits": 2,
+        "n_couplings": 1,
+        "device_info": f"file://{test_storage.fs_url.removeprefix('file://')}/{history_key}",
+    }
+
+
+def test_list_device_info_history_forbidden(test_client, test_db):
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
+    test_db.add(_get_model(device="SC"))
+    test_db.commit()
+
+    actual = test_client.get("/devices/SC/device_info_history")
+
+    assert actual.status_code == 403
+    assert actual.json() == {"message": "Cannot access device_id=SC."}
 
 
 """

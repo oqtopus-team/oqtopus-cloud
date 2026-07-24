@@ -187,3 +187,59 @@ devices.DeviceInfo:
         }
       calibrated_at: "2022-10-19T11:45:34Z"
       description: "State vector-based quantum circuit simulator"
+
+devices.DeviceInfoHistoryEntry:
+  type: object
+  properties:
+    device_id:
+      type: string
+      example: qulacs
+    calibrated_at:
+      type: string
+      format: date-time
+      example: "2024-03-04T12:34:56Z"
+    n_qubits:
+      type: integer
+      example: 64
+    n_couplings:
+      type: integer
+      example: 72
+  required:
+    - device_id
+    - calibrated_at
+    - n_qubits
+    - n_couplings
+
+devices.DeviceInfoHistoryDetail:
+  allOf:
+    - $ref: '#/devices.DeviceInfoHistoryEntry'
+    - type: object
+      properties:
+        device_info:
+          description: Presigned URL for downloading the historical device_info.zip.
+          type: string
+          example: "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+      required:
+        - device_info
+
+devices.DeviceInfoHistoryListResponse:
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/devices.DeviceInfoHistoryEntry'
+    total:
+      type: integer
+      example: 3
+    limit:
+      type: integer
+      example: 100
+    offset:
+      type: integer
+      example: 0
+  required:
+    - items
+    - total
+    - limit
+    - offset

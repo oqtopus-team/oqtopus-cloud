@@ -31,6 +31,54 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 
 バックエンドは storage key を `devices` table に保存しません。毎回 `device_id` から `devices/<device_id>/device_info.zip` を組み立てて参照します。
 
+## DB 仕様
+
+`devices` table は、現在のデバイス状態を表す metadata を保持します。`device_info` payload の実体は DB には保存せず、`device_id` から導出できる現在用 storage key に保存します。
+
+| Column | 用途 |
+| --- | --- |
+| `id` | device identifier。現在用 storage key `devices/<device_id>/device_info.zip` の `<device_id>` としても使います。 |
+| `device_type` | `QPU` または `simulator`。 |
+| `status` | デバイスの公開状態。 |
+| `n_qubits` | 現在の device row に表示する量子ビット数。 |
+| `basis_gates` | JSON 文字列化した basis gate list。 |
+| `instructions` | JSON 文字列化した supported instruction list。 |
+| `calibrated_at` | 現在の device_info が確定された時刻。Provider の device_info 確定時に更新されます。 |
+| `description` | デバイス説明。 |
+
+`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。履歴 payload の実体も DB には保存せず、`device_id` と `calibrated_at` から決定的に導出される history storage key に保存します。
+
+| Column | Type | Nullable | 用途 |
+| --- | --- | --- | --- |
+| `id` | integer / MySQL unsigned BIGINT | no | surrogate primary key。 |
+| `device_id` | varchar(64) | no | `devices.id` への外部キー。`ON DELETE CASCADE`。 |
+| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。history storage key の一部。 |
+| `n_qubits` | integer | no | snapshot 時点の量子ビット数。履歴一覧と履歴詳細ヘッダーで使います。 |
+| `n_couplings` | integer | no | snapshot 時点の coupling 数。履歴一覧と履歴詳細ヘッダーで使います。 |
+| `created_at` | timestamp / datetime | yes | row 作成時刻。 |
+| `updated_at` | timestamp / datetime | yes | row 更新時刻。MySQL では `ON UPDATE CURRENT_TIMESTAMP`。 |
+
+制約と index は次の通りです。
+
+| Name | 内容 |
+| --- | --- |
+| Primary key | `id` |
+| Foreign key | `device_id` references `devices(id)` with `ON DELETE CASCADE` |
+| Unique constraint | `(device_id, calibrated_at)`。同じデバイス・同じ calibrated_at の snapshot は 1 件だけです。 |
+| Index | `(device_id, calibrated_at)`。履歴一覧と「指定時刻以前の最新 snapshot」検索に使います。 |
+
+`device_info_history` には `storage_key` column を持たせません。history object key は次の規則で一意に決まるため、DB に重複して保存しない方針です。
+
+```text
+devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device_info.zip
+```
+
+この key は実装上 `get_device_info_history_key(device_id, calibrated_at)` で生成します。DB row と storage object の対応は `(device_id, calibrated_at)` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
+
+Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、`device_info_history` に metadata row を追加します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
+
+Admin API の `DELETE /devices/{device_id}` は、`devices` row の削除により `device_info_history` rows を cascade delete します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
+
 ## Admin API の流れ
 
 現在の Admin API は、storage-backed な 2 段階フローです。

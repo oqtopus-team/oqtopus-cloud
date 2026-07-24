@@ -436,6 +436,114 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+  /devices/{device_id}/device_info_history:
+    get:
+      tags:
+        - devices
+      summary: List device information history
+      description: List device information history metadata for the specified device.
+      operationId: list_device_info_history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          description: Device identifier
+          required: true
+          schema:
+            type: string
+          example: qulacs
+        - name: from
+          in: query
+          description: Inclusive lower bound of calibrated_at.
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Inclusive upper bound of calibrated_at.
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Returns device information history metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfoHistoryListResponse'
+        '404':
+          description: Device with device_id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /devices/{device_id}/device_info_history/at:
+    get:
+      tags:
+        - devices
+      summary: Get device information history at timestamp
+      description: Returns the latest device information history whose calibrated_at is earlier than or equal to the specified timestamp.
+      operationId: get_device_info_history_at
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          description: Device identifier
+          required: true
+          schema:
+            type: string
+          example: qulacs
+        - name: timestamp
+          in: query
+          description: Runtime timestamp used to resolve the effective device information.
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Returns resolved device information history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
+        '404':
+          description: Device or history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
     patch:
       tags:
         - devices
@@ -453,11 +561,11 @@ paths:
             type: string
             example: qulacs
       requestBody:
-        description: New calibration data
+        description: Updated device metadata
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/devices.DeviceBase'
+              $ref: '#/components/schemas/devices.DevicePatch'
       responses:
         '200':
           description: Device's data updated
@@ -1165,6 +1273,123 @@ components:
         device_info:
           type: string
           example: '{"device_id": "qulacs", "qubits": []}'
+        device_type:
+          type: string
+          enum:
+            - QPU
+            - simulator
+          example: simulator
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          example: available
+        n_qubits:
+          type: integer
+          example: 64
+        available_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        calibrated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        basis_gates:
+          type: array
+          items:
+            type: string
+          example:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+        supported_instructions:
+          type: array
+          items:
+            type: string
+          example:
+            - measure
+            - barrier
+            - reset
+        description:
+          type: string
+          example: Superconducting quantum computer
+    devices.DeviceInfoHistoryEntry:
+      type: object
+      properties:
+        device_id:
+          type: string
+          example: qulacs
+        calibrated_at:
+          type: string
+          format: date-time
+          example: '2024-03-04T12:34:56Z'
+        n_qubits:
+          type: integer
+          example: 64
+        n_couplings:
+          type: integer
+          example: 72
+      required:
+        - device_id
+        - calibrated_at
+        - n_qubits
+        - n_couplings
+    devices.DeviceInfoHistoryListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/devices.DeviceInfoHistoryEntry'
+        total:
+          type: integer
+          example: 3
+        limit:
+          type: integer
+          example: 100
+        offset:
+          type: integer
+          example: 0
+      required:
+        - items
+        - total
+        - limit
+        - offset
+    devices.DeviceInfoHistoryDetail:
+      allOf:
+        - $ref: '#/components/schemas/devices.DeviceInfoHistoryEntry'
+        - type: object
+          properties:
+            device_info:
+              description: Presigned URL for downloading the historical device_info.zip.
+              type: string
+              example: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE
+          required:
+            - device_info
+    devices.DevicePatch:
+      type: object
+      properties:
         device_type:
           type: string
           enum:

@@ -24,9 +24,8 @@ users.GetOneUserResponse:
             - '*'
   xml:
     name: User
-  required: [
-    id,
-  ]
+  required:
+    - id
 
 users.UserStatus:
   type: string

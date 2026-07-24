@@ -7,7 +7,9 @@ from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
 )
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
     get_device_info_key,
     get_device_info_upload_key,
 )
@@ -27,7 +29,10 @@ from oqtopus_cloud.provider.schemas.devices import (
     UpdateDeviceResponse,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
-from oqtopus_cloud.provider.schemas.errors import BadRequestResponse
+from oqtopus_cloud.provider.schemas.errors import (
+    BadRequestResponse,
+    ConflictErrorResponse,
+)
 
 utc = ZoneInfo("UTC")
 client = TestClient(app)
@@ -45,6 +50,14 @@ def _get_calibration_dict() -> Dict:
         "gateDuration": {"sx": {"0": 29.3, "1": 50.9, "2": 45.4}},
     }
     return calib_dict
+
+
+def _get_device_info_dict() -> Dict:
+    return {
+        "device_id": "SC",
+        "qubits": [{"id": 0}, {"id": 1}],
+        "couplings": [{"control": 0, "target": 1}],
+    }
 
 
 def _get_model_sim():
@@ -137,9 +150,7 @@ def test_update_device_calibration_qpu(test_db, test_storage):
     upload_id = "upload-qpu"
     device_info_key = get_device_info_key(device.id)
     upload_key = get_device_info_upload_key(device.id, upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=upload_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
         upload_id=upload_id,
@@ -164,9 +175,7 @@ def test_update_device_calibration_sim(test_db, test_storage):
     upload_id = "upload-sim"
     device_info_key = get_device_info_key(device.id)
     upload_key = get_device_info_upload_key(device.id, upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=upload_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
         upload_id=upload_id,
@@ -201,9 +210,7 @@ def test_update_device_calibration_with_uploaded_device_info(test_db, test_stora
     upload_id = "uploaded-device-info"
     device_info_key = get_device_info_key("SC")
     upload_key = get_device_info_upload_key("SC", upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=upload_key, data=json.dumps(_get_calibration_dict()).encode())
 
     request = DeviceInfoUpdate(
         upload_id=upload_id,
@@ -215,6 +222,52 @@ def test_update_device_calibration_with_uploaded_device_info(test_db, test_stora
     assert test_storage.does_exist(key=device_info_key)
     assert not test_storage.does_exist(key=upload_key)
     assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
+
+
+def test_update_device_calibration_creates_history(test_db, test_storage):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    upload_id = "history-upload"
+    calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
+    upload_key = get_device_info_upload_key("SC", upload_id)
+    history_key = get_device_info_history_key("SC", calibrated_at)
+    test_storage.put(key=upload_key, data=json.dumps(_get_device_info_dict()).encode())
+
+    request = DeviceInfoUpdate(upload_id=upload_id, calibrated_at=calibrated_at)
+    actual = update_device_calibration("SC", request, test_db, test_storage)
+
+    history = test_db.query(DeviceInfoHistory).filter_by(device_id="SC").one()
+    assert actual == DeviceDataUpdateResponse(message="Device's data updated")
+    assert history.calibrated_at == calibrated_at
+    assert history.n_qubits == 2
+    assert history.n_couplings == 1
+    assert test_storage.does_exist(key=history_key)
+
+
+def test_update_device_calibration_rejects_duplicate_history(test_db, test_storage):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
+    first_upload_id = "history-upload-1"
+    second_upload_id = "history-upload-2"
+    for upload_id in [first_upload_id, second_upload_id]:
+        test_storage.put(
+            key=get_device_info_upload_key("SC", upload_id),
+            data=json.dumps(_get_device_info_dict()).encode(),
+        )
+
+    first_request = DeviceInfoUpdate(
+        upload_id=first_upload_id, calibrated_at=calibrated_at
+    )
+    second_request = DeviceInfoUpdate(
+        upload_id=second_upload_id, calibrated_at=calibrated_at
+    )
+
+    update_device_calibration("SC", first_request, test_db, test_storage)
+    actual = update_device_calibration("SC", second_request, test_db, test_storage)
+
+    assert isinstance(actual, ConflictErrorResponse)
+    assert actual.status_code == 409
 
 
 def test_update_device_calibration_rejects_stale_final_object(test_db, test_storage):

@@ -30,6 +30,54 @@ If the object does not exist, `device_info` is `null` even when the device row i
 
 The backend does not store the storage key in the `devices` table. It reconstructs the key from `device_id` every time by using the fixed `devices/<device_id>/device_info.zip` convention.
 
+## Database Specification
+
+The `devices` table stores metadata for the current device state. The actual `device_info` payload is not stored in the database; it is stored under the current storage key derived from `device_id`.
+
+| Column | Purpose |
+| --- | --- |
+| `id` | Device identifier. Also used as `<device_id>` in the current storage key `devices/<device_id>/device_info.zip`. |
+| `device_type` | `QPU` or `simulator`. |
+| `status` | Device availability state. |
+| `n_qubits` | Qubit count shown for the current device row. |
+| `basis_gates` | JSON-serialized basis gate list. |
+| `instructions` | JSON-serialized supported instruction list. |
+| `calibrated_at` | Timestamp at which the current `device_info` was confirmed. Updated when the Provider API confirms device_info. |
+| `description` | Device description. |
+
+The `device_info_history` table stores only the metadata needed to look up historical `device_info` snapshots. Historical payloads are not stored in the database either; they are stored under a deterministic history storage key derived from `device_id` and `calibrated_at`.
+
+| Column | Type | Nullable | Purpose |
+| --- | --- | --- | --- |
+| `id` | integer / MySQL unsigned BIGINT | no | Surrogate primary key. |
+| `device_id` | varchar(64) | no | Foreign key to `devices.id` with `ON DELETE CASCADE`. |
+| `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. Also part of the history storage key. |
+| `n_qubits` | integer | no | Qubit count at the snapshot. Used by history lists and historical detail headers. |
+| `n_couplings` | integer | no | Coupling count at the snapshot. Used by history lists and historical detail headers. |
+| `created_at` | timestamp / datetime | yes | Row creation timestamp. |
+| `updated_at` | timestamp / datetime | yes | Row update timestamp. On MySQL this uses `ON UPDATE CURRENT_TIMESTAMP`. |
+
+Constraints and indexes are:
+
+| Name | Definition |
+| --- | --- |
+| Primary key | `id` |
+| Foreign key | `device_id` references `devices(id)` with `ON DELETE CASCADE` |
+| Unique constraint | `(device_id, calibrated_at)`. A device can have only one snapshot for the same calibrated timestamp. |
+| Index | `(device_id, calibrated_at)`. Used for history listing and "latest snapshot at or before timestamp" lookups. |
+
+`device_info_history` intentionally does not have a `storage_key` column. The history object key is uniquely determined by this convention, so storing it again in the database would duplicate derived data:
+
+```text
+devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device_info.zip
+```
+
+The implementation generates this key with `get_device_info_history_key(device_id, calibrated_at)`. The relationship between a database row and a storage object is represented by `(device_id, calibrated_at)`, and read APIs derive the key when checking object existence and issuing presigned URLs.
+
+`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, and inserts a `device_info_history` metadata row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
+
+`DELETE /devices/{device_id}` on the Admin API deletes the `devices` row, which cascade-deletes `device_info_history` rows. It also deletes the current object and each history object so neither the database nor object storage is left with orphaned device_info data.
+
 ## Admin API Flow
 
 The current Admin API is a two-step storage-backed flow:
@@ -102,7 +150,7 @@ devices/qulacs/device_info.zip
 ## Implementation Notes
 
 - `device_info` is storage-backed on reads. API responses expose a download presigned URL, not the raw JSON payload.
-- The OpenAPI files do not define a typed schema for the contents of `device_info` itself. The write-side contract is effectively “JSON serialized into a string”, and the read-side contract is “string URL to the archived payload”.
+- The OpenAPI files do not define a typed schema for the contents of `device_info` itself. The write-side contract is effectively "JSON serialized into a string", and the read-side contract is "string URL to the archived payload".
 - The Admin API PATCH contract is metadata-only. The current admin client uploads `device_info.zip` separately and does not send `device_info` back in `PATCH /devices/{device_id}`.
 - `calibrated_at` remains in the `devices` table and is updated separately from the object upload confirmation.
 - Upload presigned URLs expire according to the storage strategy; the current default in `FSSpecStorage` is one hour.

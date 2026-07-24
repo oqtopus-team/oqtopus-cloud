@@ -105,6 +105,116 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
+
+devices.device_info_history:
+  get:
+    tags:
+      - devices
+    summary: List device information history
+    description: List device information history metadata for the specified device.
+    operationId: list_device_info_history
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: device_id
+        in: path
+        description: Device identifier
+        required: true
+        schema:
+          type: string
+        example: qulacs
+      - name: from
+        in: query
+        description: Inclusive lower bound of calibrated_at.
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        description: Inclusive upper bound of calibrated_at.
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+    responses:
+      "200":
+        description: Returns device information history metadata.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryListResponse"
+      "404":
+        description: Device with device_id not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+
+devices.device_info_history.at:
+  get:
+    tags:
+      - devices
+    summary: Get device information history at timestamp
+    description: Returns the latest device information history whose calibrated_at is earlier than or equal to the specified timestamp.
+    operationId: get_device_info_history_at
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: device_id
+        in: path
+        description: Device identifier
+        required: true
+        schema:
+          type: string
+        example: qulacs
+      - name: timestamp
+        in: query
+        description: Runtime timestamp used to resolve the effective device information.
+        required: true
+        schema:
+          type: string
+          format: date-time
+    responses:
+      "200":
+        description: Returns resolved device information history.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryDetail"
+      "404":
+        description: Device or history not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
   patch:
     tags:
     - devices
