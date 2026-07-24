@@ -9,7 +9,6 @@ from oqtopus_cloud.common.models.device import (
 )
 from oqtopus_cloud.common.storages.storage_utils import (
     get_device_info_key,
-    get_device_info_upload_key,
 )
 from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.devices import (
@@ -134,15 +133,10 @@ def test_update_device_calibration_qpu(test_db, test_storage):
     test_db.add(_get_model_qpu())
     test_db.commit()
     device = test_db.get(Device, "SC")
-    upload_id = "upload-qpu"
     device_info_key = get_device_info_key(device.id)
-    upload_key = get_device_info_upload_key(device.id, upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
-        upload_id=upload_id,
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
     actual = update_device_calibration(
@@ -152,7 +146,6 @@ def test_update_device_calibration_qpu(test_db, test_storage):
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
     assert test_storage.does_exist(key=device_info_key)
-    assert not test_storage.does_exist(key=upload_key)
     assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
 
 
@@ -161,15 +154,10 @@ def test_update_device_calibration_sim(test_db, test_storage):
     test_db.add(_get_model_sim())
     test_db.commit()
     device = test_db.get(Device, "SC2")
-    upload_id = "upload-sim"
     device_info_key = get_device_info_key(device.id)
-    upload_key = get_device_info_upload_key(device.id, upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
-        upload_id=upload_id,
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
     actual = update_device_calibration(
@@ -179,7 +167,6 @@ def test_update_device_calibration_sim(test_db, test_storage):
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
     assert test_storage.does_exist(key=device_info_key)
-    assert not test_storage.does_exist(key=upload_key)
     assert test_db.get(Device, "SC2").calibrated_at == request.calibrated_at
 
 
@@ -190,64 +177,52 @@ def test_get_device_info_upload_url(test_db, test_storage):
     actual = get_device_info_upload_url("SC", test_db, test_storage)
 
     assert isinstance(actual, DeviceInfoUploadResponse)
-    upload_key = get_device_info_upload_key("SC", actual.upload_id)
-    assert actual.presigned_url.url.endswith(f"/{upload_key}")
-    assert actual.presigned_url.fields["key"].endswith(f"/{upload_key}")
+    device_info_key = get_device_info_key("SC")
+    assert actual.presigned_url.url.endswith(f"/{device_info_key}")
+    assert actual.presigned_url.fields["key"].endswith(f"/{device_info_key}")
 
 
 def test_update_device_calibration_with_uploaded_device_info(test_db, test_storage):
     test_db.add(_get_model_qpu())
     test_db.commit()
-    upload_id = "uploaded-device-info"
     device_info_key = get_device_info_key("SC")
-    upload_key = get_device_info_upload_key("SC", upload_id)
-    test_storage.put(
-        key=upload_key, data=json.dumps(_get_calibration_dict()).encode()
-    )
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
 
     request = DeviceInfoUpdate(
-        upload_id=upload_id,
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
     actual = update_device_calibration("SC", request, test_db, test_storage)
 
     assert actual == DeviceDataUpdateResponse(message="Device's data updated")
     assert test_storage.does_exist(key=device_info_key)
-    assert not test_storage.does_exist(key=upload_key)
     assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
 
 
-def test_update_device_calibration_rejects_stale_final_object(test_db, test_storage):
+def test_update_device_calibration_requires_device_info(test_db, test_storage):
     test_db.add(_get_model_qpu())
     test_db.commit()
 
-    test_storage.put(
-        key=get_device_info_key("SC"), data=json.dumps(_get_calibration_dict()).encode()
-    )
-
     request = DeviceInfoUpdate(
-        upload_id="missing-upload",
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
     actual = update_device_calibration("SC", request, test_db, test_storage)
 
     assert isinstance(actual, BadRequestResponse)
     assert actual.status_code == 400
-    assert json.loads(actual.body) == {"message": "device_info upload not found"}
+    assert json.loads(actual.body) == {"message": "device_info is required"}
 
 
 def test_update_device_info_timezone(test_db, test_storage):
     # Arrange
     test_db.add(_get_model_qpu())
     test_db.commit()
-    upload_id = "timezone-upload"
     test_storage.put(
-        key=get_device_info_upload_key("SC", upload_id),
+        key=get_device_info_key("SC"),
         data=json.dumps(_get_calibration_dict()).encode(),
     )
 
     req = DeviceInfoUpdate.model_validate_json(
-        '{ "upload_id": "timezone-upload", "calibrated_at": "2025-04-01T12:34:56.789000+09:00" }'
+        '{ "calibrated_at": "2025-04-01T12:34:56.789000+09:00" }'
     )
 
     resp = client.patch("/devices/SC/device_info", content=req.model_dump_json())
