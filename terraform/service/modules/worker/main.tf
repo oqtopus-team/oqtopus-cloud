@@ -52,6 +52,7 @@ resource "aws_lambda_function" "this" {
     size = "512"
   }
   filename                       = "./bin/${var.identifier}/lambda.zip"
+  source_code_hash               = filebase64sha256("./bin/${var.identifier}/lambda.zip")
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-worker"
   handler                        = var.lambda_handler
   memory_size                    = "1024"
