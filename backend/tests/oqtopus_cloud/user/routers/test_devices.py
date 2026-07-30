@@ -117,6 +117,20 @@ def _get_model(device="SVSim", device_info: str | None = None):
     return Device(**mode_dict)
 
 
+def _get_history_model(
+    device_id: str,
+    calibrated_at: datetime,
+    n_qubits: int,
+    n_couplings: int,
+) -> DeviceInfoHistory:
+    return DeviceInfoHistory(
+        device_id=device_id,
+        calibrated_at=calibrated_at,
+        n_qubits=n_qubits,
+        n_couplings=n_couplings,
+    )
+
+
 def test_get_device(test_db):
     # Arrange
     user_no = 1
@@ -368,11 +382,8 @@ def test_list_device_info_history_handler(test_client, test_db):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model())
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-            n_qubits=2,
-            n_couplings=1,
+        _get_history_model(
+            "SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
     test_db.commit()
@@ -404,11 +415,8 @@ def test_get_device_info_history_at_handler(test_client, test_db, test_storage):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model())
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-            n_qubits=2,
-            n_couplings=1,
+        _get_history_model(
+            "SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
     test_db.commit()

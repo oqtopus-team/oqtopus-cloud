@@ -54,6 +54,20 @@ def _get_model(n, device_info=None):
     return Device(**mode_dict)
 
 
+def _get_history_model(
+    device_id: str,
+    calibrated_at: datetime,
+    n_qubits: int,
+    n_couplings: int,
+) -> DeviceInfoHistory:
+    return DeviceInfoHistory(
+        device_id=device_id,
+        calibrated_at=calibrated_at,
+        n_qubits=n_qubits,
+        n_couplings=n_couplings,
+    )
+
+
 def test_get_devices(
     test_db,
 ):
@@ -173,19 +187,13 @@ def test_list_device_info_history(test_db):
     device_info = {"device_id": "SVSim1"}
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim1",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-            n_qubits=2,
-            n_couplings=1,
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim1",
-            calibrated_at=datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc),
-            n_qubits=4,
-            n_couplings=3,
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3
         )
     )
     test_db.commit()
@@ -217,19 +225,13 @@ def test_get_device_info_history_at(test_db):
     storage.put(key=later_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim1",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-            n_qubits=2,
-            n_couplings=1,
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim1",
-            calibrated_at=datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc),
-            n_qubits=4,
-            n_couplings=3,
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3
         )
     )
     test_db.commit()
@@ -643,11 +645,8 @@ def test_delete_device_deletes_device_info_history(test_db):
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        DeviceInfoHistory(
-            device_id="SVSim1",
-            calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
-            n_qubits=2,
-            n_couplings=1,
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
     test_db.commit()

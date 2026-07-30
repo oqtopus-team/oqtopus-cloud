@@ -70,7 +70,9 @@ def _history_to_detail(
         calibrated_at=history.calibrated_at,
         n_qubits=history.n_qubits,
         n_couplings=history.n_couplings,
-        device_info=storage.get_download_presigned_url(key=_get_history_object_key(history)),
+        device_info=storage.get_download_presigned_url(
+            key=_get_history_object_key(history)
+        ),
     )
 
 

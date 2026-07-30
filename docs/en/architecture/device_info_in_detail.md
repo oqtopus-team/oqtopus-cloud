@@ -74,7 +74,7 @@ devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device
 
 The implementation generates this key with `get_device_info_history_key(device_id, calibrated_at)`. The relationship between a database row and a storage object is represented by `(device_id, calibrated_at)`, and read APIs derive the key when checking object existence and issuing presigned URLs.
 
-`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, and inserts a `device_info_history` metadata row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
+`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
 
 `DELETE /devices/{device_id}` on the Admin API deletes the `devices` row, which cascade-deletes `device_info_history` rows. It also deletes the current object and each history object so neither the database nor object storage is left with orphaned device_info data.
 

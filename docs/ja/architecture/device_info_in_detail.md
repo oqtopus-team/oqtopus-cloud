@@ -75,7 +75,7 @@ devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device
 
 この key は実装上 `get_device_info_history_key(device_id, calibrated_at)` で生成します。DB row と storage object の対応は `(device_id, calibrated_at)` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
 
-Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、`device_info_history` に metadata row を追加します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
+Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、`device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
 
 Admin API の `DELETE /devices/{device_id}` は、`devices` row の削除により `device_info_history` rows を cascade delete します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
 
