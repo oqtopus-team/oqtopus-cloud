@@ -24,6 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "device_info_history",
+        sa.Column("history_uid", sa.String(length=36), nullable=False),
         sa.Column("device_id", sa.String(length=64), nullable=False),
         sa.Column(
             "calibrated_at",
@@ -44,10 +45,11 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=True,
         ),
-        sa.PrimaryKeyConstraint(
+        sa.PrimaryKeyConstraint("history_uid"),
+        sa.UniqueConstraint(
             "device_id",
             "calibrated_at",
-            name="pk_device_info_history_device_calibrated_at",
+            name="uq_device_info_history_device_calibrated_at",
         ),
     )
 

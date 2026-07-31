@@ -124,6 +124,7 @@ def _get_history_model(
     n_couplings: int,
 ) -> DeviceInfoHistory:
     return DeviceInfoHistory(
+        history_uid=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
         device_id=device_id,
         calibrated_at=calibrated_at,
         n_qubits=n_qubits,
@@ -378,7 +379,7 @@ def test_get_device_handler(test_client, test_db):
     assert actual.json() == expected
 
 
-def test_list_device_info_history_handler(test_client, test_db):
+def test_list_device_histories_handler(test_client, test_db):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model())
     test_db.add(
@@ -388,12 +389,13 @@ def test_list_device_info_history_handler(test_client, test_db):
     )
     test_db.commit()
 
-    actual = test_client.get("/devices/SVSim/device_info_history")
+    actual = test_client.get("/device_histories?device_id=SVSim")
 
     assert actual.status_code == 200
     assert actual.json() == {
         "items": [
             {
+                "history_uid": "history-SVSim-20240304123456",
                 "device_id": "SVSim",
                 "calibrated_at": "2024-03-04T12:34:56Z",
                 "n_qubits": 2,
@@ -406,7 +408,7 @@ def test_list_device_info_history_handler(test_client, test_db):
     }
 
 
-def test_get_device_info_history_at_handler(test_client, test_db, test_storage):
+def test_get_device_history_handler(test_client, test_db, test_storage):
     history_key = "devices/SVSim/history/20240304T123456000000Z/device_info.zip"
     test_storage.put(
         key=history_key,
@@ -421,12 +423,11 @@ def test_get_device_info_history_at_handler(test_client, test_db, test_storage):
     )
     test_db.commit()
 
-    actual = test_client.get(
-        "/devices/SVSim/device_info_history/at?timestamp=2024-03-04T12:34:56Z"
-    )
+    actual = test_client.get("/device_histories/history-SVSim-20240304123456")
 
     assert actual.status_code == 200
     assert actual.json() == {
+        "history_uid": "history-SVSim-20240304123456",
         "device_id": "SVSim",
         "calibrated_at": "2024-03-04T12:34:56Z",
         "n_qubits": 2,
@@ -435,12 +436,12 @@ def test_get_device_info_history_at_handler(test_client, test_db, test_storage):
     }
 
 
-def test_list_device_info_history_forbidden(test_client, test_db):
+def test_list_device_histories_forbidden(test_client, test_db):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model(device="SC"))
     test_db.commit()
 
-    actual = test_client.get("/devices/SC/device_info_history")
+    actual = test_client.get("/device_histories?device_id=SC")
 
     assert actual.status_code == 403
     assert actual.json() == {"message": "Cannot access device_id=SC."}

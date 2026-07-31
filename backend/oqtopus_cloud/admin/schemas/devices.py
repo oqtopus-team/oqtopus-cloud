@@ -133,34 +133,6 @@ class DeviceBase(BaseModel):
     ] = None
 
 
-class DeviceInfoHistoryEntry(BaseModel):
-    device_id: Annotated[str, Field(examples=["qulacs"])]
-    calibrated_at: Annotated[AwareDatetime, Field(examples=["2024-03-04T12:34:56Z"])]
-    n_qubits: Annotated[int, Field(examples=[64])]
-    n_couplings: Annotated[int, Field(examples=[72])]
-
-
-class DeviceInfoHistoryListResponse(BaseModel):
-    items: list[DeviceInfoHistoryEntry]
-    total: Annotated[int, Field(examples=[3])]
-    limit: Annotated[int, Field(examples=[100])]
-    offset: Annotated[int, Field(examples=[0])]
-
-
-class DeviceInfoHistoryDetail(DeviceInfoHistoryEntry):
-    device_info: Annotated[
-        str,
-        Field(
-            examples=[
-                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
-            ]
-        ),
-    ]
-    """
-    Presigned URL for downloading the historical device_info.zip.
-    """
-
-
 class DevicePatch(BaseModel):
     device_type: Annotated[DeviceType | None, Field(examples=["simulator"])] = None
     status: Annotated[Status | None, Field(examples=["available"])] = None
@@ -208,6 +180,40 @@ class DevicePatch(BaseModel):
     description: Annotated[
         str | None, Field(examples=["Superconducting quantum computer"])
     ] = None
+
+
+class DeviceInfoHistoryEntry(BaseModel):
+    history_uid: Annotated[
+        str, Field(examples=["018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"])
+    ]
+    """
+    UUID assigned when the device information history is issued.
+    """
+    device_id: Annotated[str, Field(examples=["qulacs"])]
+    calibrated_at: Annotated[AwareDatetime, Field(examples=["2024-03-04T12:34:56Z"])]
+    n_qubits: Annotated[int, Field(examples=[64])]
+    n_couplings: Annotated[int, Field(examples=[72])]
+
+
+class DeviceInfoHistoryListResponse(BaseModel):
+    items: list[DeviceInfoHistoryEntry]
+    total: Annotated[int, Field(examples=[3])]
+    limit: Annotated[int, Field(examples=[100])]
+    offset: Annotated[int, Field(examples=[0])]
+
+
+class DeviceInfoHistoryDetail(DeviceInfoHistoryEntry):
+    device_info: Annotated[
+        str,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+            ]
+        ),
+    ]
+    """
+    Presigned URL for downloading the historical device_info.zip.
+    """
 
 
 class DeviceInfoUploadPresignedURL(BaseModel):

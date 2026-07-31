@@ -276,6 +276,7 @@ def update_device_calibration(
         device.calibrated_at = calibrated_at
         db.add(
             DeviceInfoHistory(
+                history_uid=str(uuid4()),
                 device_id=device_id,
                 calibrated_at=calibrated_at,
                 n_qubits=n_qubits,

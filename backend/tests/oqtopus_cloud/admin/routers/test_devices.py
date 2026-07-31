@@ -61,6 +61,7 @@ def _get_history_model(
     n_couplings: int,
 ) -> DeviceInfoHistory:
     return DeviceInfoHistory(
+        history_uid=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
         device_id=device_id,
         calibrated_at=calibrated_at,
         n_qubits=n_qubits,
@@ -183,7 +184,7 @@ def test_get_device_no_device(
     assert response.status_code == 404
 
 
-def test_list_device_info_history(test_db):
+def test_list_device_histories(test_db):
     device_info = {"device_id": "SVSim1"}
     test_db.add(_get_model(1, device_info))
     test_db.add(
@@ -198,12 +199,13 @@ def test_list_device_info_history(test_db):
     )
     test_db.commit()
 
-    response = client.get("/devices/SVSim1/device_info_history?limit=1")
+    response = client.get("/device_histories?device_id=SVSim1&limit=1")
 
     assert response.status_code == 200
     assert response.json() == {
         "items": [
             {
+                "history_uid": "history-SVSim1-20240305123456",
                 "device_id": "SVSim1",
                 "calibrated_at": "2024-03-05T12:34:56Z",
                 "n_qubits": 4,
@@ -216,37 +218,29 @@ def test_list_device_info_history(test_db):
     }
 
 
-def test_get_device_info_history_at(test_db):
+def test_get_device_history(test_db):
     device_info = {"device_id": "SVSim1"}
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
-    resolved_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
-    later_key = "devices/SVSim1/history/20240305T123456000000Z/device_info.zip"
-    storage.put(key=resolved_key, data=_device_info_archive_bytes(device_info))
-    storage.put(key=later_key, data=_device_info_archive_bytes(device_info))
+    history_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
+    storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
         _get_history_model(
             "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
         )
     )
-    test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3
-        )
-    )
     test_db.commit()
 
-    response = client.get(
-        "/devices/SVSim1/device_info_history/at?timestamp=2024-03-04T20:00:00Z"
-    )
+    response = client.get("/device_histories/history-SVSim1-20240304123456")
 
     assert response.status_code == 200
     assert response.json() == {
+        "history_uid": "history-SVSim1-20240304123456",
         "device_id": "SVSim1",
         "calibrated_at": "2024-03-04T12:34:56Z",
         "n_qubits": 2,
         "n_couplings": 1,
-        "device_info": f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}/{resolved_key}",
+        "device_info": f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}/{history_key}",
     }
 
 

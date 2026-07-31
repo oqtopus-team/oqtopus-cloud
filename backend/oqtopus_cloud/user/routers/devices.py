@@ -49,6 +49,7 @@ def _normalize_utc(value: datetime) -> datetime:
 
 def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
     return DeviceInfoHistoryEntry(
+        history_uid=history.history_uid,
         device_id=history.device_id,
         calibrated_at=history.calibrated_at,
         n_qubits=history.n_qubits,
@@ -64,6 +65,7 @@ def _history_to_detail(
     history: DeviceInfoHistory, storage: AbstractStorage
 ) -> DeviceInfoHistoryDetail:
     return DeviceInfoHistoryDetail(
+        history_uid=history.history_uid,
         device_id=history.device_id,
         calibrated_at=history.calibrated_at,
         n_qubits=history.n_qubits,
@@ -90,6 +92,23 @@ def _check_user_device_access(
         logger.info(message)
         return NotFoundErrorResponse(message=message)
     return device
+
+
+def _apply_history_filters(
+    stmt,
+    count_stmt,
+    from_: datetime | None,
+    to: datetime | None,
+):
+    if from_ is not None:
+        from_ = _normalize_utc(from_)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+    if to is not None:
+        to = _normalize_utc(to)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at <= to)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at <= to)
+    return stmt, count_stmt
 
 
 @router.get(
@@ -172,7 +191,7 @@ def get_device(
 
 
 @router.get(
-    "/devices/{device_id}/device_info_history",
+    "/device_histories",
     response_model=DeviceInfoHistoryListResponse,
     responses={
         403: {"model": Message},
@@ -181,9 +200,9 @@ def get_device(
     },
 )
 @tracer.capture_method
-def list_device_info_history(
-    device_id: str,
+def list_device_histories(
     event: Event,
+    device_id: str | None = None,
     from_: Annotated[datetime | None, Query(alias="from")] = None,
     to: datetime | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
@@ -191,25 +210,28 @@ def list_device_info_history(
     db: Session = Depends(get_db),
 ) -> DeviceInfoHistoryListResponse | ErrorResponse:
     try:
-        access_result = _check_user_device_access(device_id, event, db)
-        if isinstance(access_result, ErrorResponse):
-            return access_result
+        stmt = select(DeviceInfoHistory)
+        count_stmt = select(func.count()).select_from(DeviceInfoHistory)
 
-        stmt = select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
-        count_stmt = (
-            select(func.count())
-            .select_from(DeviceInfoHistory)
-            .where(DeviceInfoHistory.device_id == device_id)
-        )
-        if from_ is not None:
-            from_ = _normalize_utc(from_)
-            stmt = stmt.where(DeviceInfoHistory.calibrated_at >= from_)
-            count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at >= from_)
-        if to is not None:
-            to = _normalize_utc(to)
-            stmt = stmt.where(DeviceInfoHistory.calibrated_at <= to)
-            count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at <= to)
+        if device_id is not None:
+            access_result = _check_user_device_access(device_id, event, db)
+            if isinstance(access_result, ErrorResponse):
+                return access_result
+            stmt = stmt.where(DeviceInfoHistory.device_id == device_id)
+            count_stmt = count_stmt.where(DeviceInfoHistory.device_id == device_id)
+        else:
+            available_devices = get_user_available_devices(event.state.user_id, db)
+            if available_devices != "*":
+                if len(available_devices) == 0:
+                    return DeviceInfoHistoryListResponse(
+                        items=[], total=0, limit=limit, offset=offset
+                    )
+                stmt = stmt.where(DeviceInfoHistory.device_id.in_(available_devices))
+                count_stmt = count_stmt.where(
+                    DeviceInfoHistory.device_id.in_(available_devices)
+                )
 
+        stmt, count_stmt = _apply_history_filters(stmt, count_stmt, from_, to)
         total = db.scalar(count_stmt) or 0
         histories = db.scalars(
             stmt.order_by(DeviceInfoHistory.calibrated_at.desc())
@@ -229,7 +251,7 @@ def list_device_info_history(
 
 
 @router.get(
-    "/devices/{device_id}/device_info_history/at",
+    "/device_histories/{history_uid}",
     response_model=DeviceInfoHistoryDetail,
     responses={
         403: {"model": Message},
@@ -238,35 +260,27 @@ def list_device_info_history(
     },
 )
 @tracer.capture_method
-def get_device_info_history_at(
-    device_id: str,
+def get_device_history(
+    history_uid: str,
     event: Event,
-    timestamp: datetime,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfoHistoryDetail | ErrorResponse:
     try:
-        access_result = _check_user_device_access(device_id, event, db)
-        if isinstance(access_result, ErrorResponse):
-            return access_result
-
-        timestamp = _normalize_utc(timestamp)
         history = db.scalars(
-            select(DeviceInfoHistory)
-            .where(
-                DeviceInfoHistory.device_id == device_id,
-                DeviceInfoHistory.calibrated_at <= timestamp,
+            select(DeviceInfoHistory).where(
+                DeviceInfoHistory.history_uid == history_uid
             )
-            .order_by(DeviceInfoHistory.calibrated_at.desc())
-            .limit(1)
         ).first()
         if history is None:
             return NotFoundErrorResponse(
-                message=(
-                    f"device_info_history for device_id={device_id} "
-                    f"at timestamp={timestamp.isoformat()} is not found."
-                )
+                message=f"device_info_history history_uid={history_uid} is not found."
             )
+
+        access_result = _check_user_device_access(history.device_id, event, db)
+        if isinstance(access_result, ErrorResponse):
+            return access_result
+
         if not storage.does_exist(key=_get_history_object_key(history)):
             return NotFoundErrorResponse(message="device_info object is not found.")
         return _history_to_detail(history, storage)

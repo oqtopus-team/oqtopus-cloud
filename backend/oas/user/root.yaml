@@ -17,10 +17,10 @@ paths:
     $ref: ./paths/devices.yaml#/devices
   /devices/{device_id}:
     $ref: ./paths/devices.yaml#/devices.device_id
-  /devices/{device_id}/device_info_history:
-    $ref: ./paths/devices.yaml#/devices.device_info_history
-  /devices/{device_id}/device_info_history/at:
-    $ref: ./paths/devices.yaml#/devices.device_info_history.at
+  /device_histories:
+    $ref: ./paths/devices.yaml#/device_histories
+  /device_histories/{history_uid}:
+    $ref: ./paths/devices.yaml#/device_histories.history_uid
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}/submit:
