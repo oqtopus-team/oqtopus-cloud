@@ -440,8 +440,8 @@ paths:
     get:
       tags:
         - devices
-      summary: List device information history
-      description: List device information history metadata for the specified device.
+      summary: List device history
+      description: List device history metadata for the specified device.
       operationId: list_device_info_history
       security:
         - BearerAuth: []
@@ -484,7 +484,7 @@ paths:
             default: 0
       responses:
         '200':
-          description: Returns device information history metadata.
+          description: Returns device history metadata.
           content:
             application/json:
               schema:
@@ -505,8 +505,8 @@ paths:
     get:
       tags:
         - devices
-      summary: Get device information history at timestamp
-      description: Returns the latest device information history whose calibrated_at is earlier than or equal to the specified timestamp.
+      summary: Get device history at timestamp
+      description: Returns the latest device history whose calibrated_at is earlier than or equal to the specified timestamp.
       operationId: get_device_info_history_at
       security:
         - BearerAuth: []
@@ -527,7 +527,7 @@ paths:
             format: date-time
       responses:
         '200':
-          description: Returns resolved device information history.
+          description: Returns resolved device history.
           content:
             application/json:
               schema:

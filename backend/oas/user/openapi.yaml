@@ -91,8 +91,8 @@ paths:
     get:
       tags:
         - device
-      summary: List device information histories
-      description: List device information history metadata. Optionally filter by device_id.
+      summary: List device histories
+      description: List device history metadata. Optionally filter by device_id.
       operationId: list_device_histories
       security:
         - BearerAuth: []
@@ -135,7 +135,7 @@ paths:
             default: 0
       responses:
         '200':
-          description: Returns device information history metadata.
+          description: Returns device history metadata.
           content:
             application/json:
               schema:
@@ -162,22 +162,22 @@ paths:
     get:
       tags:
         - device
-      summary: Get device information history
-      description: Returns the device information history identified by history_uid.
+      summary: Get device history
+      description: Returns the device history identified by history_uid.
       operationId: get_device_history
       security:
         - BearerAuth: []
       parameters:
         - name: history_uid
           in: path
-          description: Device information history UUID.
+          description: Device history UUID.
           required: true
           schema:
             type: string
           example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
       responses:
         '200':
-          description: Returns device information history.
+          description: Returns device history.
           content:
             application/json:
               schema:
@@ -1200,7 +1200,7 @@ components:
       type: object
       properties:
         history_uid:
-          description: UUID assigned when the device information history is issued.
+          description: UUID assigned when the device history is issued.
           type: string
           example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
         device_id:

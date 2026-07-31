@@ -222,8 +222,8 @@ device_histories:
   get:
     tags:
       - devices
-    summary: List device information histories
-    description: List device information history metadata. Optionally filter by device_id.
+    summary: List device histories
+    description: List device history metadata. Optionally filter by device_id.
     operationId: list_device_histories
     security:
       - BearerAuth: []
@@ -266,7 +266,7 @@ device_histories:
           default: 0
     responses:
       "200":
-        description: Returns device information history metadata.
+        description: Returns device history metadata.
         content:
           application/json:
             schema:
@@ -288,22 +288,22 @@ device_histories.history_uid:
   get:
     tags:
       - devices
-    summary: Get device information history
-    description: Returns the device information history identified by history_uid.
+    summary: Get device history
+    description: Returns the device history identified by history_uid.
     operationId: get_device_history
     security:
       - BearerAuth: []
     parameters:
       - name: history_uid
         in: path
-        description: Device information history UUID.
+        description: Device history UUID.
         required: true
         schema:
           type: string
         example: "018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"
     responses:
       "200":
-        description: Returns device information history.
+        description: Returns device history.
         content:
           application/json:
             schema:
@@ -323,24 +323,24 @@ device_histories.history_uid:
   delete:
     tags:
       - devices
-    summary: Delete device information history
-    description: Deletes the device information history metadata and archived device_info object identified by history_uid.
+    summary: Delete device history
+    description: Deletes the device history metadata and archived device_info object identified by history_uid.
     operationId: delete_device_history
     security:
       - BearerAuth: []
     parameters:
       - name: history_uid
         in: path
-        description: Device information history UUID.
+        description: Device history UUID.
         required: true
         schema:
           type: string
         example: "018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"
     responses:
       "204":
-        description: Device information history deleted
+        description: Device history deleted
       "404":
-        description: Device information history not found
+        description: Device history not found
         content:
           application/json:
             schema:

@@ -192,7 +192,7 @@ devices.DeviceInfoHistoryEntry:
   type: object
   properties:
     history_uid:
-      description: UUID assigned when the device information history is issued.
+      description: UUID assigned when the device history is issued.
       type: string
       example: "018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"
     device_id:
