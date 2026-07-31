@@ -244,6 +244,62 @@ def test_get_device_history(test_db):
     }
 
 
+def test_delete_device_history(test_db):
+    device_info = {"device_id": "SVSim1"}
+    history_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+        )
+    )
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-SVSim1-20240304123456")
+
+    assert response.status_code == 204
+    assert (
+        test_db.query(DeviceInfoHistory)
+        .filter_by(history_uid="history-SVSim1-20240304123456")
+        .first()
+        is None
+    )
+    assert not storage.does_exist(key=history_key)
+
+
+def test_delete_device_history_allows_missing_storage_object(test_db):
+    device_info = {"device_id": "SVSim1"}
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model(
+            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+        )
+    )
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-SVSim1-20240304123456")
+
+    assert response.status_code == 204
+    assert (
+        test_db.query(DeviceInfoHistory)
+        .filter_by(history_uid="history-SVSim1-20240304123456")
+        .first()
+        is None
+    )
+
+
+def test_delete_device_history_404(test_db):
+    device_info = {"device_id": "SVSim1"}
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-unknown")
+
+    assert response.status_code == 404
+
+
 def test_register_devices(
     test_db,
 ):

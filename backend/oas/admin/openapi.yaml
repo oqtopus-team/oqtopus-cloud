@@ -649,6 +649,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - devices
+      summary: Delete device information history
+      description: Deletes the device information history metadata and archived device_info object identified by history_uid.
+      operationId: delete_device_history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: history_uid
+          in: path
+          description: Device information history UUID.
+          required: true
+          schema:
+            type: string
+          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
+      responses:
+        '204':
+          description: Device information history deleted
+        '404':
+          description: Device information history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /devices/{device_id}/device_info/upload:
     get:
       tags:

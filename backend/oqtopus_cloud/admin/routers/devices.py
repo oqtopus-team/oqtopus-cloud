@@ -233,6 +233,47 @@ def get_device_history(
         return InternalServerErrorResponse(message="Internal Server Error")
 
 
+@router.delete(
+    "/device_histories/{history_uid}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def delete_device_history(
+    history_uid: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> SuccessResponse | ErrorResponse:
+    try:
+        logger.info("invoked delete device history")
+        history = db.scalars(
+            select(DeviceInfoHistory).where(
+                DeviceInfoHistory.history_uid == history_uid
+            )
+        ).first()
+        if history is None:
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_uid={history_uid} is not found."
+            )
+
+        history_key = _get_history_object_key(history)
+        if storage.does_exist(key=history_key):
+            storage.delete(key=history_key)
+        else:
+            logger.warning("device_info_history object is not found: %s", history_key)
+        db.delete(history)
+        db.commit()
+        return SuccessResponse(message="Device history deleted successfully")
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
 @router.get(
     "/devices/{device_id}/device_info/upload",
     response_model=DeviceInfoUploadResponse,
