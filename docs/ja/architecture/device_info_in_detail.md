@@ -50,9 +50,8 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 
 | Column | Type | Nullable | 用途 |
 | --- | --- | --- | --- |
-| `id` | integer / MySQL unsigned BIGINT | no | surrogate primary key。 |
-| `device_id` | varchar(64) | no | `devices.id` への外部キー。`ON DELETE CASCADE`。 |
-| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。history storage key の一部。 |
+| `device_id` | varchar(64) | no | device identifier。primary key と history storage key の一部です。この column には foreign key constraint を張りません。 |
+| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。primary key と history storage key の一部です。 |
 | `n_qubits` | integer | no | snapshot 時点の量子ビット数。履歴一覧と履歴詳細ヘッダーで使います。 |
 | `n_couplings` | integer | no | snapshot 時点の coupling 数。履歴一覧と履歴詳細ヘッダーで使います。 |
 | `created_at` | timestamp / datetime | yes | row 作成時刻。 |
@@ -62,10 +61,8 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 
 | Name | 内容 |
 | --- | --- |
-| Primary key | `id` |
-| Foreign key | `device_id` references `devices(id)` with `ON DELETE CASCADE` |
-| Unique constraint | `(device_id, calibrated_at)`。同じデバイス・同じ calibrated_at の snapshot は 1 件だけです。 |
-| Index | `(device_id, calibrated_at)`。履歴一覧と「指定時刻以前の最新 snapshot」検索に使います。 |
+| Primary key | `(device_id, calibrated_at)`。同じデバイス・同じ calibrated_at の snapshot は 1 件だけです。 |
+| Foreign key | なし。device history の cleanup は application 側で明示的に行い、この table は snapshot identity で引ける小さな metadata table として保ちます。 |
 
 `device_info_history` には `storage_key` column を持たせません。history object key は次の規則で一意に決まるため、DB に重複して保存しない方針です。
 
@@ -77,7 +74,7 @@ devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device
 
 Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、`device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
 
-Admin API の `DELETE /devices/{device_id}` は、`devices` row の削除により `device_info_history` rows を cascade delete します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
+Admin API の `DELETE /devices/{device_id}` は、`devices` row を削除する前に matching する `device_info_history` rows を明示的に削除します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
 
 ## Admin API の流れ
 

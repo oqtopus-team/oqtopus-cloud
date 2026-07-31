@@ -49,9 +49,8 @@ The `device_info_history` table stores only the metadata needed to look up histo
 
 | Column | Type | Nullable | Purpose |
 | --- | --- | --- | --- |
-| `id` | integer / MySQL unsigned BIGINT | no | Surrogate primary key. |
-| `device_id` | varchar(64) | no | Foreign key to `devices.id` with `ON DELETE CASCADE`. |
-| `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. Also part of the history storage key. |
+| `device_id` | varchar(64) | no | Device identifier. Also part of the primary key and history storage key. This column intentionally does not have a foreign key constraint. |
+| `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. Also part of the primary key and history storage key. |
 | `n_qubits` | integer | no | Qubit count at the snapshot. Used by history lists and historical detail headers. |
 | `n_couplings` | integer | no | Coupling count at the snapshot. Used by history lists and historical detail headers. |
 | `created_at` | timestamp / datetime | yes | Row creation timestamp. |
@@ -61,10 +60,8 @@ Constraints and indexes are:
 
 | Name | Definition |
 | --- | --- |
-| Primary key | `id` |
-| Foreign key | `device_id` references `devices(id)` with `ON DELETE CASCADE` |
-| Unique constraint | `(device_id, calibrated_at)`. A device can have only one snapshot for the same calibrated timestamp. |
-| Index | `(device_id, calibrated_at)`. Used for history listing and "latest snapshot at or before timestamp" lookups. |
+| Primary key | `(device_id, calibrated_at)`. A device can have only one snapshot for the same calibrated timestamp. |
+| Foreign key | None. Device history cleanup is handled explicitly by the application so this table can remain a compact metadata table keyed by the snapshot identity. |
 
 `device_info_history` intentionally does not have a `storage_key` column. The history object key is uniquely determined by this convention, so storing it again in the database would duplicate derived data:
 
@@ -76,7 +73,7 @@ The implementation generates this key with `get_device_info_history_key(device_i
 
 `PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
 
-`DELETE /devices/{device_id}` on the Admin API deletes the `devices` row, which cascade-deletes `device_info_history` rows. It also deletes the current object and each history object so neither the database nor object storage is left with orphaned device_info data.
+`DELETE /devices/{device_id}` on the Admin API explicitly deletes matching `device_info_history` rows before deleting the `devices` row. It also deletes the current object and each history object so neither the database nor object storage is left with orphaned device_info data.
 
 ## Admin API Flow
 

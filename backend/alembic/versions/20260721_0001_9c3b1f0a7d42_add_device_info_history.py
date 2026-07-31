@@ -24,12 +24,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "device_info_history",
-        sa.Column(
-            "id",
-            sa.Integer().with_variant(mysql.BIGINT(unsigned=True), "mysql"),
-            autoincrement=True,
-            nullable=False,
-        ),
         sa.Column("device_id", sa.String(length=64), nullable=False),
         sa.Column(
             "calibrated_at",
@@ -50,18 +44,11 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=True,
         ),
-        sa.ForeignKeyConstraint(["device_id"], ["devices.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
+        sa.PrimaryKeyConstraint(
             "device_id",
             "calibrated_at",
-            name="uq_device_info_history_device_calibrated_at",
+            name="pk_device_info_history_device_calibrated_at",
         ),
-    )
-    op.create_index(
-        "ix_device_info_history_device_calibrated_at",
-        "device_info_history",
-        ["device_id", "calibrated_at"],
     )
 
     bind = op.get_bind()
@@ -74,8 +61,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_device_info_history_device_calibrated_at",
-        table_name="device_info_history",
-    )
     op.drop_table("device_info_history")
