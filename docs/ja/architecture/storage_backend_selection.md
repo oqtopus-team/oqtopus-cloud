@@ -36,7 +36,7 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 ### MinIO 環境からの更新
 
-`make up` は古い `minio` コンテナを取り除きますが、`minio-data` volume の中身は移行しません。シードデータは `make up` が作り直すので影響ありませんが、自分で作成したジョブは DB に行だけ残り、成果物を参照できなくなります。作り直す場合は `docker compose down -v` のあとに `make up` してください。`minio-data` volume は compose の管理外になるため自動では消えず、`docker volume rm <project>_minio-data` で削除します。
+`make up` は古い `minio` コンテナを取り除きますが、`minio-data` volume の中身は移行しません。シードデータは `make up` が作り直すので影響ありませんが、自分で作成したジョブは DB に行だけ残り、成果物を参照できなくなります。作り直す場合は `docker compose down -v --remove-orphans` のあとに `make up` してください。`--remove-orphans` が無いと古い `minio` コンテナが残り、volume を掴んだままになります。`minio-data` volume 自体は compose の管理外になるため自動では消えず、`docker volume rm <project>_minio-data` で削除します。
 
 ## ストレージ経路の確認
 

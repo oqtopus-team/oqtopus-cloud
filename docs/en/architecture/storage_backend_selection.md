@@ -39,9 +39,11 @@ The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedf
 `make up` removes the stale `minio` container, but it does not migrate the
 contents of the `minio-data` volume. Seed data is unaffected because `make up`
 recreates it, but jobs you created yourself keep their database rows while their
-objects become unreachable. To start clean, run `docker compose down -v` and then
-`make up`. The `minio-data` volume is no longer managed by compose, so remove it
-explicitly with `docker volume rm <project>_minio-data`.
+objects become unreachable. To start clean, run
+`docker compose down -v --remove-orphans` and then `make up`; without
+`--remove-orphans` the old `minio` container survives and keeps holding its
+volume. The `minio-data` volume itself is no longer managed by compose, so remove
+it explicitly with `docker volume rm <project>_minio-data`.
 
 ## Verifying the storage path
 

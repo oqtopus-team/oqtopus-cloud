@@ -170,7 +170,7 @@ variable "storage_env_vars_seaweedfs" {
   })
   default     = null
   sensitive   = true
-  description = "The Lambda environment variables for the self-hosted SeaweedFS storage drivder. Required when `storage_driver` is `seaweedfs`."
+  description = "The Lambda environment variables for the self-hosted SeaweedFS storage driver. Required when `storage_driver` is `seaweedfs`."
 
   validation {
     condition     = var.storage_driver != "seaweedfs" || var.storage_env_vars_seaweedfs != null
