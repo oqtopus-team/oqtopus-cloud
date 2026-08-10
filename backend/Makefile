@@ -232,7 +232,7 @@ lint-user_signup: ## Run user_signup linters
 	@uv run ruff check oqtopus_cloud/user_signup
 	@uv run mypy -p oqtopus_cloud.user_signup
 
-lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker ## Run all linters
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker lint-scripts ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -288,7 +288,7 @@ test-scripts: lint-scripts ## Run helper script tests
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
 	export POWERTOOLS_SERVICE_NAME=all && \
-	uv run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:coverage.xml --cov-report=html:htmlcov
+	uv run pytest tests -vv --cov=oqtopus_cloud --cov=scripts --cov-report=xml:coverage.xml --cov-report=html:htmlcov
 
 
 help: ## Show this help message
