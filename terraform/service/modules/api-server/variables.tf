@@ -137,6 +137,11 @@ variable "storage_driver" {
   type        = string
   default     = "s3"
   description = "Storage driver. The value should be one of: `s3`, `local`, `seaweedfs`"
+
+  validation {
+    condition     = contains(["s3", "local", "seaweedfs"], var.storage_driver)
+    error_message = "storage_driver must be one of: s3, local, seaweedfs. The `local:minio` driver was replaced by `seaweedfs`."
+  }
 }
 
 variable "storage_env_vars_s3" {
