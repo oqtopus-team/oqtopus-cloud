@@ -60,9 +60,11 @@ services:
 
   # Object storage backing the seaweedfs driver (see x-api-env above).
   # `-s3` is required to enable the S3 gateway at all (the image's default
-  # command does not start it).
+  # command does not start it). Pinned: the AWS_ACCESS_KEY_ID identity
+  # bootstrap below is what every presigned upload depends on, so a floating
+  # tag could break `make up` with 403s on an unrelated commit.
   seaweedfs:
-    image: chrislusf/seaweedfs
+    image: chrislusf/seaweedfs:4.40
     command: ["server", "-s3", "-dir=/data"]
     environment:
       # SeaweedFS bootstraps an admin S3 identity from these, and it must match
@@ -94,7 +96,7 @@ services:
   # the bucket explicitly. `s3.bucket.create` is idempotent, so this is safe to
   # re-run on every `make up`.
   seaweedfs-bucket-init:
-    image: chrislusf/seaweedfs
+    image: chrislusf/seaweedfs:4.40
     depends_on:
       seaweedfs:
         condition: service_healthy

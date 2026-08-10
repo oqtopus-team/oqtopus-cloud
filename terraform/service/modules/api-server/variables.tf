@@ -176,6 +176,13 @@ variable "storage_env_vars_seaweedfs" {
     condition     = var.storage_driver != "seaweedfs" || var.storage_env_vars_seaweedfs != null
     error_message = "storage_env_vars_seaweedfs must be set when storage_driver is \"seaweedfs\"."
   }
+
+  validation {
+    condition = var.storage_env_vars_seaweedfs == null || alltrue([
+      for value in values(var.storage_env_vars_seaweedfs) : trimspace(value) != ""
+    ])
+    error_message = "storage_env_vars_seaweedfs values must not be empty; the Lambda would start and only fail on its first storage call."
+  }
 }
 
 variable "sse_bucket" {
