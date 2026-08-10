@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -75,11 +75,11 @@ export USER_API_PORT ?= 8080
 export PROVIDER_API_PORT ?= 8888
 export ADMIN_API_PORT ?= 8889
 export USER_SIGNUP_API_PORT ?= 8890
-export STORAGE_DRIVER=local:minio
-export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
-export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
-export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
-export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+export STORAGE_DRIVER=seaweedfs
+export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_SEAWEEDFS_USERNAME=devadmin
+export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
+export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
 export ALLOW_DELETION=true # flag to control whether users can delete their accounts
 export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
 export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
@@ -131,6 +131,30 @@ seed: ## Seed the local DB with test data (idempotent)
 
 down: ## Stop the DB
 	@docker compose down
+
+PRESIGNED_POST_COUNT ?= 100
+PRESIGNED_POST_WORKERS ?= 10
+PRESIGNED_POST_PAYLOAD_BYTES ?= 4096
+PRESIGNED_POST_ROUNDS ?= 3
+PRESIGNED_POST_WARMUP_ROUNDS ?= 1
+PRESIGNED_POST_LABEL ?= SeaweedFS
+PRESIGNED_POST_OUTPUT_JSON ?= benchmark-results/presigned-storage.json
+check-presigned-post: ## Run concurrent presigned POST E2E against local SeaweedFS
+	@uv run python scripts/check_presigned_post.py \
+		--count $(PRESIGNED_POST_COUNT) \
+		--workers $(PRESIGNED_POST_WORKERS) \
+		--payload-bytes $(PRESIGNED_POST_PAYLOAD_BYTES)
+
+benchmark-presigned-post: ## Benchmark presigned POST/GET throughput and latency
+	@uv run python scripts/check_presigned_post.py \
+		--benchmark \
+		--label "$(PRESIGNED_POST_LABEL)" \
+		--count $(PRESIGNED_POST_COUNT) \
+		--workers $(PRESIGNED_POST_WORKERS) \
+		--payload-bytes $(PRESIGNED_POST_PAYLOAD_BYTES) \
+		--rounds $(PRESIGNED_POST_ROUNDS) \
+		--warmup-rounds $(PRESIGNED_POST_WARMUP_ROUNDS) \
+		--output-json $(PRESIGNED_POST_OUTPUT_JSON)
 
 migrate-create: ## Generate a migration from current models. Usage: make migrate-create NAME=<slug>
 	@if [ -z "$(NAME)" ]; then \
@@ -252,6 +276,10 @@ test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
+
+test-scripts: ## Run helper script tests
+	@uv run pytest tests/scripts -vv --cov=scripts --cov-report=xml:coverage-scripts.xml --cov-report=html:htmlcov-scripts
+	@mv .coverage .coverage-scripts
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \

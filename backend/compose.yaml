@@ -8,11 +8,15 @@ x-api-env: &api-env
   ALLOW_METHODS: "*"
   ALLOW_HEADERS: "*"
   LOG_LEVEL: DEBUG
-  STORAGE_DRIVER: local:minio
-  STORAGE_LOCAL_MINIO_BUCKET_NAME: oqtopus-oqtopus-dev
-  STORAGE_LOCAL_MINIO_USERNAME: minioadmin
-  STORAGE_LOCAL_MINIO_PASSWORD: minioadmin
-  STORAGE_LOCAL_MINIO_ENDPOINT_URL: http://minio:9000
+  # Hardcoded (not ${VAR:-default}) on purpose: `make up` exports its own
+  # host-side STORAGE_SEAWEEDFS_* (for seed/init_storage.py, which run
+  # outside docker) and, since it shells out to `docker compose up`, those
+  # would otherwise silently override these container-side values too.
+  STORAGE_DRIVER: seaweedfs
+  STORAGE_SEAWEEDFS_BUCKET_NAME: oqtopus-oqtopus-dev
+  STORAGE_SEAWEEDFS_USERNAME: devadmin
+  STORAGE_SEAWEEDFS_PASSWORD: devadmin123
+  STORAGE_SEAWEEDFS_ENDPOINT_URL: http://seaweedfs:8333
   ALLOW_DELETION: "true"
   EDITABLE_FIELDS: '["name", "organization"]'
   VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
@@ -34,8 +38,8 @@ x-api-common: &api-common
   depends_on:
     db:
       condition: service_started
-    minio:
-      condition: service_healthy
+    seaweedfs-bucket-init:
+      condition: service_completed_successfully
     otel-collector:
       condition: service_started
   restart: unless-stopped
@@ -54,34 +58,48 @@ services:
     ports:
       - 3306:3306
 
-  minio:
-    image: quay.io/minio/minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+  # Object storage backing the seaweedfs driver (see x-api-env above).
+  # `-s3` is required to enable the S3 gateway at all (the image's default
+  # command does not start it).
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    command: ["server", "-s3", "-dir=/data"]
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
+      # SeaweedFS bootstraps an admin S3 identity from these, and it must match
+      # STORAGE_SEAWEEDFS_USERNAME/PASSWORD above. Without them the gateway has
+      # no identity at all: unsigned requests are allowed, but every *signed*
+      # one — including all presigned uploads — is rejected with 403
+      # InvalidAccessKeyId.
+      AWS_ACCESS_KEY_ID: devadmin
+      AWS_SECRET_ACCESS_KEY: devadmin123
+    ports:
+      - "8333:8333" # S3 API
+      - "9333:9333" # Master UI / cluster status
+      - "9001:8888" # Filer UI (remapped; 8888/8889/8890 are provider/admin/user_signup API ports)
     volumes:
-      - minio-data:/data
+      - seaweedfs-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      # Checks the S3 port specifically (not the master's :9333/cluster/status):
+      # seaweedfs-bucket-init below talks to :8333, and that gateway binds about
+      # 10s after the master reports healthy. No `-f`: an unsigned GET against
+      # the S3 API legitimately returns a non-2xx (e.g. 403), so this only needs
+      # *some* HTTP response, not a successful one.
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8333/"]
       interval: 3s
       timeout: 2s
       retries: 5
-      start_period: 5s
+      start_period: 15s
 
-  mc:
-    image: minio/mc
+  # SeaweedFS doesn't guarantee bucket auto-creation on first write, so bootstrap
+  # the bucket explicitly. `s3.bucket.create` is idempotent, so this is safe to
+  # re-run on every `make up`.
+  seaweedfs-bucket-init:
+    image: chrislusf/seaweedfs
     depends_on:
-      minio:
+      seaweedfs:
         condition: service_healthy
     entrypoint: /bin/sh
-    command: -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin && \
-      mc mb --ignore-existing local/oqtopus-oqtopus-dev && \
-      echo '✅ Bucket created (or already exists)'"
+    command: -c "echo 's3.bucket.create -name oqtopus-oqtopus-dev' | weed shell -master=seaweedfs:9333"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -112,4 +130,4 @@ services:
       - "8888:8888"
 
 volumes:
-  minio-data:
+  seaweedfs-data:

@@ -7,6 +7,7 @@ from moto import mock_aws
 from unittest.mock import MagicMock, patch
 from urllib.parse import urlparse, parse_qs
 
+from oqtopus_cloud.common.storages import get_storage
 from oqtopus_cloud.common.storages.fsspec_storage import FSSpecStorage
 from oqtopus_cloud.common.storages.presign_strategies import (
     GeneralPresignStrategy,
@@ -161,6 +162,41 @@ def test_fsspec_storage_local_file_download_url(tmp_path):
     # get & check presigned URL
     presigned_url = storage.get_download_presigned_url(key)
     assert presigned_url == f"file://{storage_base}/{key}"
+
+
+def test_get_storage_seaweedfs(monkeypatch):
+    """
+    Tests that the seaweedfs driver points the S3 client at the self-hosted
+    endpoint instead of AWS
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+
+    storage = get_storage()
+
+    assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
+    assert storage.fs_url == "s3://test-bucket"
+    assert storage.fs.client_kwargs["endpoint_url"] == "http://seaweedfs:8333"
+    assert storage.fs.key == "devadmin"
+    assert storage.fs.secret == "devadmin123"
+
+
+def test_get_storage_seaweedfs_requires_endpoint(monkeypatch):
+    """
+    Tests that a missing endpoint fails fast rather than silently falling back
+    to AWS S3
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
+    monkeypatch.delenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", raising=False)
+
+    with pytest.raises(KeyError, match="STORAGE_SEAWEEDFS_ENDPOINT_URL"):
+        get_storage()
 
 
 @patch("fsspec.filesystem")

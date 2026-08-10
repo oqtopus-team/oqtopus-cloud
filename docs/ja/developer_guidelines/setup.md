@@ -94,14 +94,14 @@ make setup-uv
 
 以降のステップは別々のターミナルで実行します。各ターミナルで `cd backend` してから make コマンドを実行してください。
 
-### 1. DB・MinIOの起動（ターミナル1）
+### 1. DB・SeaweedFSの起動（ターミナル1）
 
 ```bash
 cd backend
 make up
 ```
 
-MySQL (ポート3306) と MinIO (ポート9000/9001) が起動します。
+MySQL (ポート3306) と SeaweedFS (S3 APIポート8333、Web UIポート9333/9001) が起動します。
 初回起動時はDBの初期化（テーブル作成・テストデータ投入）が自動で行われます。
 
 `make up` は foreground で動作するため、このターミナルはそのまま開いておいてください（停止させたい場合は Ctrl+C）。
@@ -146,6 +146,9 @@ APIドキュメント（Swagger UI）で確認できます：
 - User API: [http://localhost:8080/docs](http://localhost:8080/docs)
 - Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
 - User Signup API: [http://localhost:8890/docs](http://localhost:8890/docs)（起動した場合）
+
+ストレージ経路だけを切り分けて確認したい場合は`make check-presigned-post`が使えます。
+通常の開発では不要です。詳細は[ストレージバックエンドの選定](../architecture/storage_backend_selection.md)を参照してください。
 
 ## ローカルでのフロントエンド起動
 

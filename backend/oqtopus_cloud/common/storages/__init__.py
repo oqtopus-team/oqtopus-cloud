@@ -21,16 +21,19 @@ def get_storage() -> AbstractStorage:
             local_base_path = environ.get("STORAGE_LOCAL_BASE_PATH", "/tmp/storage")
             return FSSpecStorage(fs_url=f"file://{local_base_path}")
 
-        case "local:minio":
-            minio_bucket_name = environ.get("STORAGE_LOCAL_MINIO_BUCKET_NAME")
-            minio_username = environ.get("STORAGE_LOCAL_MINIO_USERNAME")
-            minio_password = environ.get("STORAGE_LOCAL_MINIO_PASSWORD")
-            minio_endpoint_url = environ.get("STORAGE_LOCAL_MINIO_ENDPOINT_URL")
+        case "seaweedfs":
+            # Bucket and endpoint are required: without them s3fs would silently
+            # fall back to AWS S3. Credentials stay optional, since a SeaweedFS
+            # gateway with no configured identity accepts anonymous access.
+            bucket_name = environ["STORAGE_SEAWEEDFS_BUCKET_NAME"]
+            access_key = environ.get("STORAGE_SEAWEEDFS_USERNAME")
+            secret_key = environ.get("STORAGE_SEAWEEDFS_PASSWORD")
+            endpoint_url = environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"]
             return FSSpecStorage(
-                fs_url=f"s3://{minio_bucket_name}",
-                key=minio_username,
-                secret=minio_password,
-                client_kwargs={"endpoint_url": minio_endpoint_url},
+                fs_url=f"s3://{bucket_name}",
+                key=access_key,
+                secret=secret_key,
+                client_kwargs={"endpoint_url": endpoint_url},
             )
 
         case _:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed the local object storage (MinIO) to match the seeded job rows.
+"""Seed the local object storage (SeaweedFS) to match the seeded job rows.
 
 After the S3-offload change, a job's payload no longer lives in the DB: the API
 (`get_job_info`) builds presigned URLs for ``{job_id}/input.zip`` and, for every
@@ -14,9 +14,9 @@ drift, and it is **idempotent**: objects that already exist are left untouched.
 Run via `make up` (which invokes it after `make seed`) or directly:
 
     cd backend
-    STORAGE_DRIVER=local:minio STORAGE_LOCAL_MINIO_BUCKET_NAME=... \
-        STORAGE_LOCAL_MINIO_USERNAME=... STORAGE_LOCAL_MINIO_PASSWORD=... \
-        STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000 \
+    STORAGE_DRIVER=seaweedfs STORAGE_SEAWEEDFS_BUCKET_NAME=... \
+        STORAGE_SEAWEEDFS_USERNAME=... STORAGE_SEAWEEDFS_PASSWORD=... \
+        STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333 \
         uv run python storage/init_storage.py
 """
 
@@ -103,11 +103,11 @@ def _seed_storage(storage: AbstractStorage) -> tuple[int, int]:
 
 def main() -> None:
     driver = os.environ.get("STORAGE_DRIVER", "s3")
-    if driver not in ("local", "local:minio"):
+    if driver not in ("local", "seaweedfs"):
         # Guard against accidentally writing seed objects to a real S3 bucket.
         print(
             f"⏭️  Skipping storage seed: STORAGE_DRIVER={driver!r} is not a "
-            "local driver (expected 'local' or 'local:minio')."
+            "self-hosted driver (expected 'local' or 'seaweedfs')."
         )
         return
 

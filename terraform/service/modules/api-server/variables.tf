@@ -136,7 +136,7 @@ variable "lambda_authorizer_alias" {
 variable "storage_driver" {
   type        = string
   default     = "s3"
-  description = "Storage driver. The value should be one of: `s3`, `local`, `local:minio`"
+  description = "Storage driver. The value should be one of: `s3`, `local`, `seaweedfs`"
 }
 
 variable "storage_env_vars_s3" {
@@ -156,15 +156,15 @@ variable "storage_env_vars_local" {
   description = "The Lambda environment variables for local filesystem storage drivder."
 }
 
-variable "storage_env_vars_local_minio" {
+variable "storage_env_vars_seaweedfs" {
   type = object({
-    STORAGE_LOCAL_MINIO_BUCKET_NAME  = string
-    STORAGE_LOCAL_MINIO_USERNAME     = string
-    STORAGE_LOCAL_MINIO_PASSWORD     = string
-    STORAGE_LOCAL_MINIO_ENDPOINT_URL = string
+    STORAGE_SEAWEEDFS_BUCKET_NAME  = string
+    STORAGE_SEAWEEDFS_USERNAME     = string
+    STORAGE_SEAWEEDFS_PASSWORD     = string
+    STORAGE_SEAWEEDFS_ENDPOINT_URL = string
   })
   default     = null
-  description = "The Lambda environment variables for local MinIO storage drivder."
+  description = "The Lambda environment variables for the self-hosted SeaweedFS storage drivder."
 }
 
 variable "sse_bucket" {
