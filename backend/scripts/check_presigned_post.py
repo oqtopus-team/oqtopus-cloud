@@ -366,7 +366,8 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
             print(
                 f"ROUND {round_number}/{total_rounds} {phase} "
                 f"POST={put_round.operations_per_second:.2f}ops/s "
-                f"GET={get_round.operations_per_second:.2f}ops/s errors=0"
+                f"GET={get_round.operations_per_second:.2f}ops/s "
+                f"errors={put_round.errors + get_round.errors}"
             )
         finally:
             if not args.keep:

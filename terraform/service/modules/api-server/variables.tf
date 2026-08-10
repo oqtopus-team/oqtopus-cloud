@@ -164,6 +164,7 @@ variable "storage_env_vars_seaweedfs" {
     STORAGE_SEAWEEDFS_ENDPOINT_URL = string
   })
   default     = null
+  sensitive   = true
   description = "The Lambda environment variables for the self-hosted SeaweedFS storage drivder. Required when `storage_driver` is `seaweedfs`."
 
   validation {
