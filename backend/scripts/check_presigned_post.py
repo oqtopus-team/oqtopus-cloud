@@ -182,11 +182,17 @@ def run_transfers(
     transfer: Callable[[TransferTarget, bytes, float], TransferResult],
 ) -> tuple[list[TransferResult], float]:
     started_at = perf_counter()
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=workers)
+    try:
         futures = [
             executor.submit(transfer, target, payload, timeout) for target in targets
         ]
         results = [future.result() for future in as_completed(futures)]
+    finally:
+        # cancel_futures drops transfers that have not started yet. Without it a
+        # failed request at --count 5000 still waits for every queued one, which
+        # looks like a hang. On the success path nothing is left to cancel.
+        executor.shutdown(cancel_futures=True)
     return results, perf_counter() - started_at
 
 
