@@ -34,6 +34,15 @@ The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedf
 
 `FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, so no storage-layer code changes were needed. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings.
 
+### Upgrading from the MinIO setup
+
+`make up` removes the stale `minio` container, but it does not migrate the
+contents of the `minio-data` volume. Seed data is unaffected because `make up`
+recreates it, but jobs you created yourself keep their database rows while their
+objects become unreachable. To start clean, run `docker compose down -v` and then
+`make up`. The `minio-data` volume is no longer managed by compose, so remove it
+explicitly with `docker volume rm <project>_minio-data`.
+
 ## Verifying the storage path
 
 A script is available for checking the storage after swapping the backend or updating its version. It is not needed for normal development.

@@ -34,6 +34,10 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 `FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続するので、ストレージ層のコード変更は不要です。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。
 
+### MinIO 環境からの更新
+
+`make up` は古い `minio` コンテナを取り除きますが、`minio-data` volume の中身は移行しません。シードデータは `make up` が作り直すので影響ありませんが、自分で作成したジョブは DB に行だけ残り、成果物を参照できなくなります。作り直す場合は `docker compose down -v` のあとに `make up` してください。`minio-data` volume は compose の管理外になるため自動では消えず、`docker volume rm <project>_minio-data` で削除します。
+
 ## ストレージ経路の確認
 
 ストレージを差し替えたときや、バージョンを更新したあとの確認用にスクリプトを用意しています。通常の開発では不要です。
