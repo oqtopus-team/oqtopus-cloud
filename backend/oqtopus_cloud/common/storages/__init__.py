@@ -22,12 +22,14 @@ def get_storage() -> AbstractStorage:
             return FSSpecStorage(fs_url=f"file://{local_base_path}")
 
         case "seaweedfs":
-            # Bucket and endpoint are required: without them s3fs would silently
-            # fall back to AWS S3. Credentials stay optional, since a SeaweedFS
-            # gateway with no configured identity accepts anonymous access.
+            # All four are required. Omitting any of them makes s3fs fall back
+            # to AWS defaults instead: the real S3 endpoint, or the ambient AWS
+            # credential chain. Credentials are not optional either -- a gateway
+            # with no identity configured rejects every signed request, so it
+            # cannot serve presigned URLs at all.
             bucket_name = environ["STORAGE_SEAWEEDFS_BUCKET_NAME"]
-            access_key = environ.get("STORAGE_SEAWEEDFS_USERNAME")
-            secret_key = environ.get("STORAGE_SEAWEEDFS_PASSWORD")
+            access_key = environ["STORAGE_SEAWEEDFS_USERNAME"]
+            secret_key = environ["STORAGE_SEAWEEDFS_PASSWORD"]
             endpoint_url = environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"]
             return FSSpecStorage(
                 fs_url=f"s3://{bucket_name}",

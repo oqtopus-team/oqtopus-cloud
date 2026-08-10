@@ -185,17 +185,29 @@ def test_get_storage_seaweedfs(monkeypatch):
     assert storage.fs.secret == "devadmin123"
 
 
-def test_get_storage_seaweedfs_requires_endpoint(monkeypatch):
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "STORAGE_SEAWEEDFS_BUCKET_NAME",
+        "STORAGE_SEAWEEDFS_USERNAME",
+        "STORAGE_SEAWEEDFS_PASSWORD",
+        "STORAGE_SEAWEEDFS_ENDPOINT_URL",
+    ],
+)
+def test_get_storage_seaweedfs_requires_every_setting(monkeypatch, missing):
     """
-    Tests that a missing endpoint fails fast rather than silently falling back
-    to AWS S3
+    Tests that an incomplete configuration fails fast rather than silently
+    falling back to AWS S3 or to the ambient AWS credential chain
     """
 
     monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
     monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
-    monkeypatch.delenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", raising=False)
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+    monkeypatch.delenv(missing)
 
-    with pytest.raises(KeyError, match="STORAGE_SEAWEEDFS_ENDPOINT_URL"):
+    with pytest.raises(KeyError, match=missing):
         get_storage()
 
 

@@ -276,8 +276,8 @@ def cleanup(
             return f"{key}: {error}"
         return None
 
-    # Serial cleanup dominates the runtime at benchmark sizes: --count 5000
-    # over several rounds is tens of thousands of round trips.
+    # Pooled because cleanup is two round trips per object: run serially, at
+    # benchmark sizes (--count 5000 over several rounds) it dominated the run.
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = [executor.submit(remove, target.key) for target in targets]
         failures = [result for result in (f.result() for f in futures) if result]
