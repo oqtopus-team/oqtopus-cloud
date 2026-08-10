@@ -444,6 +444,10 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     try:
         run(parse_args())
+    except KeyError as error:
+        # get_storage() reads the STORAGE_SEAWEEDFS_* settings with environ[].
+        print(f"FAIL missing environment variable: {error}", file=sys.stderr)
+        raise SystemExit(1) from error
     except (ValueError, RuntimeError, requests.RequestException) as error:
         print(f"FAIL {error}", file=sys.stderr)
         raise SystemExit(1) from error
