@@ -114,7 +114,10 @@ run-worker:
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB, apply migrations, seed data, and init storage
-	@docker compose up -d
+	@# --remove-orphans: seaweedfs replaced the minio/mc services, and a leftover
+	@# minio container from an older checkout keeps port 9001 bound, which makes
+	@# the new stack fail with "port is already allocated".
+	@docker compose up -d --remove-orphans
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
 	@# fresh volume MySQL first runs a socket-only temporary server for init,

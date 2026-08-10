@@ -263,10 +263,30 @@ def summarize_rounds(
     }
 
 
-def cleanup(storage: AbstractStorage, targets: list[UploadTarget]) -> None:
-    for target in targets:
-        if storage.does_exist(target.key):
-            storage.delete(target.key)
+def cleanup(
+    storage: AbstractStorage, targets: list[UploadTarget], workers: int
+) -> None:
+    # Best-effort: cleanup runs from a finally block, so raising here would
+    # replace the failure the caller is actually reporting.
+    def remove(key: str) -> str | None:
+        try:
+            if storage.does_exist(key):
+                storage.delete(key)
+        except Exception as error:
+            return f"{key}: {error}"
+        return None
+
+    # Serial cleanup dominates the runtime at benchmark sizes: --count 5000
+    # over several rounds is tens of thousands of round trips.
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(remove, target.key) for target in targets]
+        failures = [result for result in (f.result() for f in futures) if result]
+
+    if failures:
+        print(
+            f"WARN cleanup left {len(failures)} object(s) behind: {failures[:5]}",
+            file=sys.stderr,
+        )
 
 
 def run_check(args: argparse.Namespace, storage: AbstractStorage) -> None:
@@ -301,7 +321,7 @@ def run_check(args: argparse.Namespace, storage: AbstractStorage) -> None:
         )
     finally:
         if not args.keep:
-            cleanup(storage, targets)
+            cleanup(storage, targets, args.workers)
 
 
 def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
@@ -371,7 +391,7 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
             )
         finally:
             if not args.keep:
-                cleanup(storage, upload_targets)
+                cleanup(storage, upload_targets, args.workers)
 
     summaries = [
         summarize_rounds(
