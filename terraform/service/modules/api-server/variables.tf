@@ -164,7 +164,12 @@ variable "storage_env_vars_seaweedfs" {
     STORAGE_SEAWEEDFS_ENDPOINT_URL = string
   })
   default     = null
-  description = "The Lambda environment variables for the self-hosted SeaweedFS storage drivder."
+  description = "The Lambda environment variables for the self-hosted SeaweedFS storage drivder. Required when `storage_driver` is `seaweedfs`."
+
+  validation {
+    condition     = var.storage_driver != "seaweedfs" || var.storage_env_vars_seaweedfs != null
+    error_message = "storage_env_vars_seaweedfs must be set when storage_driver is \"seaweedfs\"."
+  }
 }
 
 variable "sse_bucket" {

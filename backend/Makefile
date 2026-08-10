@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test lint-scripts test-scripts help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -277,7 +277,11 @@ test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
 
-test-scripts: ## Run helper script tests
+lint-scripts: ## Run helper script linters
+	@uv run ruff check scripts
+	@uv run mypy scripts
+
+test-scripts: lint-scripts ## Run helper script tests
 	@uv run pytest tests/scripts -vv --cov=scripts --cov-report=xml:coverage-scripts.xml --cov-report=html:htmlcov-scripts
 	@mv .coverage .coverage-scripts
 
