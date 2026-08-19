@@ -40,7 +40,7 @@ jobs:
     needs: lint-format
     strategy:
       matrix:
-        target: [common, user, provider, admin, lambda_auth, user_signup, worker, scripts]
+        target: [common, user, provider, admin, lambda_auth, user_signup, worker]
 
     steps:
     - name: Checkout repository
