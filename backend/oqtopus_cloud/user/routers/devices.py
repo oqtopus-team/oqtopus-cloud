@@ -84,27 +84,27 @@ def get_device(
     Returns:
         GetDeviceResponse: _description_
     """
-    # TODO implement error handling
     try:
         user_id = event.state.user_id
         logger.info(f"User {user_id} is trying to access device_id={device_id}.")
-        available_devices = get_user_available_devices(user_id, db)
 
+        # Check order: 404 (existence) before 403 (authorization)
+        device = db.scalars(select(Device).where(Device.id == device_id)).first()
+        logger.info("invoked get_device")
+        if not device:
+            message = f"device_id={device_id} is not found."
+            logger.info(message)
+            return NotFoundErrorResponse(message=message)
+
+        available_devices = get_user_available_devices(user_id, db)
         if available_devices != "*" and device_id not in available_devices:
             logger.error(f"{user_id} is not allowed to access device_id={device_id}.")
             return ForbiddenErrorResponse(
                 message=f"Cannot access device_id={device_id}."
             )
 
-        device = db.scalars(select(Device).where(Device.id == device_id)).first()
-        logger.info("invoked get_device")
-        if device:
-            response = model_to_schema(device, storage)
-            return response
-        else:
-            message = f"device_id={device_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(message=message)
+        response = model_to_schema(device, storage)
+        return response
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
