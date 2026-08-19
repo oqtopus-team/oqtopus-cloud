@@ -296,7 +296,7 @@ def test_register_devices_overlap(
     }
 
     response = client.post("/devices", json=body)
-    assert response.status_code == 400
+    assert response.status_code == 409
     assert response.json() == {"message": "device_id=SVSim1 already exists"}
 
 

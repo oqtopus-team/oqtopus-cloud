@@ -19,3 +19,10 @@ error.BadRequestError:
       type: string
   required:
     - message
+error.ConflictError:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message
