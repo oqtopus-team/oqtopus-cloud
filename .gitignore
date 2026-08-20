@@ -42,7 +42,6 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov*/
-backend/benchmark-results/
 .tox/
 .nox/
 .coverage*
@@ -218,3 +217,6 @@ bin/
 
 # Differences file on make plan (terraform plan)
 **/diffs.ansi
+
+# Benchmark results from make benchmark-presigned-post
+backend/benchmark-results/
