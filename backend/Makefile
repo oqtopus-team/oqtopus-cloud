@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test lint-scripts test-scripts help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -232,7 +232,7 @@ lint-user_signup: ## Run user_signup linters
 	@uv run ruff check oqtopus_cloud/user_signup
 	@uv run mypy -p oqtopus_cloud.user_signup
 
-lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker lint-scripts ## Run all linters
+lint-all: lint-common lint-user lint-provider lint-admin lint-lambda_auth lint-maintenance lint-user_signup lint-worker ## Run all linters
 
 test-common: fmt-common lint-common ## Run common tests
 	@export POWERTOOLS_METRICS_NAMESPACE=common && \
@@ -277,18 +277,15 @@ test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
 
-lint-scripts: ## Run helper script linters
+test-scripts: ## Run helper script tests
 	@uv run ruff check scripts
 	@uv run mypy scripts
-
-test-scripts: lint-scripts ## Run helper script tests
-	@uv run pytest tests/scripts -vv --cov=scripts --cov-report=xml:coverage-scripts.xml --cov-report=html:htmlcov-scripts
-	@mv .coverage .coverage-scripts
+	@uv run pytest tests/scripts -vv
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \
 	export POWERTOOLS_SERVICE_NAME=all && \
-	uv run pytest tests -vv --cov=oqtopus_cloud --cov=scripts --cov-report=xml:coverage.xml --cov-report=html:htmlcov
+	uv run pytest tests/oqtopus_cloud -vv --cov=oqtopus_cloud --cov-report=xml:coverage.xml --cov-report=html:htmlcov
 
 
 help: ## Show this help message
