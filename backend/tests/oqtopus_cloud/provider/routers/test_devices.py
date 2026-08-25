@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from typing import Dict
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
@@ -239,6 +240,7 @@ def test_update_device_calibration_creates_history(test_db, test_storage):
     history = test_db.query(DeviceInfoHistory).filter_by(device_id="SC").one()
     assert actual == DeviceDataUpdateResponse(message="Device's data updated")
     assert history.calibrated_at == calibrated_at
+    assert UUID(history.history_id).version == 7
     assert history.n_qubits == 2
     assert history.n_couplings == 1
     assert test_storage.does_exist(key=history_key)

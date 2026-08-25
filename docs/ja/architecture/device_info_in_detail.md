@@ -46,11 +46,11 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 | `calibrated_at` | 現在の device_info が確定された時刻。Provider の device_info 確定時に更新されます。 |
 | `description` | デバイス説明。 |
 
-`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。Provider API が履歴を発行するタイミングで、各 row に `history_uid` UUID を付与します。履歴 payload の実体も DB には保存せず、`device_id` と `calibrated_at` から決定的に導出される history storage key に保存します。
+`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。Provider API が履歴を発行するタイミングで、各 row にユニークな文字列 identifier を付与します。履歴 payload の実体も DB には保存せず、`device_id` と `calibrated_at` から決定的に導出される history storage key に保存します。
 
 | Column | Type | Nullable | 用途 |
 | --- | --- | --- | --- |
-| `history_uid` | varchar(36) | no | history row 発行時に付与する UUID。primary key であり、`GET /device_histories/{history_uid}` の公開 identifier です。 |
+| `history_id` | varchar(36) | no | history row 発行時に付与するユニークな文字列。primary key であり、`GET /device_histories/{history_id}` の公開 identifier です。 |
 | `device_id` | varchar(64) | no | device identifier。history storage key の一部です。この column には foreign key constraint を張りません。 |
 | `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。history storage key の一部です。 |
 | `n_qubits` | integer | no | snapshot 時点の量子ビット数。履歴一覧と履歴詳細ヘッダーで使います。 |
@@ -62,7 +62,7 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 
 | Name | 内容 |
 | --- | --- |
-| Primary key | `history_uid`。 |
+| Primary key | `history_id`。 |
 | Unique constraint | `(device_id, calibrated_at)`。同じデバイス・同じ calibrated_at の snapshot は 1 件だけです。 |
 | Foreign key | なし。device history の cleanup は application 側で明示的に行い、この table は snapshot identity で引ける小さな metadata table として保ちます。 |
 
@@ -74,12 +74,12 @@ devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device
 
 この key は実装上 `get_device_info_history_key(device_id, calibrated_at)` で生成します。DB row と storage object の対応は `(device_id, calibrated_at)` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
 
-Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、新しい `history_uid` を付与して `device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
+Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、新しい `history_id` を付与して `device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
 
 User API と Admin API は、履歴を top-level resource として公開します。
 
 - `GET /device_histories` は履歴 metadata の一覧を返します。query parameter として `device_id`, `from`, `to`, `limit`, `offset` を指定できます。
-- `GET /device_histories/{history_uid}` は、特定の履歴詳細と archived `device_info.zip` の presigned download URL を返します。
+- `GET /device_histories/{history_id}` は、特定の履歴詳細と archived `device_info.zip` の presigned download URL を返します。
 
 Admin API の `DELETE /devices/{device_id}` は、`devices` row を削除する前に matching する `device_info_history` rows を明示的に削除します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
 

@@ -39,6 +39,7 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from sqlalchemy.orm import Session
+from uuid_extensions import uuid7
 
 from . import LoggerRouteHandler
 
@@ -276,7 +277,7 @@ def update_device_calibration(
         device.calibrated_at = calibrated_at
         db.add(
             DeviceInfoHistory(
-                history_uid=str(uuid4()),
+                history_id=str(uuid7()),
                 device_id=device_id,
                 calibrated_at=calibrated_at,
                 n_qubits=n_qubits,

@@ -124,7 +124,7 @@ def _get_history_model(
     n_couplings: int,
 ) -> DeviceInfoHistory:
     return DeviceInfoHistory(
-        history_uid=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
+        history_id=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
         device_id=device_id,
         calibrated_at=calibrated_at,
         n_qubits=n_qubits,
@@ -383,9 +383,7 @@ def test_list_device_histories_handler(test_client, test_db):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model())
     test_db.add(
-        _get_history_model(
-            "SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 
@@ -395,7 +393,7 @@ def test_list_device_histories_handler(test_client, test_db):
     assert actual.json() == {
         "items": [
             {
-                "history_uid": "history-SVSim-20240304123456",
+                "history_id": "history-SVSim-20240304123456",
                 "device_id": "SVSim",
                 "calibrated_at": "2024-03-04T12:34:56Z",
                 "n_qubits": 2,
@@ -417,9 +415,7 @@ def test_get_device_history_handler(test_client, test_db, test_storage):
     test_db.add(_get_user_model(1, available_devices=["SVSim"]))
     test_db.add(_get_model())
     test_db.add(
-        _get_history_model(
-            "SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 
@@ -427,7 +423,7 @@ def test_get_device_history_handler(test_client, test_db, test_storage):
 
     assert actual.status_code == 200
     assert actual.json() == {
-        "history_uid": "history-SVSim-20240304123456",
+        "history_id": "history-SVSim-20240304123456",
         "device_id": "SVSim",
         "calibrated_at": "2024-03-04T12:34:56Z",
         "n_qubits": 2,

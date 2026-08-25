@@ -18,7 +18,7 @@ class DeviceInfoHistory(TimestampMixin, Base):
         ),
     )
 
-    history_uid: Mapped[str] = mapped_column(String(36), primary_key=True)
+    history_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     device_id: Mapped[str] = mapped_column(String(64), nullable=False)
     calibrated_at: Mapped[datetime.datetime] = mapped_column(
         DateTimeTz(), nullable=False

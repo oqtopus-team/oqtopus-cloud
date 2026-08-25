@@ -284,19 +284,19 @@ device_histories:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
 
-device_histories.history_uid:
+device_histories.history_id:
   get:
     tags:
       - devices
     summary: Get device history
-    description: Returns the device history identified by history_uid.
+    description: Returns the device history identified by history_id.
     operationId: get_device_history
     security:
       - BearerAuth: []
     parameters:
-      - name: history_uid
+      - name: history_id
         in: path
-        description: Device history UUID.
+        description: Unique string identifying the device history.
         required: true
         schema:
           type: string
@@ -324,14 +324,14 @@ device_histories.history_uid:
     tags:
       - devices
     summary: Delete device history
-    description: Deletes the device history metadata and archived device_info object identified by history_uid.
+    description: Deletes the device history metadata and archived device_info object identified by history_id.
     operationId: delete_device_history
     security:
       - BearerAuth: []
     parameters:
-      - name: history_uid
+      - name: history_id
         in: path
-        description: Device history UUID.
+        description: Unique string identifying the device history.
         required: true
         schema:
           type: string

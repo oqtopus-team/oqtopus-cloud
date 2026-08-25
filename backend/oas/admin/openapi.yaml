@@ -613,19 +613,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /device_histories/{history_uid}:
+  /device_histories/{history_id}:
     get:
       tags:
         - devices
       summary: Get device history
-      description: Returns the device history identified by history_uid.
+      description: Returns the device history identified by history_id.
       operationId: get_device_history
       security:
         - BearerAuth: []
       parameters:
-        - name: history_uid
+        - name: history_id
           in: path
-          description: Device history UUID.
+          description: Unique string identifying the device history.
           required: true
           schema:
             type: string
@@ -653,14 +653,14 @@ paths:
       tags:
         - devices
       summary: Delete device history
-      description: Deletes the device history metadata and archived device_info object identified by history_uid.
+      description: Deletes the device history metadata and archived device_info object identified by history_id.
       operationId: delete_device_history
       security:
         - BearerAuth: []
       parameters:
-        - name: history_uid
+        - name: history_id
           in: path
-          description: Device history UUID.
+          description: Unique string identifying the device history.
           required: true
           schema:
             type: string
@@ -1425,8 +1425,8 @@ components:
     devices.DeviceInfoHistoryEntry:
       type: object
       properties:
-        history_uid:
-          description: UUID assigned when the device history is issued.
+        history_id:
+          description: Unique string identifying the device history.
           type: string
           example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
         device_id:
@@ -1443,7 +1443,7 @@ components:
           type: integer
           example: 72
       required:
-        - history_uid
+        - history_id
         - device_id
         - calibrated_at
         - n_qubits

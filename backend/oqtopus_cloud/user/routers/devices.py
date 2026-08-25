@@ -49,7 +49,7 @@ def _normalize_utc(value: datetime) -> datetime:
 
 def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
     return DeviceInfoHistoryEntry(
-        history_uid=history.history_uid,
+        history_id=history.history_id,
         device_id=history.device_id,
         calibrated_at=history.calibrated_at,
         n_qubits=history.n_qubits,
@@ -65,7 +65,7 @@ def _history_to_detail(
     history: DeviceInfoHistory, storage: AbstractStorage
 ) -> DeviceInfoHistoryDetail:
     return DeviceInfoHistoryDetail(
-        history_uid=history.history_uid,
+        history_id=history.history_id,
         device_id=history.device_id,
         calibrated_at=history.calibrated_at,
         n_qubits=history.n_qubits,
@@ -251,7 +251,7 @@ def list_device_histories(
 
 
 @router.get(
-    "/device_histories/{history_uid}",
+    "/device_histories/{history_id}",
     response_model=DeviceInfoHistoryDetail,
     responses={
         403: {"model": Message},
@@ -261,20 +261,18 @@ def list_device_histories(
 )
 @tracer.capture_method
 def get_device_history(
-    history_uid: str,
+    history_id: str,
     event: Event,
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfoHistoryDetail | ErrorResponse:
     try:
         history = db.scalars(
-            select(DeviceInfoHistory).where(
-                DeviceInfoHistory.history_uid == history_uid
-            )
+            select(DeviceInfoHistory).where(DeviceInfoHistory.history_id == history_id)
         ).first()
         if history is None:
             return NotFoundErrorResponse(
-                message=f"device_info_history history_uid={history_uid} is not found."
+                message=f"device_info_history history_id={history_id} is not found."
             )
 
         access_result = _check_user_device_access(history.device_id, event, db)

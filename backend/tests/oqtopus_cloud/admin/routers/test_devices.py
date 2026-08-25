@@ -61,7 +61,7 @@ def _get_history_model(
     n_couplings: int,
 ) -> DeviceInfoHistory:
     return DeviceInfoHistory(
-        history_uid=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
+        history_id=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
         device_id=device_id,
         calibrated_at=calibrated_at,
         n_qubits=n_qubits,
@@ -188,14 +188,10 @@ def test_list_device_histories(test_db):
     device_info = {"device_id": "SVSim1"}
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3)
     )
     test_db.commit()
 
@@ -205,7 +201,7 @@ def test_list_device_histories(test_db):
     assert response.json() == {
         "items": [
             {
-                "history_uid": "history-SVSim1-20240305123456",
+                "history_id": "history-SVSim1-20240305123456",
                 "device_id": "SVSim1",
                 "calibrated_at": "2024-03-05T12:34:56Z",
                 "n_qubits": 4,
@@ -225,9 +221,7 @@ def test_get_device_history(test_db):
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 
@@ -235,7 +229,7 @@ def test_get_device_history(test_db):
 
     assert response.status_code == 200
     assert response.json() == {
-        "history_uid": "history-SVSim1-20240304123456",
+        "history_id": "history-SVSim1-20240304123456",
         "device_id": "SVSim1",
         "calibrated_at": "2024-03-04T12:34:56Z",
         "n_qubits": 2,
@@ -251,9 +245,7 @@ def test_delete_device_history(test_db):
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 
@@ -262,7 +254,7 @@ def test_delete_device_history(test_db):
     assert response.status_code == 204
     assert (
         test_db.query(DeviceInfoHistory)
-        .filter_by(history_uid="history-SVSim1-20240304123456")
+        .filter_by(history_id="history-SVSim1-20240304123456")
         .first()
         is None
     )
@@ -273,9 +265,7 @@ def test_delete_device_history_allows_missing_storage_object(test_db):
     device_info = {"device_id": "SVSim1"}
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 
@@ -284,7 +274,7 @@ def test_delete_device_history_allows_missing_storage_object(test_db):
     assert response.status_code == 204
     assert (
         test_db.query(DeviceInfoHistory)
-        .filter_by(history_uid="history-SVSim1-20240304123456")
+        .filter_by(history_id="history-SVSim1-20240304123456")
         .first()
         is None
     )
@@ -695,9 +685,7 @@ def test_delete_device_deletes_device_info_history(test_db):
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
-        _get_history_model(
-            "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
-        )
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
     )
     test_db.commit()
 

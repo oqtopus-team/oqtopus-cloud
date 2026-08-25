@@ -89,11 +89,9 @@ class DeviceInfo(BaseModel):
 
 
 class DeviceInfoHistoryEntry(BaseModel):
-    history_uid: Annotated[
-        str, Field(examples=["018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"])
-    ]
+    history_id: Annotated[str, Field(examples=["018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"])]
     """
-    UUID assigned when the device history is issued.
+    Unique string identifying the device history.
     """
     device_id: Annotated[str, Field(examples=["qulacs"])]
     calibrated_at: Annotated[AwareDatetime, Field(examples=["2024-03-04T12:34:56Z"])]

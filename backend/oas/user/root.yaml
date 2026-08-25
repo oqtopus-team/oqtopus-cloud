@@ -19,8 +19,8 @@ paths:
     $ref: ./paths/devices.yaml#/devices.device_id
   /device_histories:
     $ref: ./paths/devices.yaml#/device_histories
-  /device_histories/{history_uid}:
-    $ref: ./paths/devices.yaml#/device_histories.history_uid
+  /device_histories/{history_id}:
+    $ref: ./paths/devices.yaml#/device_histories.history_id
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}/submit:

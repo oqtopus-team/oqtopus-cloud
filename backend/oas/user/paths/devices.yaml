@@ -151,19 +151,19 @@ device_histories:
             schema:
               $ref: '../schemas/error.yaml#/error.InternalServerError'
 
-device_histories.history_uid:
+device_histories.history_id:
   get:
     tags:
       - device
     summary: Get device history
-    description: Returns the device history identified by history_uid.
+    description: Returns the device history identified by history_id.
     operationId: get_device_history
     security:
       - BearerAuth: []
     parameters:
-      - name: history_uid
+      - name: history_id
         in: path
-        description: Device history UUID.
+        description: Unique string identifying the device history.
         required: true
         schema:
           type: string

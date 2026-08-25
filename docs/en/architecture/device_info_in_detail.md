@@ -45,11 +45,11 @@ The `devices` table stores metadata for the current device state. The actual `de
 | `calibrated_at` | Timestamp at which the current `device_info` was confirmed. Updated when the Provider API confirms device_info. |
 | `description` | Device description. |
 
-The `device_info_history` table stores only the metadata needed to look up historical `device_info` snapshots. Each history row receives a `history_uid` UUID when the Provider API issues the history. Historical payloads are not stored in the database either; they are stored under a deterministic history storage key derived from `device_id` and `calibrated_at`.
+The `device_info_history` table stores only the metadata needed to look up historical `device_info` snapshots. Each history row receives a unique string identifier when the Provider API issues the history. Historical payloads are not stored in the database either; they are stored under a deterministic history storage key derived from `device_id` and `calibrated_at`.
 
 | Column | Type | Nullable | Purpose |
 | --- | --- | --- | --- |
-| `history_uid` | varchar(36) | no | UUID assigned when the history row is issued. Primary key and public identifier for `GET /device_histories/{history_uid}`. |
+| `history_id` | varchar(36) | no | Unique string assigned when the history row is issued. Primary key and public identifier for `GET /device_histories/{history_id}`. |
 | `device_id` | varchar(64) | no | Device identifier. Also part of the history storage key. This column intentionally does not have a foreign key constraint. |
 | `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. Also part of the history storage key. |
 | `n_qubits` | integer | no | Qubit count at the snapshot. Used by history lists and historical detail headers. |
@@ -61,7 +61,7 @@ Constraints and indexes are:
 
 | Name | Definition |
 | --- | --- |
-| Primary key | `history_uid`. |
+| Primary key | `history_id`. |
 | Unique constraint | `(device_id, calibrated_at)`. A device can have only one snapshot for the same calibrated timestamp. |
 | Foreign key | None. Device history cleanup is handled explicitly by the application so this table can remain a compact metadata table keyed by the snapshot identity. |
 
@@ -73,12 +73,12 @@ devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device
 
 The implementation generates this key with `get_device_info_history_key(device_id, calibrated_at)`. The relationship between a database row and a storage object is represented by `(device_id, calibrated_at)`, and read APIs derive the key when checking object existence and issuing presigned URLs.
 
-`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, assigns a new `history_uid`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
+`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, assigns a new `history_id`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
 
 The User API and Admin API expose history as top-level resources:
 
 - `GET /device_histories` lists history metadata. `device_id`, `from`, `to`, `limit`, and `offset` can be used as query parameters.
-- `GET /device_histories/{history_uid}` returns one history detail and a presigned download URL for the archived `device_info.zip`.
+- `GET /device_histories/{history_id}` returns one history detail and a presigned download URL for the archived `device_info.zip`.
 
 `DELETE /devices/{device_id}` on the Admin API explicitly deletes matching `device_info_history` rows before deleting the `devices` row. It also deletes the current object and each history object so neither the database nor object storage is left with orphaned device_info data.
 
