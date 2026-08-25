@@ -111,7 +111,7 @@ class DeviceInfoHistoryDetail(DeviceInfoHistoryEntry):
         str,
         Field(
             examples=[
-                "https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+                "https://oqtopus-cloud.s3.amazonaws.com/device_histories/018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
             ]
         ),
     ]

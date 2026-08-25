@@ -231,7 +231,6 @@ def test_update_device_calibration_creates_history(test_db, test_storage):
     upload_id = "history-upload"
     calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
     upload_key = get_device_info_upload_key("SC", upload_id)
-    history_key = get_device_info_history_key("SC", calibrated_at)
     test_storage.put(key=upload_key, data=json.dumps(_get_device_info_dict()).encode())
 
     request = DeviceInfoUpdate(upload_id=upload_id, calibrated_at=calibrated_at)
@@ -243,6 +242,8 @@ def test_update_device_calibration_creates_history(test_db, test_storage):
     assert UUID(history.history_id).version == 7
     assert history.n_qubits == 2
     assert history.n_couplings == 1
+    history_key = get_device_info_history_key(history.history_id)
+    assert history_key == f"device_histories/{history.history_id}/device_info.zip"
     assert test_storage.does_exist(key=history_key)
 
 

@@ -7,17 +7,19 @@ This page describes the current backend behavior and the storage conventions use
 
 ## Storage Model
 
-Each device owns a deterministic storage key:
+Current device information and each historical snapshot use deterministic storage keys:
 
 ```text
 devices/<device_id>/device_info.zip
+device_histories/<history_id>/device_info.zip
 ```
 
-The object key is fixed by the backend. Clients conventionally upload a zip containing a single `device_info.json` entry, but the backend validates the object key, not the filename inside the archive.
+The object keys are fixed by the backend. Clients conventionally upload a zip containing a single `device_info.json` entry, but the backend validates the object key, not the filename inside the archive.
 
 | Object | Conventional archive entry name | Producer | Consumer | Payload format | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDKs | Device JSON payload | The only storage-backed device payload currently supported. |
+| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDKs | Device JSON payload | Current device information. |
+| `device_histories/<history_id>/device_info.zip` | `device_info.json` | Provider | Admin, User | Device JSON payload | Immutable historical snapshot. |
 
 The default storage driver is S3. Local development can use `local` or `local:minio`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and clients transfer the archive directly to the storage backend.
 
@@ -45,13 +47,13 @@ The `devices` table stores metadata for the current device state. The actual `de
 | `calibrated_at` | Timestamp at which the current `device_info` was confirmed. Updated when the Provider API confirms device_info. |
 | `description` | Device description. |
 
-The `device_info_history` table stores only the metadata needed to look up historical `device_info` snapshots. Each history row receives a unique string identifier when the Provider API issues the history. Historical payloads are not stored in the database either; they are stored under a deterministic history storage key derived from `device_id` and `calibrated_at`.
+The `device_info_history` table stores only the metadata needed to look up historical `device_info` snapshots. Each history row receives a unique string identifier when the Provider API issues the history. Historical payloads are not stored in the database either; they are stored under a deterministic history storage key derived from `history_id`.
 
 | Column | Type | Nullable | Purpose |
 | --- | --- | --- | --- |
 | `history_id` | varchar(36) | no | Unique string assigned when the history row is issued. Primary key and public identifier for `GET /device_histories/{history_id}`. |
-| `device_id` | varchar(64) | no | Device identifier. Also part of the history storage key. This column intentionally does not have a foreign key constraint. |
-| `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. Also part of the history storage key. |
+| `device_id` | varchar(64) | no | Device identifier. This column intentionally does not have a foreign key constraint. |
+| `calibrated_at` | timestamp / datetime | no | Snapshot timestamp. |
 | `n_qubits` | integer | no | Qubit count at the snapshot. Used by history lists and historical detail headers. |
 | `n_couplings` | integer | no | Coupling count at the snapshot. Used by history lists and historical detail headers. |
 | `created_at` | timestamp / datetime | yes | Row creation timestamp. |
@@ -68,12 +70,12 @@ Constraints and indexes are:
 `device_info_history` intentionally does not have a `storage_key` column. The history object key is uniquely determined by this convention, so storing it again in the database would duplicate derived data:
 
 ```text
-devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device_info.zip
+device_histories/<history_id>/device_info.zip
 ```
 
-The implementation generates this key with `get_device_info_history_key(device_id, calibrated_at)`. The relationship between a database row and a storage object is represented by `(device_id, calibrated_at)`, and read APIs derive the key when checking object existence and issuing presigned URLs.
+The implementation generates this key with `get_device_info_history_key(history_id)`. The relationship between a database row and a storage object is represented by `history_id`, and read APIs derive the key when checking object existence and issuing presigned URLs.
 
-`PATCH /devices/{device_id}/device_info` on the Provider API stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, assigns a new `history_id`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
+`PATCH /devices/{device_id}/device_info` on the Provider API assigns a new `history_id`, stores the uploaded archive under both the current key and the history key, updates `devices.calibrated_at`, and inserts a `device_info_history` metadata row. The row stores only lookup and summary metadata for the archived snapshot; device catalog metadata and operational state remain on the current `devices` row. If the same `(device_id, calibrated_at)` already exists, the request is treated as a conflict and the history row is not overwritten.
 
 The User API and Admin API expose history as top-level resources:
 

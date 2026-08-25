@@ -58,7 +58,7 @@ def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
 
 
 def _get_history_object_key(history: DeviceInfoHistory) -> str:
-    return get_device_info_history_key(history.device_id, history.calibrated_at)
+    return get_device_info_history_key(history.history_id)
 
 
 def _history_to_detail(

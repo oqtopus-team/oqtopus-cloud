@@ -12,7 +12,10 @@ from oqtopus_cloud.common.models.device import (
 from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.storages import FSSpecStorage
-from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
+    get_device_info_key,
+)
 from oqtopus_cloud.user.routers.devices import get_device, get_devices, model_to_schema
 from oqtopus_cloud.user.schemas.devices import DeviceInfo, DeviceType, Status
 from oqtopus_cloud.user.schemas.errors import (
@@ -407,7 +410,7 @@ def test_list_device_histories_handler(test_client, test_db):
 
 
 def test_get_device_history_handler(test_client, test_db, test_storage):
-    history_key = "devices/SVSim/history/20240304T123456000000Z/device_info.zip"
+    history_key = get_device_info_history_key("history-SVSim-20240304123456")
     test_storage.put(
         key=history_key,
         data=_device_info_archive_bytes({"device_id": "SVSim"}),

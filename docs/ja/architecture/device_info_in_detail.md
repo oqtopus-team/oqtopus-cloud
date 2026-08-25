@@ -7,17 +7,19 @@ OQTOPUS は device_info の実体をオブジェクトストレージに保存�
 
 ## ストレージモデル
 
-各デバイスは、決定的な storage key を 1 つ持ちます。
+現在のデバイス情報と各履歴 snapshot は、決定的な storage key を持ちます。
 
 ```text
 devices/<device_id>/device_info.zip
+device_histories/<history_id>/device_info.zip
 ```
 
 オブジェクトキーはバックエンドで固定されています。クライアントは慣例として `device_info.json` を 1 つだけ含む zip をアップロードしますが、バックエンドが検証するのはオブジェクトキーであり、archive 内のファイル名ではありません。
 
 | Object | 慣例上の zip 内エントリ名 | 作成者 | 利用者 | payload format | 備考 |
 | --- | --- | --- | --- | --- | --- |
-| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDK | デバイス JSON payload | 現在 storage-backed なデバイス payload はこれだけです。 |
+| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDK | デバイス JSON payload | 現在のデバイス情報です。 |
+| `device_histories/<history_id>/device_info.zip` | `device_info.json` | Provider | Admin, User | デバイス JSON payload | 変更されない過去の snapshot です。 |
 
 デフォルトのストレージドライバーは S3 です。
 ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントは archive をストレージバックエンドへ直接転送します。
@@ -46,13 +48,13 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 | `calibrated_at` | 現在の device_info が確定された時刻。Provider の device_info 確定時に更新されます。 |
 | `description` | デバイス説明。 |
 
-`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。Provider API が履歴を発行するタイミングで、各 row にユニークな文字列 identifier を付与します。履歴 payload の実体も DB には保存せず、`device_id` と `calibrated_at` から決定的に導出される history storage key に保存します。
+`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。Provider API が履歴を発行するタイミングで、各 row にユニークな文字列 identifier を付与します。履歴 payload の実体も DB には保存せず、`history_id` から決定的に導出される history storage key に保存します。
 
 | Column | Type | Nullable | 用途 |
 | --- | --- | --- | --- |
 | `history_id` | varchar(36) | no | history row 発行時に付与するユニークな文字列。primary key であり、`GET /device_histories/{history_id}` の公開 identifier です。 |
-| `device_id` | varchar(64) | no | device identifier。history storage key の一部です。この column には foreign key constraint を張りません。 |
-| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。history storage key の一部です。 |
+| `device_id` | varchar(64) | no | device identifier。この column には foreign key constraint を張りません。 |
+| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。 |
 | `n_qubits` | integer | no | snapshot 時点の量子ビット数。履歴一覧と履歴詳細ヘッダーで使います。 |
 | `n_couplings` | integer | no | snapshot 時点の coupling 数。履歴一覧と履歴詳細ヘッダーで使います。 |
 | `created_at` | timestamp / datetime | yes | row 作成時刻。 |
@@ -69,12 +71,12 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 `device_info_history` には `storage_key` column を持たせません。history object key は次の規則で一意に決まるため、DB に重複して保存しない方針です。
 
 ```text
-devices/<device_id>/history/<calibrated_at in UTC YYYYMMDDTHHMMSSffffffZ>/device_info.zip
+device_histories/<history_id>/device_info.zip
 ```
 
-この key は実装上 `get_device_info_history_key(device_id, calibrated_at)` で生成します。DB row と storage object の対応は `(device_id, calibrated_at)` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
+この key は実装上 `get_device_info_history_key(history_id)` で生成します。DB row と storage object の対応は `history_id` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
 
-Provider API の `PATCH /devices/{device_id}/device_info` は、upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新し、新しい `history_id` を付与して `device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
+Provider API の `PATCH /devices/{device_id}/device_info` は、新しい `history_id` を付与してから upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新して `device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
 
 User API と Admin API は、履歴を top-level resource として公開します。
 

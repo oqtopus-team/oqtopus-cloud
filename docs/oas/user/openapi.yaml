@@ -87,20 +87,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /devices/{device_id}/device_info_history:
+  /device_histories:
     get:
       tags:
         - device
-      summary: List device history
-      description: List device history metadata for the specified device.
-      operationId: list_device_info_history
+      summary: List device histories
+      description: List device history metadata. Optionally filter by device_id.
+      operationId: list_device_histories
       security:
         - BearerAuth: []
       parameters:
         - name: device_id
-          in: path
-          description: Device identifier
-          required: true
+          in: query
+          description: Device identifier to filter histories.
+          required: false
           schema:
             type: string
           example: qulacs
@@ -158,33 +158,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error.InternalServerError'
-  /devices/{device_id}/device_info_history/at:
+  /device_histories/{history_id}:
     get:
       tags:
         - device
-      summary: Get device history at timestamp
-      description: Returns the latest device history whose calibrated_at is earlier than or equal to the specified timestamp.
-      operationId: get_device_info_history_at
+      summary: Get device history
+      description: Returns the device history identified by history_id.
+      operationId: get_device_history
       security:
         - BearerAuth: []
       parameters:
-        - name: device_id
+        - name: history_id
           in: path
-          description: Device identifier
+          description: Unique string identifying the device history.
           required: true
           schema:
             type: string
-          example: qulacs
-        - name: timestamp
-          in: query
-          description: Runtime timestamp used to resolve the effective device information.
-          required: true
-          schema:
-            type: string
-            format: date-time
+          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
       responses:
         '200':
-          description: Returns resolved device history.
+          description: Returns device history.
           content:
             application/json:
               schema:
@@ -1206,6 +1199,10 @@ components:
     devices.DeviceInfoHistoryEntry:
       type: object
       properties:
+        history_id:
+          description: Unique string identifying the device history.
+          type: string
+          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
         device_id:
           type: string
           example: qulacs
@@ -1220,6 +1217,7 @@ components:
           type: integer
           example: 72
       required:
+        - history_id
         - device_id
         - calibrated_at
         - n_qubits
@@ -1253,7 +1251,7 @@ components:
             device_info:
               description: Presigned URL for downloading the historical device_info.zip.
               type: string
-              example: https://oqtopus-cloud.s3.amazonaws.com/devices/qulacs/history/20240304T123456000000Z/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE
+              example: https://oqtopus-cloud.s3.amazonaws.com/device_histories/018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE
           required:
             - device_info
     jobs.JobStatus:

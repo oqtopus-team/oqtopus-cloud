@@ -14,7 +14,10 @@ from oqtopus_cloud.admin.schemas.devices import (
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.storages import FSSpecStorage
-from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
+    get_device_info_key,
+)
 from pydantic.type_adapter import TypeAdapter
 from zoneinfo import ZoneInfo
 
@@ -217,7 +220,7 @@ def test_list_device_histories(test_db):
 def test_get_device_history(test_db):
     device_info = {"device_id": "SVSim1"}
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
-    history_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
+    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
     test_db.add(
@@ -240,7 +243,7 @@ def test_get_device_history(test_db):
 
 def test_delete_device_history(test_db):
     device_info = {"device_id": "SVSim1"}
-    history_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
+    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))
@@ -680,7 +683,7 @@ def test_delete_device_deletes_uploaded_device_info(
 
 def test_delete_device_deletes_device_info_history(test_db):
     device_info = {"device_id": "SVSim1"}
-    history_key = "devices/SVSim1/history/20240304T123456000000Z/device_info.zip"
+    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
     storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
     test_db.add(_get_model(1, device_info))

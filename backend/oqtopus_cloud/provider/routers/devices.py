@@ -270,14 +270,15 @@ def update_device_calibration(
         n_qubits, n_couplings = _extract_device_info_metadata(uploaded_device_info)
 
         device_info_key = get_device_info_key(device_id)
-        history_key = get_device_info_history_key(device_id, calibrated_at)
+        history_id = str(uuid7())
+        history_key = get_device_info_history_key(history_id)
         storage.put(key=history_key, data=uploaded_device_info)
         storage.put(key=device_info_key, data=uploaded_device_info)
         storage.delete(key=upload_key)
         device.calibrated_at = calibrated_at
         db.add(
             DeviceInfoHistory(
-                history_id=str(uuid7()),
+                history_id=history_id,
                 device_id=device_id,
                 calibrated_at=calibrated_at,
                 n_qubits=n_qubits,
