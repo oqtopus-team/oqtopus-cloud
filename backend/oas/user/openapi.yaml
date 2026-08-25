@@ -894,7 +894,7 @@ components:
       properties:
         program:
           type: array
-          description: A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+          description: A list of OPENQASM3 program. Required for sampling, estimation and multiprogramming jobs. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
           items:
             type: string
           example:
@@ -903,8 +903,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/jobs.S3OperatorItem'
-      required:
-        - program
+          description: Estimation operator. Required for estimation jobs.
+        sse_program:
+          type: string
+          description: SSE user program. Required for SSE jobs.
     jobs.S3JobResult:
       type: object
       properties:
@@ -1532,11 +1534,11 @@ components:
         pauli:
           type: string
           description: The Pauli string.
+          nullable: false
           example: X 0 X 1
         coeff:
-          type: number
           description: Coefficient number in the Pauli string representation.
-          example: 1
+          type: number
       required:
         - pauli
     jobs.S3SamplingResult:
