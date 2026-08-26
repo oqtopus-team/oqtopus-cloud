@@ -58,6 +58,48 @@
       "attributes": {
         "post.logout.redirect.uris": "+"
       }
+    },
+    {
+      "clientId": "oqtopus-engine",
+      "name": "OQTOPUS Engine (machine-to-machine)",
+      "description": "Confidential client for oqtopus-engine. Uses the OAuth2 client-credentials grant to call the Provider API.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "engine-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "provider.write"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "provider.write",
+      "description": "Write access to the OQTOPUS Provider API",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "provider-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "oqtopus-provider-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
   "components": {

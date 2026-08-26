@@ -109,3 +109,19 @@ services:
     depends_on:
       keycloak:
         condition: service_started
+
+  # Switch the Provider API to OIDC machine-to-machine auth for the demo.
+  # ENV stays `local` (DB/MinIO wiring unchanged); AUTH_MODE=oidc makes the API
+  # verify an OAuth2 client-credentials Bearer token (from the `oqtopus-engine`
+  # Keycloak client) and require the `provider.write` scope. oauth2-proxy is NOT
+  # involved: machine clients fetch a token themselves and call :8888 directly.
+  provider-api:
+    environment:
+      AUTH_MODE: oidc
+      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
+      OIDC_AUDIENCE: "oqtopus-provider-api"
+      PROVIDER_REQUIRED_SCOPE: "provider.write"
+    depends_on:
+      keycloak:
+        condition: service_started
