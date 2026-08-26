@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import AwareDatetime, BaseModel, Field
 
@@ -36,20 +36,20 @@ class DeviceDataUpdateResponse(BaseModel):
 
 
 class DeviceInfoUpdate(BaseModel):
-    device_info: Annotated[
-        str | None,
-        Field(
-            examples=[
-                '{\n  "n_nodes": 512,\n  "calibration_data": {\n    "qubit_connectivity": [\n      "(1,4)",\n      "(4,5)",\n      "(5,8)"\n    ],\n    "t1": {\n      "0": 55.51,\n      "1": 37.03,\n      "2": 57.13\n    }\n  }\n}'
-            ]
-        ),
-    ] = None
+    calibrated_at: Annotated[AwareDatetime, Field(examples=["2023-09-10T14:00:00Z"])]
     """
-    Calibration_data and n_nodes etc. Make sure that the value is a valid JSON data.
+    Calibration timestamp for the uploaded device_info.
     """
-    calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2023-09-10T14:00:00Z"])
-    ] = None
+
+
+class DeviceInfoUploadPresignedURL(BaseModel):
     """
-    Parameter mandatory and valid if calibrationData not null
+    Presigned URL for uploading device_info.zip to OQTOPUS cloud.
     """
+
+    url: Annotated[str, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])]
+    fields: dict[str, Any]
+
+
+class DeviceInfoUploadResponse(BaseModel):
+    presigned_url: DeviceInfoUploadPresignedURL

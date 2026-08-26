@@ -26,7 +26,6 @@ class Device(Base, TimestampMixin):
         n_qubits (int): The number of qubits of the device.
         basis_gates (str): The basis gates supported by the device.
         instructions (str): The supported instructions of the device.
-        device_info (str): The infomation of the device.
         calibrated_at (datetime): The date and time when the device was last calibrated.
         description (str): The description of the device.
     """
@@ -71,10 +70,10 @@ class Device(Base, TimestampMixin):
         String(64),
         nullable=False,
     )
-    # NOT NULL by design (the Alembic migration is the source of truth): API
-    # handlers substitute "{}" for missing values before insert (see Lambda
-    # handlers).
-    device_info: Mapped[str] = mapped_column(Text, nullable=False)
+    device_info: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
     calibrated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTimeTz(), nullable=True
     )

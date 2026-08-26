@@ -7,7 +7,6 @@ from typing import (
 
 import boto3
 import pytest
-import pytz
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.base import (
     Base,
@@ -18,7 +17,7 @@ from oqtopus_cloud.common.models.device import (
 from oqtopus_cloud.common.session import (
     get_db,
 )
-from oqtopus_cloud.common.storages import AbstractStorage, FSSpecStorage
+from oqtopus_cloud.common.storages import FSSpecStorage
 from oqtopus_cloud.user.lambda_function import app as real_app
 from sqlalchemy import (
     create_engine,
@@ -163,7 +162,6 @@ def insert_initial_data(db: Session):
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
-            device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
             description="Superconducting quantum computer",
             created_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
