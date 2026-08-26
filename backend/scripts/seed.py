@@ -43,6 +43,8 @@ _RUNNING_AT = datetime.datetime(2024, 3, 4, 12, 1, 0, tzinfo=datetime.timezone.u
 _ENDED_AT = datetime.datetime(2024, 3, 4, 12, 1, 16, tzinfo=datetime.timezone.utc)
 
 
+# NOTE: storage/init_storage.py derives each seeded device_info archive from
+# these rows so local DB metadata and object storage cannot drift.
 DEVICES: list[dict[str, Any]] = [
     {
         "id": "SC",
