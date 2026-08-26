@@ -238,6 +238,10 @@ make deploy-user
 make deploy-provider
 ```
 
+The deployment principal must have `lambda:InvokeFunction` permission. Each
+versioned Lambda deployment invokes `lambda-version-cleaner` explicitly after
+updating its alias; the deployment flow does not depend on CloudTrail events.
+
 ### Testing the Service
 
 To test the service, run the following commands:

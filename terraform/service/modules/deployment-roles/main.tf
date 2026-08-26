@@ -80,11 +80,12 @@ resource "aws_iam_role_policy" "auto_deployment_policy" {
       Action = [
         "iam:ListAccountAliases",
         "lambda:UpdateFunctionCode",
+        "lambda:InvokeFunction",
         "lambda:TagResource",
         "lambda:CreateAlias",
         "lambda:UpdateAlias",
         "lambda:GetAlias",
-        "lambda:PublishVersion"
+        "lambda:PublishVersion",
       ]
       Resource = "*"
     }]

@@ -11,7 +11,51 @@ on:
   workflow_dispatch:
 
 jobs:
+  version-cleaner:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: 'ap-northeast-1'
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/oqtopus-oqtopus-dev-deploy-lambda
+
+      - name: Set AWS Profile
+        run: |
+          ACCOUNT_NAME=$(aws iam list-account-aliases --query "AccountAliases[0]" --output text)
+          echo "PROFILE=$ACCOUNT_NAME" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Set up Aqua
+        run: |
+          sudo apt install make
+          make setup-aqua
+          echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+      - name: setup uv
+        run: |
+          make setup-uv
+
+      - name: Deploy version cleaner
+        working-directory: ./deployment/oqtopus-dev
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          sudo -E env PATH="$PATH" make deploy-lambda-version-cleaner-via-actions
+
   deployment:
+    needs: version-cleaner
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
