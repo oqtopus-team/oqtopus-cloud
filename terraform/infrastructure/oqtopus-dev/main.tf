@@ -45,7 +45,9 @@ module "db" {
   db_name                         = "main"
   user_name                       = var.db_user_name
   db_proxy_security_group_ids     = module.security_group.db_proxy_security_group_ids
-  db_performance_insights_enabled = true
+  db_instance_class               = "db.t4g.micro"
+  db_multi_az                     = false
+  db_performance_insights_enabled = false
 }
 
 module "management" {
