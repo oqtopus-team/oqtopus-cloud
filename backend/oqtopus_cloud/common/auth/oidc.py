@@ -50,9 +50,7 @@ def _config_from_env() -> OidcProviderConfig:
             "verification with OIDC_ALLOW_ANY_AUDIENCE=true"
         )
     algorithms = [
-        a.strip()
-        for a in os.getenv("OIDC_ALGORITHMS", "RS256").split(",")
-        if a.strip()
+        a.strip() for a in os.getenv("OIDC_ALGORITHMS", "RS256").split(",") if a.strip()
     ]
     try:
         return OidcProviderConfig(

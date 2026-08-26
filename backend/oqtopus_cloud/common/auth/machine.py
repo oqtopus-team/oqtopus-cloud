@@ -68,10 +68,7 @@ def _oidc_machine_identity(request: Request) -> MachineIdentity:
     # The principal of a client-credentials token is the client, not a user:
     # `azp`/`client_id` name it; fall back to `sub` (the service account).
     client_id = (
-        claims.get("azp")
-        or claims.get("client_id")
-        or claims.get("sub")
-        or "unknown"
+        claims.get("azp") or claims.get("client_id") or claims.get("sub") or "unknown"
     )
     return MachineIdentity(
         client_id=str(client_id),
