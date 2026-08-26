@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
@@ -9,6 +10,8 @@ from oqtopus_cloud.admin.schemas.devices import (
     Status,
 )
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.storages import FSSpecStorage
+from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from pydantic.type_adapter import TypeAdapter
 from zoneinfo import ZoneInfo
 
@@ -17,7 +20,7 @@ client = TestClient(app)
 utc = ZoneInfo("UTC")
 
 
-def _get_model(n, device_info={}):
+def _get_model(n, device_info=None):
     mode_dict = {
         "id": f"SVSim{n}",
         "device_type": "simulator",
@@ -27,7 +30,7 @@ def _get_model(n, device_info={}):
         "n_qubits": 1 + n,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": json.dumps(device_info),
+        "device_info": json.dumps(device_info) if device_info is not None else None,
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
@@ -171,6 +174,7 @@ def test_register_devices(
     # confirm the device is registered
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.basis_gates == '["x", "sx", "rz", "cx", "t"]'
+    assert device.device_info == json.dumps(device_info)
 
 
 def test_register_devices_no_utc(
@@ -331,7 +335,6 @@ def test_update_device_data_full(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "QPU",
         "status": "unavailable",
         "n_qubits": 4,
@@ -370,7 +373,6 @@ def test_update_device_data_partial(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "n_qubits": 999,
         "description": "updated description",
     }
@@ -381,6 +383,29 @@ def test_update_device_data_partial(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device.description == "updated description"
     assert device.n_qubits == 999
+
+
+def test_update_device_data_keeps_uploaded_device_info(
+    test_db,
+):
+    device_info = {"device_id": "SVSim1"}
+    device_info_key = get_device_info_key("SVSim1")
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+    body = {
+        "calibrated_at": "2024-03-04T12:34:56+00:00",
+    }
+
+    response = client.patch("/devices/SVSim1", json=body)
+
+    assert response.status_code == 200
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert storage.does_exist(key=device_info_key)
+    assert device.calibrated_at == datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc)
 
 
 def test_update_device_data_timezone_awareness(
@@ -396,7 +421,6 @@ def test_update_device_data_timezone_awareness(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     body = {
-        "device_info": json.dumps(device_info),
         "calibrated_at": "2024-03-04T12:34:56+09:00",
         "description": "State vector-based quantum circuit simulator updated",
     }
@@ -409,12 +433,10 @@ def test_update_device_data_timezone_awareness(
     assert device.calibrated_at == datetime(2024, 3, 4, 3, 34, 56, tzinfo=timezone.utc)
 
 
-def test_update_device_data_inconsistent_device_id(
+def test_update_device_data_ignores_legacy_device_info_field(
     test_db,
 ):
-    """_summary_
-    Simple PATCH /devices/{device_id} tests inconsistent device_id
-    """
+    """Legacy device_info fields in PATCH should be ignored."""
 
     device_info = {"device_id": "SVSim1"}
 
@@ -428,10 +450,11 @@ def test_update_device_data_inconsistent_device_id(
         "description": "updated description",
     }
     response = client.patch("/devices/SVSim1", json=body)
-    assert response.status_code == 400
-    assert response.json() == {
-        "message": "device_id is inconsistent with device_info: SVSim1 != SVSim2"
-    }
+    assert response.status_code == 200
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device is not None
+    assert device.n_qubits == 999
+    assert device.description == "updated description"
 
 
 def test_update_device_data_404(test_db):
@@ -444,7 +467,6 @@ def test_update_device_data_404(test_db):
     test_db.commit()
 
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 3,
@@ -462,10 +484,7 @@ def test_update_device_data_500():
     """_summary_
     Simple PATCH /devices/{device_id} tests 500 error
     """
-    device_info = {"device_id": "SVSim1"}
-
     body = {
-        "device_info": json.dumps(device_info),
         "device_type": "simulator",
         "status": "available",
         "n_qubits": 2,
@@ -494,6 +513,27 @@ def test_delete_device(
     # confirm the device is deleted
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device is None
+
+
+def test_delete_device_deletes_uploaded_device_info(
+    test_db,
+):
+    """DELETE should remove both the device row and uploaded device_info."""
+    device_info = {"device_id": "SVSim1"}
+    device_info_key = get_device_info_key("SVSim1")
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
+
+    test_db.flush()
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+
+    response = client.delete("/devices/SVSim1")
+
+    assert response.status_code == 204
+    device = test_db.query(Device).filter(Device.id == "SVSim1").first()
+    assert device is None
+    assert not storage.does_exist(key=device_info_key)
 
 
 def test_delete_device_404(

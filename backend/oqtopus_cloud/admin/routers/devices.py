@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 from fastapi import APIRouter, Body, Depends, status
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -10,6 +11,10 @@ from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceBase,
     DeviceInfo,
+    DeviceInfoUploadPresignedURL,
+    DeviceInfoUploadResponse,
+    DeviceType,
+    Status,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
@@ -23,11 +28,62 @@ from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_key,
+)
 
 from . import LoggerRouteHandler
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
+
+
+class DevicePatch(BaseModel):
+    device_type: DeviceType | None = Field(default=None, examples=["simulator"])
+    status: Status | None = Field(default=None, examples=["available"])
+    n_qubits: int | None = Field(default=None, examples=[64])
+    available_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    calibrated_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    basis_gates: list[str] | None = Field(
+        default=None,
+        examples=[
+            [
+                "x",
+                "y",
+                "z",
+                "h",
+                "s",
+                "sdg",
+                "t",
+                "tdg",
+                "rx",
+                "ry",
+                "rz",
+                "cx",
+                "cz",
+                "swap",
+                "u1",
+                "u2",
+                "u3",
+                "u",
+                "p",
+                "id",
+                "sx",
+                "sxdg",
+            ]
+        ],
+    )
+    supported_instructions: list[str] | None = Field(
+        default=None, examples=[["measure", "barrier", "reset"]]
+    )
+    description: str | None = Field(
+        default=None, examples=["Superconducting quantum computer"]
+    )
 
 
 @router.get(
@@ -38,11 +94,12 @@ utc = ZoneInfo("UTC")
 @tracer.capture_method
 def get_devices(
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked get_devices")
         devices = db.scalars(select(Device)).all()
-        return [model_to_schema(device) for device in devices]
+        return [model_to_schema(device, storage) for device in devices]
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -61,17 +118,49 @@ def get_devices(
 def get_device(
     device_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfo | ErrorResponse:
     try:
         device = db.scalars(select(Device).where(Device.id == device_id)).first()
         logger.info("invoked get_device")
         if device:
-            response = model_to_schema(device)
+            response = model_to_schema(device, storage)
             return response
         else:
             message = f"device_id={device_id} is not found."
             logger.info(message)
             return NotFoundErrorResponse(message=message)
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/devices/{device_id}/device_info/upload",
+    response_model=DeviceInfoUploadResponse,
+    responses={
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_device_info_upload_url(
+    device_id: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> DeviceInfoUploadResponse | ErrorResponse:
+    try:
+        device = db.scalars(select(Device).where(Device.id == device_id)).first()
+        if device is None:
+            return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
+        return DeviceInfoUploadResponse(
+            presigned_url=DeviceInfoUploadPresignedURL(
+                **storage.get_upload_presigned_url_data(
+                    key=get_device_info_key(device_id)
+                )
+            )
+        )
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -126,7 +215,7 @@ def register_devices(
 @tracer.capture_method
 def update_device_data(
     device_id: str,
-    device_update: DeviceBase = Body(..., description="new status"),
+    device_update: DevicePatch = Body(..., description="new status"),
     db: Session = Depends(get_db),
 ) -> SuccessResponse | ErrorResponse:
     try:
@@ -137,14 +226,6 @@ def update_device_data(
         if not query:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
-        device_id_from_body = get_device_id(device_update)
-        if device_id != device_id_from_body:
-            logger.error(
-                f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-            )
-            return BadRequestErrorResponse(
-                message=f"device_id is inconsistent with device_info: {device_id} != {device_id_from_body}"
-            )
         update_fields = device_update.model_dump(exclude_none=True)
         for field, value in update_fields.items():
             if field == "basis_gates" and isinstance(value, list):
@@ -176,6 +257,7 @@ def update_device_data(
 def delete_device(
     device_id: str,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
         logger.info("invoked delete device")
@@ -186,6 +268,9 @@ def delete_device(
         if not query_result:
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message="Device not found")
+        device_info_key = get_device_info_key(device_id)
+        if storage.does_exist(key=device_info_key):
+            storage.delete(key=device_info_key)
         # delete from RDS
         db.delete(query_result)
         db.commit()
@@ -216,7 +301,14 @@ def ensure_timezone(dt):
     return dt
 
 
-def model_to_schema(model: Device) -> DeviceInfo:
+def get_device_info(model: Device, storage: AbstractStorage) -> str | None:
+    device_info_key = get_device_info_key(model.id)
+    if storage.does_exist(key=device_info_key):
+        return storage.get_download_presigned_url(key=device_info_key)
+    return getattr(model, "device_info", None)
+
+
+def model_to_schema(model: Device, storage: AbstractStorage) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
         "device_type": getattr(model, "device_type", None),
@@ -226,7 +318,7 @@ def model_to_schema(model: Device) -> DeviceInfo:
         "n_qubits": getattr(model, "n_qubits", None),
         "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
         "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
-        "device_info": getattr(model, "device_info", None),
+        "device_info": get_device_info(model, storage),
         "calibrated_at": ensure_timezone(getattr(model, "calibrated_at", None)),
         "description": model.description,
     }

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Seed the local object storage (MinIO) to match the seeded job rows.
+"""Seed the local object storage (MinIO) to match the seeded DB rows.
 
-After the S3-offload change, a job's payload no longer lives in the DB: the API
-(`get_job_info`) builds presigned URLs for ``{job_id}/input.zip`` and, for every
-entry in the job's ``output_files`` column, ``{job_id}/{name}.zip``. Seeding
-only the DB (scripts/seed.py) therefore leaves those URLs pointing at objects
-that do not exist. This script uploads the matching objects so the DB rows and
-storage stay consistent.
+After the S3-offload changes, job payloads and device_info no longer live in the
+DB. Seeding only the DB (scripts/seed.py) therefore leaves API download URLs
+pointing at objects that do not exist. This script uploads the matching objects
+so the DB rows and storage stay consistent.
 
-It is driven by the same ``JOBS`` list as scripts/seed.py, so the two cannot
-drift, and it is **idempotent**: objects that already exist are left untouched.
+It is driven by the same ``DEVICES`` and ``JOBS`` lists as scripts/seed.py, so
+the DB and storage seeds cannot drift, and it is **idempotent**: objects that
+already exist are left untouched.
 
 Run via `make up` (which invokes it after `make seed`) or directly:
 
@@ -36,9 +35,11 @@ if _BACKEND_ROOT not in sys.path:
 
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage  # noqa: E402
 from oqtopus_cloud.common.storages.storage_utils import (  # noqa: E402
+    DEVICE_INFO_FILE,
     JOB_INFO_INPUT_PARAM,
+    get_device_info_key,
 )
-from scripts.seed import JOBS  # noqa: E402
+from scripts.seed import DEVICES, JOBS  # noqa: E402
 
 
 def _zip_bytes(entries: dict[str, str]) -> bytes:
@@ -74,8 +75,17 @@ _INPUT_PAYLOAD = {
 
 
 def _object_manifest() -> dict[str, bytes]:
-    """Map every required storage key to its payload, derived from JOBS."""
+    """Map every required storage key to its payload, derived from DB seeds."""
     manifest: dict[str, bytes] = {}
+    for device in DEVICES:
+        device_info = {
+            "device_id": device["id"],
+            "qubits": [{"id": qubit_id} for qubit_id in range(device["n_qubits"])],
+            "couplings": [],
+        }
+        manifest[get_device_info_key(device["id"])] = _zip_bytes(
+            {DEVICE_INFO_FILE: json.dumps(device_info)}
+        )
     for job in JOBS:
         job_id = job["id"]
         # Every submitted (non-registered) job has an uploaded input.

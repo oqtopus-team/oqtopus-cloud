@@ -49,7 +49,7 @@ resource "aws_vpc_endpoint" "secret_manager" {
         Resource = ["*"]
         Principal = {
           # allow access to all Lambda functions specified in identifiers variable
-          AWS = [ for key, lambda_role_arn in var.identifiers: lambda_role_arn ]
+          AWS = [for key, lambda_role_arn in var.identifiers : lambda_role_arn]
         }
       }
     ]
@@ -81,8 +81,8 @@ resource "aws_vpc_endpoint" "cognito" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "cognito-idp:SignUp",
           "cognito-idp:ConfirmSignUp",
           "cognito-idp:ListUsers",
@@ -98,7 +98,7 @@ resource "aws_vpc_endpoint" "cognito" {
           "cognito-idp:AdminSetUserMFAPreference",
           "cognito-idp:AdminUserGlobalSignOut"
         ]
-        Resource = "*"
+        Resource  = "*"
         Principal = "*"
       }
     ]
@@ -130,15 +130,15 @@ resource "aws_vpc_endpoint" "cloudtrail" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "cloudtrail:LookupEvents"
         ]
         Resource = "*"
         # allow access only to user_api Lambda functions
         Principal = {
-          "AWS": [
-            for key, lambda_role_arn in var.identifiers: lambda_role_arn
+          "AWS" : [
+            for key, lambda_role_arn in var.identifiers : lambda_role_arn
             if contains(["user_api"], key)
           ]
         }
@@ -192,9 +192,9 @@ resource "aws_vpc_endpoint" "s3" {
         "Condition" : {
           "ArnLike" : {
             "aws:PrincipalArn" = [
-              # allow access only to user_api and provider_api Lambda functions
-              for key, lambda_role_arn in var.identifiers: lambda_role_arn
-              if contains(["user_api", "provider_api"], key)
+              # allow access only to user_api, provider_api, and admin_api Lambda functions
+              for key, lambda_role_arn in var.identifiers : lambda_role_arn
+              if contains(["user_api", "provider_api", "admin_api"], key)
             ]
           }
         }

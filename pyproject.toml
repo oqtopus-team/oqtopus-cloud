@@ -57,6 +57,7 @@ DB_HOST="localhost"
 ENV="local"
 POWERTOOLS_METRICS_NAMESPACE="user-api"
 POWERTOOLS_SERVICE_NAME="user-api"
+COUNT_PENDING_JOBS_SINCE="10d"
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

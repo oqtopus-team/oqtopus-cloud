@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import AwareDatetime, BaseModel, Field
 
@@ -25,7 +25,7 @@ class DeviceInfo(BaseModel):
     device_type: Annotated[DeviceType, Field(examples=["simulator"])]
     status: Annotated[Status, Field(examples=["available"])]
     available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+00:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     """
     Parameter mandatory and valid for 'unavailable' devices
@@ -71,7 +71,7 @@ class DeviceInfo(BaseModel):
     json format calibration_data and n_nodes etc
     """
     calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+00:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     """
     Parameter available only for `QPU` devices with available calibration data
@@ -89,10 +89,10 @@ class DeviceBase(BaseModel):
     status: Annotated[Status | None, Field(examples=["available"])] = None
     n_qubits: Annotated[int | None, Field(examples=[64])] = None
     available_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+00:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     calibrated_at: Annotated[
-        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34+00:00"])
+        AwareDatetime | None, Field(examples=["2022-10-19T11:45:34Z"])
     ] = None
     basis_gates: Annotated[
         list[str] | None,
@@ -131,3 +131,16 @@ class DeviceBase(BaseModel):
     description: Annotated[
         str | None, Field(examples=["Superconducting quantum computer"])
     ] = None
+
+
+class DeviceInfoUploadPresignedURL(BaseModel):
+    """
+    Presigned URL for uploading device_info.zip to OQTOPUS cloud.
+    """
+
+    url: Annotated[str, Field(examples=["https://oqtopus-cloud.s3.amazonaws.com/"])]
+    fields: dict[str, Any]
+
+
+class DeviceInfoUploadResponse(BaseModel):
+    presigned_url: DeviceInfoUploadPresignedURL
