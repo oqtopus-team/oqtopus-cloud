@@ -21,6 +21,8 @@ paths:
     $ref: ./paths/devices.yaml#/devices.device_status
   /devices/{device_id}/device_info:
     $ref: ./paths/devices.yaml#/devices.device_info
+  /devices/{device_id}/device_info/upload:
+    $ref: ./paths/devices.yaml#/devices.device_info.upload
   /jobs:
     $ref: ./paths/jobs.yaml#/jobs
   /jobs/{job_id}:

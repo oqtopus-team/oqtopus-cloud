@@ -122,11 +122,11 @@ devices.device_id:
           type: string
           example: "qulacs"
     requestBody:
-      description: "New calibration data"
+      description: "Updated device metadata"
       content:
         application/json:
           schema:
-            $ref: "../schemas/devices.yaml#/devices.DeviceBase"
+            $ref: "../schemas/devices.yaml#/devices.DevicePatch"
     responses:
       "200":
         description: Device's data updated
@@ -215,3 +215,50 @@ devices.device_id:
           application/json:
             schema:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error
+
+devices.device_info.upload:
+  get:
+    tags:
+    - devices
+    summary: "Generate a presigned URL to upload device_info"
+    description: "Generate a presigned URL to upload device_info for the selected device."
+    operationId: get_device_info_upload_url
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: device_id
+        description: "Device ID"
+        required: true
+        schema:
+          type: string
+          example: "qulacs"
+    responses:
+      "200":
+        description: Device_info upload URL generated
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoUploadResponse"
+      "401":
+        description: "Unauthorized"
+      "403":
+        description: "Not authorized"
+      "404":
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+            example:
+              message: Device not found
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+            example:
+              message: Internal server error

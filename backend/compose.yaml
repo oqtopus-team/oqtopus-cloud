@@ -42,7 +42,7 @@ x-api-common: &api-common
 
 services:
   db:
-    image: mysql:8.0
+    image: mysql:8.4
     platform: linux/x86_64
     environment:
       - MYSQL_DATABASE=main
@@ -51,7 +51,6 @@ services:
       - MYSQL_ROOT_PASSWORD=root
     volumes:
       - ./db/conf.d:/etc/mysql/conf.d
-      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - 3306:3306
 

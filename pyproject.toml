@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "1.6.0"
+version = "1.6.1"
 description = "OQTOPUS Cloud is a project that provides the architecture of cloud quantum computers as an open-source software (OSS). By using it in conjunction with various OSS provided by [@oqtopus-team](https://github.com/oqtopus-team), you can build a cloud quantum computer system."
 authors = [
     {name = "oqtopus-team", email = "oqtopus-team@googlegroups.com"}
@@ -57,6 +57,7 @@ DB_HOST="localhost"
 ENV="local"
 POWERTOOLS_METRICS_NAMESPACE="user-api"
 POWERTOOLS_SERVICE_NAME="user-api"
+COUNT_PENDING_JOBS_SINCE="10d"
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

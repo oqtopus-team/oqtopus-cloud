@@ -25,7 +25,6 @@ from oqtopus_cloud.provider.schemas.jobs import (
 )
 from pydantic.type_adapter import TypeAdapter
 from sqlalchemy.orm.session import Session
-from zoneinfo import ZoneInfo
 
 client = TestClient(app)
 
@@ -53,7 +52,6 @@ def _get_device_model():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
@@ -455,7 +453,8 @@ def test_update_job_status(
     assert model.status == JobStatus.succeeded
     assert model.output_files == json.dumps(["result", "transpile_result"])
     assert model.message == "job succeeded"
-    assert model.execution_time == 15.8
+    # execution_time is a Numeric(65,3) column -> Python Decimal; compare as float.
+    assert float(model.execution_time) == 15.8
     assert model.running_at == running_at
     assert model.ended_at is not None
 
@@ -473,7 +472,7 @@ def test_update_job_invalid_status_transitions(test_db: Session):
         "status": "running"
     }
     resp = client.patch(
-        f"/jobs/testjob1id/status",
+        "/jobs/testjob1id/status",
         content=json.dumps(body),
     )
     assert resp.status_code == 409
@@ -487,7 +486,7 @@ def test_update_job_invalid_status_transitions(test_db: Session):
         "status": "succeeded"
     }
     resp = client.patch(
-        f"/jobs/testjob1id/status",
+        "/jobs/testjob1id/status",
         content=json.dumps(body),
     )
     assert resp.status_code == 409

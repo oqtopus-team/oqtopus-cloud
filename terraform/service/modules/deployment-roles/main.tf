@@ -81,6 +81,7 @@ resource "aws_iam_role_policy" "auto_deployment_policy" {
         Action = [
           "iam:ListAccountAliases",
           "lambda:UpdateFunctionCode",
+        　"lambda:InvokeFunction",
           "lambda:TagResource",
           "lambda:CreateAlias",
           "lambda:UpdateAlias",
@@ -92,7 +93,6 @@ resource "aws_iam_role_policy" "auto_deployment_policy" {
       {
         # Publish the generated OpenAPI spec (deployment/<env> Makefile
         # `publish-*-schema-via-actions`) to the frontend-build bucket.
-        Sid      = "PublishOpenApiSpec"
         Effect   = "Allow"
         Action   = ["s3:PutObject"]
         Resource = "arn:aws:s3:::${var.product}-${var.org}-${var.env}-frontend-build/*"

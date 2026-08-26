@@ -1,6 +1,8 @@
 import datetime
+from typing import Optional
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, Integer, String, Text, text
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.models.base import (
@@ -30,16 +32,21 @@ class Announcement(Base, TimestampMixin):
     __tablename__ = "announcements"
 
     id: Mapped[int] = mapped_column(
-        Integer,
+        Integer().with_variant(BIGINT(unsigned=True), "mysql"),
         primary_key=True,
+        autoincrement=True,
     )
-    title: Mapped[str] = mapped_column(
-        String(255),
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    start_time: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(), nullable=True
     )
-    content: Mapped[str]
-    start_time: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
-    end_time: Mapped[datetime.datetime] = mapped_column(DateTimeTz())
+    end_time: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTimeTz(), nullable=True
+    )
     publishable: Mapped[bool] = mapped_column(
         Boolean,
+        nullable=False,
         default=False,
+        server_default=text("0"),
     )
