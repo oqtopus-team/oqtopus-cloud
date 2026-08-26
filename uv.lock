@@ -269,6 +269,7 @@ dependencies = [
     { name = "opentelemetry-instrumentation-logging" },
     { name = "opentelemetry-instrumentation-sqlalchemy" },
     { name = "opentelemetry-sdk" },
+    { name = "oqtopus-auth" },
     { name = "pydantic", extra = ["email"] },
     { name = "pyjwt" },
     { name = "pymysql" },
@@ -336,6 +337,7 @@ requires-dist = [
     { name = "opentelemetry-instrumentation-logging", specifier = ">=0.48b0" },
     { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.48b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.27.0" },
+    { name = "oqtopus-auth", editable = "../oqtopus-auth" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pymysql", specifier = ">=1.1.0" },
@@ -1536,6 +1538,48 @@ wheels = [
 ]
 
 [[package]]
+name = "oqtopus-auth"
+version = "0.2.0"
+source = { editable = "../oqtopus-auth" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pyjwt", extra = ["crypto"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.136.1" },
+    { name = "httpx", marker = "extra == 'client'", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.13.0" },
+]
+provides-extras = ["fastapi", "client"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=2.1.0" },
+    { name = "ruff", specifier = ">=0.15.15" },
+]
+docs = [
+    { name = "mkdocs", specifier = "<2.0" },
+    { name = "mkdocs-gen-files", specifier = ">=0.6.1" },
+    { name = "mkdocs-glightbox", specifier = ">=0.5.2" },
+    { name = "mkdocs-literate-nav", specifier = ">=0.6.3" },
+    { name = "mkdocs-macros-plugin", specifier = ">=1.5.0" },
+    { name = "mkdocs-material", specifier = ">=9.7.6" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
+    { name = "pymarkdownlnt", specifier = ">=0.9.37" },
+    { name = "pymdown-extensions", specifier = ">=10.21.3" },
+]
+test = [
+    { name = "fastapi", specifier = ">=0.136.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1734,11 +1778,16 @@ wheels = [
 
 [[package]]
 name = "pyjwt"
-version = "2.10.1"
+version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e7/46/bd74733ff231675599650d3e47f361794b22ef3e3770998dda30d3b63726/pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953", size = 87785, upload-time = "2024-11-28T03:43:29.933Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/81/58d0ac84e1ef3a3843791d6954d94c0b33d526c75eeb1efbce9d0a4c4077/pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423", size = 107515, upload-time = "2026-05-21T19:54:36.618Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/61/ad/689f02752eeec26aed679477e80e632ef1b682313be70793d798c1d5fc8f/PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb", size = 22997, upload-time = "2024-11-28T03:43:27.893Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/5e/ecf12fdb62546d64385c158514e9b2b671f7832108ef2ecd2020ce0af2d1/pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728", size = 31274, upload-time = "2026-05-21T19:54:35.362Z" },
+]
+
+[package.optional-dependencies]
+crypto = [
+    { name = "cryptography" },
 ]
 
 [[package]]

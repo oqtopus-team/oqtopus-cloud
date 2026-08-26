@@ -1,104 +1,74 @@
-"""Generic OIDC Bearer-token verification.
+"""OIDC Bearer-token verification for the OQTOPUS backend.
 
-This generalizes the Cognito-specific JWT verification that lived in the Lambda
-authorizer (``lambda_auth/lambda_function.py::_verify_id_token``) to any OIDC
-issuer -- Cognito, Keycloak, or anything else that exposes a JWKS endpoint.
+Thin adapter over the shared :mod:`oqtopus_auth` library. The backend resolves
+OIDC settings from environment variables (``OIDC_ISSUER`` / ``OIDC_JWKS_URL`` /
+``OIDC_AUDIENCE`` / ``OIDC_ALGORITHMS`` / ``OIDC_ALLOW_ANY_AUDIENCE``); this
+module maps them onto an ``oqtopus_auth.OidcProviderConfig`` and delegates the
+actual verification and scope handling to the library, so both the user- and
+machine-identity paths share one audited implementation.
 
-Configuration (environment variables):
-- ``OIDC_ISSUER``        (required) expected ``iss`` claim; also the base for
-                          JWKS/discovery when the explicit URLs are not set.
-- ``OIDC_JWKS_URL``      (optional) explicit JWKS endpoint. Useful when the
-                          issuer that appears in the token (browser-facing host,
-                          e.g. ``http://localhost:8080/...``) differs from the
-                          host reachable from this service (``http://keycloak:8080/...``).
-- ``OIDC_AUDIENCE``      (optional) expected ``aud``; when set, audience is
-                          verified, otherwise the ``aud`` check is skipped.
-- ``OIDC_ALGORITHMS``    (optional) comma-separated allow-list, default ``RS256``.
+Audience verification is fail-closed: ``OIDC_AUDIENCE`` must be set, or the
+operator must explicitly opt out with ``OIDC_ALLOW_ANY_AUDIENCE=true`` (which
+disables the ``aud`` check and allows tokens minted for other resources of the
+same issuer). Setting neither is a configuration error.
 """
 
-import json
 import os
-import urllib.request
-from functools import lru_cache
 
-import jwt
+from oqtopus_auth import (
+    OidcError,
+    OidcProviderConfig,
+    extract_scopes,
+    has_required_scope,
+)
+from oqtopus_auth import verify_bearer_token as _lib_verify_bearer_token
+from pydantic import ValidationError
 
-# Match the authorizer's JWKS fetch timeout so a stalled IdP fails fast.
-_JWKS_HTTP_TIMEOUT_SECONDS = 5
-_DISCOVERY_HTTP_TIMEOUT_SECONDS = 5
-
-
-class OidcError(Exception):
-    """Raised when a Bearer token cannot be verified."""
-
-
-@lru_cache(maxsize=8)
-def _jwks_client(jwks_url: str) -> "jwt.PyJWKClient":
-    # PyJWKClient caches signing keys internally; lru_cache keeps one client per
-    # URL so keys are not re-fetched on every request.
-    return jwt.PyJWKClient(jwks_url, timeout=_JWKS_HTTP_TIMEOUT_SECONDS)
+__all__ = [
+    "OidcError",
+    "extract_scopes",
+    "has_required_scope",
+    "verify_bearer_token",
+]
 
 
-@lru_cache(maxsize=8)
-def _discover_jwks_url(issuer: str) -> str:
-    """Resolve the JWKS URL from the issuer's OIDC discovery document."""
-    discovery_url = issuer.rstrip("/") + "/.well-known/openid-configuration"
-    try:
-        with urllib.request.urlopen(
-            discovery_url, timeout=_DISCOVERY_HTTP_TIMEOUT_SECONDS
-        ) as resp:
-            doc = json.loads(resp.read())
-        return doc["jwks_uri"]
-    except Exception as e:  # noqa: BLE001 - surface a single typed error
-        raise OidcError(f"OIDC discovery failed for {discovery_url}: {e}")
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in ("true", "1", "yes")
 
 
-def _resolve_jwks_url(issuer: str) -> str:
-    explicit = os.getenv("OIDC_JWKS_URL")
-    if explicit:
-        return explicit
-    return _discover_jwks_url(issuer)
-
-
-def verify_bearer_token(token: str) -> dict:
-    """Verify an OIDC JWT and return its (validated) claims.
-
-    Verifies signature (via JWKS), ``iss``, ``exp`` and -- when ``OIDC_AUDIENCE``
-    is configured -- ``aud``. Raises :class:`OidcError` on any failure.
-    """
+def _config_from_env() -> OidcProviderConfig:
     issuer = os.getenv("OIDC_ISSUER")
     if not issuer:
         raise OidcError("OIDC_ISSUER is not configured")
-
-    audience = os.getenv("OIDC_AUDIENCE")
-    algorithms = [
-        a.strip() for a in os.getenv("OIDC_ALGORITHMS", "RS256").split(",") if a.strip()
-    ]
-
-    jwks_url = _resolve_jwks_url(issuer)
-    try:
-        signing_key = _jwks_client(jwks_url).get_signing_key_from_jwt(token)
-    except Exception as e:  # noqa: BLE001
-        raise OidcError(f"Failed to get signing key from JWKS: {e}")
-
-    require = ["exp", "iss"]
-    options: dict = {"verify_iss": True, "verify_exp": True}
-    decode_kwargs: dict = {"issuer": issuer}
-    if audience:
-        require.append("aud")
-        options["verify_aud"] = True
-        decode_kwargs["audience"] = audience
-    else:
-        options["verify_aud"] = False
-    options["require"] = require
-
-    try:
-        return jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=algorithms,
-            options=options,
-            **decode_kwargs,
+    audience = os.getenv("OIDC_AUDIENCE") or None
+    allow_any_audience = _env_flag("OIDC_ALLOW_ANY_AUDIENCE")
+    # Fail-closed: never skip the aud check implicitly. Require an audience, or
+    # an explicit, deliberate opt-out.
+    if audience is None and not allow_any_audience:
+        raise OidcError(
+            "OIDC_AUDIENCE is not set; set it, or explicitly opt out of audience "
+            "verification with OIDC_ALLOW_ANY_AUDIENCE=true"
         )
-    except Exception as e:  # noqa: BLE001
-        raise OidcError(f"Bearer token verification failed: {e}")
+    algorithms = [
+        a.strip()
+        for a in os.getenv("OIDC_ALGORITHMS", "RS256").split(",")
+        if a.strip()
+    ]
+    try:
+        return OidcProviderConfig(
+            issuer=issuer,
+            jwks_url=os.getenv("OIDC_JWKS_URL") or None,
+            audience=audience,
+            allow_any_audience=allow_any_audience,
+            algorithms=algorithms,
+        )
+    except ValidationError as e:
+        raise OidcError(f"invalid OIDC configuration: {e}") from e
+
+
+def verify_bearer_token(token: str) -> dict:
+    """Verify an OIDC JWT against the env-configured issuer and return its claims.
+
+    Raises :class:`oqtopus_auth.OidcError` on any failure.
+    """
+    return _lib_verify_bearer_token(token, _config_from_env())

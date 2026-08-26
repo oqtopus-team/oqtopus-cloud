@@ -25,6 +25,7 @@ dependencies = [
   "pytest-env>=1.1.5",
   "fastapi-pagination>=0.12.32",
   "pyjwt>=2.10.1",
+  "oqtopus-auth>=0.2.0",
   "pytz>=2025.1",
   "types-pytz>=2025.1.0.20250204",
   "argon2-cffi>=23.1.0",
@@ -111,3 +112,7 @@ docs = [
 
 [tool.uv.sources]
 qubex = { git = "https://github.com/amachino/qubex.git", rev = "v1.2.12" }
+# Local dev source for the shared auth library. For container/Lambda builds,
+# replace with a published (PyPI) or git ref — a relative path is outside the
+# Docker build context.
+oqtopus-auth = { path = "../oqtopus-auth", editable = true }
