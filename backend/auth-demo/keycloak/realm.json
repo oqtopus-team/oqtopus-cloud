@@ -57,7 +57,20 @@
       ],
       "attributes": {
         "post.logout.redirect.uris": "+"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "user-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "oqtopus-user-api",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "clientId": "oqtopus-engine",

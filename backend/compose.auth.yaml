@@ -100,7 +100,10 @@ services:
       AUTH_MODE: oidc
       OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
       OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
-      OIDC_AUDIENCE: "oqtopus-oauth2-proxy"
+      # Resource-server audience: the access token carries aud=oqtopus-user-api
+      # via the realm's audience mapper (also added to the id token, so the
+      # API-only demo that forwards an id_token still passes the aud check).
+      OIDC_AUDIENCE: "oqtopus-user-api"
       OIDC_USERNAME_CLAIM: "email"
       AUTH_ENFORCE_STATUS: "true"
       # Login history is an AWS-only feature (CloudTrail); disable it in the

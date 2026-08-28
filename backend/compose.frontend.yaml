@@ -36,9 +36,11 @@ services:
       - --email-domain=*
       - --scope=openid email profile
       - --insecure-oidc-allow-unverified-email=true
-      # Return the id_token in the Authorization header of the auth subrequest
-      # so nginx can forward it to the backend.
+      # Expose both tokens on the auth subrequest response:
+      #  - id_token  in Authorization                 (used by /logout as id_token_hint)
+      #  - access_token in X-Auth-Request-Access-Token (forwarded to /api as Bearer)
       - --set-authorization-header=true
+      - --pass-access-token=true
       - --set-xauthrequest=true
       - --whitelist-domain=localhost:4200
       # Allow the post-sign_out redirect to Keycloak's end-session endpoint
