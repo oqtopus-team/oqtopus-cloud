@@ -42,3 +42,9 @@ variable "aws_account_id" {
   description = "AWS account ID"
   type        = string
 }
+
+variable "enable_terraform_deploy_role" {
+  description = "Create a GitHub Actions role allowed to run terraform apply (sandbox envs only)"
+  type        = bool
+  default     = false
+}
