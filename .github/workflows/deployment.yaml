@@ -130,7 +130,8 @@ jobs:
             --success="$SUCCESS" \
             --timestamp="$(date "+%Y-%m-%d %H:%M:%S")" \
             --run-url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --deploy-target="${{ matrix.deploy-target }}"
+            --deploy-target="${{ matrix.deploy-target }}" \
+            --env="dev"
         env:
           SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
           SLACK_CHANNEL_NAME: ${{ secrets.SLACK_CHANNEL_NAME }}
