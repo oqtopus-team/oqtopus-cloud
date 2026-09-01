@@ -1,3 +1,5 @@
+import logging
+
 import boto3
 import fsspec
 import pytest
@@ -209,6 +211,30 @@ def test_get_storage_seaweedfs_requires_every_setting(monkeypatch, missing):
 
     with pytest.raises(KeyError, match=missing):
         get_storage()
+
+
+def test_get_storage_local_minio_is_deprecated_but_still_works(monkeypatch, caplog):
+    """
+    Tests that the deprecated local:minio driver still connects to the
+    configured endpoint and warns, so an existing deployment survives the
+    upgrade
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "local:minio")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_BUCKET_NAME", "legacy-bucket")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_USERNAME", "minioadmin")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_PASSWORD", "minioadmin123")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_ENDPOINT_URL", "http://minio:9000")
+
+    with caplog.at_level(logging.WARNING):
+        storage = get_storage()
+
+    assert "deprecated" in caplog.text
+    assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
+    assert storage.fs_url == "s3://legacy-bucket"
+    assert storage.fs.client_kwargs["endpoint_url"] == "http://minio:9000"
+    assert storage.fs.key == "minioadmin"
+    assert storage.fs.secret == "minioadmin123"
 
 
 @patch("fsspec.filesystem")

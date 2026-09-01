@@ -79,6 +79,7 @@ resource "aws_lambda_function" "this" {
         var.storage_driver == "s3" ? var.storage_env_vars_s3 : {},
         var.storage_driver == "local" ? var.storage_env_vars_local : {},
         var.storage_driver == "seaweedfs" ? var.storage_env_vars_seaweedfs : {},
+        var.storage_driver == "local:minio" ? var.storage_env_vars_local_minio : {},
       ),
       var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
       var.sse_container_log_name != "" ? { SSE_CONTAINER_LOG_NAME = var.sse_container_log_name } : {},

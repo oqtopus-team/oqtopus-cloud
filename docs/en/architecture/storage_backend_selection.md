@@ -34,6 +34,10 @@ The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedf
 
 `FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, so no storage-layer code changes were needed. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings.
 
+### Migrating from `local:minio`
+
+The `local:minio` driver is deprecated but still works: its settings are read exactly as before, and it logs a warning on every use. To migrate, set `STORAGE_DRIVER` to `seaweedfs` and rename the `STORAGE_LOCAL_MINIO_*` settings to `STORAGE_SEAWEEDFS_*`; in Terraform, `storage_env_vars_local_minio` becomes `storage_env_vars_seaweedfs`. The old driver will be removed in a future release.
+
 ## Verifying the storage path
 
 A script is available for checking the storage after swapping the backend or updating its version. It is not needed for normal development.

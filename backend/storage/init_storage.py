@@ -113,11 +113,24 @@ def _seed_storage(storage: AbstractStorage) -> tuple[int, int]:
 
 def main() -> None:
     driver = os.environ.get("STORAGE_DRIVER", "s3")
-    if driver not in ("local", "seaweedfs"):
+    if driver not in ("local", "seaweedfs", "local:minio"):
         # Guard against accidentally writing seed objects to a real S3 bucket.
         print(
             f"⏭️  Skipping storage seed: STORAGE_DRIVER={driver!r} is not a "
-            "self-hosted driver (expected 'local' or 'seaweedfs')."
+            "self-hosted driver (expected 'local', 'seaweedfs', or the "
+            "deprecated 'local:minio')."
+        )
+        return
+
+    if driver == "local:minio" and not os.environ.get(
+        "STORAGE_LOCAL_MINIO_ENDPOINT_URL"
+    ):
+        # The deprecated driver reads its settings leniently: with no endpoint
+        # the S3 client falls back to AWS, and the seed would land in a real
+        # bucket.
+        print(
+            "⏭️  Skipping storage seed: STORAGE_DRIVER='local:minio' without "
+            "STORAGE_LOCAL_MINIO_ENDPOINT_URL would target AWS S3."
         )
         return
 

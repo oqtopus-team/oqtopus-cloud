@@ -136,11 +136,11 @@ variable "lambda_authorizer_alias" {
 variable "storage_driver" {
   type        = string
   default     = "s3"
-  description = "Storage driver. The value should be one of: `s3`, `local`, `seaweedfs`"
+  description = "Storage driver. The value should be one of: `s3`, `local`, `seaweedfs`, `local:minio` (deprecated)"
 
   validation {
-    condition     = contains(["s3", "local", "seaweedfs"], var.storage_driver)
-    error_message = "storage_driver must be one of: s3, local, seaweedfs. The `local:minio` driver was replaced by `seaweedfs`."
+    condition     = contains(["s3", "local", "seaweedfs", "local:minio"], var.storage_driver)
+    error_message = "storage_driver must be one of: s3, local, seaweedfs, local:minio."
   }
 }
 
@@ -159,6 +159,30 @@ variable "storage_env_vars_local" {
   })
   default     = null
   description = "The Lambda environment variables for local filesystem storage drivder."
+}
+
+variable "storage_env_vars_local_minio" {
+  type = object({
+    STORAGE_LOCAL_MINIO_BUCKET_NAME  = string
+    STORAGE_LOCAL_MINIO_USERNAME     = string
+    STORAGE_LOCAL_MINIO_PASSWORD     = string
+    STORAGE_LOCAL_MINIO_ENDPOINT_URL = string
+  })
+  default     = null
+  sensitive   = true
+  description = "Deprecated. The Lambda environment variables for the local MinIO storage driver, kept for existing deployments. Use `storage_env_vars_seaweedfs` instead."
+
+  validation {
+    condition     = var.storage_driver != "local:minio" || var.storage_env_vars_local_minio != null
+    error_message = "storage_env_vars_local_minio must be set when storage_driver is \"local:minio\"."
+  }
+
+  validation {
+    condition = var.storage_env_vars_local_minio == null || alltrue([
+      for value in values(var.storage_env_vars_local_minio) : trimspace(value) != ""
+    ])
+    error_message = "storage_env_vars_local_minio values must not be empty; the Lambda would start and only fail on its first storage call."
+  }
 }
 
 variable "storage_env_vars_seaweedfs" {
