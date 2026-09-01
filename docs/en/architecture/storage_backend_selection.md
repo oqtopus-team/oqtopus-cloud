@@ -32,11 +32,13 @@ SeaweedFS is also driven mainly by a single individual, so the ⑤ single-mainta
 
 The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which `backend/compose.yaml` starts for local development and which on-premises deployments run in place of AWS S3.
 
-`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, so no storage-layer code changes were needed. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings.
+`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, so no storage-layer code changes were needed. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings. The driver name records the backend this project runs and verifies against; nothing in the driver is specific to SeaweedFS. Another self-hosted S3-compatible backend, RustFS for example, is reached by pointing `STORAGE_SEAWEEDFS_ENDPOINT_URL` and the credentials at it.
 
 ### Migrating from `local:minio`
 
-The `local:minio` driver is deprecated but still works: its settings are read exactly as before, and it logs a warning on every use. To migrate, set `STORAGE_DRIVER` to `seaweedfs` and rename the `STORAGE_LOCAL_MINIO_*` settings to `STORAGE_SEAWEEDFS_*`; in Terraform, `storage_env_vars_local_minio` becomes `storage_env_vars_seaweedfs`. The old driver will be removed in a future release.
+The `local:minio` driver is deprecated but still works: its settings are read exactly as before, and it logs a warning on every use. To migrate, set `STORAGE_DRIVER` to `seaweedfs` and rename the `STORAGE_LOCAL_MINIO_*` settings to `STORAGE_SEAWEEDFS_*`; in Terraform, `storage_env_vars_local_minio` becomes `storage_env_vars_seaweedfs`.
+
+No removal date is set. The old driver stays until `seaweedfs` and `local:minio` have been shown to behave identically, so a deployment that has not migrated yet keeps working in the meantime.
 
 ## Verifying the storage path
 

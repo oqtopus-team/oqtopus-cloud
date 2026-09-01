@@ -32,11 +32,13 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 `seaweedfs` ドライバは [SeaweedFS](https://github.com/seaweedfs/seaweedfs) にオブジェクトを格納します。ローカル開発では `backend/compose.yaml` が起動し、オンプレ環境では AWS S3 の代わりに SeaweedFS を運用します。
 
-`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続するので、ストレージ層のコード変更は不要です。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。
+`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続するので、ストレージ層のコード変更は不要です。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。ドライバ名は本プロジェクトが実際に運用・検証しているバックエンドを表すもので、実装に SeaweedFS 固有の要素はありません。RustFS など他のセルフホスト S3 互換バックエンドを使う場合も、`STORAGE_SEAWEEDFS_ENDPOINT_URL` と認証情報の向き先を変えるだけで接続できます。
 
 ### `local:minio` からの移行
 
-`local:minio` ドライバは deprecated ですが、これまで通り動作します。設定の読み方は従来のままで、使用時に警告ログを出力します。移行するには `STORAGE_DRIVER` を `seaweedfs` に変更し、`STORAGE_LOCAL_MINIO_*` の設定を `STORAGE_SEAWEEDFS_*` に置き換えてください。Terraform では `storage_env_vars_local_minio` が `storage_env_vars_seaweedfs` になります。旧ドライバは将来のリリースで削除します。
+`local:minio` ドライバは deprecated ですが、これまで通り動作します。設定の読み方は従来のままで、使用時に警告ログを出力します。移行するには `STORAGE_DRIVER` を `seaweedfs` に変更し、`STORAGE_LOCAL_MINIO_*` の設定を `STORAGE_SEAWEEDFS_*` に置き換えてください。Terraform では `storage_env_vars_local_minio` が `storage_env_vars_seaweedfs` になります。
+
+削除時期は未定です。`seaweedfs` と `local:minio` の挙動が同一であることを確認できるまで旧ドライバは残すため、移行していないデプロイもそれまでは動作し続けます。
 
 ## ストレージ経路の確認
 

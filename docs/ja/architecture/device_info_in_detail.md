@@ -20,7 +20,7 @@ devices/<device_id>/device_info.zip
 | `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDK | デバイス JSON payload | 現在 storage-backed なデバイス payload はこれだけです。 |
 
 デフォルトのストレージドライバーは S3 です。
-ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントは archive をストレージバックエンドへ直接転送します。
+オンプレ環境やローカル開発では `local` や `seaweedfs` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントは archive をストレージバックエンドへ直接転送します。
 
 OpenAPI レベルでは、`device_info.zip` の中身の payload format は構造化 schema としては規定されていません。Admin 側の request model では `device_info` を JSON 文字列として扱い、read 側 API では `device_info` を presigned download URL を入れた文字列 field として返します。
 

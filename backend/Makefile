@@ -114,7 +114,7 @@ run-worker:
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB, apply migrations, seed data, and init storage
-	@docker compose up -d db minio otel-collector mc
+	@docker compose up -d db seaweedfs otel-collector seaweedfs-bucket-init
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
 	@# fresh volume MySQL first runs a socket-only temporary server for init,
@@ -124,6 +124,11 @@ up: ## Start the DB, apply migrations, seed data, and init storage
 	@echo "MySQL ready, applying Alembic migrations..."
 	@$(MAKE) migrate-up
 	@$(MAKE) seed
+	@# seaweedfs-bucket-init is a one-shot that creates the bucket once the S3
+	@# gateway is healthy, and `up -d` returns without waiting for it. Seeding
+	@# storage before it finishes would write into a bucket that does not exist
+	@# yet, so wait for it to exit first.
+	@docker compose wait seaweedfs-bucket-init >/dev/null
 	@if [ -f storage/init_storage.py ]; then uv run python storage/init_storage.py; fi
 
 seed: ## Seed the local DB with test data (idempotent)

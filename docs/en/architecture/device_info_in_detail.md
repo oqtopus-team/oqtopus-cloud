@@ -19,7 +19,7 @@ The object key is fixed by the backend. Clients conventionally upload a zip cont
 | --- | --- | --- | --- | --- | --- |
 | `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDKs | Device JSON payload | The only storage-backed device payload currently supported. |
 
-The default storage driver is S3. Local development can use `local` or `local:minio`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and clients transfer the archive directly to the storage backend.
+The default storage driver is S3. Self-hosted deployments and local development can use `local` or `seaweedfs`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and clients transfer the archive directly to the storage backend.
 
 At the OpenAPI level, the payload format inside `device_info.zip` is not defined as a structured schema. Admin-side request models treat `device_info` as a JSON string, while read-side APIs expose `device_info` as a string field containing a presigned download URL.
 
