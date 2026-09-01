@@ -101,6 +101,43 @@ services:
     entrypoint: /bin/sh
     command: -c "echo 's3.bucket.create -name oqtopus-oqtopus-dev' | weed shell -master=seaweedfs:9333"
 
+  # Deprecated MinIO stack, kept so the `local:minio` driver stays runnable
+  # until it is removed (see docs/*/architecture/storage_backend_selection.md).
+  # Behind a compose profile, so it is opt-in and the default stack never pulls
+  # these archived images: start it with `make up STORAGE_STACK=minio`.
+  # It maps the same host ports as seaweedfs above (9001), so the two stacks
+  # cannot run at the same time.
+  minio:
+    profiles: ["minio"]
+    image: quay.io/minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+
+  mc:
+    profiles: ["minio"]
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin && \
+      mc mb --ignore-existing local/oqtopus-oqtopus-dev && \
+      echo '✅ Bucket created (or already exists)'"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: oqtopus-otel-collector
@@ -131,3 +168,4 @@ services:
 
 volumes:
   seaweedfs-data:
+  minio-data:

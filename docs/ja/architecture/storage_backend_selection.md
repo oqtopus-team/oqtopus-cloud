@@ -40,6 +40,19 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 削除時期は未定です。`seaweedfs` と `local:minio` の挙動が同一であることを確認できるまで旧ドライバは残すため、移行していないデプロイもそれまでは動作し続けます。
 
+### 非推奨の MinIO スタックをローカルで起動する
+
+`backend/compose.yaml` には MinIO のサービスが compose profile 付きで残してあります。明示的に指定しない限り起動しません。起動できないドライバは削除前の確認ができないため、ドライバを削除するまでは残します。
+
+```bash
+cd backend
+make up STORAGE_STACK=minio                   # MySQL + MinIO、マイグレーションとシード
+make run-user STORAGE_STACK=minio             # この構成で API を起動
+make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレージ確認
+```
+
+`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、同時には起動できません。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+
 ## ストレージ経路の確認
 
 ストレージを差し替えたときや、バージョンを更新したあとの確認用にスクリプトを用意しています。通常の開発では不要です。

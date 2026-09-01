@@ -408,7 +408,8 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
         )
         for operation in ("POST", "GET")
     ]
-    label = args.label or os.environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"]
+    endpoint, bucket = storage_endpoint_and_bucket()
+    label = args.label or endpoint
     print(
         "\nBackend | Operation | Size | Workers | Ops/s | MiB/s | p50 ms | "
         "p95 ms | p99 ms | Errors"
@@ -428,8 +429,8 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
         report = {
             "created_at": datetime.now(timezone.utc).isoformat(),
             "label": label,
-            "endpoint": os.environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"],
-            "bucket": os.environ["STORAGE_SEAWEEDFS_BUCKET_NAME"],
+            "endpoint": endpoint,
+            "bucket": bucket,
             "parameters": {
                 "count": args.count,
                 "workers": args.workers,
@@ -453,12 +454,28 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
         print(f"JSON {args.output_json}")
 
 
+def storage_endpoint_and_bucket() -> tuple[str, str]:
+    """Report where the objects went, for whichever self-hosted driver is set."""
+
+    if os.environ.get("STORAGE_DRIVER") == "local:minio":
+        return (
+            os.environ["STORAGE_LOCAL_MINIO_ENDPOINT_URL"],
+            os.environ["STORAGE_LOCAL_MINIO_BUCKET_NAME"],
+        )
+    return (
+        os.environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"],
+        os.environ["STORAGE_SEAWEEDFS_BUCKET_NAME"],
+    )
+
+
 def run(args: argparse.Namespace) -> None:
     validate_args(args)
-    if os.environ.get("STORAGE_DRIVER") != "seaweedfs":
+    driver = os.environ.get("STORAGE_DRIVER")
+    if driver not in ("seaweedfs", "local:minio"):
         raise RuntimeError(
-            "This check only runs with STORAGE_DRIVER=seaweedfs to avoid "
-            "writing test objects to production S3."
+            "This check only runs with STORAGE_DRIVER=seaweedfs or "
+            "STORAGE_DRIVER=local:minio to avoid writing test objects to "
+            "production S3."
         )
 
     storage = get_storage()
@@ -472,7 +489,7 @@ def main() -> None:
     try:
         run(parse_args())
     except KeyError as error:
-        # get_storage() reads the STORAGE_SEAWEEDFS_* settings with environ[].
+        # get_storage() reads the driver's settings with environ[].
         print(f"FAIL missing environment variable: {error}", file=sys.stderr)
         raise SystemExit(1) from error
     except (ValueError, RuntimeError, requests.RequestException) as error:

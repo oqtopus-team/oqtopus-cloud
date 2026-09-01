@@ -4,6 +4,7 @@ import pytest
 
 from scripts.check_presigned_post import (
     RoundResult,
+    run,
     TransferResult,
     create_round_result,
     ensure_transfers_succeeded,
@@ -144,3 +145,34 @@ def test_create_round_result_counts_errors() -> None:
     assert round_result.errors == 2
     assert round_result.operations_per_second == pytest.approx(2)
     assert round_result.mebibytes_per_second == pytest.approx(2)
+
+
+@pytest.mark.parametrize("driver", ["seaweedfs", "local:minio"])
+def test_run_accepts_the_self_hosted_drivers(monkeypatch, driver) -> None:
+    """
+    Both self-hosted drivers are checkable: `local:minio` is deprecated, but it
+    stays runnable so its behaviour can be compared against seaweedfs
+    """
+
+    checked = []
+    monkeypatch.setenv("STORAGE_DRIVER", driver)
+    monkeypatch.setattr("scripts.check_presigned_post.get_storage", lambda: "storage")
+    monkeypatch.setattr(
+        "scripts.check_presigned_post.run_check",
+        lambda args, storage: checked.append(storage),
+    )
+
+    run(make_args(benchmark=False))
+
+    assert checked == ["storage"]
+
+
+def test_run_rejects_the_s3_driver(monkeypatch) -> None:
+    """
+    The check writes and deletes objects, so it must never target real S3
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "s3")
+
+    with pytest.raises(RuntimeError, match="production S3"):
+        run(make_args(benchmark=False))

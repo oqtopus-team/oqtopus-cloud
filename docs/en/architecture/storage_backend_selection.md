@@ -40,6 +40,19 @@ The `local:minio` driver is deprecated but still works: its settings are read ex
 
 No removal date is set. The old driver stays until `seaweedfs` and `local:minio` have been shown to behave identically, so a deployment that has not migrated yet keeps working in the meantime.
 
+### Running the deprecated MinIO stack locally
+
+`backend/compose.yaml` still carries the MinIO services, behind a compose profile so nothing starts them unless they are asked for. A driver that cannot be started cannot be checked before it is dropped, so it stays until the driver does.
+
+```bash
+cd backend
+make up STORAGE_STACK=minio                   # MySQL + MinIO, migrations and seed data
+make run-user STORAGE_STACK=minio             # run an API against it
+make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
+```
+
+`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so run one at a time. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+
 ## Verifying the storage path
 
 A script is available for checking the storage after swapping the backend or updating its version. It is not needed for normal development.

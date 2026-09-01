@@ -75,11 +75,28 @@ export USER_API_PORT ?= 8080
 export PROVIDER_API_PORT ?= 8888
 export ADMIN_API_PORT ?= 8889
 export USER_SIGNUP_API_PORT ?= 8890
+# Which local object storage to run against. `minio` selects the deprecated
+# stack, kept runnable until the `local:minio` driver is removed.
+STORAGE_STACK ?= seaweedfs
+ifeq ($(STORAGE_STACK),minio)
+STORAGE_SERVICES = minio mc
+STORAGE_INIT_SERVICE = mc
+STORAGE_LABEL = MinIO
+export STORAGE_DRIVER=local:minio
+export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
+export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
+export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+else
+STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
+STORAGE_INIT_SERVICE = seaweedfs-bucket-init
+STORAGE_LABEL = SeaweedFS
 export STORAGE_DRIVER=seaweedfs
 export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_SEAWEEDFS_USERNAME=devadmin
 export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
 export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
+endif
 export ALLOW_DELETION=true # flag to control whether users can delete their accounts
 export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
 export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
@@ -113,8 +130,8 @@ run-worker:
 	export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
-up: ## Start the DB, apply migrations, seed data, and init storage
-	@docker compose up -d db seaweedfs otel-collector seaweedfs-bucket-init
+up: ## Start the DB, apply migrations, seed data, and init storage (STORAGE_STACK=seaweedfs|minio)
+	@docker compose --profile $(STORAGE_STACK) up -d db $(STORAGE_SERVICES) otel-collector
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
 	@# fresh volume MySQL first runs a socket-only temporary server for init,
@@ -124,25 +141,24 @@ up: ## Start the DB, apply migrations, seed data, and init storage
 	@echo "MySQL ready, applying Alembic migrations..."
 	@$(MAKE) migrate-up
 	@$(MAKE) seed
-	@# seaweedfs-bucket-init is a one-shot that creates the bucket once the S3
-	@# gateway is healthy, and `up -d` returns without waiting for it. Seeding
-	@# storage before it finishes would write into a bucket that does not exist
-	@# yet, so wait for it to exit first.
-	@docker compose wait seaweedfs-bucket-init >/dev/null
+	@# The bucket is created by a one-shot service, and `up -d` returns without
+	@# waiting for it. Seeding storage before it finishes would write into a
+	@# bucket that does not exist yet, so wait for it to exit first.
+	@docker compose --profile $(STORAGE_STACK) wait $(STORAGE_INIT_SERVICE) >/dev/null
 	@if [ -f storage/init_storage.py ]; then uv run python storage/init_storage.py; fi
 
 seed: ## Seed the local DB with test data (idempotent)
 	@uv run python scripts/seed.py
 
 down: ## Stop the DB
-	@docker compose down
+	@docker compose --profile minio down
 
 PRESIGNED_POST_COUNT ?= 100
 PRESIGNED_POST_WORKERS ?= 10
 PRESIGNED_POST_PAYLOAD_BYTES ?= 4096
 PRESIGNED_POST_ROUNDS ?= 3
 PRESIGNED_POST_WARMUP_ROUNDS ?= 1
-PRESIGNED_POST_LABEL ?= SeaweedFS
+PRESIGNED_POST_LABEL ?= $(STORAGE_LABEL)
 PRESIGNED_POST_OUTPUT_JSON ?= benchmark-results/presigned-storage.json
 check-presigned-post: ## Run concurrent presigned POST E2E against local SeaweedFS
 	@uv run python scripts/check_presigned_post.py \
