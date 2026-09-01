@@ -477,6 +477,26 @@ def run(args: argparse.Namespace) -> None:
             "STORAGE_DRIVER=local:minio to avoid writing test objects to "
             "production S3."
         )
+    if driver == "local:minio":
+        # That driver reads its settings leniently, so an incomplete
+        # configuration resolves to AWS S3 instead of failing -- and this check
+        # uploads and deletes objects. seaweedfs fails on its own in
+        # get_storage(), which reads the settings with environ[].
+        missing = [
+            name
+            for name in (
+                "STORAGE_LOCAL_MINIO_BUCKET_NAME",
+                "STORAGE_LOCAL_MINIO_USERNAME",
+                "STORAGE_LOCAL_MINIO_PASSWORD",
+                "STORAGE_LOCAL_MINIO_ENDPOINT_URL",
+            )
+            if not os.environ.get(name)
+        ]
+        if missing:
+            raise RuntimeError(
+                "Incomplete local:minio configuration would target production "
+                "S3. Missing: " + ", ".join(missing)
+            )
 
     storage = get_storage()
     if args.benchmark:

@@ -160,7 +160,7 @@ PRESIGNED_POST_ROUNDS ?= 3
 PRESIGNED_POST_WARMUP_ROUNDS ?= 1
 PRESIGNED_POST_LABEL ?= $(STORAGE_LABEL)
 PRESIGNED_POST_OUTPUT_JSON ?= benchmark-results/presigned-storage.json
-check-presigned-post: ## Run concurrent presigned POST E2E against local SeaweedFS
+check-presigned-post: ## Run concurrent presigned POST E2E against the local storage stack
 	@uv run python scripts/check_presigned_post.py \
 		--count $(PRESIGNED_POST_COUNT) \
 		--workers $(PRESIGNED_POST_WORKERS) \

@@ -147,6 +147,14 @@ def test_create_round_result_counts_errors() -> None:
     assert round_result.mebibytes_per_second == pytest.approx(2)
 
 
+MINIO_ENV = {
+    "STORAGE_LOCAL_MINIO_BUCKET_NAME": "test-bucket",
+    "STORAGE_LOCAL_MINIO_USERNAME": "minioadmin",
+    "STORAGE_LOCAL_MINIO_PASSWORD": "minioadmin",
+    "STORAGE_LOCAL_MINIO_ENDPOINT_URL": "http://localhost:9000",
+}
+
+
 @pytest.mark.parametrize("driver", ["seaweedfs", "local:minio"])
 def test_run_accepts_the_self_hosted_drivers(monkeypatch, driver) -> None:
     """
@@ -156,6 +164,8 @@ def test_run_accepts_the_self_hosted_drivers(monkeypatch, driver) -> None:
 
     checked = []
     monkeypatch.setenv("STORAGE_DRIVER", driver)
+    for name, value in MINIO_ENV.items():
+        monkeypatch.setenv(name, value)
     monkeypatch.setattr("scripts.check_presigned_post.get_storage", lambda: "storage")
     monkeypatch.setattr(
         "scripts.check_presigned_post.run_check",
@@ -175,4 +185,19 @@ def test_run_rejects_the_s3_driver(monkeypatch) -> None:
     monkeypatch.setenv("STORAGE_DRIVER", "s3")
 
     with pytest.raises(RuntimeError, match="production S3"):
+        run(make_args(benchmark=False))
+
+
+def test_run_rejects_an_incomplete_local_minio_configuration(monkeypatch) -> None:
+    """
+    The deprecated driver reads its settings leniently, so a missing endpoint
+    would send these uploads and deletes to real S3
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "local:minio")
+    for name, value in MINIO_ENV.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.delenv("STORAGE_LOCAL_MINIO_ENDPOINT_URL")
+
+    with pytest.raises(RuntimeError, match="STORAGE_LOCAL_MINIO_ENDPOINT_URL"):
         run(make_args(benchmark=False))
