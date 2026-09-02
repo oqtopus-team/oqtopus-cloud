@@ -51,7 +51,7 @@ make run-user STORAGE_STACK=minio             # この構成で API を起動
 make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレージ確認
 ```
 
-`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、同時には起動できません。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、同時には起動できません。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、このスタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
 
 ## ストレージ経路の確認
 

@@ -107,6 +107,8 @@ On the first run, DB initialization (table creation and test data insertion) is 
 
 `make up` starts the containers in the background and exits. Stop them with `make down`.
 
+To start the deprecated MinIO stack instead, use `make up STORAGE_STACK=minio`. See [Storage Backend Selection](../architecture/storage_backend_selection.md).
+
 ### 2. Start the APIs
 
 > [!NOTE]

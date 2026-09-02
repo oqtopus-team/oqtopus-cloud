@@ -51,7 +51,7 @@ make run-user STORAGE_STACK=minio             # run an API against it
 make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
 ```
 
-`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so run one at a time. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so run one at a time. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for this stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
 
 ## Verifying the storage path
 

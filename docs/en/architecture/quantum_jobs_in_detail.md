@@ -27,7 +27,7 @@ The supported `.zip` object names are fixed by the backend. Each zip conventiona
 | `result.zip` | `result.json` | Provider | User | JSON matching `jobs.S3JobResult` | Job result. |
 | `sse_log.zip` | `sse_log.log` | Provider | User | JSON string payload containing the SSE log text | Only accepted for `sse` jobs. |
 
-The default storage driver is S3. Self-hosted deployments and local development can use `local` or `seaweedfs`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and the client transfers files directly to the storage backend.
+The default storage driver is S3. Self-hosted deployments and local development can use `local` or `seaweedfs` — the deprecated `local:minio` is still accepted — but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and the client transfers files directly to the storage backend.
 
 For the current storage-backed format, client-side archive entries conventionally use `<object-stem>.json`, except SSE logs, which conventionally use a `.log` entry.
 

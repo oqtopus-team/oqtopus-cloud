@@ -49,9 +49,8 @@ def get_storage() -> AbstractStorage:
             # Logged rather than raised as a DeprecationWarning, which Python
             # suppresses by default and an operator would never see.
             logger.warning(
-                "STORAGE_DRIVER='local:minio' is deprecated and will be removed "
-                "in a future release. Switch to STORAGE_DRIVER='seaweedfs' and "
-                "the STORAGE_SEAWEEDFS_* settings."
+                "STORAGE_DRIVER='local:minio' is deprecated. Switch to "
+                "STORAGE_DRIVER='seaweedfs' and the STORAGE_SEAWEEDFS_* settings."
             )
             minio_bucket_name = environ.get("STORAGE_LOCAL_MINIO_BUCKET_NAME")
             minio_username = environ.get("STORAGE_LOCAL_MINIO_USERNAME")

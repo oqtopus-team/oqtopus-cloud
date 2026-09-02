@@ -106,6 +106,8 @@ MySQL (ポート3306) と SeaweedFS (S3 APIポート8333、Web UIポート9333/9
 
 `make up` はコンテナをバックグラウンドで起動して終了します。停止するときは `make down` を実行してください。
 
+非推奨の MinIO スタックを起動する場合は `make up STORAGE_STACK=minio` を使います。[ストレージバックエンドの選定](../architecture/storage_backend_selection.md) を参照してください。
+
 ### 2. APIの起動
 
 > [!NOTE]
