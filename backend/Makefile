@@ -78,8 +78,10 @@ export USER_SIGNUP_API_PORT ?= 8890
 # Which local object storage to run against. `minio` selects the deprecated
 # stack, kept runnable until the `local:minio` driver is removed.
 STORAGE_STACK ?= seaweedfs
-ifeq ($(filter $(STORAGE_STACK),seaweedfs minio),)
+ifneq ($(STORAGE_STACK),seaweedfs)
+ifneq ($(STORAGE_STACK),minio)
 $(error STORAGE_STACK must be seaweedfs or minio, got '$(STORAGE_STACK)')
+endif
 endif
 ifeq ($(STORAGE_STACK),minio)
 STORAGE_SERVICES = minio mc
