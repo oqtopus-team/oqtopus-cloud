@@ -15,35 +15,41 @@ variable "env" {
 
 variable "resource_arn_list" {
   description = "list of ARN of the resources to associate WAF with (like API Gateway)"
-  type = list(string)
+  type        = list(string)
 }
 
 variable "enable_common_rules" {
   description = "flag for enabling/disabling common rules WAF rule"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
+}
+
+variable "common_rules_excluded_rules" {
+  description = "list of rule names in AWSManagedRulesCommonRuleSet to override to Count"
+  type        = list(string)
+  default     = []
 }
 
 variable "enable_rate_limiting" {
   description = "flag for enabling/disabling rate limiting WAF rule"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "rate_limit" {
   description = "maximum number of requests, which have an identical value in the field specified by the RateKey, allowed in a five-minute period. Minimum value is 100"
-  type = number
-  default = 1000
+  type        = number
+  default     = 1000
 }
 
 variable "cloudwatch_metrics_enabled" {
   description = "flag for enabling/disabling sending WAF metrics to cloudwatch"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "sampled_requests_enabled" {
   description = "flag for enabling/disabling storing sample requests in WAF for analysis"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
