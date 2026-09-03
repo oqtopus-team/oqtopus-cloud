@@ -261,7 +261,7 @@ def update_job_status(
                     f"The specified job is not a status that allows transition to the status: {request.status}"
                 )
         elif request.status == JobStatus.failed:
-            if model_status not in [JobStatus.ready, JobStatus.running]:
+            if model_status not in [JobStatus.ready, JobStatus.running, JobStatus.cancelling]:
                 return ConflictErrorResponse(
                     f"The specified job is not a status that allows transition to the status: {request.status}"
                 )
@@ -269,7 +269,7 @@ def update_job_status(
             JobStatus.succeeded,
             JobStatus.cancelled,
         ]:
-            if model_status != JobStatus.running:
+            if model_status not in [JobStatus.running, JobStatus.cancelling]:
                 return ConflictErrorResponse(
                     f"The specified job is not a status that allows transition to the status: {request.status}"
                 )
