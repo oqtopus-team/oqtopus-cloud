@@ -45,7 +45,7 @@ module "db" {
   db_name                         = "main"
   user_name                       = var.db_user_name
   db_proxy_security_group_ids     = module.security_group.db_proxy_security_group_ids
-  db_instance_class               = "db.t4g.medium"
+  db_instance_class               = var.db_instance_class
   db_multi_az                     = true
   db_performance_insights_enabled = true
 }

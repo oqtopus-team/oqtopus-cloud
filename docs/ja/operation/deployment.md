@@ -98,6 +98,8 @@ org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 
+db_instance_class = "db.t4g.small"
+
 enable_guardduty               = false
 enable_guardduty_s3_protection = false
 ```

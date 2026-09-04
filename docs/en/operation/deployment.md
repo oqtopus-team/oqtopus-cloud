@@ -95,6 +95,8 @@ org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 
+db_instance_class = "db.t4g.small"
+
 vpc_flow_log_retention_days = 14
 s3_logs_expiration_days = 365
 s3_logs_transition_days_standard_ia = 30

@@ -52,6 +52,12 @@ variable "db_user_name" {
   sensitive = true
 }
 
+variable "db_instance_class" {
+  description = "RDS instance class, e.g. db.t4g.small or db.t4g.medium"
+  type        = string
+  default     = "db.t4g.small"
+}
+
 variable "vpc_flow_log_retention_days" {
   description = "Number of days for which VPC flow logs are retained"
   type        = number
