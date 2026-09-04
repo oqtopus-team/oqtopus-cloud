@@ -23,6 +23,12 @@ variable "db_user_name" {
   type        = string
 }
 
+variable "db_instance_class" {
+  description = "RDS instance class, e.g. db.t4g.small or db.t4g.medium"
+  type        = string
+  default     = "db.t4g.medium"
+}
+
 variable "profile" {
   description = "aws profile"
   type        = string
