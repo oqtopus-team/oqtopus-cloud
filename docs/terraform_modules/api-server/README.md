@@ -123,6 +123,7 @@ module "user_api" {
 | <a name="input_login_history_enabled"></a> [login\_history\_enabled](#input\_login\_history\_enabled) | Flag to control whether user login history should be included in GET user API response | `string` | `"false"` | no |
 | <a name="input_manage_cognito_user_pool"></a> [manage\_cognito\_user\_pool](#input\_manage\_cognito\_user\_pool) | Set `true` if the module should manage the Cognito user pool | `bool` | `false` | no |
 | <a name="input_org"></a> [org](#input\_org) | organization name | `string` | n/a | yes |
+| <a name="input_otel_collector_layer_arn"></a> [otel\_collector\_layer\_arn](#input\_otel\_collector\_layer\_arn) | OTel Lambda collector layer ARN. When set, the app exports to the layer's in-environment collector, which forwards to otel\_exporter\_otlp\_endpoint off the response path (decouple processor). Empty = direct export. | `string` | `""` | no |
 | <a name="input_otel_enabled"></a> [otel\_enabled](#input\_otel\_enabled) | Enable OpenTelemetry tracing for this Lambda. | `bool` | `false` | no |
 | <a name="input_otel_exporter_otlp_endpoint"></a> [otel\_exporter\_otlp\_endpoint](#input\_otel\_exporter\_otlp\_endpoint) | OTLP HTTP endpoint when otel\_enabled = true (e.g. http://10.3.2.5:34318). | `string` | `""` | no |
 | <a name="input_power_tools_metrics_namespace"></a> [power\_tools\_metrics\_namespace](#input\_power\_tools\_metrics\_namespace) | The namespace for the PowerTools metrics | `string` | n/a | yes |
