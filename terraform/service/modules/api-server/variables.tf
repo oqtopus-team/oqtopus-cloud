@@ -121,6 +121,20 @@ variable "manage_cognito_user_pool" {
   default     = false
 }
 
+variable "lambda_authorizer_cache_ttl_seconds" {
+  description = "TTL in seconds for the Lambda authorizer result cache. Set to 0 to disable caching."
+  type        = number
+  default     = 300
+
+  validation {
+    condition = (
+      var.lambda_authorizer_cache_ttl_seconds >= 0 &&
+      var.lambda_authorizer_cache_ttl_seconds <= 3600
+    )
+    error_message = "lambda_authorizer_cache_ttl_seconds must be between 0 and 3600."
+  }
+}
+
 variable "lambda_authorizer_arn" {
   type        = string
   default     = ""

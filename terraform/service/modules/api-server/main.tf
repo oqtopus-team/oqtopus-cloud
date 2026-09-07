@@ -354,12 +354,17 @@ resource "aws_api_gateway_deployment" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
   triggers = {
     code_hash = md5(file("../modules/api-server/main.tf"))
+    # Redeploy when Lambda authorizer cache TTL changes.
+    authorizer_redeployment = sha1(jsonencode({
+      cache_ttl_seconds = var.lambda_authorizer_cache_ttl_seconds
+    }))
   }
   lifecycle {
     create_before_destroy = true
   }
   depends_on = [
     aws_api_gateway_integration.this,
+    aws_api_gateway_authorizer.lambda,
   ]
 }
 
@@ -515,8 +520,8 @@ resource "aws_api_gateway_authorizer" "lambda" {
   name                             = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
   rest_api_id                      = aws_api_gateway_rest_api.this.id
   type                             = "REQUEST"
-  identity_source                  = ""
-  authorizer_result_ttl_in_seconds = 0
+  identity_source                  = "method.request.header.Authorization"
+  authorizer_result_ttl_in_seconds = var.lambda_authorizer_cache_ttl_seconds
   authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}/invocations"
 }
 

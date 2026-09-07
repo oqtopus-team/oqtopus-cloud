@@ -46,3 +46,11 @@ profile = "myprofile-tf"
 After running `terraform init -backend-config=oqtopus-dev.tfbackend -reconfigure` under `terraform/infrastructure/oqtopus-dev`, you can execute `terraform plan` to run Terraform with MFA authentication.
 
 See details in here: [Terraform AWS Provider Issue #2420](https://github.com/hashicorp/terraform-provider-aws/issues/2420#issuecomment-1899137746)
+
+Q. When using `q-api-token` with Lambda authorizer authentication, is the `authorization` header optional?
+
+A. No. Due to Lambda authorizer cache key behavior, the `authorization` header is required even when using `q-api-token`. Set the same value in both `authorization` and `q-api-token`.
+
+Q. Is there anything to consider when setting the Resource in a Policy Document with Lambda authorizer caching enabled?
+
+A. When caching is enabled, API Gateway reuses the generated Policy Document for subsequent requests. If access to the entire API is allowed, the Resource must cover all resources and HTTP methods within the target stage. Reference: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html

@@ -8,6 +8,8 @@ from oqtopus_cloud.lambda_auth.lambda_function import (
     AuthError,
     _generate_policy_allow,
     _generate_policy_deny,
+    _generate_stage_resource_arn,
+    _validate_headers_for_api_token,
     _verify_api_token,
     _verify_id_token,
     lambda_handler,
@@ -104,6 +106,57 @@ def _get_model(n: int, expiration_day=90, status=UserStatus.approved) -> User:
         + timedelta(days=expiration_day),
     }
     return User(**model_dict)
+
+
+def test__validate_headers_for_api_token_success():
+    headers = {
+        "q-api-token": "token-value",
+        "authorization": "token-value",
+    }
+
+    _validate_headers_for_api_token(headers)
+
+
+def test__validate_headers_for_authorization_missing_header():
+    headers = {
+        "q-api-token": "token-value",
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authentication header is missing" in str(excinfo.value)
+
+def test__validate_headers_for_q_api_token_missing_header():
+    headers = {
+        "authorization": "token-value",
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authentication header is missing" in str(excinfo.value)
+
+def test__validate_headers_for_both_headers_missing():
+    headers = {
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authentication header is missing" in str(excinfo.value)
+
+
+def test__validate_headers_for_api_token_mismatch():
+    headers = {
+        "q-api-token": "token-value",
+        "authorization": "another-value",
+    }
+
+    with pytest.raises(AuthError) as excinfo:
+        _validate_headers_for_api_token(headers)
+
+    assert "Authorization and q-api-token do not match" in str(excinfo.value)
 
 
 def test__verify_id_token(test_session, monkeypatch):
@@ -358,10 +411,36 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
 
-def test__generate_policy_allow():
-    actual = _generate_policy_allow(
-        "fake_username1", 'event["methodArn"]1', "fake_username1"
+def test__generate_stage_resource_arn():
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/GET/foo"
+
+    actual = _generate_stage_resource_arn(method_arn)
+
+    assert (
+        actual
+        == "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/*/*"
     )
+
+
+def test__generate_stage_resource_arn_invalid_arn_format():
+    with pytest.raises(AuthError) as excinfo:
+        _generate_stage_resource_arn("invalid-method-arn")
+
+    assert "Invalid methodArn" in str(excinfo.value)
+
+
+def test__generate_stage_resource_arn_invalid_api_gateway_part():
+    with pytest.raises(AuthError) as excinfo:
+        _generate_stage_resource_arn(
+            "arn:aws:execute-api:ap-northeast-1:123456789012:api-id"
+        )
+
+    assert "Invalid methodArn" in str(excinfo.value)
+
+
+def test__generate_policy_allow():
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/GET/devices"
+    actual = _generate_policy_allow("fake_username1", method_arn, "fake_username1")
     expect = {
         "principalId": "fake_username1",
         "policyDocument": {
@@ -370,7 +449,7 @@ def test__generate_policy_allow():
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Allow",
-                    "Resource": 'event["methodArn"]1',
+                    "Resource": "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/*/*",
                 }
             ],
         },
@@ -381,9 +460,8 @@ def test__generate_policy_allow():
 
 
 def test__generate_policy_deny():
-    actual = _generate_policy_deny(
-        "fake_username2", 'event["methodArn"]2', "fake_username2"
-    )
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/prod/POST/jobs"
+    actual = _generate_policy_deny("fake_username2", method_arn, "fake_username2")
     expect = {
         "principalId": "fake_username2",
         "policyDocument": {
@@ -392,7 +470,7 @@ def test__generate_policy_deny():
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Deny",
-                    "Resource": 'event["methodArn"]2',
+                    "Resource": "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/prod/*/*",
                 }
             ],
         },
@@ -406,7 +484,13 @@ def test_lambda_handler_api_token(monkeypatch):
     def fake__verify_api_token(id_token=""):
         return "fake_username"
 
-    input = {"headers": {"q-api-token": "api_token_secret"}, "methodArn": "methodArn"}
+    input = {
+        "headers": {
+            "q-api-token": "api_token_secret",
+            "authorization": "api_token_secret",
+        },
+        "methodArn": "methodArn",
+    }
 
     const = {
         "principalId": "fake_username",
