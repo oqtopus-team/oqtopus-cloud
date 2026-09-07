@@ -85,8 +85,9 @@ The `ready -> failed` transition is supported so that provider-side preprocessin
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | Array of OpenQASM 3 programs. Non-multiprogramming jobs normally contain one program. |
 | `operator` | `estimation` | Array of Pauli operator items. |
+| `sse_program` | `sse` | SSE user program. |
 
-The Provider API has a separate generated `jobs.S3SubmitJobInfo` schema that includes `sse_program` for SSE jobs. That field is not part of the User API input-upload schema described here.
+The User and Provider API definitions of `jobs.S3SubmitJobInfo` are kept aligned so the upload and download sides use the same contract.
 
 For provider output zip files and the conventional payload names/schema inside them, refer to the storage-model table above.
 

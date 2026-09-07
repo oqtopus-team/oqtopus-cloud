@@ -88,8 +88,9 @@ DB にはジョブ ID と `.zip` suffix を除いた正規化済みオブジェ�
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | OpenQASM 3 program の配列です。非 multiprogramming job では通常 1 つの program を含みます。 |
 | `operator` | `estimation` | Pauli operator item の配列です。 |
+| `sse_program` | `sse` | SSE user program です。 |
 
-Provider API には、SSE job 用の `sse_program` を含む別の generated `jobs.S3SubmitJobInfo` schema があります。このフィールドは、ここで説明している User API の input upload schema には含まれません。
+User API と Provider API の `jobs.S3SubmitJobInfo` 定義を揃え、upload 側と download 側で同じ契約を使用します。
 
 Provider の出力 zip とその中の慣例上の payload 名、schema/format の対応は上のストレージモデル表を参照してください。
 

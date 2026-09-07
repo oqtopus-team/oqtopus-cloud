@@ -269,7 +269,7 @@ class S3OperatorItem(BaseModel):
     """
     The Pauli string.
     """
-    coeff: Annotated[float | None, Field(examples=[1])] = None
+    coeff: float | None = None
     """
     Coefficient number in the Pauli string representation.
     """
@@ -340,7 +340,7 @@ class RegisteredJob(Job):
 
 class S3SubmitJobInfo(BaseModel):
     program: Annotated[
-        list[str],
+        list[str] | None,
         Field(
             examples=[
                 [
@@ -348,11 +348,18 @@ class S3SubmitJobInfo(BaseModel):
                 ]
             ]
         ),
-    ]
+    ] = None
     """
-    A list of OPENQASM3 program. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
+    A list of OPENQASM3 program. Required for sampling, estimation and multiprogramming jobs. For non-multiprogramming jobs, this field is assumed to contain exactly one program. Otherwise, those programs are combined according to the multiprogramming machinery.
     """
     operator: list[S3OperatorItem] | None = None
+    """
+    Estimation operator. Required for estimation jobs.
+    """
+    sse_program: str | None = None
+    """
+    SSE user program. Required for SSE jobs.
+    """
 
 
 class S3JobResult(BaseModel):
