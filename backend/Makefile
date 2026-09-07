@@ -114,7 +114,7 @@ run-worker:
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB, apply migrations, seed data, and init storage
-	@docker compose up -d
+	@docker compose up -d db minio otel-collector mc
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
 	@# fresh volume MySQL first runs a socket-only temporary server for init,

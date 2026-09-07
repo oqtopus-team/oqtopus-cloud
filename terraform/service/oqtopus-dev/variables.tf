@@ -141,3 +141,9 @@ variable "otel_exporter_otlp_endpoint" {
     error_message = "otel_exporter_otlp_endpoint must be set when otel_enabled = true."
   }
 }
+
+variable "otel_collector_layer_arn" {
+  description = "OTel Lambda collector layer ARN. When set, user-api / provider-api export via the in-environment collector (decouple processor) instead of posting to otel_exporter_otlp_endpoint from the request path."
+  type        = string
+  default     = ""
+}

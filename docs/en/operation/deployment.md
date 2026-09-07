@@ -95,18 +95,25 @@ org="oqtopus"
 env="dev"
 region = "ap-northeast-1"
 
+db_instance_class = "db.t4g.small"
+
 vpc_flow_log_retention_days = 14
-s3_api_trail_cloudwatch_retention_in_days = 30
-cloudtrail_s3_logs_expiration_days = 365
-cloudtrail_s3_logs_transition_days_standard_ia = 30
-cloudtrail_s3_logs_transition_days_glacier_ir = 90
-cloudtrail_s3_logs_transition_days_deep_archive = 180
+s3_logs_expiration_days = 365
+s3_logs_transition_days_standard_ia = 30
+s3_logs_transition_days_glacier_ir = 90
+s3_logs_transition_days_deep_archive = 180
 
 enable_guardduty               = false
 enable_guardduty_s3_protection = false
 ```
 
 These files set the storage location for the state file and environment variables.
+
+!!! note
+
+    OQTOPUS does not create or manage an account-level CloudTrail trail. The AWS
+    account owner is responsible for configuring management-event logging and,
+    when required, S3 object-level data-event logging for the OQTOPUS bucket.
 
 Initialize with `terraform init`. Run the following command:
 
@@ -232,6 +239,10 @@ To deploy, run the following commands:
 make deploy-user
 make deploy-provider
 ```
+
+The deployment principal must have `lambda:InvokeFunction` permission. Each
+versioned Lambda deployment invokes `lambda-version-cleaner` explicitly after
+updating its alias; the deployment flow does not depend on CloudTrail events.
 
 ### Testing the Service
 

@@ -55,7 +55,6 @@ def insert_initial_data(db: Session):
             n_qubits=64,
             basis_gates='["sx", "rx", "rzx90", "id"]',
             instructions='["measure", "barrier"]',
-            device_info="{}",
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56),
             description="Superconducting quantum computer",
             created_at=datetime(2024, 3, 4, 12, 34, 56),

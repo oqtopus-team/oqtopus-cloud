@@ -4,7 +4,7 @@
 *
 * ## Description
 *
-* This module manages S3 data bucket logging: S3 access logs, and S3 API logs with CloudTrail.
+* This module manages S3 server access logging.
 *
 * ## Usage
 *
@@ -19,13 +19,7 @@
 *
 */
 
-data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
-
-locals {
-  trail_name = "s3-api-trail"
-  trail_arn  = "arn:aws:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/${local.trail_name}"
-}
 
 resource "aws_s3_bucket" "logs" {
   bucket        = "${var.product}-${var.org}-${var.env}-logs"
@@ -91,35 +85,6 @@ resource "aws_s3_bucket_policy" "logs" {
             "aws:SourceAccount" = data.aws_caller_identity.current.account_id
           }
         }
-      },
-      {
-        Sid    = "AllowCloudTrailAclCheck"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudtrail.amazonaws.com"
-        }
-        Action   = "s3:GetBucketAcl"
-        Resource = aws_s3_bucket.logs.arn
-        Condition = {
-          StringEquals = {
-            "aws:SourceArn" = local.trail_arn
-          }
-        }
-      },
-      {
-        Sid    = "AllowCloudTrailWrite"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudtrail.amazonaws.com"
-        }
-        Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.logs.arn}/s3-api-trail/*"
-        Condition = {
-          StringEquals = {
-            "s3:x-amz-acl"  = "bucket-owner-full-control"
-            "aws:SourceArn" = local.trail_arn
-          }
-        }
       }
     ]
   })
@@ -140,92 +105,22 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     status = "Enabled"
 
     expiration {
-      days = var.cloudtrail_s3_logs_expiration_days
+      days = var.s3_logs_expiration_days
     }
 
     transition {
-      days          = var.cloudtrail_s3_logs_transition_days_standard_ia
+      days          = var.s3_logs_transition_days_standard_ia
       storage_class = "STANDARD_IA"
     }
 
     transition {
-      days          = var.cloudtrail_s3_logs_transition_days_glacier_ir
+      days          = var.s3_logs_transition_days_glacier_ir
       storage_class = "GLACIER_IR"
     }
 
     transition {
-      days          = var.cloudtrail_s3_logs_transition_days_deep_archive
+      days          = var.s3_logs_transition_days_deep_archive
       storage_class = "DEEP_ARCHIVE"
     }
-  }
-}
-
-resource "aws_cloudwatch_log_group" "s3_api_trail" {
-  name              = "/aws/cloudtrail/${local.trail_name}"
-  retention_in_days = var.s3_api_trail_cloudwatch_retention_in_days
-
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${local.trail_name}-cloudwatch-logs"
-  }
-}
-
-resource "aws_iam_role" "s3_api_trail" {
-  name = "${var.product}-${var.org}-${var.env}-cloudwatch-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudtrail.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "s3_api_trail" {
-  name = "${var.product}-${var.org}-${var.env}-${local.trail_name}-cloudwatch-policy"
-  role = aws_iam_role.s3_api_trail.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "${aws_cloudwatch_log_group.s3_api_trail.arn}:*"
-      }
-    ]
-  })
-}
-
-resource "aws_cloudtrail" "s3_api_trail" {
-  name           = local.trail_name
-  s3_bucket_name = aws_s3_bucket.logs.id
-  s3_key_prefix  = local.trail_name
-
-  include_global_service_events = false
-
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
-
-    data_resource {
-      type   = "AWS::S3::Object"
-      values = ["${var.s3_target_bucket_arn}/*"]
-    }
-  }
-
-  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.s3_api_trail.arn}:*"
-  cloud_watch_logs_role_arn  = aws_iam_role.s3_api_trail.arn
-
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-${local.trail_name}"
   }
 }

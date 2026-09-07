@@ -78,6 +78,7 @@ module "user_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
 }
 
@@ -117,6 +118,7 @@ module "provider_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
 }
 
@@ -145,8 +147,14 @@ module "admin_api" {
   allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
-  lambda_timeout                         = 30
-  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+  storage_driver                         = "s3"
+  storage_env_vars_s3 = {
+    STORAGE_S3_REGION      = var.region
+    STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
+  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  lambda_timeout                 = 30
+  api_gateway_log_retention_days = var.api_gateway_log_retention_days
 }
 
 module "user_signup_api" {
