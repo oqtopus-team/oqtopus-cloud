@@ -36,6 +36,7 @@ nav:
   - Operation:
       - Setup Operation Environment: operation/setup.md
       - Deployment: operation/deployment.md
+      - Backup and Recovery: operation/backup.md
   - Others:
       - How to Contribute: CONTRIBUTING.md
       - Code of Conduct: CODE_OF_CONDUCT.md
@@ -113,6 +114,7 @@ plugins:
             Operation: 運用
             Setup Operation Environment: 運用環境のセットアップ
             Deployment: デプロイメント
+            Backup and Recovery: バックアップとリカバリ
 
             Others: その他
             How to Contribute: コントリビュートの方法

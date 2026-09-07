@@ -66,10 +66,11 @@ module "management" {
 module "user_cognito" {
   source = "../modules/cognito"
 
-  product    = var.product
-  org        = var.org
-  env        = var.env
-  identifier = "user"
+  product                  = var.product
+  org                      = var.org
+  env                      = var.env
+  identifier               = "user"
+  enable_delete_protection = true
 }
 
 module "admin_cognito" {
@@ -83,6 +84,19 @@ module "admin_cognito" {
   enable_delete_protection = true
   enable_mfa               = true
   password_minimum_length  = 12
+}
+
+module "cognito_backup" {
+  source = "../modules/cognito-backup"
+
+  product = var.product
+  org     = var.org
+  env     = var.env
+  region  = var.region
+  user_pools = {
+    user  = { id = module.user_cognito.user_pool_id, arn = module.user_cognito.user_pool_arn }
+    admin = { id = module.admin_cognito.user_pool_id, arn = module.admin_cognito.user_pool_arn }
+  }
 }
 
 module "s3" {

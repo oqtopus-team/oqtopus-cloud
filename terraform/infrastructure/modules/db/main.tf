@@ -61,7 +61,8 @@ resource "aws_db_instance" "this" {
   vpc_security_group_ids                = var.db_security_group_ids
 
   lifecycle {
-    ignore_changes = [engine_version]
+    ignore_changes  = [engine_version]
+    prevent_destroy = true
   }
 }
 
@@ -69,10 +70,14 @@ resource "aws_db_instance" "this" {
 resource "aws_kms_key" "db_storage" {
   description             = "key to encrypt db storage."
   key_usage               = "ENCRYPT_DECRYPT"
-  deletion_window_in_days = 7
+  deletion_window_in_days = 30
   enable_key_rotation     = true
   tags = {
     Name = "${var.product}-${var.org}-${var.env}"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
