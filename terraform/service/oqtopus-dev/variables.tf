@@ -95,6 +95,12 @@ variable "waf_enable_common_rules" {
   default     = false
 }
 
+variable "waf_common_rules_excluded_rules" {
+  description = "list of rule names in AWSManagedRulesCommonRuleSet to override to Count"
+  type        = list(string)
+  default     = []
+}
+
 variable "waf_enable_rate_limiting" {
   description = "flag for enabling/disabling rate limiting WAF rule"
   type        = bool

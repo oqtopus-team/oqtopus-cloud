@@ -279,11 +279,12 @@ module "waf" {
     module.admin_api.api_gateway_stage_arn,
     module.user_signup_api.api_gateway_stage_arn,
   ]
-  enable_common_rules        = var.waf_enable_common_rules
-  enable_rate_limiting       = var.waf_enable_rate_limiting
-  rate_limit                 = var.waf_rate_limit
-  cloudwatch_metrics_enabled = var.waf_cloudwatch_metrics_enabled
-  sampled_requests_enabled   = var.waf_sampled_requests_enabled
+  common_rules_excluded_rules = var.waf_common_rules_excluded_rules
+  enable_common_rules         = var.waf_enable_common_rules
+  enable_rate_limiting        = var.waf_enable_rate_limiting
+  rate_limit                  = var.waf_rate_limit
+  cloudwatch_metrics_enabled  = var.waf_cloudwatch_metrics_enabled
+  sampled_requests_enabled    = var.waf_sampled_requests_enabled
 
   depends_on = [
     module.user_api,
