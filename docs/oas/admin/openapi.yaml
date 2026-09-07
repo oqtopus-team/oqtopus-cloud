@@ -453,11 +453,11 @@ paths:
             type: string
             example: qulacs
       requestBody:
-        description: New calibration data
+        description: Updated device metadata
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/devices.DeviceBase'
+              $ref: '#/components/schemas/devices.DevicePatch'
       responses:
         '200':
           description: Device's data updated
@@ -1165,6 +1165,70 @@ components:
         device_info:
           type: string
           example: '{"device_id": "qulacs", "qubits": []}'
+        device_type:
+          type: string
+          enum:
+            - QPU
+            - simulator
+          example: simulator
+        status:
+          type: string
+          enum:
+            - available
+            - unavailable
+          example: available
+        n_qubits:
+          type: integer
+          example: 64
+        available_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        calibrated_at:
+          type: string
+          format: date-time
+          example: '2022-10-19T11:45:34Z'
+        basis_gates:
+          type: array
+          items:
+            type: string
+          example:
+            - x
+            - 'y'
+            - z
+            - h
+            - s
+            - sdg
+            - t
+            - tdg
+            - rx
+            - ry
+            - rz
+            - cx
+            - cz
+            - swap
+            - u1
+            - u2
+            - u3
+            - u
+            - p
+            - id
+            - sx
+            - sxdg
+        supported_instructions:
+          type: array
+          items:
+            type: string
+          example:
+            - measure
+            - barrier
+            - reset
+        description:
+          type: string
+          example: Superconducting quantum computer
+    devices.DevicePatch:
+      type: object
+      properties:
         device_type:
           type: string
           enum:
