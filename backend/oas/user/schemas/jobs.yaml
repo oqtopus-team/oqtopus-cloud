@@ -10,9 +10,7 @@ jobs.GetJobStatusResponse:
       $ref: "#/jobs.JobId"
     status:
       $ref: "#/jobs.JobStatus"
-  required: [
-    job_id,status
-  ]
+  required: [job_id, status]
 
 jobs.RegisterJobResponse:
   description: Register new job
@@ -72,7 +70,7 @@ jobs.SubmitJobRequest:
         },
         "skip_transpilation": false,
         "seed_transpilation": 873
-      }
+        }
     simulator_info:
       type: object
       properties: {}
@@ -87,14 +85,14 @@ jobs.SubmitJobRequest:
           "optimization_block_size": 1,
           "optimization_swap_level": 1
         }
-      }
+        }
     mitigation_info:
       type: object
       properties: {}
       additionalProperties: true
       example: {
         "ro_error_mitigation": "pseudo_inverse"
-      }
+        }
     shots:
       type: integer
       minimum: 1
@@ -155,7 +153,7 @@ jobs.Job:
         },
         "skip_transpilation": false,
         "seed_transpilation": 873
-      }
+        }
     simulator_info:
       type: object
       properties: {}
@@ -170,14 +168,14 @@ jobs.Job:
           "optimization_block_size": 1,
           "optimization_swap_level": 1
         }
-      }
+        }
     mitigation_info:
       type: object
       properties: {}
       additionalProperties: true
       example: {
         "ro_error_mitigation": "pseudo_inverse"
-      }
+        }
     execution_time:
       type: number
       example: 10.123
@@ -206,16 +204,16 @@ jobs.Job:
       job_type: estimation
       job_info: {
         "input": https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
-      }
+        }
       transpiler_info: {
         "qubit_allocation": { "0": 12, "1": 16 }, "skip_transpilation": false, "seed_transpilation": 873
-      }
+        }
       simulator_info: {
         "n_qubits": 5, "n_nodes": 12, "n_per_node": 2, "seed_simulation": 39058567, "simulation_opt": { "optimization_method": "light", "optimization_block_size": 1, "optimization_swap_level": 1 }
-      }
+        }
       mitigation_info: {
         "ro_error_mitigation": "pseudo_inverse"
-      }
+        }
       shots: 1000
       status: submitted
       execution_time: 10.123
@@ -339,7 +337,7 @@ jobs.S3SubmitJobInfo:
         type: string
       example: [
         "OPENQASM 3; qubit[2] q; bit[2] c; h q[0]; cnot q[0], q[1]; c = measure q;"
-      ]
+        ]
     operator:
       type: array
       items:
@@ -360,7 +358,7 @@ jobs.S3SamplingResult:
         "11": 387,
         "10": 454,
         "01": 75
-      }
+        }
     divided_counts:
       type: object
       properties: {}
@@ -379,7 +377,7 @@ jobs.S3SamplingResult:
           "10": 454,
           "01": 75
         }
-      }
+        }
 
 jobs.S3EstimationResult:
   type: object
