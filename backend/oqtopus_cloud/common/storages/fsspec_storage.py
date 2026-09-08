@@ -91,7 +91,7 @@ class FSSpecStorage(AbstractStorage):
                 # entries that disappeared since listing.
                 if not filename or filename.endswith("/"):
                     try:
-                        info = self.fs.info(full_path, refresh=True)  # type: ignore[attr-defined]
+                        info = self.fs.info(full_path, refresh=True)
                     except FileNotFoundError:
                         continue
                     if info["type"] == "directory":
