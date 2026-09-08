@@ -50,7 +50,9 @@ def get_storage() -> AbstractStorage:
             # suppresses by default and an operator would never see.
             logger.warning(
                 "STORAGE_DRIVER='local:minio' is deprecated. Switch to "
-                "STORAGE_DRIVER='seaweedfs' and the STORAGE_SEAWEEDFS_* settings."
+                "STORAGE_DRIVER='seaweedfs' and the STORAGE_SEAWEEDFS_* settings. "
+                "Migration guide: https://oqtopus-cloud.readthedocs.io/latest/"
+                "architecture/storage_backend_selection/#migrating-from-localminio"
             )
             minio_bucket_name = environ.get("STORAGE_LOCAL_MINIO_BUCKET_NAME")
             minio_username = environ.get("STORAGE_LOCAL_MINIO_USERNAME")
