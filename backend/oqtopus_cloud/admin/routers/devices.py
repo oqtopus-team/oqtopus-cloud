@@ -18,6 +18,7 @@ from oqtopus_cloud.admin.schemas.devices import (
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
+    ConflictErrorResponse,
     ErrorResponse,
     InternalServerErrorResponse,
     Message,
@@ -170,7 +171,7 @@ def get_device_info_upload_url(
 @router.post(
     "/devices",
     response_model=SuccessResponse,
-    responses={400: {"model": Message}, 500: {"model": Message}},
+    responses={400: {"model": Message}, 409: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def register_devices(
@@ -188,7 +189,7 @@ def register_devices(
         ).first()
         if existing_device:
             logger.error(f"device_id={device_id} already exists")
-            return BadRequestErrorResponse(
+            return ConflictErrorResponse(
                 message=f"device_id={device_id} already exists"
             )
         new_device = schema_to_model(device_id, device_info)

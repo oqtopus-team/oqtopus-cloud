@@ -93,3 +93,26 @@ class BadRequestErrorResponse(ErrorResponse):
             status_code=400,
             content={"message": message},
         )
+
+
+class ConflictErrorResponse(ErrorResponse):
+    """
+    Represents an error response for a conflict (HTTP status code 409).
+
+    Args:
+        message (str): The detailed error message.
+
+    Attributes:
+        status_code (int): The HTTP status code for the error response (409).
+        content (dict): The content of the error response.
+
+    """
+
+    def __init__(
+        self,
+        message: str,
+    ):
+        super().__init__(
+            status_code=409,
+            content={"message": message},
+        )
