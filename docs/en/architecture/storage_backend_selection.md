@@ -2,7 +2,7 @@
 
 OQTOPUS keeps large job payloads in object storage (see [Quantum Jobs in Detail](quantum_jobs_in_detail.md) for the object layout and how the APIs use it). On AWS it uses the default `s3` driver, while on-premises deployments and local development run their own S3-compatible storage instead.
 
-SeaweedFS is added as the default local backend. The existing `local:minio` driver and its configuration remain supported, with a deprecation warning. This page records the selection, configuration, and release compatibility checks.
+SeaweedFS is added as the default local backend. `local:minio` is planned for removal; its driver and configuration remain available with a deprecation warning during migration to SeaweedFS. This page records the selection, configuration, and release compatibility checks.
 
 ## Selection criteria
 
@@ -38,7 +38,7 @@ The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedf
 
 The `local:minio` driver is deprecated but still works: its settings are read exactly as before, and it logs a warning on every use. To migrate, set `STORAGE_DRIVER` to `seaweedfs` and rename the `STORAGE_LOCAL_MINIO_*` settings to `STORAGE_SEAWEEDFS_*`; in Terraform, `storage_env_vars_local_minio` becomes `storage_env_vars_seaweedfs`.
 
-No removal date is set. Removing `local:minio` is a separate compatibility-policy decision that must account for existing deployments and their migration. Passing the SeaweedFS compatibility tests does not authorize removal or mean that users have migrated.
+`local:minio` is planned for removal, but no removal date is set. The timing will take into account migration of existing deployments to SeaweedFS. Passing the SeaweedFS compatibility tests does not authorize removal or mean that users have migrated.
 
 ### Running the deprecated MinIO stack locally
 
