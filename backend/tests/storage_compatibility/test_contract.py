@@ -95,3 +95,16 @@ def test_presigned_post_rejects_changed_key(storage: AbstractStorage) -> None:
         assert response.status_code == 403
     assert storage.get("allowed.bin") is None
     assert storage.get("other.bin") is None
+
+
+@pytest.mark.parametrize("payload", [b"", b"program"], ids=["empty", "nonempty"])
+def test_traverse_deletes_object_with_trailing_slash(
+    storage: AbstractStorage, payload: bytes
+) -> None:
+    key = "jobs/one/"
+    storage.put(key, payload)
+    assert storage.get(key) == payload
+    assert list(storage.prefix("jobs/one")) == [key]
+    storage.traverse_prefix("jobs/one", storage.delete)
+    assert storage.get(key) is None
+    assert list(storage.prefix("jobs/one")) == []
