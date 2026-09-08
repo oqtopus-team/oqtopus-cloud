@@ -98,13 +98,15 @@ def test_presigned_post_rejects_changed_key(storage: AbstractStorage) -> None:
 
 
 @pytest.mark.parametrize("payload", [b"", b"program"], ids=["empty", "nonempty"])
-def test_traverse_deletes_object_with_trailing_slash(
-    storage: AbstractStorage, payload: bytes
+@pytest.mark.parametrize("key", ["jobs/one", "jobs/one/"])
+def test_traverse_deletes_object_at_prefix(
+    storage: AbstractStorage, payload: bytes, key: str
 ) -> None:
-    key = "jobs/one/"
+    # s3fs normalizes trailing slashes. Match existing application calls,
+    # without claiming support for literal trailing-slash keys created via SDK.
     storage.put(key, payload)
     assert storage.get(key) == payload
-    assert list(storage.prefix("jobs/one")) == [key]
+    assert storage.traverse_prefix("jobs/one", storage.get) == [payload]
     storage.traverse_prefix("jobs/one", storage.delete)
     assert storage.get(key) is None
     assert list(storage.prefix("jobs/one")) == []

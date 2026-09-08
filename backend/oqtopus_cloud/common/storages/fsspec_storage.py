@@ -85,12 +85,17 @@ class FSSpecStorage(AbstractStorage):
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
                 full_path = f"{dirpath}/{filename}"
-                # A trailing slash can also name a real S3 object. Check the
-                # backend before excluding a synthetic directory entry.
-                if (not filename or filename.endswith("/")) and self.fs.info(  # type: ignore[attr-defined]
-                    full_path, refresh=True
-                )["type"] == "directory":
-                    continue
+                # walk() can report the traversal root as an empty filename,
+                # for either a real object or a leftover SeaweedFS directory.
+                # Keep the legacy object traversal; skip only directories and
+                # entries that disappeared since listing.
+                if not filename or filename.endswith("/"):
+                    try:
+                        info = self.fs.info(full_path, refresh=True)  # type: ignore[attr-defined]
+                    except FileNotFoundError:
+                        continue
+                    if info["type"] == "directory":
+                        continue
                 if full_path.startswith(storage_base):
                     relative_path = full_path[len(storage_base) :].lstrip("/")
                     yield relative_path
