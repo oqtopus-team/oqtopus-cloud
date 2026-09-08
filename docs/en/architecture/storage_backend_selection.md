@@ -64,7 +64,7 @@ make test-storage-compatibility
 
 The test starts and stops dedicated SeaweedFS and MinIO services and checks reads, writes, deletion, listing, and presigned uploads/downloads against the same expectations. Coverage is limited to storage operations; it does not include complete API workflows or migration of existing data.
 
-Results and image identities are saved in `backend/storage-compatibility-results/`. Record the verification results in the PR.
+Results and image identities are saved in `backend/storage-compatibility-results/`.
 
 ## Verifying the storage path
 

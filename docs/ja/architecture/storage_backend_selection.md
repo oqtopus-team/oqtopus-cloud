@@ -64,7 +64,7 @@ make test-storage-compatibility
 
 テスト用の SeaweedFS と MinIO を自動で起動・終了し、読み書き・削除・一覧取得・署名付きアップロード／ダウンロードを同じ期待結果で検証します。対象はストレージ操作で、API ワークフロー全体や既存データの移行は含みません。
 
-結果と使用イメージの情報は `backend/storage-compatibility-results/` に保存されます。確認結果は PR に記録してください。
+結果と使用イメージの情報は `backend/storage-compatibility-results/` に保存されます。
 
 ## ストレージ経路の確認
 
