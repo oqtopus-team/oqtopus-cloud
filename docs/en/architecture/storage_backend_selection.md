@@ -2,7 +2,7 @@
 
 OQTOPUS keeps large job payloads in object storage (see [Quantum Jobs in Detail](quantum_jobs_in_detail.md) for the object layout and how the APIs use it). On AWS it uses the default `s3` driver, while on-premises deployments and local development run their own S3-compatible storage instead.
 
-This page records why SeaweedFS was chosen for that role, and how the `seaweedfs` driver is configured.
+SeaweedFS is added as the default local backend. The existing `local:minio` driver and its configuration remain supported, with a deprecation warning. This page records the selection, configuration, and release compatibility checks.
 
 ## Selection criteria
 
@@ -32,17 +32,17 @@ SeaweedFS is also driven mainly by a single individual, so the ⑤ single-mainta
 
 The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which `backend/compose.yaml` starts for local development and which on-premises deployments run in place of AWS S3.
 
-`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, so no storage-layer code changes were needed. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings. The driver name records the backend this project runs and verifies against; nothing in the driver is specific to SeaweedFS. Another self-hosted S3-compatible backend, RustFS for example, is reached by pointing `STORAGE_SEAWEEDFS_ENDPOINT_URL` and the credentials at it.
+`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, with directory markers excluded from prefix results so empty SeaweedFS directories are not exposed as object keys. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings. The driver name records the backend this project runs and verifies against; nothing in the driver is specific to SeaweedFS. Another self-hosted S3-compatible backend, RustFS for example, is reached by pointing `STORAGE_SEAWEEDFS_ENDPOINT_URL` and the credentials at it.
 
 ### Migrating from `local:minio`
 
 The `local:minio` driver is deprecated but still works: its settings are read exactly as before, and it logs a warning on every use. To migrate, set `STORAGE_DRIVER` to `seaweedfs` and rename the `STORAGE_LOCAL_MINIO_*` settings to `STORAGE_SEAWEEDFS_*`; in Terraform, `storage_env_vars_local_minio` becomes `storage_env_vars_seaweedfs`.
 
-No removal date is set. The old driver stays until `seaweedfs` and `local:minio` have been shown to behave identically, so a deployment that has not migrated yet keeps working in the meantime.
+No removal date is set. Removing `local:minio` is a separate compatibility-policy decision that must account for existing deployments and their migration. Passing the SeaweedFS compatibility tests does not authorize removal or mean that users have migrated.
 
 ### Running the deprecated MinIO stack locally
 
-`backend/compose.yaml` still carries the MinIO services, behind a compose profile so nothing starts them unless they are asked for. A driver that cannot be started cannot be checked before it is dropped, so it stays until the driver does.
+`backend/compose.yaml` still carries the MinIO services, behind a compose profile so nothing starts them unless they are asked for. This keeps existing configurations runnable and allows regression and compatibility checks while the driver remains supported.
 
 ```bash
 cd backend
@@ -52,6 +52,19 @@ make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
 ```
 
 `STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so run one at a time. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for this stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+
+## Release compatibility check
+
+To verify compatibility with `local:minio`, run the following test in the release introducing SeaweedFS and confirm that both backends pass. Decide when to remove `local:minio` separately.
+
+```bash
+cd backend
+make test-storage-compatibility
+```
+
+The test starts and stops dedicated SeaweedFS and MinIO services and checks reads, writes, deletion, listing, and presigned uploads/downloads against the same expectations. Coverage is limited to storage operations; it does not include complete API workflows or migration of existing data.
+
+Results and image identities are saved in `backend/storage-compatibility-results/`. Record the verification results in the PR.
 
 ## Verifying the storage path
 

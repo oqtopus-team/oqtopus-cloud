@@ -2,7 +2,7 @@
 
 OQTOPUS は大きなジョブペイロードをオブジェクトストレージに保存します (格納形式や API との関係は [量子ジョブの詳細](quantum_jobs_in_detail.md) を参照)。AWS 上ではデフォルトの `s3` ドライバを使いますが、オンプレ環境やローカル開発では自前の S3 互換ストレージを使います。
 
-このページでは、そのバックエンドに SeaweedFS を選んだ経緯と、`seaweedfs` ドライバの設定を説明します。
+SeaweedFS をローカル環境の既定バックエンドとして追加します。既存の `local:minio` ドライバとその設定は、非推奨警告付きで引き続きサポートします。このページでは選定の経緯、設定、リリース時の互換性確認を説明します。
 
 ## 選定基準
 
@@ -32,17 +32,17 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 `seaweedfs` ドライバは [SeaweedFS](https://github.com/seaweedfs/seaweedfs) にオブジェクトを格納します。ローカル開発では `backend/compose.yaml` が起動し、オンプレ環境では AWS S3 の代わりに SeaweedFS を運用します。
 
-`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続するので、ストレージ層のコード変更は不要です。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。ドライバ名は本プロジェクトが実際に運用・検証しているバックエンドを表すもので、実装に SeaweedFS 固有の要素はありません。RustFS など他のセルフホスト S3 互換バックエンドを使う場合も、`STORAGE_SEAWEEDFS_ENDPOINT_URL` と認証情報の向き先を変えるだけで接続できます。
+`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続します。SeaweedFS の空ディレクトリがオブジェクトのキーとして返らないよう、prefix の結果からディレクトリマーカーを除外しています。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。ドライバ名は本プロジェクトが実際に運用・検証しているバックエンドを表すもので、実装に SeaweedFS 固有の要素はありません。RustFS など他のセルフホスト S3 互換バックエンドを使う場合も、`STORAGE_SEAWEEDFS_ENDPOINT_URL` と認証情報の向き先を変えるだけで接続できます。
 
 ### `local:minio` からの移行
 
 `local:minio` ドライバは deprecated ですが、これまで通り動作します。設定の読み方は従来のままで、使用時に警告ログを出力します。移行するには `STORAGE_DRIVER` を `seaweedfs` に変更し、`STORAGE_LOCAL_MINIO_*` の設定を `STORAGE_SEAWEEDFS_*` に置き換えてください。Terraform では `storage_env_vars_local_minio` が `storage_env_vars_seaweedfs` になります。
 
-削除時期は未定です。`seaweedfs` と `local:minio` の挙動が同一であることを確認できるまで旧ドライバは残すため、移行していないデプロイもそれまでは動作し続けます。
+削除時期は未定です。`local:minio` の削除は、既存デプロイとその移行状況を考慮して別途判断します。SeaweedFS の互換性テストが通っても、それだけで削除可能になったり、利用者の移行が完了したりするわけではありません。
 
 ### 非推奨の MinIO スタックをローカルで起動する
 
-`backend/compose.yaml` には MinIO のサービスが compose profile 付きで残してあります。明示的に指定しない限り起動しません。起動できないドライバは削除前の確認ができないため、ドライバを削除するまでは残します。
+`backend/compose.yaml` には MinIO のサービスが compose profile 付きで残してあります。明示的に指定しない限り起動しません。既存設定で起動できる状態を維持し、ドライバのサポート期間中に回帰テストと互換性確認を行うための構成です。
 
 ```bash
 cd backend
@@ -52,6 +52,19 @@ make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレー�
 ```
 
 `STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、同時には起動できません。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、このスタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+
+## リリース時の互換性確認
+
+`local:minio` との互換性を確認するため、SeaweedFS を導入するリリース時に以下のテストを実行し、両バックエンドで成功することを確認してください。`local:minio` の削除時期は別途判断します。
+
+```bash
+cd backend
+make test-storage-compatibility
+```
+
+テスト用の SeaweedFS と MinIO を自動で起動・終了し、読み書き・削除・一覧取得・署名付きアップロード／ダウンロードを同じ期待結果で検証します。対象はストレージ操作で、API ワークフロー全体や既存データの移行は含みません。
+
+結果と使用イメージの情報は `backend/storage-compatibility-results/` に保存されます。確認結果は PR に記録してください。
 
 ## ストレージ経路の確認
 

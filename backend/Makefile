@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -302,6 +302,17 @@ test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
+
+# Both backends are required for the release compatibility check. The dedicated
+# project uses separate ports and disposable data, without starting DB or APIs.
+STORAGE_COMPATIBILITY_COMPOSE = docker compose -p oqtopus-storage-compatibility -f tests/storage_compatibility/compose.yaml
+test-storage-compatibility: ## Verify the same storage contract on SeaweedFS and MinIO
+	@mkdir -p storage-compatibility-results
+	@trap '$(STORAGE_COMPATIBILITY_COMPOSE) down --volumes' EXIT; \
+	$(STORAGE_COMPATIBILITY_COMPOSE) up -d --wait --wait-timeout 90; \
+	$(STORAGE_COMPATIBILITY_COMPOSE) images --format json > storage-compatibility-results/images.json; \
+	RUN_STORAGE_COMPATIBILITY=1 uv run pytest tests/storage_compatibility -o addopts= \
+		-v --junitxml=storage-compatibility-results/results.xml
 
 test-scripts: ## Run helper script tests
 	@uv run ruff check scripts

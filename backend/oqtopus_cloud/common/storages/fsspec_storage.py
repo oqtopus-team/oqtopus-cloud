@@ -84,6 +84,11 @@ class FSSpecStorage(AbstractStorage):
 
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
+                # SeaweedFS can expose an empty directory marker as a file
+                # after its last object is deleted. Only return object keys,
+                # matching MinIO and local filesystem traversal.
+                if not filename or filename.endswith("/"):
+                    continue
                 full_path = f"{dirpath}/{filename}"
                 if full_path.startswith(storage_base):
                     relative_path = full_path[len(storage_base) :].lstrip("/")
