@@ -95,17 +95,19 @@ This command is required to use the Python version installed with Pyenv, to set 
 
 The following steps each run in a separate terminal. In every terminal, `cd backend` first before running the make commands.
 
-### 1. Start DB and MinIO (Terminal 1)
+### 1. Start DB and SeaweedFS (Terminal 1)
 
 ```bash
 cd backend
 make up
 ```
 
-MySQL (port 3306) and MinIO (port 9000/9001) will start.
+MySQL (port 3306) and SeaweedFS (S3 API port 8333, web UI port 9333/9001) will start.
 On the first run, DB initialization (table creation and test data insertion) is performed automatically.
 
-`make up` runs in the foreground, so keep this terminal open (press Ctrl+C to stop).
+`make up` starts the containers in the background and exits. Stop them with `make down`.
+
+To start the deprecated MinIO stack instead, use `make up STORAGE_STACK=minio`. See [Storage Backend Selection](../architecture/storage_backend_selection.md).
 
 ### 2. Start the APIs
 
@@ -147,6 +149,10 @@ Check the API documentation (Swagger UI):
 - User API: [http://localhost:8080/docs](http://localhost:8080/docs)
 - Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
 - User Signup API: [http://localhost:8890/docs](http://localhost:8890/docs) (if started)
+
+To exercise the storage path on its own, `make check-presigned-post` is available.
+It is not needed for normal development. See
+[Storage Backend Selection](../architecture/storage_backend_selection.md) for details.
 
 ## Running the Frontend Locally
 

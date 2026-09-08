@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down fmt lint test help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -75,11 +75,33 @@ export USER_API_PORT ?= 8080
 export PROVIDER_API_PORT ?= 8888
 export ADMIN_API_PORT ?= 8889
 export USER_SIGNUP_API_PORT ?= 8890
+# Which local object storage to run against. `minio` selects the deprecated
+# stack, kept runnable until the `local:minio` driver is removed.
+STORAGE_STACK ?= seaweedfs
+ifneq ($(STORAGE_STACK),seaweedfs)
+ifneq ($(STORAGE_STACK),minio)
+$(error STORAGE_STACK must be seaweedfs or minio, got '$(STORAGE_STACK)')
+endif
+endif
+ifeq ($(STORAGE_STACK),minio)
+STORAGE_SERVICES = minio mc
+STORAGE_INIT_SERVICE = mc
+STORAGE_LABEL = MinIO
 export STORAGE_DRIVER=local:minio
 export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
 export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+else
+STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
+STORAGE_INIT_SERVICE = seaweedfs-bucket-init
+STORAGE_LABEL = SeaweedFS
+export STORAGE_DRIVER=seaweedfs
+export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_SEAWEEDFS_USERNAME=devadmin
+export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
+export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
+endif
 export ALLOW_DELETION=true # flag to control whether users can delete their accounts
 export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
 export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
@@ -113,8 +135,8 @@ run-worker:
 	export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
-up: ## Start the DB, apply migrations, seed data, and init storage
-	@docker compose up -d db minio otel-collector mc
+up: ## Start the DB, apply migrations, seed data, and init storage (STORAGE_STACK=seaweedfs|minio)
+	@docker compose --profile $(STORAGE_STACK) up -d db $(STORAGE_SERVICES) otel-collector
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
 	@# fresh volume MySQL first runs a socket-only temporary server for init,
@@ -124,13 +146,41 @@ up: ## Start the DB, apply migrations, seed data, and init storage
 	@echo "MySQL ready, applying Alembic migrations..."
 	@$(MAKE) migrate-up
 	@$(MAKE) seed
+	@# The bucket is created by a one-shot service, and `up -d` returns without
+	@# waiting for it. Seeding storage before it finishes would write into a
+	@# bucket that does not exist yet, so wait for it to exit first.
+	@docker compose --profile $(STORAGE_STACK) wait $(STORAGE_INIT_SERVICE) >/dev/null
 	@if [ -f storage/init_storage.py ]; then uv run python storage/init_storage.py; fi
 
 seed: ## Seed the local DB with test data (idempotent)
 	@uv run python scripts/seed.py
 
 down: ## Stop the DB
-	@docker compose down
+	@docker compose --profile minio down
+
+PRESIGNED_POST_COUNT ?= 100
+PRESIGNED_POST_WORKERS ?= 10
+PRESIGNED_POST_PAYLOAD_BYTES ?= 4096
+PRESIGNED_POST_ROUNDS ?= 3
+PRESIGNED_POST_WARMUP_ROUNDS ?= 1
+PRESIGNED_POST_LABEL ?= $(STORAGE_LABEL)
+PRESIGNED_POST_OUTPUT_JSON ?= benchmark-results/presigned-storage.json
+check-presigned-post: ## Run concurrent presigned POST E2E against the local storage stack
+	@uv run python scripts/check_presigned_post.py \
+		--count $(PRESIGNED_POST_COUNT) \
+		--workers $(PRESIGNED_POST_WORKERS) \
+		--payload-bytes $(PRESIGNED_POST_PAYLOAD_BYTES)
+
+benchmark-presigned-post: ## Benchmark presigned POST/GET throughput and latency
+	@uv run python scripts/check_presigned_post.py \
+		--benchmark \
+		--label "$(PRESIGNED_POST_LABEL)" \
+		--count $(PRESIGNED_POST_COUNT) \
+		--workers $(PRESIGNED_POST_WORKERS) \
+		--payload-bytes $(PRESIGNED_POST_PAYLOAD_BYTES) \
+		--rounds $(PRESIGNED_POST_ROUNDS) \
+		--warmup-rounds $(PRESIGNED_POST_WARMUP_ROUNDS) \
+		--output-json $(PRESIGNED_POST_OUTPUT_JSON)
 
 migrate-create: ## Generate a migration from current models. Usage: make migrate-create NAME=<slug>
 	@if [ -z "$(NAME)" ]; then \
@@ -252,6 +302,22 @@ test-user_signup: fmt-user_signup lint-user_signup ## Run user_signup tests
 	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
 	uv run pytest tests/oqtopus_cloud/user_signup/ -vv --cov=oqtopus_cloud/user_signup --cov-report=xml:coverage-user_signup.xml --cov-report=html:htmlcov-user_signup
 	@mv .coverage .coverage-user_signup
+
+# Both backends are required for the release compatibility check. The dedicated
+# project uses separate ports and disposable data, without starting DB or APIs.
+STORAGE_COMPATIBILITY_COMPOSE = docker compose -p oqtopus-storage-compatibility -f tests/storage_compatibility/compose.yaml
+test-storage-compatibility: ## Verify the same storage contract on SeaweedFS and MinIO
+	@mkdir -p storage-compatibility-results
+	@trap '$(STORAGE_COMPATIBILITY_COMPOSE) down --volumes' EXIT; \
+	$(STORAGE_COMPATIBILITY_COMPOSE) up -d --wait --wait-timeout 90; \
+	$(STORAGE_COMPATIBILITY_COMPOSE) images --format json > storage-compatibility-results/images.json; \
+	RUN_STORAGE_COMPATIBILITY=1 uv run pytest tests/storage_compatibility -o addopts= \
+		-v --junitxml=storage-compatibility-results/results.xml
+
+test-scripts: ## Run helper script tests
+	@uv run ruff check scripts
+	@uv run mypy scripts
+	@uv run pytest tests/scripts -vv
 
 test-all: fmt-all lint-all ## Run All tests
 	@export POWERTOOLS_METRICS_NAMESPACE=all && \

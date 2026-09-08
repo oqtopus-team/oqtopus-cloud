@@ -85,6 +85,17 @@ class FSSpecStorage(AbstractStorage):
         for dirpath, _, filenames in self.fs.walk(full_prefix):
             for filename in filenames:
                 full_path = f"{dirpath}/{filename}"
+                # walk() can report the traversal root as an empty filename,
+                # for either a real object or a leftover SeaweedFS directory.
+                # Keep the legacy object traversal; skip only directories and
+                # entries that disappeared since listing.
+                if not filename or filename.endswith("/"):
+                    try:
+                        info = self.fs.info(full_path, refresh=True)
+                    except FileNotFoundError:
+                        continue
+                    if info["type"] == "directory":
+                        continue
                 if full_path.startswith(storage_base):
                     relative_path = full_path[len(storage_base) :].lstrip("/")
                     yield relative_path

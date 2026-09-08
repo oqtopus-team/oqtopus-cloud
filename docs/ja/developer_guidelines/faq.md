@@ -4,7 +4,7 @@
 
 Q. 開発環境DBの初期値はどこで設定しますか？
 
-A. スキーマは Alembic マイグレーション（`backend/alembic/`）で、初期データは `backend/scripts/seed.py`（DB）と `backend/storage/init_storage.py`（オブジェクトストレージ / MinIO）で管理しています。`make up` を実行するとマイグレーション適用とシードが自動的に行われます。
+A. スキーマは Alembic マイグレーション（`backend/alembic/`）で、初期データは `backend/scripts/seed.py`（DB）と `backend/storage/init_storage.py`（オブジェクトストレージ / SeaweedFS）で管理しています。`make up` を実行するとマイグレーション適用とシードが自動的に行われます。
 初期値を変更する場合はこれらのファイルを編集してください。
 
 Q. MFAを有効にしている場合、Terraformの実行はどのように行いますか？

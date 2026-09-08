@@ -1,3 +1,5 @@
+import logging
+
 import boto3
 import fsspec
 import pytest
@@ -7,6 +9,7 @@ from moto import mock_aws
 from unittest.mock import MagicMock, patch
 from urllib.parse import urlparse, parse_qs
 
+from oqtopus_cloud.common.storages import get_storage
 from oqtopus_cloud.common.storages.fsspec_storage import FSSpecStorage
 from oqtopus_cloud.common.storages.presign_strategies import (
     GeneralPresignStrategy,
@@ -161,6 +164,77 @@ def test_fsspec_storage_local_file_download_url(tmp_path):
     # get & check presigned URL
     presigned_url = storage.get_download_presigned_url(key)
     assert presigned_url == f"file://{storage_base}/{key}"
+
+
+def test_get_storage_seaweedfs(monkeypatch):
+    """
+    Tests that the seaweedfs driver points the S3 client at the self-hosted
+    endpoint instead of AWS
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+
+    storage = get_storage()
+
+    assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
+    assert storage.fs_url == "s3://test-bucket"
+    assert storage.fs.client_kwargs["endpoint_url"] == "http://seaweedfs:8333"
+    assert storage.fs.key == "devadmin"
+    assert storage.fs.secret == "devadmin123"
+
+
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "STORAGE_SEAWEEDFS_BUCKET_NAME",
+        "STORAGE_SEAWEEDFS_USERNAME",
+        "STORAGE_SEAWEEDFS_PASSWORD",
+        "STORAGE_SEAWEEDFS_ENDPOINT_URL",
+    ],
+)
+def test_get_storage_seaweedfs_requires_every_setting(monkeypatch, missing):
+    """
+    Tests that an incomplete configuration fails fast rather than silently
+    falling back to AWS S3 or to the ambient AWS credential chain
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+    monkeypatch.delenv(missing)
+
+    with pytest.raises(KeyError, match=missing):
+        get_storage()
+
+
+def test_get_storage_local_minio_is_deprecated_but_still_works(monkeypatch, caplog):
+    """
+    Tests that the deprecated local:minio driver still connects to the
+    configured endpoint and warns, so an existing deployment survives the
+    upgrade
+    """
+
+    monkeypatch.setenv("STORAGE_DRIVER", "local:minio")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_BUCKET_NAME", "legacy-bucket")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_USERNAME", "minioadmin")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_PASSWORD", "minioadmin123")
+    monkeypatch.setenv("STORAGE_LOCAL_MINIO_ENDPOINT_URL", "http://minio:9000")
+
+    with caplog.at_level(logging.WARNING):
+        storage = get_storage()
+
+    assert "deprecated" in caplog.text
+    assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
+    assert storage.fs_url == "s3://legacy-bucket"
+    assert storage.fs.client_kwargs["endpoint_url"] == "http://minio:9000"
+    assert storage.fs.key == "minioadmin"
+    assert storage.fs.secret == "minioadmin123"
 
 
 @patch("fsspec.filesystem")

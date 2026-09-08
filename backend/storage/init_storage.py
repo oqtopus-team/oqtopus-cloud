@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed the local object storage (MinIO) to match the seeded DB rows.
+"""Seed the local object storage to match the seeded DB rows.
 
 After the S3-offload changes, job payloads and device_info no longer live in the
 DB. Seeding only the DB (scripts/seed.py) therefore leaves API download URLs
@@ -10,12 +10,13 @@ It is driven by the same ``DEVICES`` and ``JOBS`` lists as scripts/seed.py, so
 the DB and storage seeds cannot drift, and it is **idempotent**: objects that
 already exist are left untouched.
 
-Run via `make up` (which invokes it after `make seed`) or directly:
+Run via `make up` (which invokes it after `make seed`, against whichever
+stack `STORAGE_STACK` selects) or directly:
 
     cd backend
-    STORAGE_DRIVER=local:minio STORAGE_LOCAL_MINIO_BUCKET_NAME=... \
-        STORAGE_LOCAL_MINIO_USERNAME=... STORAGE_LOCAL_MINIO_PASSWORD=... \
-        STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000 \
+    STORAGE_DRIVER=seaweedfs STORAGE_SEAWEEDFS_BUCKET_NAME=... \
+        STORAGE_SEAWEEDFS_USERNAME=... STORAGE_SEAWEEDFS_PASSWORD=... \
+        STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333 \
         uv run python storage/init_storage.py
 """
 
@@ -113,13 +114,35 @@ def _seed_storage(storage: AbstractStorage) -> tuple[int, int]:
 
 def main() -> None:
     driver = os.environ.get("STORAGE_DRIVER", "s3")
-    if driver not in ("local", "local:minio"):
+    if driver not in ("local", "seaweedfs", "local:minio"):
         # Guard against accidentally writing seed objects to a real S3 bucket.
         print(
             f"⏭️  Skipping storage seed: STORAGE_DRIVER={driver!r} is not a "
-            "local driver (expected 'local' or 'local:minio')."
+            "self-hosted driver (expected 'local', 'seaweedfs', or the "
+            "deprecated 'local:minio')."
         )
         return
+
+    if driver == "local:minio":
+        # The deprecated driver reads its settings leniently, so an incomplete
+        # configuration resolves to AWS and the seed would land in a real
+        # bucket. Same requirement as scripts/check_presigned_post.py.
+        missing = [
+            name
+            for name in (
+                "STORAGE_LOCAL_MINIO_BUCKET_NAME",
+                "STORAGE_LOCAL_MINIO_USERNAME",
+                "STORAGE_LOCAL_MINIO_PASSWORD",
+                "STORAGE_LOCAL_MINIO_ENDPOINT_URL",
+            )
+            if not os.environ.get(name)
+        ]
+        if missing:
+            print(
+                "⏭️  Skipping storage seed: incomplete local:minio configuration "
+                "would target AWS S3. Missing: " + ", ".join(missing)
+            )
+            return
 
     storage = get_storage()
     uploaded, total = _seed_storage(storage)

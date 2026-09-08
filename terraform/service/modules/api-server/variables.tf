@@ -136,7 +136,12 @@ variable "lambda_authorizer_alias" {
 variable "storage_driver" {
   type        = string
   default     = "s3"
-  description = "Storage driver. The value should be one of: `s3`, `local`, `local:minio`"
+  description = "Storage driver. The value should be one of: `s3`, `local`, `seaweedfs`, `local:minio` (deprecated)"
+
+  validation {
+    condition     = contains(["s3", "local", "seaweedfs", "local:minio"], var.storage_driver)
+    error_message = "storage_driver must be one of: s3, local, seaweedfs, local:minio."
+  }
 }
 
 variable "storage_env_vars_s3" {
@@ -164,7 +169,44 @@ variable "storage_env_vars_local_minio" {
     STORAGE_LOCAL_MINIO_ENDPOINT_URL = string
   })
   default     = null
-  description = "The Lambda environment variables for local MinIO storage drivder."
+  sensitive   = true
+  description = "Deprecated. The Lambda environment variables for the local MinIO storage driver, kept for existing deployments. Use `storage_env_vars_seaweedfs` instead."
+
+  validation {
+    condition     = var.storage_driver != "local:minio" || var.storage_env_vars_local_minio != null
+    error_message = "storage_env_vars_local_minio must be set when storage_driver is \"local:minio\"."
+  }
+
+  validation {
+    condition = var.storage_env_vars_local_minio == null || alltrue([
+      for value in values(var.storage_env_vars_local_minio) : trimspace(value) != ""
+    ])
+    error_message = "storage_env_vars_local_minio values must not be empty; the Lambda would start and only fail on its first storage call."
+  }
+}
+
+variable "storage_env_vars_seaweedfs" {
+  type = object({
+    STORAGE_SEAWEEDFS_BUCKET_NAME  = string
+    STORAGE_SEAWEEDFS_USERNAME     = string
+    STORAGE_SEAWEEDFS_PASSWORD     = string
+    STORAGE_SEAWEEDFS_ENDPOINT_URL = string
+  })
+  default     = null
+  sensitive   = true
+  description = "The Lambda environment variables for the self-hosted SeaweedFS storage driver. Required when `storage_driver` is `seaweedfs`."
+
+  validation {
+    condition     = var.storage_driver != "seaweedfs" || var.storage_env_vars_seaweedfs != null
+    error_message = "storage_env_vars_seaweedfs must be set when storage_driver is \"seaweedfs\"."
+  }
+
+  validation {
+    condition = var.storage_env_vars_seaweedfs == null || alltrue([
+      for value in values(var.storage_env_vars_seaweedfs) : trimspace(value) != ""
+    ])
+    error_message = "storage_env_vars_seaweedfs values must not be empty; the Lambda would start and only fail on its first storage call."
+  }
 }
 
 variable "sse_bucket" {
