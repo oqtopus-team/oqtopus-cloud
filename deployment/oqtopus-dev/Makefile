@@ -214,10 +214,11 @@ generate-tag: ## Tag version
 	AWS_ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text --profile $(PROFILE)) && \
 	AWS_REGION=$$(aws configure get region --profile $(PROFILE)) && \
 	echo "$(PROFILE)" && \
-	echo "🏷️ Tagging version: $${GITHUB_SHA}" && \
+	echo "🏷️ Tagging version: $(GITHUB_SHA)" && \
 	aws lambda tag-resource \
-	--resource arn:aws:lambda:$${AWS_REGION}:$${AWS_ACCOUNT_ID}:function:$${FUNCTION_NAME} \
-  --tags github-sha=$${GITHUB_SHA}
+		--resource arn:aws:lambda:$(AWS_REGION):$(AWS_ACCOUNT_ID):function:$(FUNCTION_NAME) \
+		--tags github-sha=$(GITHUB_SHA) \
+		--profile $(PROFILE)
 	@echo "🏷️ Tagging Completed"
 
 deploy-aliased-version: generate-tag
