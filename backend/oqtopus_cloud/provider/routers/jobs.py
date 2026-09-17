@@ -265,10 +265,20 @@ def update_job_status(
                 return ConflictErrorResponse(
                     f"The specified job is not a status that allows transition to the status: {request.status}"
                 )
-        elif request.status in [
-            JobStatus.succeeded,
-            JobStatus.cancelled,
-        ]:
+        elif request.status == JobStatus.succeeded:
+            cancelled_with_result = (
+                model_status == JobStatus.cancelled
+                and request.output_files is not None
+                and f"{job_id}/result.zip" in request.output_files
+            )
+            if (
+                model_status not in [JobStatus.running, JobStatus.cancelling]
+                and not cancelled_with_result
+            ):
+                return ConflictErrorResponse(
+                    f"The specified job is not a status that allows transition to the status: {request.status}"
+                )
+        elif request.status == JobStatus.cancelled:
             if model_status not in [JobStatus.running, JobStatus.cancelling]:
                 return ConflictErrorResponse(
                     f"The specified job is not a status that allows transition to the status: {request.status}"

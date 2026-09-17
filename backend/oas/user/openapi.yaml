@@ -475,7 +475,7 @@ paths:
       tags:
         - job
       summary: Cancel job
-      description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid only for job with status: submitted, ready or running.'
+      description: 'Start a procedure to cancel quantum job.<br/><br/> Operation is valid for jobs with status: registered, submitted, ready, running, cancelling or cancelled.'
       operationId: cancel_job
       security:
         - BearerAuth: []

@@ -646,7 +646,7 @@ def cancel_job(
             "cancelled",
         ]:
             return BadRequestResponse(
-                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'registered', 'ready', 'submitted' and 'running')"
+                message=f"{job_id} job is not in valid status for cancellation (valid statuses for cancellation: 'registered', 'ready', 'submitted', 'running', 'cancelling' and 'cancelled')"
             )
 
         if job.status == "running":

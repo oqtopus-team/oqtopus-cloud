@@ -82,6 +82,7 @@ def update_pending_jobs(db, current: datetime):
                         Job.status == "submitted",
                         Job.status == "ready",
                         Job.status == "running",
+                        Job.status == "cancelling",
                     ),
                     Job.device_id == device_id,
                     Job.submitted_at >= since,
