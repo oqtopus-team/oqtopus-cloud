@@ -48,3 +48,9 @@ variable "password_minimum_length" {
   default     = 8
 }
 
+variable "post_confirmation_lambda_arn" {
+  description = "ARN of Lambda function to invoke after Cognito sign-up confirmation. When set, attaches as PostConfirmation trigger."
+  type        = string
+  default     = null
+}
+
