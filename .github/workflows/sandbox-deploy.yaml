@@ -1,0 +1,221 @@
+name: Deploy sandbox
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply the terraform plans (false = plan only, no approval needed)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: sandbox-deploy
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_DEFAULT_REGION: ap-northeast-1
+  TF_IN_AUTOMATION: "1"
+
+# Deploys the selected branch to an organization's sandbox AWS account so a
+# pull request can be verified on a real environment before merge. Everything
+# organization-specific lives in configuration, not in this file:
+#   - SANDBOX_TERRAFORM_ROLE_ARN (repository secret): IAM role to assume,
+#     created by the deployment-roles module with enable_terraform_deploy_role.
+#   - oqtopus-cloud/sandbox/terraform-files (Secrets Manager, sandbox account):
+#     tfvars/tfbackend content for both stacks.
+# Without that configuration this workflow has nothing to deploy to.
+#
+# Two jobs so a human confirms the plan before anything is applied:
+#   plan   - always runs; plans both stacks, prints the diffs to the run
+#            summary, and uploads the infrastructure plan as an artifact.
+#   apply  - only when apply=true; gated by the `sandbox` GitHub Environment.
+#            Configure Required reviewers on that environment (repo Settings ->
+#            Environments -> sandbox); GitHub then pauses here until a reviewer
+#            reads the plan summary and approves or rejects. A deletion is NOT
+#            blocked mechanically - the reviewer decides whether it is expected.
+#            On approval it applies the exact infrastructure plan that was
+#            reviewed, then plan+applies service.
+#
+# The terraform/*/oqtopus-dev directories are used as the shared dev entry
+# point; the backend/vars fetched above decide which account/state they
+# actually target (same pattern as running oqtopus-prod entries for other
+# prod environments).
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # -eo pipefail, so a failed `terraform plan | tee` stops the step
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: 'ap-northeast-1'
+          role-to-assume: ${{ secrets.SANDBOX_TERRAFORM_ROLE_ARN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Set up Aqua
+        run: |
+          sudo apt install -y make
+          make setup-aqua
+          echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+      - name: setup uv
+        run: |
+          make setup-uv
+
+      # tfvars/tfbackend are gitignored; the environment values live in
+      # Secrets Manager (sandbox account) and are materialized per run.
+      - name: Fetch terraform config
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id oqtopus-cloud/sandbox/terraform-files \
+            --query SecretString --output text)
+          echo "$SECRET" | jq -r .infrastructure_tfvars    > terraform/infrastructure/oqtopus-dev/sandbox.tfvars
+          echo "$SECRET" | jq -r .infrastructure_tfbackend > terraform/infrastructure/oqtopus-dev/sandbox.tfbackend
+          echo "$SECRET" | jq -r .service_tfvars           > terraform/service/oqtopus-dev/sandbox.tfvars
+          echo "$SECRET" | jq -r .service_tfbackend        > terraform/service/oqtopus-dev/sandbox.tfbackend
+
+      - name: Build Lambda packages
+        working-directory: ./deployment/sandbox
+        run: |
+          make PROFILE=sandbox zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner
+
+      # terraform service reads bin/<id>/lambda.zip; lambda_auth lives under the module
+      - name: Place packages for terraform
+        run: |
+          mkdir -p terraform/service/oqtopus-dev/bin terraform/service/modules/lambda-auth/bin
+          cp -r deployment/sandbox/bin/user deployment/sandbox/bin/provider deployment/sandbox/bin/admin deployment/sandbox/bin/user_signup deployment/sandbox/bin/pending-jobs-updater deployment/sandbox/bin/lambda-version-cleaner terraform/service/oqtopus-dev/bin/
+          cp -r deployment/sandbox/bin/lambda_auth terraform/service/modules/lambda-auth/bin/
+
+      # The apply job reuses these exact packages instead of rebuilding, so the
+      # binaries the reviewer's service preview was based on are the ones applied.
+      - name: Upload Lambda packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: deployment/sandbox/bin
+          retention-days: 7 # must outlast the manual approval wait
+          if-no-files-found: error
+
+      # service references the infrastructure state, so infrastructure goes first
+      - name: Plan infrastructure
+        working-directory: ./terraform/infrastructure/oqtopus-dev
+        run: |
+          terraform init -backend-config=sandbox.tfbackend -reconfigure -input=false
+          terraform plan -var-file=sandbox.tfvars -out=sandbox.tfplan -input=false -no-color | tee plan.txt
+          { echo "## infrastructure"; grep -E "will be|must be|^Plan:|No changes" plan.txt || true; } >> "$GITHUB_STEP_SUMMARY"
+
+      # Saved plan the apply job replays verbatim, so the reviewer approves the
+      # exact change that gets applied. May contain resource attribute values -
+      # kept 7 days and only in the sandbox account.
+      - name: Upload infrastructure plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-tfplan
+          path: terraform/infrastructure/oqtopus-dev/sandbox.tfplan
+          retention-days: 7 # must outlast the manual approval wait
+          if-no-files-found: error
+
+      # Preview only: computed against the CURRENT infrastructure state (infra
+      # is not applied in this job), so it can differ from what actually
+      # applies after an infrastructure change. Shown to give the reviewer
+      # context on the service stack; service is not separately gated.
+      # continue-on-error so a PR that adds infra the service stack references
+      # (which cannot plan until infra is applied) still reaches the apply gate.
+      - name: Plan service (preview)
+        continue-on-error: true
+        working-directory: ./terraform/service/oqtopus-dev
+        run: |
+          terraform init -backend-config=sandbox.tfbackend -reconfigure -input=false
+          terraform plan -var-file=sandbox.tfvars -input=false -no-color | tee plan.txt
+          { echo "## service (preview)"; grep -E "will be|must be|^Plan:|No changes" plan.txt || true; } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    needs: plan
+    if: ${{ inputs.apply }}
+    runs-on: ubuntu-latest
+    environment: sandbox # add Required reviewers to this environment to gate the apply
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: 'ap-northeast-1'
+          role-to-assume: ${{ secrets.SANDBOX_TERRAFORM_ROLE_ARN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Set up Aqua
+        run: |
+          sudo apt install -y make
+          make setup-aqua
+          echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+      - name: setup uv
+        run: |
+          make setup-uv
+
+      - name: Fetch terraform config
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id oqtopus-cloud/sandbox/terraform-files \
+            --query SecretString --output text)
+          echo "$SECRET" | jq -r .infrastructure_tfvars    > terraform/infrastructure/oqtopus-dev/sandbox.tfvars
+          echo "$SECRET" | jq -r .infrastructure_tfbackend > terraform/infrastructure/oqtopus-dev/sandbox.tfbackend
+          echo "$SECRET" | jq -r .service_tfvars           > terraform/service/oqtopus-dev/sandbox.tfvars
+          echo "$SECRET" | jq -r .service_tfbackend        > terraform/service/oqtopus-dev/sandbox.tfbackend
+
+      - name: Download infrastructure plan
+        uses: actions/download-artifact@v4
+        with:
+          name: infrastructure-tfplan
+          path: terraform/infrastructure/oqtopus-dev
+
+      # Reuse the exact packages the plan job built (deterministic + faster,
+      # and no build step here that could fail after infra is applied).
+      - name: Download Lambda packages
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+          path: deployment/sandbox/bin
+
+      - name: Place packages for terraform
+        run: |
+          mkdir -p terraform/service/oqtopus-dev/bin terraform/service/modules/lambda-auth/bin
+          cp -r deployment/sandbox/bin/user deployment/sandbox/bin/provider deployment/sandbox/bin/admin deployment/sandbox/bin/user_signup deployment/sandbox/bin/pending-jobs-updater deployment/sandbox/bin/lambda-version-cleaner terraform/service/oqtopus-dev/bin/
+          cp -r deployment/sandbox/bin/lambda_auth terraform/service/modules/lambda-auth/bin/
+
+      # Applies the exact plan the reviewer approved. If the state moved since
+      # the plan was taken, apply of the saved plan fails rather than guessing.
+      - name: Apply infrastructure
+        working-directory: ./terraform/infrastructure/oqtopus-dev
+        run: |
+          terraform init -backend-config=sandbox.tfbackend -reconfigure -input=false
+          terraform apply -input=false sandbox.tfplan
+
+      # service is not separately gated (the stateful resources all live in the
+      # infrastructure stack); re-plan against the now-applied infrastructure
+      # state and apply.
+      - name: Apply service
+        working-directory: ./terraform/service/oqtopus-dev
+        run: |
+          terraform init -backend-config=sandbox.tfbackend -reconfigure -input=false
+          terraform plan -var-file=sandbox.tfvars -out=sandbox.tfplan -input=false -no-color | tee plan.txt
+          { echo "## service"; grep -E "will be|must be|^Plan:|No changes" plan.txt || true; } >> "$GITHUB_STEP_SUMMARY"
+          terraform apply -input=false sandbox.tfplan
