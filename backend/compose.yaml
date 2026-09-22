@@ -73,7 +73,7 @@ services:
       start_period: 5s
 
   mc:
-    image: minio/mc
+    image: quay.io/minio/mc
     depends_on:
       minio:
         condition: service_healthy
