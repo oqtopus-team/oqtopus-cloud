@@ -394,6 +394,14 @@ paths:
           description: Unauthorized
         '403':
           description: Not authorized
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ConflictError'
+              example:
+                message: device_id already exists
         '500':
           description: Internal Server Error
           content:
@@ -1226,6 +1234,13 @@ components:
         description:
           type: string
           example: Superconducting quantum computer
+    error.ConflictError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     devices.DevicePatch:
       type: object
       properties:
