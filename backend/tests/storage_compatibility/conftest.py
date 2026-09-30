@@ -35,6 +35,8 @@ def storage(
         "ENDPOINT_URL": endpoint,
     }.items():
         monkeypatch.setenv(f"{prefix}_{name}", value)
+    if driver == "seaweedfs":
+        monkeypatch.setenv("STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL", endpoint)
 
     client = boto3.client(
         "s3",

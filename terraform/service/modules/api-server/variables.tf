@@ -178,7 +178,7 @@ variable "storage_env_vars_local_minio" {
   }
 
   validation {
-    condition = var.storage_env_vars_local_minio == null || alltrue([
+    condition = var.storage_env_vars_local_minio == null ? true : alltrue([
       for value in values(var.storage_env_vars_local_minio) : trimspace(value) != ""
     ])
     error_message = "storage_env_vars_local_minio values must not be empty; the Lambda would start and only fail on its first storage call."
@@ -187,14 +187,15 @@ variable "storage_env_vars_local_minio" {
 
 variable "storage_env_vars_seaweedfs" {
   type = object({
-    STORAGE_SEAWEEDFS_BUCKET_NAME  = string
-    STORAGE_SEAWEEDFS_USERNAME     = string
-    STORAGE_SEAWEEDFS_PASSWORD     = string
-    STORAGE_SEAWEEDFS_ENDPOINT_URL = string
+    STORAGE_SEAWEEDFS_BUCKET_NAME         = string
+    STORAGE_SEAWEEDFS_USERNAME            = string
+    STORAGE_SEAWEEDFS_PASSWORD            = string
+    STORAGE_SEAWEEDFS_ENDPOINT_URL        = string
+    STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL = string
   })
   default     = null
   sensitive   = true
-  description = "The Lambda environment variables for the self-hosted SeaweedFS storage driver. Required when `storage_driver` is `seaweedfs`."
+  description = "The Lambda environment variables for the self-hosted SeaweedFS storage driver. `STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL` controls the endpoint embedded in presigned URLs."
 
   validation {
     condition     = var.storage_driver != "seaweedfs" || var.storage_env_vars_seaweedfs != null
@@ -202,7 +203,7 @@ variable "storage_env_vars_seaweedfs" {
   }
 
   validation {
-    condition = var.storage_env_vars_seaweedfs == null || alltrue([
+    condition = var.storage_env_vars_seaweedfs == null ? true : alltrue([
       for value in values(var.storage_env_vars_seaweedfs) : trimspace(value) != ""
     ])
     error_message = "storage_env_vars_seaweedfs values must not be empty; the Lambda would start and only fail on its first storage call."

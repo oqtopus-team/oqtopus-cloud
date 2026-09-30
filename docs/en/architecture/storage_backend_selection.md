@@ -32,7 +32,9 @@ SeaweedFS is also driven mainly by a single individual, so the ⑤ single-mainta
 
 The `seaweedfs` driver stores objects in [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which `backend/compose.yaml` starts for local development and which on-premises deployments run in place of AWS S3.
 
-`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, with directory markers excluded from prefix results so empty SeaweedFS directories are not exposed as object keys. Credentials and the endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` in `backend/compose.yaml`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings. The driver name records the backend this project runs and verifies against; nothing in the driver is specific to SeaweedFS. Another self-hosted S3-compatible backend, RustFS for example, is reached by pointing `STORAGE_SEAWEEDFS_ENDPOINT_URL` and the credentials at it.
+`FSSpecStorage` reaches SeaweedFS through the same S3 code path as AWS S3, with directory markers excluded from prefix results so empty SeaweedFS directories are not exposed as object keys. Credentials and the server-side endpoint are configured via `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL`. Any S3-compatible backend connects through that same code path, so switching to a different implementation later only means changing the connection settings. The driver name records the backend this project runs and verifies against; nothing in the driver is specific to SeaweedFS. Another self-hosted S3-compatible backend, RustFS for example, is reached by pointing these settings at it.
+
+When the API reaches storage through an internal hostname but clients use a public hostname, set `STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL` to the client-facing S3 endpoint. This value is embedded in presigned upload and download URLs without being contacted by the API. The Terraform module requires this setting explicitly; direct application configuration falls back to `STORAGE_SEAWEEDFS_ENDPOINT_URL` when it is omitted. The local Compose APIs therefore connect to `http://seaweedfs:8333` while returning URLs under `http://localhost:8333`.
 
 ### Migrating from `local:minio`
 
@@ -51,7 +53,7 @@ make run-user STORAGE_STACK=minio             # run an API against it
 make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
 ```
 
-`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so run one at a time. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for this stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so `make up` stops the inactive stack before starting the selected one. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for the MinIO stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
 
 ## Release compatibility check
 

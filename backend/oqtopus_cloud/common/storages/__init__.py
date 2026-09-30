@@ -34,8 +34,10 @@ def get_storage() -> AbstractStorage:
             access_key = environ["STORAGE_SEAWEEDFS_USERNAME"]
             secret_key = environ["STORAGE_SEAWEEDFS_PASSWORD"]
             endpoint_url = environ["STORAGE_SEAWEEDFS_ENDPOINT_URL"]
+            public_endpoint_url = environ.get("STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL")
             return FSSpecStorage(
                 fs_url=f"s3://{bucket_name}",
+                presign_endpoint_url=public_endpoint_url,
                 key=access_key,
                 secret=secret_key,
                 client_kwargs={"endpoint_url": endpoint_url},

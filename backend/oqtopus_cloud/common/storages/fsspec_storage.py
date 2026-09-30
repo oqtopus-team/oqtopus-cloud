@@ -23,13 +23,23 @@ class FSSpecStorage(AbstractStorage):
 
     fs: fsspec.AbstractFileSystem
 
-    def __init__(self, fs_url: str, **storage_options):
+    def __init__(
+        self,
+        fs_url: str,
+        *,
+        presign_endpoint_url: str | None = None,
+        **storage_options,
+    ):
         """
         :param fs_url: Storage URL scheme (e.g. "s3://my-bucket" or "file:///tmp")
+        :param presign_endpoint_url: Optional client-facing S3 endpoint to embed in
+            presigned URLs instead of the server-side endpoint.
         :param storage_options: options for specific storage driver (AWS credentials for s3 driver, etc)
         """
         self.fs_url = fs_url.rstrip("/")
         self._parsed_fs_url = urlparse(self.fs_url)
+        self._presign_endpoint_url = presign_endpoint_url
+        self._storage_options = storage_options
         self.fs = fsspec.filesystem(self._parsed_fs_url.scheme, **storage_options)
         self._presigned_url_strategy: GeneralPresignStrategy = (
             self._init_presign_strategy()
@@ -37,8 +47,18 @@ class FSSpecStorage(AbstractStorage):
 
     def _init_presign_strategy(self) -> GeneralPresignStrategy:
         if self._parsed_fs_url.scheme == "s3":
+            presign_fs = self.fs
+            if self._presign_endpoint_url is not None:
+                presign_options = {
+                    **self._storage_options,
+                    "client_kwargs": {
+                        **self._storage_options.get("client_kwargs", {}),
+                        "endpoint_url": self._presign_endpoint_url,
+                    },
+                }
+                presign_fs = fsspec.filesystem("s3", **presign_options)
             return S3PresignStrategy(
-                s3_fs=cast(S3FileSystem, self.fs),
+                s3_fs=cast(S3FileSystem, presign_fs),
                 bucket_name=self._parsed_fs_url.netloc,
             )
         elif self._parsed_fs_url.scheme == "file":

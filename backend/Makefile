@@ -85,6 +85,7 @@ endif
 endif
 ifeq ($(STORAGE_STACK),minio)
 STORAGE_SERVICES = minio mc
+INACTIVE_STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
 STORAGE_INIT_SERVICE = mc
 STORAGE_LABEL = MinIO
 export STORAGE_DRIVER=local:minio
@@ -94,6 +95,7 @@ export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
 export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
 else
 STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
+INACTIVE_STORAGE_SERVICES = minio mc
 STORAGE_INIT_SERVICE = seaweedfs-bucket-init
 STORAGE_LABEL = SeaweedFS
 export STORAGE_DRIVER=seaweedfs
@@ -101,6 +103,7 @@ export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_SEAWEEDFS_USERNAME=devadmin
 export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
 export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
+export STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL=http://localhost:8333
 endif
 export ALLOW_DELETION=true # flag to control whether users can delete their accounts
 export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
@@ -136,6 +139,9 @@ run-worker:
 	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
 
 up: ## Start the DB, apply migrations, seed data, and init storage (STORAGE_STACK=seaweedfs|minio)
+	@# Both stacks publish port 9001. Stop the inactive stack before starting the
+	@# selected one so changing STORAGE_STACK works without a manual `make down`.
+	@docker compose --profile minio stop $(INACTIVE_STORAGE_SERVICES) >/dev/null
 	@docker compose --profile $(STORAGE_STACK) up -d db $(STORAGE_SERVICES) otel-collector
 	@echo "Waiting for MySQL to be ready..."
 	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a

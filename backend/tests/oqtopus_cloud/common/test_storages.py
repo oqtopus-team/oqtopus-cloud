@@ -141,9 +141,7 @@ def test_fsspec_storage_local_file_upload_url(tmp_path):
     presigned_url_data = storage.get_upload_presigned_url_data(key)
 
     assert presigned_url_data["url"] == f"file://{storage_base}/{key}"
-    assert presigned_url_data["fields"] == {
-        "key": f"file://{storage_base}/{key}"
-    }
+    assert presigned_url_data["fields"] == {"key": f"file://{storage_base}/{key}"}
 
 
 def test_fsspec_storage_local_file_download_url(tmp_path):
@@ -177,14 +175,44 @@ def test_get_storage_seaweedfs(monkeypatch):
     monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
     monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
     monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL", "http://localhost:8333")
 
     storage = get_storage()
 
     assert isinstance(storage._presigned_url_strategy, S3PresignStrategy)
     assert storage.fs_url == "s3://test-bucket"
     assert storage.fs.client_kwargs["endpoint_url"] == "http://seaweedfs:8333"
+    assert (
+        storage._presigned_url_strategy._fs.client_kwargs["endpoint_url"]
+        == "http://localhost:8333"
+    )
+    assert (
+        storage.get_upload_presigned_url_data("input.bin")["url"]
+        == "http://localhost:8333/test-bucket"
+    )
+    assert storage.get_download_presigned_url("input.bin").startswith(
+        "http://localhost:8333/test-bucket/input.bin?"
+    )
     assert storage.fs.key == "devadmin"
     assert storage.fs.secret == "devadmin123"
+
+
+def test_get_storage_seaweedfs_uses_internal_endpoint_for_presigning_by_default(
+    monkeypatch,
+):
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_BUCKET_NAME", "test-bucket")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_USERNAME", "devadmin")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_PASSWORD", "devadmin123")
+    monkeypatch.setenv("STORAGE_SEAWEEDFS_ENDPOINT_URL", "http://seaweedfs:8333")
+    monkeypatch.delenv("STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL", raising=False)
+
+    storage = get_storage()
+
+    assert (
+        storage.get_upload_presigned_url_data("input.bin")["url"]
+        == "http://seaweedfs:8333/test-bucket"
+    )
 
 
 @pytest.mark.parametrize(

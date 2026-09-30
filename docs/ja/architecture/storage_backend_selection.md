@@ -32,7 +32,9 @@ SeaweedFS も中心開発者が個人であるため、⑤の単一主体リス�
 
 `seaweedfs` ドライバは [SeaweedFS](https://github.com/seaweedfs/seaweedfs) にオブジェクトを格納します。ローカル開発では `backend/compose.yaml` が起動し、オンプレ環境では AWS S3 の代わりに SeaweedFS を運用します。
 
-`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続します。SeaweedFS の空ディレクトリがオブジェクトのキーとして返らないよう、prefix の結果からディレクトリマーカーを除外しています。認証情報・接続先は `backend/compose.yaml` の `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。ドライバ名は本プロジェクトが実際に運用・検証しているバックエンドを表すもので、実装に SeaweedFS 固有の要素はありません。RustFS など他のセルフホスト S3 互換バックエンドを使う場合も、`STORAGE_SEAWEEDFS_ENDPOINT_URL` と認証情報の向き先を変えるだけで接続できます。
+`FSSpecStorage` は SeaweedFS へ AWS S3 と同じ S3 コードパスで接続します。SeaweedFS の空ディレクトリがオブジェクトのキーとして返らないよう、prefix の結果からディレクトリマーカーを除外しています。認証情報・サーバー側の接続先は `STORAGE_SEAWEEDFS_BUCKET_NAME` / `STORAGE_SEAWEEDFS_USERNAME` / `STORAGE_SEAWEEDFS_PASSWORD` / `STORAGE_SEAWEEDFS_ENDPOINT_URL` で設定します。S3 互換のバックエンドであれば同じコードパスで接続できるため、将来別の実装へ乗り換える場合も変更は接続設定だけで済みます。ドライバ名は本プロジェクトが実際に運用・検証しているバックエンドを表すもので、実装に SeaweedFS 固有の要素はありません。RustFS など他のセルフホスト S3 互換バックエンドを使う場合も、これらの設定の向き先を変えるだけで接続できます。
+
+API が内部ホスト名でストレージへ接続し、クライアントが公開ホスト名を使う構成では、`STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL` にクライアント向け S3 endpoint を設定します。この値は署名付き upload/download URL に埋め込まれ、API 自身は接続しません。Terraform モジュールでは明示的な指定が必須です。Terraform を介さずアプリへ直接設定する場合は、省略すると `STORAGE_SEAWEEDFS_ENDPOINT_URL` を署名付き URL にも使用します。そのためローカル Compose の API は `http://seaweedfs:8333` へ接続しつつ、`http://localhost:8333` の URL を返します。
 
 ### `local:minio` からの移行
 
@@ -51,7 +53,7 @@ make run-user STORAGE_STACK=minio             # この構成で API を起動
 make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレージ確認
 ```
 
-`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、同時には起動できません。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、このスタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、`make up` は選択されていないスタックを停止してから対象を起動します。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、MinIO スタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
 
 ## リリース時の互換性確認
 

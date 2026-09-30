@@ -17,6 +17,8 @@ x-api-env: &api-env
   STORAGE_SEAWEEDFS_USERNAME: devadmin
   STORAGE_SEAWEEDFS_PASSWORD: devadmin123
   STORAGE_SEAWEEDFS_ENDPOINT_URL: http://seaweedfs:8333
+  # Presigned URLs are used by clients outside the Compose network.
+  STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL: http://localhost:8333
   ALLOW_DELETION: "true"
   EDITABLE_FIELDS: '["name", "organization"]'
   VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
