@@ -28,9 +28,11 @@ User API、Provider API、ストレージは presigned URL で接続され、ク
 | `sse_log.zip` | `sse_log.log` | Provider | User | SSE ログ文字列を入れた JSON string payload | `sse` ジョブでのみ受け付けます。 |
 
 デフォルトのストレージドライバーは S3 です。
-ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントはストレージバックエンドへ直接ファイルを転送します。
+オンプレ環境やローカル開発では `local` や `seaweedfs` も使えます（`local:minio` は将来的に廃止する方針ですが、SeaweedFS への移行期間中は非推奨として利用できます）が、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントはストレージバックエンドへ直接ファイルを転送します。
 
 現在の storage-backed 形式では、クライアント側の archive entry は慣例として `<object-stem>.json` を使い、SSE ログでは慣例として `.log` entry を使います。
+
+ローカル開発やオンプレ環境で使う `seaweedfs` ドライバの選定経緯と設定は、[ストレージバックエンドの選定](storage_backend_selection.md) を参照してください。
 
 ## User API の流れ
 

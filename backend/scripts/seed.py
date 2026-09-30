@@ -141,7 +141,7 @@ _MITIGATION_INFO = json.dumps({"ro_error_mitigation": "pseudo_inverse"})
 # NOTE: keep in sync with storage/init_storage.py — it uploads the storage
 # objects (input.zip, plus one <name>.zip per entry in output_files) that the
 # API's get_job_info() dereferences for each of these jobs. A job's DB row and
-# its MinIO objects must agree, or download URLs 404.
+# its storage objects must agree, or download URLs 404.
 JOBS: list[dict[str, Any]] = [
     # Job 1: a completed run. execution_time / ended_at are set, and
     # output_files + message reflect the result artifacts the provider uploaded.
