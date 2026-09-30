@@ -171,7 +171,11 @@ def get_device_info_upload_url(
 @router.post(
     "/devices",
     response_model=SuccessResponse,
-    responses={400: {"model": Message}, 409: {"model": Message}, 500: {"model": Message}},
+    responses={
+        400: {"model": Message},
+        409: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def register_devices(
