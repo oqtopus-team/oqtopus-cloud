@@ -96,7 +96,6 @@ dev = [
   "pytest-sqlalchemy-mock>=0.1.5",
   "coverage>=7.6.9",
   "alembic>=1.13.2",
-  "mysql>=0.0.3",
   "moto>=5.1.0",
   "slack_sdk>=3.35.0",
 ]
