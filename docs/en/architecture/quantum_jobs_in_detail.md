@@ -27,9 +27,11 @@ The supported `.zip` object names are fixed by the backend. Each zip conventiona
 | `result.zip` | `result.json` | Provider | User | JSON matching `jobs.S3JobResult` | Job result. |
 | `sse_log.zip` | `sse_log.log` | Provider | User | JSON string payload containing the SSE log text | Only accepted for `sse` jobs. |
 
-The default storage driver is S3. Local development can use `local` or `local:minio`, but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and the client transfers files directly to the storage backend.
+The default storage driver is S3. Self-hosted deployments and local development can use `local` or `seaweedfs` — `local:minio` is planned for removal and remains available as a deprecated driver during migration to SeaweedFS — but the API contract is the same: the API returns upload presigned URL data or download presigned URLs, and the client transfers files directly to the storage backend.
 
 For the current storage-backed format, client-side archive entries conventionally use `<object-stem>.json`, except SSE logs, which conventionally use a `.log` entry.
+
+For why the `seaweedfs` driver used by local development and on-premises deployments was chosen, and how it is configured, see [Storage Backend Selection](storage_backend_selection.md).
 
 ## User API Flow
 
@@ -85,8 +87,9 @@ The `ready -> failed` transition is supported so that provider-side preprocessin
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | Array of OpenQASM 3 programs. Non-multiprogramming jobs normally contain one program. |
 | `operator` | `estimation` | Array of Pauli operator items. |
+| `sse_program` | `sse` | SSE user program. |
 
-The Provider API has a separate generated `jobs.S3SubmitJobInfo` schema that includes `sse_program` for SSE jobs. That field is not part of the User API input-upload schema described here.
+The User and Provider API definitions of `jobs.S3SubmitJobInfo` are kept aligned so the upload and download sides use the same contract.
 
 For provider output zip files and the conventional payload names/schema inside them, refer to the storage-model table above.
 

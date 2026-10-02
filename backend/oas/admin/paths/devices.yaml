@@ -61,6 +61,14 @@ devices:
         description: "Unauthorized"
       "403":
         description: "Not authorized"
+      "409":
+        description: Conflict
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.ConflictError"
+            example:
+              message: device_id already exists
       "500":
         description: Internal Server Error
         content:

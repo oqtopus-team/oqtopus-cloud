@@ -205,6 +205,29 @@ def test_cannot_get_device_that_not_exist(test_db):
     assert json.loads(response.body) == {"message": f"device_id={device} is not found."}
 
 
+def test_nonexistent_device_returns_404_even_without_permission(test_db):
+    """When device does not exist, return 404 regardless of user permissions.
+    This verifies the check order: existence (404) before authorization (403)."""
+    # Arrange
+    user_no = 1
+    device = "NonExistent"
+    request = _create_request()
+    request.state.user_id = f"email_{user_no}"
+
+    test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
+    test_db.commit()
+
+    # Act
+    response = get_device(device, request, test_db)
+
+    # Assert - should be 404, not 403
+    assert isinstance(response, NotFoundErrorResponse)
+    assert response.status_code == 404
+    assert json.loads(response.body) == {
+        "message": f"device_id={device} is not found."
+    }
+
+
 def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
