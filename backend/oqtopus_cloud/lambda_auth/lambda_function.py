@@ -93,13 +93,11 @@ def _validate_headers_for_api_token(headers: dict) -> None:
     # validate that both headers are present and match
     if not authorization or not api_token:
         raise AuthError(
-            f"Authentication header is missing: authorization={authorization}, q-api-token={api_token}"
+            "Authentication header is missing: authorization or q-api-token"
         )
 
     if authorization != api_token:
-        raise AuthError(
-            f"Authorization and q-api-token do not match: authorization={authorization}, q-api-token={api_token}"
-        )
+        raise AuthError("Authorization and q-api-token do not match")
 
 
 @tracer.capture_method
