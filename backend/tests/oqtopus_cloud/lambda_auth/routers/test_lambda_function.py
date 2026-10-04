@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import oqtopus_cloud.lambda_auth.lambda_function as lambda_function
 import pytest
@@ -373,7 +374,7 @@ def test__verify_api_token_api_no_token(test_session, monkeypatch):
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token(None)
 
-    assert "API token is None" in str(excinfo.value)
+    assert "Missing Q-API-Token" in str(excinfo.value)
 
 
 def test__verify_api_token_no_env_variable(test_session, monkeypatch):
@@ -393,7 +394,21 @@ def test__verify_api_token_no_env_variable(test_session, monkeypatch):
     assert "Environment variable is not set 'AUTH_USER_POOL_ID'" in str(excinfo.value)
 
 
+def test__verify_api_token_malformed(test_session, monkeypatch):
+    # No dot separator -> rejected by the shared parser before any DB access.
+    monkeypatch.setattr(
+        lambda_function,
+        "_create_session",
+        lambda **kwargs: fake_get_db_client(test_session),
+    )
+    with pytest.raises(AuthError) as excinfo:
+        _ = _verify_api_token("api_token_secret_2")
+    assert "Malformed Q-API-Token" in str(excinfo.value)
+
+
 def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
+    # user 2 has MFA disabled; pass a *well-formed* token so verification
+    # reaches the MFA check (regression: this previously stopped at the parser).
     user = _get_model(2)
     test_session.flush()
     test_session.add(user)
@@ -403,10 +418,14 @@ def test__verify_api_token_mfa_inactive(test_session, monkeypatch):
         "_create_session",
         lambda **kwargs: fake_get_db_client(test_session),
     )
+    no_rehash = MagicMock()
+    monkeypatch.setattr(lambda_function, "rehash_api_token_if_needed", no_rehash)
 
     with pytest.raises(AuthError) as excinfo:
-        _ = _verify_api_token("api_token_secret_2")
-    assert "API token is malformed" in str(excinfo.value)
+        _ = _verify_api_token("api_token_id_2.api_token_secret_2")
+    assert "MFA is not enabled for this user" in str(excinfo.value)
+    # A rejected request must never rehash.
+    no_rehash.assert_not_called()
 
 
 @pytest.mark.usefixtures("override_boto3_client_zero_user")
@@ -420,12 +439,15 @@ def test__verify_api_token_no_cognito_user(test_session, monkeypatch):
         "_create_session",
         lambda **kwargs: fake_get_db_client(test_session),
     )
+    no_rehash = MagicMock()
+    monkeypatch.setattr(lambda_function, "rehash_api_token_if_needed", no_rehash)
     with pytest.raises(AuthError) as excinfo:
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
 
     assert "Failed to list users from Cognito Cognito user is not found" in str(
         excinfo.value
     )
+    no_rehash.assert_not_called()
 
 
 @pytest.mark.usefixtures("override_boto3_client_multiple_users")
@@ -457,8 +479,11 @@ def test__verify_api_token_suspended(test_session, monkeypatch):
         "_create_session",
         lambda **kwargs: fake_get_db_client(test_session),
     )
-    with pytest.raises(AuthError) as excinfo:
+    no_rehash = MagicMock()
+    monkeypatch.setattr(lambda_function, "rehash_api_token_if_needed", no_rehash)
+    with pytest.raises(AuthError):
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
+    no_rehash.assert_not_called()
 
 
 def test__verify_api_token_unapproved(test_session, monkeypatch):
@@ -471,8 +496,11 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
         "_create_session",
         lambda **kwargs: fake_get_db_client(test_session),
     )
-    with pytest.raises(AuthError) as excinfo:
+    no_rehash = MagicMock()
+    monkeypatch.setattr(lambda_function, "rehash_api_token_if_needed", no_rehash)
+    with pytest.raises(AuthError):
         _ = _verify_api_token("api_token_id_1.api_token_secret_1")
+    no_rehash.assert_not_called()
 
 
 def test__generate_policy_allow():

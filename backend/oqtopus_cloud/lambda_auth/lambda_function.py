@@ -1,22 +1,20 @@
 import os
-from datetime import datetime
 from typing import Optional
 
 import boto3
 import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
 from botocore.config import Config
-from sqlalchemy import select, update
-from zoneinfo import ZoneInfo
+from sqlalchemy import select
 
+from oqtopus_cloud.common.auth.api_token import (
+    ApiTokenError,
+    parse_api_token,
+    rehash_api_token_if_needed,
+    verify_api_token,
+)
 from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, _create_session
 from oqtopus_cloud.lambda_auth.conf import logger, tracer
-
-utc = ZoneInfo("UTC")
-
-ph = PasswordHasher()
 
 # Per-call timeouts so a stalled external dependency raises a Python
 # exception (visible in CloudWatch + X-Ray) instead of consuming the
@@ -150,13 +148,11 @@ def _verify_access_token(access_token: Optional[str]) -> str:
 
 @tracer.capture_method
 def _verify_api_token(api_token: Optional[str]) -> str:
-    if api_token is None or api_token == "":
-        raise AuthError("API token is None")
-
+    # Parse via the shared parser so CLI and Lambda reject the same shapes.
     try:
-        api_token_id, api_token_secret = api_token.split(".")
-    except ValueError:
-        raise AuthError("API token is malformed")
+        api_token_id, api_token_secret = parse_api_token(api_token)
+    except ApiTokenError as e:
+        raise AuthError(str(e))
 
     # Get environment variables
     try:
@@ -164,51 +160,24 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     except Exception as e:
         raise AuthError(f"Environment variable is not set {e}")
 
+    # Credential check (Argon2/expiry) is shared with the in-app resolver via
+    # common.auth.api_token so the two cannot drift. Extract the values we need
+    # and close the session immediately -- the authorization below includes a
+    # Cognito call, and we must not hold an RDS Proxy connection across it.
+    db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
     try:
-        # Get a database session
-        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
-        try:
-            select_stmt = select(
-                User.mfa_status,
-                User.api_token_hash,
-                User.api_token_expiration,
-                User.cognito_id,
-            ).where(User.api_token_id == api_token_id)
-            verification_data = db.execute(select_stmt).first()
-            if verification_data is None:
-                raise AuthError("Invalid API token")
-
-            mfa_status, api_token_hash, api_token_expiration, cognito_id = (
-                verification_data
-            )
-
-            # Check the API token hash
-            try:
-                ph.verify(api_token_hash, api_token_secret)
-            except VerifyMismatchError:
-                raise AuthError("Invalid API token")
-            except (VerificationError, InvalidHash):
-                raise AuthError("API token verification error")
-
-            if ph.check_needs_rehash(api_token_hash):
-                update_stmt = (
-                    update(User)
-                    .where(User.api_token_id == api_token_id)
-                    .values(api_token_hash=ph.hash(api_token_secret))
-                )
-                db.execute(update_stmt)
-                db.commit()
-
-            # Check the API token expiration
-            if (api_token_expiration is None) or (
-                api_token_expiration.astimezone(utc) < datetime.now(utc)
-            ):
-                raise AuthError("API token is expired")
-        finally:
-            db.close()
+        user = verify_api_token(db, api_token_id, api_token_secret)
+        mfa_status = user.mfa_status
+        cognito_id = user.cognito_id
+        current_hash = user.api_token_hash
+    except ApiTokenError as e:
+        raise AuthError(f"Database error {e}")
     except Exception as e:
         raise AuthError(f"Database error {e}")
+    finally:
+        db.close()
 
+    # Authorization (no DB connection held across these).
     if mfa_status != MFAStatus.enabled:
         raise AuthError("MFA is not enabled for this user")
 
@@ -232,10 +201,21 @@ def _verify_api_token(api_token: Optional[str]) -> str:
             raise AuthError("Cognito user is not found")
         elif len(response["Users"]) > 1:
             raise AuthError("Cognito user is duplicated")
-        else:
-            return response["Users"][0]["Username"]
+        username = response["Users"][0]["Username"]
     except Exception as e:
         raise AuthError(f"Failed to list users from Cognito {e}")
+
+    # Fully accepted -> opportunistic hash upgrade (never for a rejected req).
+    # A fresh short-lived session, so no connection was held during the Cognito
+    # call above.
+    rehash_db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+    try:
+        rehash_api_token_if_needed(
+            rehash_db, api_token_id, current_hash, api_token_secret
+        )
+    finally:
+        rehash_db.close()
+    return username
 
 
 def _generate_policy_allow(principal_id="", resource="", user_id=""):

@@ -19,8 +19,10 @@ from oqtopus_cloud.common.models.user import UserStatus
 
 UTC = ZoneInfo("UTC")
 _ph = PasswordHasher()
+# Weak params so the default hasher reports needs_rehash (to exercise rehash).
+_weak_ph = PasswordHasher(time_cost=1, memory_cost=8, parallelism=1)
 
-Row = namedtuple("Row", "id api_token_hash api_token_expiration userstatus")
+Row = namedtuple("Row", "id api_token_id api_token_hash api_token_expiration userstatus")
 
 
 def _request(token):
@@ -30,14 +32,15 @@ def _request(token):
 
 def _mock_db(monkeypatch, row):
     db = MagicMock()
-    db.execute.return_value.first.return_value = row
+    # The shared verifier queries ORM objects: db.execute(...).scalars().first()
+    db.execute.return_value.scalars.return_value.first.return_value = row
     monkeypatch.setattr(client_auth, "_create_session", lambda **_kwargs: db)
     return db
 
 
-def _row(secret, *, status=UserStatus.approved, expired=False):
+def _row(secret, *, status=UserStatus.approved, expired=False, hasher=_ph):
     exp = datetime.now(UTC) + timedelta(days=-1 if expired else 90)
-    return Row("demo@oqtopus.local", _ph.hash(secret), exp, status)
+    return Row("demo@oqtopus.local", "tok-id", hasher.hash(secret), exp, status)
 
 
 class TestResolveApiTokenIdentity:
@@ -73,3 +76,19 @@ class TestResolveApiTokenIdentity:
         _mock_db(monkeypatch, _row("s3cret", status=UserStatus.unapproved))
         with pytest.raises(AuthorizationError, match="not approved"):
             client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_approved_token_with_stale_hash_is_rehashed(self, monkeypatch):
+        db = _mock_db(monkeypatch, _row("s3cret", hasher=_weak_ph))
+        client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+        db.commit.assert_called_once()
+
+    def test_unapproved_user_with_stale_hash_is_not_rehashed(self, monkeypatch):
+        # Regression: a request rejected by authorization (unapproved) must not
+        # mutate the DB, even when the stored hash is stale.
+        db = _mock_db(
+            monkeypatch,
+            _row("s3cret", status=UserStatus.unapproved, hasher=_weak_ph),
+        )
+        with pytest.raises(AuthorizationError):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+        db.commit.assert_not_called()
