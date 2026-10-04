@@ -100,6 +100,10 @@ resource "aws_lambda_function" "this" {
         OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
       } : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
+      # AUTH_MODE is merged LAST so the dedicated, validated var.auth_mode wins:
+      # lambda_additional_env must not be able to override it with an unvalidated
+      # value. Leave it to lambda_additional_env only when auth_mode is unset.
+      var.auth_mode != "" ? { AUTH_MODE = var.auth_mode } : {},
     )
   }
 

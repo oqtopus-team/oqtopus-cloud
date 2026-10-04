@@ -70,6 +70,7 @@ module "user_api" {
   editable_fields                        = var.editable_fields
   visible_fields                         = var.visible_fields
   login_history_enabled                  = var.login_history_enabled
+  auth_mode                              = var.user_api_auth_mode
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
   otel_enabled                           = var.otel_enabled
   otel_exporter_otlp_endpoint            = var.otel_exporter_otlp_endpoint
@@ -102,6 +103,7 @@ module "provider_api" {
   power_tools_service_name       = "provider-api"
   enable_cors                    = false
   log_level                      = "INFO"
+  auth_mode                      = var.provider_api_auth_mode
   sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   sse_container_log_name         = "ssecontainer.log"
   sse_user_program_name          = "userprogram.py"

@@ -215,6 +215,23 @@ variable "login_history_enabled" {
   description = "Flag to control whether user login history should be included in GET user API response"
 }
 
+variable "auth_mode" {
+  type        = string
+  default     = ""
+  description = <<-EOT
+    Authentication strategy for the FastAPI app (AUTH_MODE env var):
+    "aws" (API Gateway Lambda-authorizer context), "oidc" (verify the token
+    in-app), or "local". Empty (default) leaves AUTH_MODE unset, preserving the
+    historical behavior (AWS when not ENV=local), so existing deployments are
+    unchanged.
+  EOT
+
+  validation {
+    condition     = contains(["", "aws", "oidc", "local"], var.auth_mode)
+    error_message = "auth_mode must be one of \"\", \"aws\", \"oidc\", or \"local\"."
+  }
+}
+
 variable "lambda_timeout" {
   type        = number
   default     = 15

@@ -75,6 +75,7 @@ module "user_api" {
   editable_fields                = var.editable_fields
   visible_fields                 = var.visible_fields
   login_history_enabled          = var.login_history_enabled
+  auth_mode                      = var.user_api_auth_mode
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
@@ -114,6 +115,7 @@ module "provider_api" {
   editable_fields                = "[]"
   visible_fields                 = "[]"
   login_history_enabled          = "false"
+  auth_mode                      = var.provider_api_auth_mode
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint

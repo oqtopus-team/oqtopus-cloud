@@ -57,6 +57,26 @@ variable "login_history_enabled" {
   description = "Flag to control whether user login history should be included in GET user API response"
 }
 
+variable "user_api_auth_mode" {
+  type        = string
+  default     = "aws"
+  description = "AUTH_MODE for the User API Lambda: \"aws\" | \"oidc\" | \"local\" (\"\" leaves it unset)."
+  validation {
+    condition     = contains(["", "aws", "oidc", "local"], var.user_api_auth_mode)
+    error_message = "user_api_auth_mode must be one of \"\", \"aws\", \"oidc\", or \"local\"."
+  }
+}
+
+variable "provider_api_auth_mode" {
+  type        = string
+  default     = "aws"
+  description = "AUTH_MODE for the Provider API Lambda: \"aws\" | \"oidc\" | \"local\" (\"\" leaves it unset)."
+  validation {
+    condition     = contains(["", "aws", "oidc", "local"], var.provider_api_auth_mode)
+    error_message = "provider_api_auth_mode must be one of \"\", \"aws\", \"oidc\", or \"local\"."
+  }
+}
+
 variable "api_gateway_log_retention_days" {
   description = "Number of days for which API Gateway logs are retained"
   type        = number
