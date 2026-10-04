@@ -21,11 +21,18 @@ When ``AUTH_MODE`` is unset the mode defaults to ``local`` if ``ENV=local`` else
 ``aws`` -- so existing deployments and tests behave exactly as before.
 """
 
-from oqtopus_cloud.common.auth.identity import (
+from oqtopus_cloud.common.auth.frontend import (
     AuthError,
+    AuthorizationError,
     Identity,
     auth_mode,
     resolve_identity,
 )
 
-__all__ = ["AuthError", "Identity", "auth_mode", "resolve_identity"]
+__all__ = [
+    "AuthError",
+    "AuthorizationError",
+    "Identity",
+    "auth_mode",
+    "resolve_identity",
+]

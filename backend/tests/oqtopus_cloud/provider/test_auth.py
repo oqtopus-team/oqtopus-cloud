@@ -45,24 +45,25 @@ def test_oidc_invalid_token_is_401(oidc_mode, monkeypatch):
         raise OidcError("bad token")
 
     monkeypatch.setattr(
-        "oqtopus_cloud.common.auth.machine.verify_bearer_token", _raise
+        "oqtopus_cloud.common.auth.engine.verify_bearer_token", _raise
     )
     resp = client.get("/hello", headers={"Authorization": "Bearer bad.jwt"})
     assert resp.status_code == 401
 
 
-def test_oidc_missing_scope_is_401(oidc_mode, monkeypatch):
+def test_oidc_missing_scope_is_403(oidc_mode, monkeypatch):
+    # Authenticated but lacking the required scope is an authorization failure.
     monkeypatch.setattr(
-        "oqtopus_cloud.common.auth.machine.verify_bearer_token",
+        "oqtopus_cloud.common.auth.engine.verify_bearer_token",
         lambda _token: {"azp": "oqtopus-engine", "scope": "openid"},
     )
     resp = client.get("/hello", headers={"Authorization": "Bearer good.jwt"})
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
 
 def test_oidc_valid_token_with_scope_passes(oidc_mode, monkeypatch):
     monkeypatch.setattr(
-        "oqtopus_cloud.common.auth.machine.verify_bearer_token",
+        "oqtopus_cloud.common.auth.engine.verify_bearer_token",
         lambda _token: {"azp": "oqtopus-engine", "scope": "provider.write"},
     )
     resp = client.get("/hello", headers={"Authorization": "Bearer good.jwt"})

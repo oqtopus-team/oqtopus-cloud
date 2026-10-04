@@ -4,8 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from oqtopus_cloud.common.auth import AuthError
-from oqtopus_cloud.common.auth.machine import resolve_machine_identity
+from oqtopus_cloud.common.auth import AuthError, AuthorizationError
+from oqtopus_cloud.common.auth.engine import resolve_machine_identity
 from oqtopus_cloud.provider.conf import logger
 
 
@@ -27,13 +27,24 @@ class CustomMiddleware(BaseHTTPMiddleware):
         try:
             identity = resolve_machine_identity(request)
             request.state.client_id = identity.client_id
+        except AuthorizationError as e:
+            # Authenticated but lacking the required scope -> 403.
+            logger.warning(f"Authorization failed: {e}")
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Forbidden"},
+                headers={"X-Correlation-Id": corr_id},
+            )
         except AuthError as e:
-            # OIDC path: the machine caller could not be authenticated/authorized.
-            logger.warning(f"Authentication/authorization failed: {e}")
+            # Authentication failed (missing/invalid token) -> 401.
+            logger.warning(f"Authentication failed: {e}")
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Unauthorized"},
-                headers={"X-Correlation-Id": corr_id},
+                headers={
+                    "X-Correlation-Id": corr_id,
+                    "WWW-Authenticate": "Bearer",
+                },
             )
 
         response = await call_next(request)

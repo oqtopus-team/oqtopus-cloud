@@ -3,7 +3,7 @@
 The Provider API is called by machine clients (e.g. ``oqtopus-engine``), not by
 human users. Historically the only gate was an API Gateway API key, so there was
 no per-caller identity at all. This module adds a pluggable resolver -- mirroring
-the user-facing :mod:`oqtopus_cloud.common.auth.identity` -- selected by the same
+the user-facing :mod:`oqtopus_cloud.common.auth.frontend` -- selected by the same
 ``AUTH_MODE`` environment variable:
 
 - ``aws``   : the API Gateway validated the API key upstream; there is no
@@ -22,7 +22,11 @@ from dataclasses import dataclass, field
 
 from fastapi import Request
 
-from oqtopus_cloud.common.auth.identity import AuthError, auth_mode
+from oqtopus_cloud.common.auth.frontend import (
+    AuthError,
+    AuthorizationError,
+    auth_mode,
+)
 from oqtopus_cloud.common.auth.oidc import (
     OidcError,
     extract_scopes,
@@ -63,7 +67,8 @@ def _oidc_machine_identity(request: Request) -> MachineIdentity:
     # Authorization: coarse scope gate (no user-status / DB check for M2M).
     scope = required_scope()
     if scope and not has_required_scope(claims, scope):
-        raise AuthError(f"Token is missing required scope '{scope}'")
+        # Authenticated but lacking the required scope -> 403, not 401.
+        raise AuthorizationError(f"Token is missing required scope '{scope}'")
 
     # The principal of a client-credentials token is the client, not a user:
     # `azp`/`client_id` name it; fall back to `sub` (the service account).

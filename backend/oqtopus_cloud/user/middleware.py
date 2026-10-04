@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from oqtopus_cloud.common.auth import AuthError, resolve_identity
+from oqtopus_cloud.common.auth import AuthError, AuthorizationError, resolve_identity
 from oqtopus_cloud.user.conf import logger
 
 
@@ -28,13 +28,27 @@ class CustomMiddleware(BaseHTTPMiddleware):
             request.state.user_id = identity.user_id
             request.state.user_pool_id = identity.user_pool_id
             request.state.region = identity.region
+        except AuthorizationError as e:
+            # Authenticated but not permitted (e.g. unapproved user) -> 403.
+            # Re-authenticating would not help, so the SPA must NOT bounce to
+            # login; it shows an access-denied state instead.
+            logger.warning(f"Authorization failed: {e}")
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Forbidden"},
+                headers={"X-Correlation-Id": corr_id},
+            )
         except AuthError as e:
-            # OIDC path: caller could not be authenticated/authorized.
-            logger.warning(f"Authentication/authorization failed: {e}")
+            # Authentication failed (missing/invalid token) -> 401. The SPA
+            # treats this as a session-expiry and sends the browser to login.
+            logger.warning(f"Authentication failed: {e}")
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Unauthorized"},
-                headers={"X-Correlation-Id": corr_id},
+                headers={
+                    "X-Correlation-Id": corr_id,
+                    "WWW-Authenticate": "Bearer",
+                },
             )
         except KeyError:
             # AWS path: the API Gateway authorizer context is missing.

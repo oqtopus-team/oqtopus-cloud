@@ -19,7 +19,15 @@ from oqtopus_cloud.common.auth.oidc import OidcError, verify_bearer_token
 
 
 class AuthError(Exception):
-    """Raised when the caller cannot be authenticated or authorized."""
+    """Authentication failure: the caller could not be authenticated (-> 401)."""
+
+
+class AuthorizationError(AuthError):
+    """Authorization failure: authenticated but not permitted (-> 403).
+
+    A subclass of :class:`AuthError` so callers that catch the latter keep
+    working; middlewares that distinguish 401 vs 403 check this type first.
+    """
 
 
 @dataclass
@@ -91,9 +99,10 @@ def _oidc_identity(request: Request) -> Identity:
         raise AuthError(f"Token is missing the '{username_claim}' claim")
 
     # Authorization: the account must exist and be approved (the piece the
-    # Lambda authorizer used to enforce upstream).
+    # Lambda authorizer used to enforce upstream). Authenticated-but-unapproved
+    # is a 403, not a 401 -- re-authenticating would not help.
     if not validate_user_status(user_id=user_id):
-        raise AuthError(f"User '{user_id}' is not approved")
+        raise AuthorizationError(f"User '{user_id}' is not approved")
 
     return Identity(user_id=user_id, email=claims.get("email"))
 
