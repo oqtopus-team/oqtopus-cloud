@@ -57,6 +57,18 @@ def create_api_token(
     user_id = event.state.user_id
     logger.info(f"Get api token for {user_id}")
 
+    # A caller authenticated *with* a Q-API-Token must not be able to mint a
+    # fresh 90-day token: that would let a leaked token renew itself forever
+    # with no interactive (OIDC/Cognito) re-authentication. Issuance requires
+    # an interactive auth method. auth_method is unset on the legacy AWS path
+    # (the API Gateway authorizer already gates issuance there), so only the
+    # in-app api_token path is rejected here.
+    if getattr(event.state, "auth_method", None) == "api_token":
+        logger.info("Forbidden: API tokens cannot be issued via API-token auth")
+        return ForbiddenErrorResponse(
+            message="API tokens can only be issued from an interactive (OIDC) session"
+        )
+
     try:
         # generate api token
         api_token_id = token_urlsafe(16)

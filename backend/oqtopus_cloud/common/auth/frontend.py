@@ -19,7 +19,16 @@ from oqtopus_cloud.common.auth.oidc import OidcError, verify_bearer_token
 
 
 class AuthError(Exception):
-    """Authentication failure: the caller could not be authenticated (-> 401)."""
+    """Authentication failure: the caller could not be authenticated (-> 401).
+
+    ``challenge`` is the ``WWW-Authenticate`` value a 401 should advertise.
+    It defaults to ``"Bearer"`` (the OIDC path), but the Q-API-Token path sets
+    it to ``None`` so a CLI token failure is not told to retry as a Bearer.
+    """
+
+    def __init__(self, message: str = "", *, challenge: Optional[str] = "Bearer"):
+        super().__init__(message)
+        self.challenge = challenge
 
 
 class AuthorizationError(AuthError):
@@ -38,6 +47,10 @@ class Identity:
     email: Optional[str] = None
     user_pool_id: Optional[str] = None
     region: Optional[str] = None
+    # How the caller authenticated: "local" | "aws" | "oidc" | "api_token".
+    # Lets handlers gate sensitive operations (e.g. forbid an API-token caller
+    # from minting a fresh API token without interactive re-authentication).
+    auth_method: Optional[str] = None
 
 
 def auth_mode() -> str:
@@ -60,6 +73,7 @@ def _local_identity() -> Identity:
         email="admin-email",
         user_pool_id="ap-northeast-1_XXXXXXXXX",
         region="ap-northeast-1",
+        auth_method="local",
     )
 
 
@@ -76,6 +90,7 @@ def _aws_identity(request: Request) -> Identity:
         user_id=user_id,
         user_pool_id=user_pool_id,
         region=region,
+        auth_method="aws",
     )
 
 
@@ -104,7 +119,7 @@ def _oidc_identity(request: Request) -> Identity:
     if not validate_user_status(user_id=user_id):
         raise AuthorizationError(f"User '{user_id}' is not approved")
 
-    return Identity(user_id=user_id, email=claims.get("email"))
+    return Identity(user_id=user_id, email=claims.get("email"), auth_method="oidc")
 
 
 def resolve_identity(request: Request) -> Identity:
@@ -115,5 +130,16 @@ def resolve_identity(request: Request) -> Identity:
     if mode == "aws":
         return _aws_identity(request)
     if mode == "oidc":
+        # On-prem the User API serves two caller kinds that AWS's Lambda
+        # authorizer used to unify: browsers (OIDC Bearer) and CLI clients
+        # (a DB-backed Q-API-Token). Dispatch on the token header. Deferred
+        # import avoids a frontend<->client module cycle.
+        from oqtopus_cloud.common.auth.client import (  # noqa: PLC0415
+            API_TOKEN_HEADER,
+            resolve_api_token_identity,
+        )
+
+        if request.headers.get(API_TOKEN_HEADER):
+            return resolve_api_token_identity(request)
         return _oidc_identity(request)
     raise AuthError(f"Unknown AUTH_MODE: {mode!r}")
