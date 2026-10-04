@@ -130,9 +130,165 @@ services agree on. Keycloak is pinned to `KC_HOSTNAME=http://localhost:8081`
   vars — no code changes. The verification in `common/auth/oidc.py` is generic.
 - The AWS production path is untouched: with `AUTH_MODE` unset (and not
   `ENV=local`) the API still reads the API Gateway Lambda-authorizer context.
-- **Machine clients** (`quri-parts-oqtopus`, `q-api-token`) are out of scope for
-  this browser-OIDC demo; that path stays in-app (DB-backed API tokens) and can
-  be wired so oauth2-proxy skips requests carrying `Q-API-Token`.
+- **Machine clients** (`oqtopus-client` / `quri-parts-oqtopus`, authenticating
+  with a `Q-API-Token`) use the same User API but a **different entry point** —
+  they bypass oauth2-proxy and the token is verified in-app. See
+  [Machine clients — Q-API-Token (CLI)](#machine-clients--q-api-token-cli) below.
+
+---
+
+# Machine clients — Q-API-Token (CLI)
+
+Programmatic clients (`oqtopus-client`, `quri-parts-oqtopus`) do **not** use OIDC.
+They authenticate to the User API with a static `Q-API-Token: <id>.<secret>`
+header. In AWS this token is checked by the API Gateway Lambda authorizer; on-prem
+the **same check runs in-app** (`common/auth/client.py`: Argon2 hash, expiry, and
+`userstatus == approved`). This section covers local development and the rules for
+a real deployment.
+
+## 1. Normal local startup (`make up`) — authentication is **bypassed**
+
+```bash
+cd backend
+make up        # docker compose up -d + migrate + seed + init storage
+```
+
+The default `compose.yaml` runs the User API with `ENV=local`, which resolves
+every request to a **fixed developer identity** (`admin-email`) and **never runs
+the Q-API-Token check**. This is the fast path for day-to-day work on handlers;
+it tells you nothing about authentication.
+
+| | `make up` (default) | Auth overlay (below) |
+| --- | --- | --- |
+| `ENV` | `local` | `local` (DB/MinIO wiring only) |
+| `AUTH_MODE` | *(unset → `local`)* | `oidc` |
+| Request identity | fixed `admin-email`, no checks | OIDC Bearer **or** `Q-API-Token`, verified |
+| Q-API-Token verified? | **No** | **Yes** (`client.py`) |
+
+## 2. Enabling Q-API-Token verification (auth overlay)
+
+Bring the stack up with the auth overlay, which switches the User API to
+`AUTH_MODE=oidc`. In this mode the in-app `AuthMiddleware` dispatches on the
+request headers: a `Q-API-Token` header → the DB-backed token verifier; otherwise
+an `Authorization: Bearer` → OIDC JWT verification.
+
+```bash
+cd backend
+docker compose -f compose.yaml -f compose.auth.yaml up -d --build
+make migrate-up && make seed      # if not already seeded (creates demo@oqtopus.local, approved)
+```
+
+`ENV` stays `local` (so DB/MinIO wiring is unchanged); `AUTH_MODE=oidc` is the
+independent switch that turns real authentication on. Keycloak comes up with the
+overlay too — it is only needed to *issue* a token (step 4); verifying a
+`Q-API-Token` itself hits the DB, not Keycloak.
+
+## 3. Pointing `oqtopus-client` at the User API (direct, **not** via the BFF)
+
+The CLI connects **straight to the User API**, bypassing oauth2-proxy / nginx:
+
+```bash
+export OQTOPUS_URL=http://localhost:8080          # User API, direct
+export OQTOPUS_API_TOKEN='<id>.<secret>'          # from step 4
+```
+
+**Why not the BFF (`:4200/api`)?** In the BFF, nginx guards `/api/*` with an
+`auth_request` subrequest to oauth2-proxy. A CLI request carries no oauth2-proxy
+**session cookie**, so oauth2-proxy returns 401 and nginx never forwards the
+request to the User API — the `Q-API-Token` is never even looked at. The token
+path must therefore terminate at the User API directly (locally `:8080`; in a
+real deployment, a dedicated HTTPS host — see §6).
+
+## 4. Issuing an API token (OIDC browser session only)
+
+API tokens are minted from an **OIDC-authenticated** session. A client that is
+already authenticated **with a Q-API-Token cannot mint a new one** — `POST
+/api-token` returns **403** in that case (so a leaked token cannot renew itself
+indefinitely). Issuance is therefore a web-console / browser responsibility:
+
+```text
+browser OIDC login  →  POST /api-token  →  set <id>.<secret> on the client
+                    →  oqtopus-client calls the User API directly
+```
+
+Scripted end-to-end (no browser), against the auth overlay from §2:
+
+```bash
+# 1) Get an OIDC token for the approved demo user (Keycloak password grant)
+ID_TOKEN=$(curl -s \
+  -d grant_type=password \
+  -d client_id=oqtopus-oauth2-proxy -d client_secret=oauth2-proxy-secret \
+  -d username=demo -d password=demopassword -d scope=openid \
+  http://localhost:8081/realms/oqtopus/protocol/openid-connect/token \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["id_token"])')
+
+# 2) Issue an API token (OIDC Bearer) and assemble "<id>.<secret>"
+TOKEN=$(curl -s -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  http://localhost:8080/api-token \
+  | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["api_token_id"] + "." + d["api_token_secret"])')
+echo "Q-API-Token: $TOKEN"
+
+# 3) Use the Q-API-Token (this is what oqtopus-client sends)
+curl -s -H "q-api-token: $TOKEN" http://localhost:8080/devices | python3 -m json.tool
+```
+
+### Connectivity check (expected status codes)
+
+```bash
+# 200 — valid Q-API-Token
+curl -s -o /dev/null -w 'token OK:        %{http_code}\n' -H "q-api-token: $TOKEN" http://localhost:8080/devices
+# 401 — bad/malformed token (note: NO "WWW-Authenticate: Bearer" on this path)
+curl -s -o /dev/null -w 'bad token:       %{http_code}\n' -H "q-api-token: nope.nope" http://localhost:8080/devices
+# 401 — no credentials at all
+curl -s -o /dev/null -w 'no creds:        %{http_code}\n' http://localhost:8080/devices
+# 403 — a Q-API-Token caller may NOT mint a new token
+curl -s -o /dev/null -w 'self-reissue:    %{http_code}\n' -X POST -H "q-api-token: $TOKEN" http://localhost:8080/api-token
+```
+
+## 5. Local Docker build prerequisite (`oqtopus-auth` sibling checkout)
+
+`oqtopus-auth` is currently an **editable path dependency**, so it must live next
+to this repo:
+
+```text
+~/workspace/
+├── oqtopus-cloud/      ← this repo
+└── oqtopus-auth/
+```
+
+`compose.yaml` and `Dockerfile` pull it into the image via a **BuildKit
+additional build context** named `oqtopus_auth` (`compose.yaml` →
+`additional_contexts`). Rather than copying the whole sibling directory, the
+`Dockerfile` copies only `oqtopus-auth`'s build inputs — its packaging metadata
+and source — from that context, so local `.git` / `.venv` contents are neither
+transferred into the build nor baked into the image:
+
+```dockerfile
+COPY --from=oqtopus_auth pyproject.toml README.md LICENSE /oqtopus-auth/
+COPY --from=oqtopus_auth src /oqtopus-auth/src
+```
+
+These run before `uv sync --frozen` (which resolves the editable path dependency
+at `/oqtopus-auth`). Build with BuildKit enabled (Compose v2 does this by default).
+
+> When `oqtopus-auth` is published (PyPI) or pinned to a git ref, this sibling-
+> directory layout and the additional context become unnecessary: the dependency
+> resolves like any other, and both `COPY --from=oqtopus_auth` lines can be removed.
+
+## 6. Production / shared-environment requirements
+
+The User API direct path (the CLI entry point) must, at minimum:
+
+- **Terminate TLS (HTTPS).** Q-API-Tokens are bearer credentials.
+- **Set `AUTH_MODE=oidc` explicitly.** Do not rely on defaults.
+- **Rate-limit** the direct host. The Argon2 verify is intentionally expensive;
+  cap it at the edge (the app also bounds concurrency via `AUTH_MAX_CONCURRENCY`).
+- **Never create a path that bypasses the FastAPI `AuthMiddleware`.** Every route
+  to the User API must pass through it.
+- **Separate the two front doors by purpose:** a browser **BFF host** (nginx +
+  oauth2-proxy, OIDC, same-origin `/api`) and a **direct User-API host** for CLI
+  `Q-API-Token` traffic. Mirrors the AWS split (SPA host vs API custom domain);
+  the direct host replaces API Gateway + Lambda authorizer with the in-app check.
 
 ---
 
