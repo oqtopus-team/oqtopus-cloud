@@ -87,11 +87,11 @@ def _validate_user_status(
 
 
 @tracer.capture_method
-def _verify_id_token(id_token: Optional[str]) -> str:
-    if id_token is None:
-        raise AuthError("ID token is not found")
+def _verify_access_token(access_token: Optional[str]) -> str:
+    if access_token is None:
+        raise AuthError("Access token is not found")
 
-    id_token = id_token.replace("Bearer ", "")
+    access_token = access_token.replace("Bearer ", "")
 
     # Get environment variables
     try:
@@ -108,37 +108,44 @@ def _verify_id_token(id_token: Optional[str]) -> str:
     try:
         # Get the signing key from the JWT
         jwks_client = jwt.PyJWKClient(jwks_url, timeout=_JWKS_HTTP_TIMEOUT_SECONDS)
-        signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+        signing_key = jwks_client.get_signing_key_from_jwt(access_token)
     except Exception as e:
         raise AuthError(f"Failed to get signing key from JWT: {e}")
 
     try:
-        # Decode and verify the ID token
+        # Cognito access tokens identify the app client with ``client_id``;
+        # unlike ID tokens, they don't necessarily contain an ``aud`` claim.
         token = jwt.decode(
-            id_token,
+            access_token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=CLIENT_ID,
             issuer=issuer,
             options={
-                "require": ["exp", "iss", "aud"],
+                "require": [
+                    "exp",
+                    "iss",
+                    "client_id",
+                    "token_use",
+                    "username",
+                ],
                 "verify_iss": True,
                 "verify_exp": True,
-                "verify_aud": True,
+                "verify_aud": False,
             },
         )
 
-        # verify the token_use claim
-        if token["token_use"] != "id":
+        if token["token_use"] != "access":
             raise AuthError("Invalid token_use")
+        if token["client_id"] != CLIENT_ID:
+            raise AuthError("Invalid client_id")
 
         # verify the user status
-        if not _validate_user_status(user_id=token["cognito:username"]):
+        if not _validate_user_status(user_id=token["username"]):
             raise AuthError("User is not approved")
 
-        return token["cognito:username"]
+        return token["username"]
     except Exception:
-        raise AuthError("ID token is invalid")
+        raise AuthError("Access token is invalid")
 
 
 @tracer.capture_method
@@ -289,8 +296,8 @@ def lambda_handler(event, context):
             # Verify API token
             user_id = _verify_api_token(headers["q-api-token"])
         elif "authorization" in headers:
-            # Verify Cognito ID token
-            user_id = _verify_id_token(headers["authorization"])
+            # Verify the Cognito access token sent by the browser client.
+            user_id = _verify_access_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
             policy_document = _generate_policy_deny(

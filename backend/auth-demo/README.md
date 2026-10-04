@@ -81,19 +81,19 @@ This exercises exactly the API-side auth seam (OIDC verify + authorization),
 getting a token straight from Keycloak via the password grant:
 
 ```bash
-# 1) Get an ID token for the LDAP-backed demo user
-ID_TOKEN=$(curl -s \
+# 1) Get an access token for the LDAP-backed demo user
+ACCESS_TOKEN=$(curl -s \
   -d grant_type=password \
   -d client_id=oqtopus-oauth2-proxy \
   -d client_secret=oauth2-proxy-secret \
   -d username=demo -d password=demopassword \
   -d scope=openid \
   http://localhost:8081/realms/oqtopus/protocol/openid-connect/token \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["id_token"])')
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
 # 2) Call the User API with the token
-curl -s -H "Authorization: Bearer $ID_TOKEN" http://localhost:8080/users/me | python3 -m json.tool
-curl -s -H "Authorization: Bearer $ID_TOKEN" http://localhost:8080/devices | python3 -m json.tool
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/users/me | python3 -m json.tool
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:8080/devices | python3 -m json.tool
 
 # 3) Negative checks
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/users/me                       # 401 (no token)
@@ -214,16 +214,16 @@ browser OIDC login  →  POST /api-token  →  set <id>.<secret> on the client
 Scripted end-to-end (no browser), against the auth overlay from §2:
 
 ```bash
-# 1) Get an OIDC token for the approved demo user (Keycloak password grant)
-ID_TOKEN=$(curl -s \
+# 1) Get an OAuth2 access token for the approved demo user (Keycloak password grant)
+ACCESS_TOKEN=$(curl -s \
   -d grant_type=password \
   -d client_id=oqtopus-oauth2-proxy -d client_secret=oauth2-proxy-secret \
   -d username=demo -d password=demopassword -d scope=openid \
   http://localhost:8081/realms/oqtopus/protocol/openid-connect/token \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["id_token"])')
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
 # 2) Issue an API token (OIDC Bearer) and assemble "<id>.<secret>"
-TOKEN=$(curl -s -X POST -H "Authorization: Bearer $ID_TOKEN" \
+TOKEN=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
   http://localhost:8080/api-token \
   | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["api_token_id"] + "." + d["api_token_secret"])')
 echo "Q-API-Token: $TOKEN"

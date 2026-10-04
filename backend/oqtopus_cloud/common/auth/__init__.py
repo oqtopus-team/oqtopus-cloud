@@ -1,7 +1,7 @@
 """Flexible authentication/authorization for the OQTOPUS backend.
 
-Historically the User API trusted a single identity contract: the API Gateway
-Lambda authorizer verified the caller's Cognito ID token (or ``q-api-token``)
+In AWS mode the User API trusts a single identity contract: the API Gateway
+Lambda authorizer verifies the caller's Cognito access token (or ``q-api-token``)
 and injected ``requestContext.authorizer["user_id"]``, which the FastAPI
 middleware read into ``request.state.user_id``.
 
