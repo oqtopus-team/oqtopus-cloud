@@ -87,6 +87,10 @@ resource "aws_cognito_user_pool" "this" {
   }
 
   username_attributes = var.username_attributes
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_cognito_user_pool_client" "this" {
