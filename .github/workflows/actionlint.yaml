@@ -15,6 +15,51 @@ jobs:
       pull-requests: "write"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Search for pull_request_target
+        id: scan
+        run: |
+          result=$(grep -rPzo --include="*.yml" --include="*.yaml" 'on:\s*\n\s*pull_request_target:' .github/workflows | tr '\0' '\n' || true)
+          {
+            echo "matches<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Delete previous bot comments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Fetching comments..."
+          COMMENTS=$(gh api repos/"$REPO"/issues/"$PR_NUMBER"/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .id')
+          for COMMENT_ID in $COMMENTS; do
+            echo "Deleting comment $COMMENT_ID"
+            gh api -X DELETE repos/"$REPO"/issues/comments/"$COMMENT_ID"
+          done
+          echo "All previous comments deleted."
+
+      - name: Post PR comment if detected
+        if: ${{ steps.scan.outputs.matches != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          body=$(cat << EOF
+          🚫 **Security Warning: \`pull_request_target\` usage detected**
+
+          The following lines in \`.github/workflows/\` contain \`pull_request_target\`:
+
+          \`\`\`
+          ${{ steps.scan.outputs.matches }}
+          \`\`\`
+
+          Using \`pull_request_target\` can introduce security risks. Please consider using safer alternatives, or ensure its usage is justified and secure.
+          EOF
+          )
+          gh pr comment ${{ github.event.pull_request.number }} --body "$body"
+        shell: bash
+
       - uses: reviewdog/action-actionlint@v1.65.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
