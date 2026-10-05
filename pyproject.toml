@@ -42,6 +42,13 @@ dependencies = [
   "opentelemetry-instrumentation-logging>=0.48b0",
 ]
 
+[project.scripts]
+oqtopus-cloud-user-api = "oqtopus_cloud.local_entry:run_user"
+oqtopus-cloud-provider-api = "oqtopus_cloud.local_entry:run_provider"
+oqtopus-cloud-admin-api = "oqtopus_cloud.local_entry:run_admin"
+oqtopus-cloud-user-signup-api = "oqtopus_cloud.local_entry:run_user_signup"
+oqtopus-cloud-worker = "oqtopus_cloud.worker.pending_jobs_updater.local_scheduler:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
