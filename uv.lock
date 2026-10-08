@@ -337,7 +337,7 @@ requires-dist = [
     { name = "opentelemetry-instrumentation-logging", specifier = ">=0.48b0" },
     { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.48b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.27.0" },
-    { name = "oqtopus-auth", editable = "../oqtopus-auth" },
+    { name = "oqtopus-auth", specifier = ">=1.0.0,<2" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pymysql", specifier = ">=1.1.0" },
@@ -1539,44 +1539,15 @@ wheels = [
 
 [[package]]
 name = "oqtopus-auth"
-version = "0.2.0"
-source = { editable = "../oqtopus-auth" }
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyjwt", extra = ["crypto"] },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.136.1" },
-    { name = "httpx", marker = "extra == 'client'", specifier = ">=0.28.1" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.13.0" },
-]
-provides-extras = ["fastapi", "client"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=2.1.0" },
-    { name = "ruff", specifier = ">=0.15.15" },
-]
-docs = [
-    { name = "mkdocs", specifier = "<2.0" },
-    { name = "mkdocs-gen-files", specifier = ">=0.6.1" },
-    { name = "mkdocs-glightbox", specifier = ">=0.5.2" },
-    { name = "mkdocs-literate-nav", specifier = ">=0.6.3" },
-    { name = "mkdocs-macros-plugin", specifier = ">=1.5.0" },
-    { name = "mkdocs-material", specifier = ">=9.7.6" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
-    { name = "pymarkdownlnt", specifier = ">=0.9.37" },
-    { name = "pymdown-extensions", specifier = ">=10.21.3" },
-]
-test = [
-    { name = "fastapi", specifier = ">=0.136.1" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "pytest-mock", specifier = ">=3.15.1" },
+sdist = { url = "https://files.pythonhosted.org/packages/2e/f0/41dee5daff20cbbb78c0992370a6a2d14add732482d78b4c1ad4de707e60/oqtopus_auth-1.0.0.tar.gz", hash = "sha256:73bda31846d2364824e285f1ddd4e4c06d9229be80f48856d00d4baefbbc77f5", size = 268802, upload-time = "2026-10-06T05:10:42.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/bf/199af471019aedb26c6e255d702dc95c08e529920d61335885f37163ed10/oqtopus_auth-1.0.0-py3-none-any.whl", hash = "sha256:1ee2f2efb6059b451fd931223c8451274e41a2728cb74be70f59f96592751723", size = 33308, upload-time = "2026-10-06T05:10:41.403Z" },
 ]
 
 [[package]]

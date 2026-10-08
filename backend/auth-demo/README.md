@@ -245,35 +245,22 @@ curl -s -o /dev/null -w 'no creds:        %{http_code}\n' http://localhost:8080/
 curl -s -o /dev/null -w 'self-reissue:    %{http_code}\n' -X POST -H "q-api-token: $TOKEN" http://localhost:8080/api-token
 ```
 
-## 5. Local Docker build prerequisite (`oqtopus-auth` sibling checkout)
+## 5. `oqtopus-auth` dependency
 
-`oqtopus-auth` is currently an **editable path dependency**, so it must live next
-to this repo:
+`oqtopus-auth` is consumed from **PyPI**, pinned in `uv.lock` (`>=1.0.0,<2`). No
+sibling checkout, BuildKit additional context, or `COPY --from=oqtopus_auth` is
+needed — `uv sync --frozen` resolves it like any other dependency during the
+Docker build.
 
-```text
-~/workspace/
-├── oqtopus-cloud/      ← this repo
-└── oqtopus-auth/
+For **local co-development** against a checkout of `oqtopus-auth` (e.g. to test an
+unreleased change), add a path override to `pyproject.toml` and re-lock:
+
+```toml
+[tool.uv.sources]
+oqtopus-auth = { path = "../oqtopus-auth", editable = true }
 ```
 
-`compose.yaml` and `Dockerfile` pull it into the image via a **BuildKit
-additional build context** named `oqtopus_auth` (`compose.yaml` →
-`additional_contexts`). Rather than copying the whole sibling directory, the
-`Dockerfile` copies only `oqtopus-auth`'s build inputs — its packaging metadata
-and source — from that context, so local `.git` / `.venv` contents are neither
-transferred into the build nor baked into the image:
-
-```dockerfile
-COPY --from=oqtopus_auth pyproject.toml README.md LICENSE /oqtopus-auth/
-COPY --from=oqtopus_auth src /oqtopus-auth/src
-```
-
-These run before `uv sync --frozen` (which resolves the editable path dependency
-at `/oqtopus-auth`). Build with BuildKit enabled (Compose v2 does this by default).
-
-> When `oqtopus-auth` is published (PyPI) or pinned to a git ref, this sibling-
-> directory layout and the additional context become unnecessary: the dependency
-> resolves like any other, and both `COPY --from=oqtopus_auth` lines can be removed.
+(Do not commit that override; the committed build uses the published package.)
 
 ## 6. Production / shared-environment requirements
 

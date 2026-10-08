@@ -31,11 +31,8 @@ x-api-common: &api-common
   build:
     context: ..
     dockerfile: backend/Dockerfile
-    # Local-dev: supply the editable path dependency `oqtopus-auth` (a sibling
-    # repo, outside the build context) via a BuildKit additional context.
-    # For real image builds, replace with a published/pinned oqtopus-auth.
-    additional_contexts:
-      oqtopus_auth: ../../oqtopus-auth
+    # oqtopus-auth is resolved from PyPI (pinned in uv.lock); no sibling-repo
+    # context is needed anymore.
   depends_on:
     db:
       condition: service_started
