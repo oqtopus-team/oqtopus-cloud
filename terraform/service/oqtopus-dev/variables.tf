@@ -79,11 +79,11 @@ variable "login_history_enabled" {
 
 variable "user_api_auth_mode" {
   type        = string
-  default     = "aws"
-  description = "AUTH_MODE for the User API Lambda: \"aws\" | \"oidc\" | \"local\" (\"\" leaves it unset)."
+  default     = "oidc"
+  description = "AUTH_MODE for the User API Lambda. \"oidc\" (default, case A): no API Gateway authorizer, the token is verified in-app. \"aws\": roll back to the API Gateway Lambda authorizer. authorizer_type is derived from this value, so the two never diverge. Only \"aws\"/\"oidc\" are allowed here -- \"\"/\"local\" would bypass or 500 on a deployed API."
   validation {
-    condition     = contains(["", "aws", "oidc", "local"], var.user_api_auth_mode)
-    error_message = "user_api_auth_mode must be one of \"\", \"aws\", \"oidc\", or \"local\"."
+    condition     = contains(["aws", "oidc"], var.user_api_auth_mode)
+    error_message = "user_api_auth_mode must be \"aws\" or \"oidc\" in a deployed environment."
   }
 }
 

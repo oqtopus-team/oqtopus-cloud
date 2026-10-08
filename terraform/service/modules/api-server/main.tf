@@ -343,8 +343,18 @@ resource "aws_api_gateway_rest_api" "this" {
 
 resource "aws_api_gateway_deployment" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
+  # Redeploy when the module changes (existing behavior) OR when the method's
+  # authorization changes -- e.g. flipping user_api_auth_mode between "aws"
+  # (CUSTOM + Lambda authorizer) and "oidc" (NONE). Hashing only main.tf would
+  # miss a change driven purely by an input variable, leaving the Stage pinned
+  # to the old deployment.
   triggers = {
-    code_hash = md5(file("../modules/api-server/main.tf"))
+    redeployment = sha1(jsonencode({
+      module_code   = filesha1("${path.module}/main.tf")
+      authorizer    = var.authorizer_type
+      authorization = aws_api_gateway_method.this.authorization
+      authorizer_id = aws_api_gateway_method.this.authorizer_id
+    }))
   }
   lifecycle {
     create_before_destroy = true

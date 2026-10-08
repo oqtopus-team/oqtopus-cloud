@@ -8,6 +8,11 @@ data "terraform_remote_state" "infrastructure" {
   }
 }
 
+locals {
+  # Cognito OIDC issuer for the user pool (used for in-app token verification).
+  user_cognito_issuer = "https://cognito-idp.${var.region}.amazonaws.com/${data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id}"
+}
+
 module "lambda_auth" {
   source = "../modules/lambda-auth"
 
@@ -39,19 +44,24 @@ module "lambda_auth" {
 module "user_api" {
   source = "../modules/api-server"
 
-  product                                = var.product
-  org                                    = var.org
-  env                                    = var.env
-  identifier                             = "user"
-  region                                 = var.region
-  db_proxy_endpoint                      = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
-  db_secret_arn                          = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
-  lambda_handler                         = "oqtopus_cloud.user.lambda_function.handler"
-  lambda_security_group_ids              = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
-  lambda_subnet_ids                      = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
-  authorizer_type                        = "LAMBDA"
-  lambda_authorizer_arn                  = module.lambda_auth.lambda_auth_arn
-  lambda_authorizer_alias                = module.lambda_auth.lambda_auth_alias_name
+  product                   = var.product
+  org                       = var.org
+  env                       = var.env
+  identifier                = "user"
+  region                    = var.region
+  db_proxy_endpoint         = data.terraform_remote_state.infrastructure.outputs.db.db_proxy_endpoint
+  db_secret_arn             = data.terraform_remote_state.infrastructure.outputs.db.db_secret_arn
+  lambda_handler            = "oqtopus_cloud.user.lambda_function.handler"
+  lambda_security_group_ids = data.terraform_remote_state.infrastructure.outputs.security_group.lambda_security_group_ids
+  lambda_subnet_ids         = data.terraform_remote_state.infrastructure.outputs.network.private_subnet_ids
+  # Case A (auth_mode=oidc): no API Gateway authorizer -- the FastAPI
+  # AuthMiddleware verifies the Cognito access token in-app. authorizer_type and
+  # the authorizer refs are DERIVED from auth_mode so a rollback to "aws" flips
+  # everything back to the Lambda authorizer consistently (the module is kept
+  # for exactly that; delete it once case A is verified stable).
+  authorizer_type                        = var.user_api_auth_mode == "aws" ? "LAMBDA" : "NONE"
+  lambda_authorizer_arn                  = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_arn : ""
+  lambda_authorizer_alias                = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_alias_name : ""
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
@@ -67,15 +77,26 @@ module "user_api" {
     STORAGE_S3_REGION      = var.region
     STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   }
-  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
-  sse_container_log_name         = "ssecontainer.log"
-  sse_user_program_name          = "userprogram.py"
-  sse_zip_file_name              = "sselog_{job_id}.zip"
-  allow_deletion                 = var.allow_deletion
-  editable_fields                = var.editable_fields
-  visible_fields                 = var.visible_fields
-  login_history_enabled          = var.login_history_enabled
-  auth_mode                      = var.user_api_auth_mode
+  sse_bucket             = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  sse_container_log_name = "ssecontainer.log"
+  sse_user_program_name  = "userprogram.py"
+  sse_zip_file_name      = "sselog_{job_id}.zip"
+  allow_deletion         = var.allow_deletion
+  editable_fields        = var.editable_fields
+  visible_fields         = var.visible_fields
+  login_history_enabled  = var.login_history_enabled
+  auth_mode              = var.user_api_auth_mode
+  # Cognito access-token verification config for AUTH_MODE=oidc (case A). The
+  # access token has no `aud`, so bind by client_id + token_use, and resolve the
+  # internal users.id via users.cognito_id == sub (OIDC_IDENTITY_RESOLVER).
+  lambda_additional_env = {
+    OIDC_ISSUER            = local.user_cognito_issuer
+    OIDC_JWKS_URL          = "${local.user_cognito_issuer}/.well-known/jwks.json"
+    OIDC_CLIENT_ID         = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
+    OIDC_TOKEN_USE         = "access"
+    OIDC_IDENTITY_RESOLVER = "cognito_sub"
+    OIDC_PRINCIPAL_CLAIM   = "sub"
+  }
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
