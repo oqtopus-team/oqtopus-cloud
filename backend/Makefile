@@ -71,10 +71,6 @@ export ALLOW_CREDENTIALS=true
 export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
-export USER_API_PORT ?= 8080
-export PROVIDER_API_PORT ?= 8888
-export ADMIN_API_PORT ?= 8889
-export USER_SIGNUP_API_PORT ?= 8890
 # Which local object storage to run against. `minio` selects the deprecated
 # stack, kept runnable until the `local:minio` driver is removed.
 STORAGE_STACK ?= seaweedfs
@@ -110,33 +106,52 @@ export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can 
 export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
 export LOGIN_HISTORY_ENABLED=true # flag to control whether user login history should be included in GET user API response
 export LOCAL_WORKER_SCHEDULING_RATE_S=60
+# uvicorn options for `make run-*`, per API (<SCOPE>_<OPTION>). Override on the
+# command line or in the environment, e.g. `make run-user USER_API_HOST=127.0.0.1`.
+# Any option listed in `uvicorn --help` can be set the same way.
+# <SCOPE>_POWERTOOLS_* are handed to POWERTOOLS_* by oqtopus_cloud/local_entry.py.
+export USER_API_HOST ?= 0.0.0.0
+export USER_API_PORT ?= 8080
+export USER_API_RELOAD ?= true
+export USER_API_LOG_LEVEL ?= debug
+export USER_API_POWERTOOLS_SERVICE_NAME ?= user-api
+export USER_API_POWERTOOLS_METRICS_NAMESPACE ?= user-api
+export PROVIDER_API_HOST ?= 0.0.0.0
+export PROVIDER_API_PORT ?= 8888
+export PROVIDER_API_RELOAD ?= true
+export PROVIDER_API_LOG_LEVEL ?= debug
+export PROVIDER_API_POWERTOOLS_SERVICE_NAME ?= provider-api
+export PROVIDER_API_POWERTOOLS_METRICS_NAMESPACE ?= provider-api
+export ADMIN_API_HOST ?= 0.0.0.0
+export ADMIN_API_PORT ?= 8889
+export ADMIN_API_RELOAD ?= true
+export ADMIN_API_LOG_LEVEL ?= debug
+export ADMIN_API_POWERTOOLS_SERVICE_NAME ?= admin-api
+export ADMIN_API_POWERTOOLS_METRICS_NAMESPACE ?= admin-api
+export USER_SIGNUP_API_HOST ?= 0.0.0.0
+export USER_SIGNUP_API_PORT ?= 8890
+export USER_SIGNUP_API_RELOAD ?= true
+export USER_SIGNUP_API_LOG_LEVEL ?= debug
+export USER_SIGNUP_API_POWERTOOLS_SERVICE_NAME ?= user_signup-api
+export USER_SIGNUP_API_POWERTOOLS_METRICS_NAMESPACE ?= user_signup-api
+
 run-user: ## Start the User API
-	@export POWERTOOLS_METRICS_NAMESPACE=user-api && \
-	export POWERTOOLS_SERVICE_NAME=user-api && \
-	uv run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port ${USER_API_PORT} --reload --log-level debug
+	@uv run oqtopus-cloud-user-api
 
 run-provider: ## Start the Provider API
-	@export POWERTOOLS_METRICS_NAMESPACE=provider-api && \
-	export POWERTOOLS_SERVICE_NAME=provider-api && \
-	uv run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port ${PROVIDER_API_PORT} --reload --log-level debug
+	@uv run oqtopus-cloud-provider-api
 
 run-admin: ## Start the Admin API
-	@export POWERTOOLS_METRICS_NAMESPACE=admin-api && \
-	export POWERTOOLS_SERVICE_NAME=admin-api && \
-	uv run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port ${ADMIN_API_PORT} --reload --log-level debug
+	@uv run oqtopus-cloud-admin-api
 
 run-user_signup: ## Start the user_signup API
-	@export POWERTOOLS_METRICS_NAMESPACE=user_signup-api && \
-	export POWERTOOLS_SERVICE_NAME=user_signup-api && \
-	uv run uvicorn oqtopus_cloud.user_signup.lambda_function:app --host 0.0.0.0 --port ${USER_SIGNUP_API_PORT} --reload --log-level debug
+	@uv run oqtopus-cloud-user-signup-api
 
 COUNT_PENDING_JOBS_SINCE ?= 10d
 
 run-worker:
-	@export POWERTOOLS_METRICS_NAMESPACE=pending-jobs-updater && \
-	export POWERTOOLS_SERVICE_NAME=pending-jobs-updater && \
-	export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
-	uv run python oqtopus_cloud/worker/pending_jobs_updater/local_scheduler.py
+	@export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
+	uv run oqtopus-cloud-worker
 
 up: ## Start the DB, apply migrations, seed data, and init storage (STORAGE_STACK=seaweedfs|minio)
 	@# Both stacks publish port 9001. Stop the inactive stack before starting the
