@@ -50,3 +50,35 @@ def validate_user_status(user_id: str) -> bool:
     finally:
         db.close()
     return user is not None
+
+
+def resolve_user_by_cognito_id(cognito_id: str) -> tuple[str, str | None] | None:
+    """Resolve the internal ``(users.id, users.email)`` from a Cognito ``sub``.
+
+    A Cognito access token identifies the user by ``sub`` (its ``username`` claim
+    is a generated UUID, not the email), which is stored as ``users.cognito_id``.
+    This resolves that to the internal ``users.id`` (an email) used everywhere
+    downstream, in a single query that also applies the approved gate.
+
+    The approved filter is applied unless ``AUTH_ENFORCE_STATUS=false``; even
+    then an *unknown* ``cognito_id`` still returns ``None`` -- the sub -> user id
+    mapping cannot be skipped. DB/driver errors propagate (surfaced as a 500, not
+    a 401/403).
+
+    Returns:
+        ``(users.id, users.email)`` for the matching user, or ``None`` when no
+        such (approved, when enforced) user exists.
+
+    """
+    conditions = [User.cognito_id == cognito_id]
+    if _status_enforced():
+        conditions.append(User.userstatus == UserStatus.approved)
+
+    db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+    try:
+        user = db.execute(select(User).where(*conditions)).scalar()
+        if user is None:
+            return None
+        return (str(user.id), user.email)
+    finally:
+        db.close()

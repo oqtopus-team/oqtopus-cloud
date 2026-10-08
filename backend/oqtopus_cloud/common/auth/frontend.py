@@ -14,7 +14,10 @@ from typing import Optional
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
 from fastapi import Request
 
-from oqtopus_cloud.common.auth.authorization import validate_user_status
+from oqtopus_cloud.common.auth.authorization import (
+    resolve_user_by_cognito_id,
+    validate_user_status,
+)
 from oqtopus_cloud.common.auth.oidc import OidcError, verify_bearer_token
 
 
@@ -95,7 +98,8 @@ def _aws_identity(request: Request) -> Identity:
 
 
 def _oidc_identity(request: Request) -> Identity:
-    # Authentication: oauth2-proxy forwards the verified token as a Bearer.
+    # Authentication: the verified OIDC token arrives as a Bearer (injected by
+    # oauth2-proxy on-prem, or sent by the SPA/Amplify on AWS).
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise AuthError("Missing Authorization header")
@@ -108,9 +112,26 @@ def _oidc_identity(request: Request) -> Identity:
     except OidcError as e:
         raise AuthError(str(e))
 
+    # How to map verified claims -> internal user identity:
+    #   "direct"      (default): a claim's value *is* the users.id (Keycloak
+    #                 access token with email; on-prem).
+    #   "cognito_sub"          : resolve users.id via users.cognito_id == sub.
+    #                 Required for Cognito access tokens, whose only stable id is
+    #                 `sub` (the `username` claim is a UUID) and which carry no
+    #                 email. Selected explicitly -- never inferred from `issuer`.
+    resolver = os.getenv("OIDC_IDENTITY_RESOLVER", "direct").strip().lower()
+    if resolver == "cognito_sub":
+        return _identity_via_cognito_sub(claims)
+    if resolver == "direct":
+        return _identity_direct(claims)
+    # A typo (e.g. "cognito_sbu") must fail closed, not silently become "direct".
+    raise AuthError(f"Unsupported OIDC_IDENTITY_RESOLVER: {resolver!r}")
+
+
+def _identity_direct(claims: dict) -> Identity:
     username_claim = os.getenv("OIDC_USERNAME_CLAIM", "email")
     user_id = claims.get(username_claim)
-    if not user_id:
+    if not user_id or not isinstance(user_id, str):
         raise AuthError(f"Token is missing the '{username_claim}' claim")
 
     # Authorization: the account must exist and be approved (the piece the
@@ -122,6 +143,24 @@ def _oidc_identity(request: Request) -> Identity:
     return Identity(user_id=user_id, email=claims.get("email"), auth_method="oidc")
 
 
+def _identity_via_cognito_sub(claims: dict) -> Identity:
+    principal_claim = os.getenv("OIDC_PRINCIPAL_CLAIM", "sub")
+    sub = claims.get(principal_claim)
+    # A missing/non-string principal is an authentication failure (401).
+    if not sub or not isinstance(sub, str):
+        raise AuthError(f"Token is missing the '{principal_claim}' claim")
+
+    # Resolve users.id/email via users.cognito_id (+ approved gate). A DB error
+    # propagates (500); None means unknown or unapproved -> 403. The email is
+    # taken from the DB, since Cognito access tokens carry no email claim.
+    resolved = resolve_user_by_cognito_id(sub)
+    if resolved is None:
+        raise AuthorizationError(f"No approved user for {principal_claim}={sub!r}")
+
+    user_id, email = resolved
+    return Identity(user_id=user_id, email=email, auth_method="oidc")
+
+
 def resolve_identity(request: Request) -> Identity:
     """Resolve the caller identity for the active :func:`auth_mode`."""
     mode = auth_mode()
@@ -130,7 +169,9 @@ def resolve_identity(request: Request) -> Identity:
     if mode == "aws":
         return _aws_identity(request)
     if mode == "oidc":
-        # On-prem the User API serves two caller kinds that AWS's Lambda
+        # "oidc" = verify the token in-app (not an on-prem-only mode): used both
+        # on AWS (Cognito, case A -- no API Gateway authorizer) and on-prem
+        # (Keycloak). The User API serves two caller kinds that AWS's Lambda
         # authorizer used to unify: browsers (OIDC Bearer) and CLI clients
         # (a DB-backed Q-API-Token). Dispatch on the token header. Deferred
         # import avoids a frontend<->client module cycle.
