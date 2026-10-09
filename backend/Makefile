@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up infra-up down infra-down check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up infra-up down infra-down infra-status check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -150,6 +150,11 @@ infra-up: ## Start the DB and storage (STORAGE_STACK=seaweedfs|minio selects the
 
 infra-down: ## Stop the DB and storage only; other containers are left running
 	@uv run oqtopus-cloud-infra stop
+
+infra-status: ## Show whether the DB and storage are running (fails only if the state is unknown)
+	@# Stopped (exit code 3) is a normal state, not an error. Use
+	@# `uv run oqtopus-cloud-infra status` directly to get the exit code.
+	@rc=0; uv run oqtopus-cloud-infra status || rc=$$?; [ $$rc -eq 3 ] || exit $$rc
 
 up: infra-up ## Start the DB, storage and otel-collector
 	@docker compose up -d otel-collector

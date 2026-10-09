@@ -108,6 +108,7 @@ On the first run, DB initialization (table creation and test data insertion) is 
 `make up` starts the containers (DB, storage and otel-collector) in the background and exits. To start only the DB and storage, use `make infra-up`.
 
 - `make infra-down` stops and removes only the DB and storage containers; other containers are left running.
+- `make infra-status` shows whether the DB and storage are running. A stopped state is not an error; the command fails only when the state cannot be determined.
 - `make down` removes all containers and the network of this compose project (volumes are kept).
 
 To start the deprecated MinIO stack instead, use `make up STORAGE_STACK=minio`. See [Storage Backend Selection](../architecture/storage_backend_selection.md).

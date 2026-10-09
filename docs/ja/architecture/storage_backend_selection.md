@@ -51,6 +51,7 @@ cd backend
 make up STORAGE_STACK=minio                   # MySQL + MinIO、マイグレーションとシード（+ otel-collector）
 make run-user STORAGE_STACK=minio             # この構成で API を起動
 make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレージ確認
+make infra-status                             # DB とストレージが稼働しているかを表示
 make infra-down                               # DB とストレージだけを停止
 ```
 

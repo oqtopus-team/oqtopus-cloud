@@ -51,6 +51,7 @@ cd backend
 make up STORAGE_STACK=minio                   # MySQL + MinIO, migrations and seed data (+ otel-collector)
 make run-user STORAGE_STACK=minio             # run an API against it
 make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
+make infra-status                             # show whether the DB and storage are running
 make infra-down                               # stop the DB and storage only
 ```
 

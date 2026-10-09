@@ -8,7 +8,7 @@ Check out the [API documentation](../docs/en/developer_guidelines/backend.md) fo
 make up
 ```
 
-`make up` starts the DB, storage and otel-collector. `make infra-up` starts only the DB and storage, and `make infra-down` stops only those; `make down` removes all containers of this compose project.
+`make up` starts the DB, storage and otel-collector. `make infra-up` starts only the DB and storage, and `make infra-down` stops only those, and `make infra-status` shows whether they are running (it fails only when the state is unknown; run `uv run oqtopus-cloud-infra status` to get the exit code); `make down` removes all containers of this compose project.
 
 - user API
 
