@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up down check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up infra-up down infra-down check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -72,39 +72,31 @@ export ALLOW_METHODS=*# pass the allowed methods -> GET,POST,PUT,DELETE
 export ALLOW_HEADERS=*# pass the allowed headers -> Content-Type,Authorization
 export LOG_LEVEL=DEBUG
 # Which local object storage to run against. `minio` selects the deprecated
-# stack, kept runnable until the `local:minio` driver is removed.
-STORAGE_STACK ?= seaweedfs
-ifneq ($(STORAGE_STACK),seaweedfs)
-ifneq ($(STORAGE_STACK),minio)
-$(error STORAGE_STACK must be seaweedfs or minio, got '$(STORAGE_STACK)')
-endif
-endif
-ifeq ($(STORAGE_STACK),minio)
-STORAGE_SERVICES = minio mc
-INACTIVE_STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
-STORAGE_INIT_SERVICE = mc
-STORAGE_LABEL = MinIO
-export STORAGE_DRIVER=local:minio
-export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
-export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
-export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
-export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
-else
-STORAGE_SERVICES = seaweedfs seaweedfs-bucket-init
-INACTIVE_STORAGE_SERVICES = minio mc
-STORAGE_INIT_SERVICE = seaweedfs-bucket-init
-STORAGE_LABEL = SeaweedFS
-export STORAGE_DRIVER=seaweedfs
+# stack, kept runnable until the `local:minio` driver is removed. The stack's
+# structure (services, driver) lives in oqtopus_cloud/infra.py; STORAGE_DRIVER
+# is derived from STORAGE_STACK there, so it is not set here.
+export STORAGE_STACK ?= seaweedfs
+export DB_USERNAME=admin
+export DB_PASSWORD=password
 export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_SEAWEEDFS_USERNAME=devadmin
 export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
 export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
 export STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL=http://localhost:8333
-endif
-export ALLOW_DELETION=true # flag to control whether users can delete their accounts
-export EDITABLE_FIELDS=["name", "organization"] # list of user fields which can be edited by the user
-export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"] # list of user fields which user can view
-export LOGIN_HISTORY_ENABLED=true # flag to control whether user login history should be included in GET user API response
+export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
+export STORAGE_LOCAL_MINIO_USERNAME=minioadmin
+export STORAGE_LOCAL_MINIO_PASSWORD=minioadmin
+export STORAGE_LOCAL_MINIO_ENDPOINT_URL=http://localhost:9000
+# Keep comments off the `export` lines: make would include the space before a
+# trailing `#` in the value (`true ` is not `TRUE` for the application).
+# flag to control whether users can delete their accounts
+export ALLOW_DELETION=true
+# list of user fields which can be edited by the user
+export EDITABLE_FIELDS=["name", "organization"]
+# list of user fields which user can view
+export VISIBLE_FIELDS=["id", "email", "name", "organization", "created_at"]
+# flag to control whether user login history should be included in GET user API response
+export LOGIN_HISTORY_ENABLED=true
 export LOCAL_WORKER_SCHEDULING_RATE_S=60
 # uvicorn options for `make run-*`, per API (<SCOPE>_<OPTION>). Override on the
 # command line or in the environment, e.g. `make run-user USER_API_HOST=127.0.0.1`.
@@ -153,38 +145,28 @@ run-worker:
 	@export COUNT_PENDING_JOBS_SINCE=$(COUNT_PENDING_JOBS_SINCE) && \
 	uv run oqtopus-cloud-worker
 
-up: ## Start the DB, apply migrations, seed data, and init storage (STORAGE_STACK=seaweedfs|minio)
-	@# Both stacks publish port 9001. Stop the inactive stack before starting the
-	@# selected one so changing STORAGE_STACK works without a manual `make down`.
-	@docker compose --profile minio stop $(INACTIVE_STORAGE_SERVICES) >/dev/null
-	@docker compose --profile $(STORAGE_STACK) up -d db $(STORAGE_SERVICES) otel-collector
-	@echo "Waiting for MySQL to be ready..."
-	@# Probe over TCP (-h127.0.0.1 --protocol=tcp), not the unix socket: on a
-	@# fresh volume MySQL first runs a socket-only temporary server for init,
-	@# and a socket probe passes during that phase — then Alembic's TCP connect
-	@# hits the server mid-restart and dies with "Lost connection" (2013).
-	@until docker compose exec -T db mysql -h127.0.0.1 --protocol=tcp -uadmin -ppassword main -e "SELECT 1" >/dev/null 2>&1; do sleep 2; done
-	@echo "MySQL ready, applying Alembic migrations..."
-	@$(MAKE) migrate-up
-	@$(MAKE) seed
-	@# The bucket is created by a one-shot service, and `up -d` returns without
-	@# waiting for it. Seeding storage before it finishes would write into a
-	@# bucket that does not exist yet, so wait for it to exit first.
-	@docker compose --profile $(STORAGE_STACK) wait $(STORAGE_INIT_SERVICE) >/dev/null
-	@if [ -f storage/init_storage.py ]; then uv run python storage/init_storage.py; fi
+infra-up: ## Start the DB and storage (STORAGE_STACK=seaweedfs|minio selects the storage stack)
+	@uv run oqtopus-cloud-infra start
+
+infra-down: ## Stop the DB and storage only; other containers are left running
+	@uv run oqtopus-cloud-infra stop
+
+up: infra-up ## Start the DB, storage and otel-collector
+	@docker compose up -d otel-collector
 
 seed: ## Seed the local DB with test data (idempotent)
 	@uv run python scripts/seed.py
 
-down: ## Stop the DB
-	@docker compose --profile minio down
+down: infra-down ## Stop and remove all containers of this compose project
+	@docker compose down
 
 PRESIGNED_POST_COUNT ?= 100
 PRESIGNED_POST_WORKERS ?= 10
 PRESIGNED_POST_PAYLOAD_BYTES ?= 4096
 PRESIGNED_POST_ROUNDS ?= 3
 PRESIGNED_POST_WARMUP_ROUNDS ?= 1
-PRESIGNED_POST_LABEL ?= $(STORAGE_LABEL)
+# Label shown in the benchmark results. Empty: the script uses STORAGE_STACK.
+PRESIGNED_POST_LABEL ?=
 PRESIGNED_POST_OUTPUT_JSON ?= benchmark-results/presigned-storage.json
 check-presigned-post: ## Run concurrent presigned POST E2E against the local storage stack
 	@uv run python scripts/check_presigned_post.py \
@@ -195,7 +177,7 @@ check-presigned-post: ## Run concurrent presigned POST E2E against the local sto
 benchmark-presigned-post: ## Benchmark presigned POST/GET throughput and latency
 	@uv run python scripts/check_presigned_post.py \
 		--benchmark \
-		--label "$(PRESIGNED_POST_LABEL)" \
+		$(if $(PRESIGNED_POST_LABEL),--label "$(PRESIGNED_POST_LABEL)") \
 		--count $(PRESIGNED_POST_COUNT) \
 		--workers $(PRESIGNED_POST_WORKERS) \
 		--payload-bytes $(PRESIGNED_POST_PAYLOAD_BYTES) \

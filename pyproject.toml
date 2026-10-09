@@ -48,6 +48,7 @@ oqtopus-cloud-provider-api = "oqtopus_cloud.local_entry:run_provider"
 oqtopus-cloud-admin-api = "oqtopus_cloud.local_entry:run_admin"
 oqtopus-cloud-user-signup-api = "oqtopus_cloud.local_entry:run_user_signup"
 oqtopus-cloud-worker = "oqtopus_cloud.worker.pending_jobs_updater.local_scheduler:main"
+oqtopus-cloud-infra = "oqtopus_cloud.infra:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -58,8 +59,8 @@ packages = ["backend/oqtopus_cloud"]
 
 [tool.pytest_env]
 DB_NAME="main"
-DB_USER="admin"
-DB_PASS="password"
+DB_USERNAME="admin"
+DB_PASSWORD="password"
 DB_HOST="localhost"
 ENV="local"
 POWERTOOLS_METRICS_NAMESPACE="user-api"

@@ -104,7 +104,10 @@ make up
 MySQL (ポート3306) と SeaweedFS (S3 APIポート8333、Web UIポート9333/9001) が起動します。
 初回起動時はDBの初期化（テーブル作成・テストデータ投入）が自動で行われます。
 
-`make up` はコンテナをバックグラウンドで起動して終了します。停止するときは `make down` を実行してください。
+`make up` はコンテナ（DB、ストレージ、otel-collector）をバックグラウンドで起動して終了します。DB とストレージだけを起動する場合は `make infra-up` を使います。
+
+- `make infra-down` は DB とストレージのコンテナだけを停止・削除します。他のコンテナは動いたままです。
+- `make down` はこの compose プロジェクトのすべてのコンテナとネットワークを削除します（ボリュームは残ります）。
 
 非推奨の MinIO スタックを起動する場合は `make up STORAGE_STACK=minio` を使います。[ストレージバックエンドの選定](../architecture/storage_backend_selection.md) を参照してください。
 

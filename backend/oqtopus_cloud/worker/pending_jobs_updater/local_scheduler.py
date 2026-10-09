@@ -1,7 +1,10 @@
 import os
+import sys
 from time import sleep
 
 from aws_lambda_powertools.utilities.data_classes import EventBridgeEvent
+
+from oqtopus_cloud import infra
 
 SCHEDULING_RATE_S: int = int(os.getenv("LOCAL_WORKER_SCHEDULING_RATE_S", 60))
 
@@ -21,6 +24,11 @@ SCHEDULING_RATE_S: int = int(os.getenv("LOCAL_WORKER_SCHEDULING_RATE_S", 60))
 
 
 def main() -> None:
+    try:
+        infra.apply_stack_env()
+    except infra.ConfigError as error:
+        sys.exit(str(error))
+
     # Must be set before lambda_function is imported: its conf module builds
     # Metrics() at import time and reads these variables.
     os.environ.setdefault("POWERTOOLS_METRICS_NAMESPACE", "pending-jobs-updater")

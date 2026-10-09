@@ -19,6 +19,7 @@ from uuid import uuid4
 
 import requests  # type: ignore[import-untyped]
 
+from oqtopus_cloud import infra
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 
 
@@ -409,7 +410,7 @@ def run_benchmark(args: argparse.Namespace, storage: AbstractStorage) -> None:
         for operation in ("POST", "GET")
     ]
     endpoint, bucket = storage_endpoint_and_bucket()
-    label = args.label or endpoint
+    label = args.label or os.environ.get("STORAGE_STACK") or endpoint
     print(
         "\nBackend | Operation | Size | Workers | Ops/s | MiB/s | p50 ms | "
         "p95 ms | p99 ms | Errors"
@@ -507,7 +508,11 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     try:
+        infra.apply_stack_env()
         run(parse_args())
+    except infra.ConfigError as error:
+        print(f"FAIL {error}", file=sys.stderr)
+        raise SystemExit(1) from error
     except KeyError as error:
         # get_storage() reads the driver's settings with environ[].
         print(f"FAIL missing environment variable: {error}", file=sys.stderr)

@@ -105,7 +105,10 @@ make up
 MySQL (port 3306) and SeaweedFS (S3 API port 8333, web UI port 9333/9001) will start.
 On the first run, DB initialization (table creation and test data insertion) is performed automatically.
 
-`make up` starts the containers in the background and exits. Stop them with `make down`.
+`make up` starts the containers (DB, storage and otel-collector) in the background and exits. To start only the DB and storage, use `make infra-up`.
+
+- `make infra-down` stops and removes only the DB and storage containers; other containers are left running.
+- `make down` removes all containers and the network of this compose project (volumes are kept).
 
 To start the deprecated MinIO stack instead, use `make up STORAGE_STACK=minio`. See [Storage Backend Selection](../architecture/storage_backend_selection.md).
 
