@@ -30,7 +30,7 @@ class Job(Base, TimestampMixin):
         mitigation_info(str): The information about the error mitigation.
         job_type (str): The action to be performed by the job (sampling or estimation).
         shots (int): The number of shots for the job.
-        status (str): The status of the job (registered, submitted, ready, running, succeeded, failed, cancelled).
+        status (str): The status of the job (registered, submitted, ready, running, cancelling, succeeded, failed, cancelled).
         output_files (str): List of job output files uploaded by provider.
         message (str): Message set by provider.
         execution_time(float): The duration of the QPU execution.
