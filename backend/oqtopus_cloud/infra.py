@@ -20,8 +20,7 @@ start / stop   0      success (``start`` when running, ``stop`` when stopped)
 start / stop   1      generic error, including a timeout while waiting
 any            2      invalid arguments
 start / stop   5      a required program (docker) is missing
-start / stop   6      missing configuration (``STORAGE_STACK`` unset, empty
-                      or unknown, or a ``DB_*`` setting is missing)
+start / stop   6      missing configuration (``STORAGE_STACK``, ``DB_*``)
 status         0      running: the DB and the stack's main service are up
 status         3      stopped (including partially running)
 status         4      status unknown (docker unusable, invalid configuration)
