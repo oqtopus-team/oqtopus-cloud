@@ -40,7 +40,19 @@ dependencies = [
   "opentelemetry-instrumentation-fastapi>=0.48b0",
   "opentelemetry-instrumentation-sqlalchemy>=0.48b0",
   "opentelemetry-instrumentation-logging>=0.48b0",
+  # Imported by the application and by `oqtopus-cloud-infra start` (migrations),
+  # which run after `uv sync --no-dev`.
+  "boto3>=1.34.55",
+  "alembic>=1.13.2",
 ]
+
+[project.scripts]
+oqtopus-cloud-user-api = "oqtopus_cloud.local_entry:run_user"
+oqtopus-cloud-provider-api = "oqtopus_cloud.local_entry:run_provider"
+oqtopus-cloud-admin-api = "oqtopus_cloud.local_entry:run_admin"
+oqtopus-cloud-user-signup-api = "oqtopus_cloud.local_entry:run_user_signup"
+oqtopus-cloud-worker = "oqtopus_cloud.worker.pending_jobs_updater.local_scheduler:main"
+oqtopus-cloud-infra = "oqtopus_cloud.infra:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -51,8 +63,8 @@ packages = ["backend/oqtopus_cloud"]
 
 [tool.pytest_env]
 DB_NAME="main"
-DB_USER="admin"
-DB_PASS="password"
+DB_USERNAME="admin"
+DB_PASSWORD="password"
 DB_HOST="localhost"
 ENV="local"
 POWERTOOLS_METRICS_NAMESPACE="user-api"
@@ -81,7 +93,6 @@ check_untyped_defs = true
 
 [dependency-groups]
 dev = [
-  "boto3>=1.34.55",
   "ruff>=0.3.4",
   "datamodel-code-generator>=0.26.2",
   "requests>=2.31.0",
@@ -95,7 +106,6 @@ dev = [
   "shandy-sqlfmt>=0.21.2",
   "pytest-sqlalchemy-mock>=0.1.5",
   "coverage>=7.6.9",
-  "alembic>=1.13.2",
   "mysql>=0.0.3",
   "moto>=5.1.0",
   "slack_sdk>=3.35.0",

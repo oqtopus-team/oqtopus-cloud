@@ -217,3 +217,9 @@ bin/
 
 # Differences file on make plan (terraform plan)
 **/diffs.ansi
+
+# Benchmark results from make benchmark-presigned-post
+backend/benchmark-results/
+
+# Real-backend storage compatibility reports
+backend/storage-compatibility-results/

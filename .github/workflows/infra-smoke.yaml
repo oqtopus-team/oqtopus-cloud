@@ -1,0 +1,81 @@
+name: Local Infra Smoke Test
+
+on:
+  push:
+    paths:
+    - 'pyproject.toml'
+    - 'uv.lock'
+    - 'backend/Makefile'
+    - 'backend/compose.yaml'
+    - 'backend/alembic/**'
+    - 'backend/oqtopus_cloud/**'
+    - 'backend/scripts/seed.py'
+    - 'backend/storage/**'
+    - '.github/workflows/infra-smoke.yaml'
+
+jobs:
+  infra-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Install the way oqtopus-cli does (`uv sync --frozen --no-dev`), and keep
+      # `uv run` in the Makefile from installing the dev group back.
+      UV_NO_SYNC: "1"
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: .python-version
+
+    - name: Set up Aqua
+      run: |
+        sudo apt install make
+        make setup-aqua
+        echo "$HOME/.local/share/aquaproj-aqua/bin" >> "$GITHUB_PATH"
+
+    - name: Install dependencies without the dev group
+      run: uv sync --frozen --no-dev
+
+    - name: Import the API and worker commands
+      run: |
+        uv run python -c "
+        import oqtopus_cloud.user.lambda_function
+        import oqtopus_cloud.provider.lambda_function
+        import oqtopus_cloud.admin.lambda_function
+        import oqtopus_cloud.user_signup.lambda_function
+        import oqtopus_cloud.worker.pending_jobs_updater.local_scheduler
+        "
+      working-directory: ./backend
+
+    - name: Start the DB and SeaweedFS (migrations and seed)
+      run: make infra-up STORAGE_STACK=seaweedfs
+      working-directory: ./backend
+
+    - name: Check that the DB and SeaweedFS are running
+      run: uv run oqtopus-cloud-infra status
+      working-directory: ./backend
+      env:
+        STORAGE_STACK: seaweedfs
+
+    - name: Switch to the MinIO stack
+      run: make infra-up STORAGE_STACK=minio
+      working-directory: ./backend
+
+    - name: Check that the DB and MinIO are running
+      run: uv run oqtopus-cloud-infra status
+      working-directory: ./backend
+      env:
+        STORAGE_STACK: minio
+
+    - name: Remove all containers, including those of the minio profile
+      run: |
+        make down STORAGE_STACK=minio
+        remaining=$(docker compose --profile minio ps -a -q)
+        if [ -n "$remaining" ]; then
+          docker compose --profile minio ps -a
+          echo "make down left containers behind" >&2
+          exit 1
+        fi
+      working-directory: ./backend

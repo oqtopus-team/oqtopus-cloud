@@ -4,7 +4,7 @@
 
 Q. 開発環境DBの初期値はどこで設定しますか？
 
-A. スキーマは Alembic マイグレーション（`backend/alembic/`）で、初期データは `backend/scripts/seed.py`（DB）と `backend/storage/init_storage.py`（オブジェクトストレージ / MinIO）で管理しています。`make up` を実行するとマイグレーション適用とシードが自動的に行われます。
+A. スキーマは Alembic マイグレーション（`backend/alembic/`）で、初期データは `backend/scripts/seed.py`（DB）と `backend/storage/init_storage.py`（オブジェクトストレージ / SeaweedFS）で管理しています。`make up` を実行するとマイグレーション適用とシードが自動的に行われます。
 初期値を変更する場合はこれらのファイルを編集してください。
 
 Q. MFAを有効にしている場合、Terraformの実行はどのように行いますか？
@@ -47,3 +47,11 @@ profile = "myprofile-tf"
 `terraform/infrastructure/oqtopus-dev`配下で`terraform init -backend-config=oqtopus-dev.tfbackend -reconfigure`を実行後、`terraform plan`を実行することでMFA認証付きでのTerraform実行が可能です。
 
 詳細は以下を参照してください。 : [Terraform AWS Provider Issue #2420](https://github.com/hashicorp/terraform-provider-aws/issues/2420#issuecomment-1899137746)
+
+Q. Lambdaオーソライザー認証で`q-api-token`を使う場合、`authorization`ヘッダーは不要ですか？
+
+A. いいえ。Lambdaオーソライザーのキャッシュキー都合で、`q-api-token`利用時でも`authorization`ヘッダーが必須です。`authorization`と`q-api-token`には同じ値を設定してください。
+
+Q. Lambda Authorizerのキャッシュを有効にする場合、Policy DocumentのResource設定で注意することはありますか？
+
+A. キャッシュを有効にすると、API Gatewayは生成されたPolicy Documentを後続のリクエストでも再利用します。API全体へのアクセスを許可する場合は、Resourceに対象ステージ配下のすべてのリソースおよびHTTPメソッドを含めてください。参考: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html

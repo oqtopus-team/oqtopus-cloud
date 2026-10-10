@@ -254,9 +254,11 @@ version = "1.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiobotocore" },
+    { name = "alembic" },
     { name = "argon2-cffi" },
     { name = "aws-lambda-powertools" },
     { name = "aws-xray-sdk" },
+    { name = "boto3" },
     { name = "cryptography" },
     { name = "databases" },
     { name = "fastapi" },
@@ -289,8 +291,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "alembic" },
-    { name = "boto3" },
     { name = "boto3-stubs" },
     { name = "case-converter" },
     { name = "coverage" },
@@ -321,9 +321,11 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "aiobotocore", specifier = ">=2.19.0" },
+    { name = "alembic", specifier = ">=1.13.2" },
     { name = "argon2-cffi", specifier = ">=23.1.0" },
     { name = "aws-lambda-powertools", specifier = ">=2.41.0" },
     { name = "aws-xray-sdk", specifier = ">=2.13.0" },
+    { name = "boto3", specifier = ">=1.34.55" },
     { name = "cryptography", specifier = ">=42.0.5" },
     { name = "databases", specifier = ">=0.9.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
@@ -356,8 +358,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "alembic", specifier = ">=1.13.2" },
-    { name = "boto3", specifier = ">=1.34.55" },
     { name = "boto3-stubs", specifier = ">=1.34.74" },
     { name = "case-converter", specifier = ">=1.1.0" },
     { name = "coverage", specifier = ">=7.6.9" },
