@@ -2,7 +2,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up infra-up down infra-down infra-status check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility help
+.PHONY: generate-user-schema generate-provider-schema generate-admin-schema generate-user_signup-schema generate-all-schema run-user run-provider run-admin run-user_signup run-worker up infra-up down infra-down infra-status check-presigned-post benchmark-presigned-post fmt lint test test-scripts test-storage-compatibility migrate-create migrate-up migrate-down migrate-current migrate-check migrate-history migrate-stamp-baseline help
 
 generate-user-schema: ## Generate user schema
 	@cd oas && $(MAKE) generate-user
@@ -192,7 +192,17 @@ benchmark-presigned-post: ## Benchmark presigned POST/GET throughput and latency
 		--warmup-rounds $(PRESIGNED_POST_WARMUP_ROUNDS) \
 		--output-json $(PRESIGNED_POST_OUTPUT_JSON)
 
-migrate-create: ## Generate a migration from current models. Usage: make migrate-create NAME=<slug>
+# Every migrate-* target below targets the LOCAL docker database: this Makefile
+# exports ENV=local and DB_HOST=localhost for the whole local stack.
+#
+# Beware while an `operation/<env>/make port-forward` tunnel is open: it also
+# listens on localhost:3306, so these targets then point at a *real* RDS while
+# still behaving as if it were the local container -- including skipping TLS,
+# which the RDS Proxy rejects with `(3159) This RDS Proxy requires TLS
+# connections`. alembic/env.py logs the host and TLS state on every connection
+# so this is visible. To act on a real environment, use the migrate-* targets in
+# operation/<env>/ instead; they are built for it.
+migrate-create: ## Generate a migration from current models (local DB). Usage: make migrate-create NAME=<slug>
 	@if [ -z "$(NAME)" ]; then \
 		echo "Usage: make migrate-create NAME=<slug>"; exit 1; \
 	fi
@@ -201,14 +211,20 @@ migrate-create: ## Generate a migration from current models. Usage: make migrate
 migrate-up: ## Apply all pending migrations to the local DB
 	@uv run alembic upgrade head
 
-migrate-down: ## Roll back the most recent applied migration
+migrate-down: ## Roll back the most recent applied migration (local DB)
 	@uv run alembic downgrade -1
 
-migrate-current: ## Show the currently applied revision
-	@uv run alembic current
+migrate-current: ## Show the revision the local DB is stamped at
+	@uv run alembic current --verbose
+
+migrate-check: ## Report schema drift between the models and the local DB
+	@uv run alembic check
 
 migrate-history: ## Show the migration history
 	@uv run alembic history --verbose
+
+migrate-stamp-baseline: ## Baseline a local DB created before Alembic at the root revision, WITHOUT running DDL
+	@uv run python scripts/migrate_baseline.py
 
 fmt-common: ## Format common code
 	@uv run ruff format oqtopus_cloud/common

@@ -1,0 +1,65 @@
+# Shared operation targets for every environment under operation/.
+#
+# Each operation/<env>/Makefile only loads its own .env and includes this file,
+# so a fix lands in all environments at once. Duplicating these recipes per
+# environment is what previously let the TLS and `stamp head` bugs survive in
+# some environments after being noticed in others.
+
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := help
+
+.PHONY: help bastion port-forward db-session migrate-current migrate-check migrate-up migrate-stamp
+
+# Alembic is invoked directly in backend/ rather than through its Makefile on
+# purpose: backend/Makefile configures the *local* docker stack and exports
+# ENV=local, which a sub-make applies over anything we pass in. That would make
+# alembic/env.py treat a production database as the local container and skip
+# TLS, which the RDS Proxy then rejects.
+#
+# ENV is unset for the same reason. Every target here talks to a real
+# environment through a port-forward, so how we connect must not hinge on a
+# variable named as generically as ENV: whatever sets it, `ENV=local` reaching
+# alembic/env.py drops TLS and the RDS Proxy then refuses the connection with
+# `(3159) This RDS Proxy requires TLS connections`.
+ALEMBIC := cd ../../backend && env -u ENV uv run
+
+# Builds ALEMBIC_DATABASE_URL for the port-forwarded RDS from the RDS-managed
+# secret. TLS is not spelled out here: alembic/env.py attaches the CA bundle
+# from oqtopus_cloud/common/certs for any non-local target.
+ALEMBIC_URL_EXPORT = SECRET=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString) && \
+	export ALEMBIC_DATABASE_URL="mysql+pymysql://$$(echo "$$SECRET" | jq -j '.username|@uri'):$$(echo "$$SECRET" | jq -j '.password|@uri')@localhost:$(MYSQL_PORT)/$(DB_NAME)"
+
+bastion: ## SSH into the bastion host
+	@aws ec2-instance-connect ssh --instance-id $(BASTION_HOST) --connection-type eice --profile $(PROFILE)
+
+port-forward: ## Port forward to the RDS instance
+	@aws ec2-instance-connect ssh --instance-id $(BASTION_HOST) --connection-type eice --local-forwarding $(MYSQL_PORT):$(MYSQL_HOST):$(MYSQL_PORT) --profile $(PROFILE)
+
+db-session: ## Start a MySQL session
+	@export MYSQL_USER=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .username) && \
+	export MYSQL_PASSWORD=$$(aws secretsmanager get-secret-value --secret-id $(SECRET_ID) --profile $(PROFILE) | jq -r .SecretString | jq -r .password) && \
+	mysql --protocol TCP -h localhost -P $(MYSQL_PORT) -u $$MYSQL_USER --password=$$MYSQL_PASSWORD $(DB_NAME)
+
+migrate-current: ## Show the revision the DB is stamped at (read-only)
+	@$(ALEMBIC_URL_EXPORT) && \
+	$(ALEMBIC) alembic current --verbose
+
+migrate-check: ## Report schema drift between the models and the DB (read-only)
+	@$(ALEMBIC_URL_EXPORT) && \
+	$(ALEMBIC) alembic check
+
+migrate-up: ## Apply pending Alembic migrations (run with `make port-forward` active in another shell)
+	@$(ALEMBIC_URL_EXPORT) && \
+	$(ALEMBIC) alembic upgrade head
+
+migrate-stamp: ## One-time baseline for a DB created before Alembic, WITHOUT running DDL. Follow with migrate-up
+	@$(ALEMBIC_URL_EXPORT) && \
+	$(ALEMBIC) python scripts/migrate_baseline.py
+
+help: ## Show this help message
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Available targets:"
+	@echo ""
+	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(filter-out .env,$(MAKEFILE_LIST)) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

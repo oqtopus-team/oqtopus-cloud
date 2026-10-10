@@ -12,16 +12,22 @@ models that should participate in autogenerate.
 Empty autogenerate revisions are suppressed via process_revision_directives;
 running `alembic revision --autogenerate` when there are no model changes
 prints "No changes detected" and creates no file.
+
+TLS comes from oqtopus_cloud.common.db_tls, the same helper session.py uses, so
+migrations reach the RDS Proxy exactly like the application does.
 """
 
+import logging
 import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine, pool
+from sqlalchemy.engine import make_url
 
 # Importing the package registers every model class with Base.metadata.
 import oqtopus_cloud.common.models  # noqa: F401
+from oqtopus_cloud.common.db_tls import ssl_connect_args
 from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models import Base
 
@@ -31,6 +37,9 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+# alembic.ini configures the "alembic" logger at INFO, so this is shown by default.
+logger = logging.getLogger("alembic.env")
 
 
 def _build_url() -> str:
@@ -88,7 +97,26 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    engine = create_engine(_build_url(), poolclass=pool.NullPool)
+    url = _build_url()
+    parsed = make_url(url)
+    # `ssl` is a PyMySQL connect argument, so it is only applied to MySQL URLs.
+    # ALEMBIC_DATABASE_URL is also used to point at a throwaway SQLite database
+    # (see _build_url), whose driver would reject it.
+    #
+    # Passed as connect_args rather than URL query parameters so that these win
+    # over any ssl_* already present in an ALEMBIC_DATABASE_URL override.
+    connect_args = (
+        ssl_connect_args(parsed.host) if parsed.get_backend_name() == "mysql" else {}
+    )
+    # Logged because a migration is often the only thing an operator runs
+    # against a production database: "which database, over TLS or not" should
+    # never have to be inferred from a stack trace.
+    logger.info(
+        "connecting to %s (TLS: %s)",
+        parsed.render_as_string(hide_password=True),
+        "on" if "ssl" in connect_args else "off",
+    )
+    engine = create_engine(url, poolclass=pool.NullPool, connect_args=connect_args)
     with engine.connect() as connection:
         context.configure(
             connection=connection,
