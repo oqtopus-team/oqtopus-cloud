@@ -68,8 +68,8 @@ def get_secret() -> Any:
     """
     if os.environ.get("ENV") == "local":
         return {
-            "username": "admin",
-            "password": "password",
+            "username": os.environ.get("DB_USERNAME", "admin"),
+            "password": os.environ.get("DB_PASSWORD", "password"),
         }
     secret_name = os.environ["SECRET_NAME"]
     region = os.environ["AWS_REGION"]

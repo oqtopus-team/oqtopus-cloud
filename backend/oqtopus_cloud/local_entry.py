@@ -23,6 +23,8 @@ from dataclasses import dataclass
 
 from uvicorn.main import main as uvicorn_cli
 
+from oqtopus_cloud import infra
+
 
 @dataclass(frozen=True)
 class ApiSpec:
@@ -87,8 +89,16 @@ def apply_scoped_powertools_env(scope: str) -> None:
             os.environ[name] = value
 
 
+def _apply_stack_env() -> None:
+    try:
+        infra.apply_stack_env()
+    except infra.ConfigError as error:
+        sys.exit(str(error))
+
+
 def _run(spec: ApiSpec) -> None:
     # Must be set before the application is imported (uvicorn imports it below).
+    _apply_stack_env()
     for key in _POWERTOOLS_VARS:
         _drop_empty(key)
     apply_scoped_powertools_env(spec.scope)

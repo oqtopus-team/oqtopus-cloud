@@ -14,6 +14,8 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "PROVIDER_API_LOG_LEVEL",
         "POWERTOOLS_SERVICE_NAME",
         "POWERTOOLS_METRICS_NAMESPACE",
+        "STORAGE_STACK",
+        "STORAGE_DRIVER",
         "USER_API_POWERTOOLS_SERVICE_NAME",
         "PROVIDER_API_POWERTOOLS_SERVICE_NAME",
     ):
@@ -93,3 +95,33 @@ def test_powertools_defaults_and_scoped_override(
 def test_user_signup_scope_and_service_name() -> None:
     assert local_entry.USER_SIGNUP.scope == "USER_SIGNUP_API"
     assert local_entry.USER_SIGNUP.name == "user_signup-api"
+
+
+def test_run_applies_storage_stack(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(local_entry, "_start_uvicorn", lambda app: None)
+    monkeypatch.setenv("USER_API_PORT", "8080")
+    monkeypatch.setenv("STORAGE_STACK", "minio")
+    monkeypatch.setenv("STORAGE_DRIVER", "seaweedfs")
+    local_entry.run_user()
+    assert local_entry.os.environ["STORAGE_DRIVER"] == "local:minio"
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_run_without_storage_stack_leaves_driver(
+    monkeypatch: pytest.MonkeyPatch, value: str | None
+) -> None:
+    monkeypatch.setattr(local_entry, "_start_uvicorn", lambda app: None)
+    monkeypatch.setenv("USER_API_PORT", "8080")
+    monkeypatch.setenv("STORAGE_DRIVER", "s3")
+    if value is not None:
+        monkeypatch.setenv("STORAGE_STACK", value)
+    local_entry.run_user()
+    assert local_entry.os.environ["STORAGE_DRIVER"] == "s3"
+
+
+def test_run_with_unknown_storage_stack_exits(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(local_entry, "_start_uvicorn", lambda app: None)
+    monkeypatch.setenv("USER_API_PORT", "8080")
+    monkeypatch.setenv("STORAGE_STACK", "nope")
+    with pytest.raises(SystemExit):
+        local_entry.run_user()

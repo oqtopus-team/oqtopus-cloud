@@ -48,12 +48,18 @@ API が内部ホスト名でストレージへ接続し、クライアントが�
 
 ```bash
 cd backend
-make up STORAGE_STACK=minio                   # MySQL + MinIO、マイグレーションとシード
+make up STORAGE_STACK=minio                   # MySQL + MinIO、マイグレーションとシード（+ otel-collector）
 make run-user STORAGE_STACK=minio             # この構成で API を起動
 make check-presigned-post STORAGE_STACK=minio # seaweedfs と同じストレージ確認
+make infra-status                             # DB とストレージが稼働しているかを表示
+make infra-down                               # DB とストレージだけを停止（データは残る）
 ```
 
-`STORAGE_STACK` の既定値は `seaweedfs` です。2つのスタックは同じホストポートを使うため、`make up` は選択されていないスタックを停止してから対象を起動します。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、MinIO スタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+`make infra-up` は DB とストレージだけを起動し（otel-collector は起動しません）、`make up` はそれに otel-collector を加えます。どちらも `oqtopus-cloud-infra start` を呼び出し、DB とストレージを1つの単位として扱います。`STORAGE_STACK`（`seaweedfs` または `minio`）でスタックを選択し、Makefile での既定値は `seaweedfs` です。`STORAGE_DRIVER` はこの値から決まるので、これらのコマンドでは設定しないでください。2つのスタックは同じホストポートを使うため、`start` は選択されていないスタックのサービスを停止してから対象を起動します。compose の `user-api` / `provider-api` は SeaweedFS 前提の設定なので、MinIO スタックで API を動かす場合はホスト側で起動してください（元々ドキュメントの開発フローもホスト起動です）。MinIO はアーカイブ済みで今後の修正は入らないので、非推奨ドライバのローカル確認以外には使わないでください。
+
+ドライバの名前は、`seaweedfs` のようにバックエンドの名前だけにし、`local:` などの接頭辞は付けません。ドライバはローカル専用とは限らないためです。`local:minio` は、既存デプロイとの互換性のための例外です。
+
+**スタックを切り替えるときの注意:** DB を残したまま `STORAGE_STACK` を切り替えると、シードのオブジェクトは新しいスタックに再投入されますが、ユーザーが作成したジョブのオブジェクトは旧スタックのボリュームに残るため、それらのダウンロード URL は 404 になります。スタックの切り替えは、ローカルのデータを破棄できる場合にだけ行ってください（ボリュームの削除は [セットアップ](../developer_guidelines/setup.md) を参照）。
 
 ## リリース時の互換性確認
 

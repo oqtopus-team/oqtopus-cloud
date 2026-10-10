@@ -48,12 +48,18 @@ The `local:minio` driver is deprecated but still works: its settings are read ex
 
 ```bash
 cd backend
-make up STORAGE_STACK=minio                   # MySQL + MinIO, migrations and seed data
+make up STORAGE_STACK=minio                   # MySQL + MinIO, migrations and seed data (+ otel-collector)
 make run-user STORAGE_STACK=minio             # run an API against it
 make check-presigned-post STORAGE_STACK=minio # same storage check as seaweedfs
+make infra-status                             # show whether the DB and storage are running
+make infra-down                               # stop the DB and storage only (the data is kept)
 ```
 
-`STORAGE_STACK` defaults to `seaweedfs`, and the two stacks bind the same host ports, so `make up` stops the inactive stack before starting the selected one. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for the MinIO stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+`make infra-up` starts only the DB and storage (without otel-collector); `make up` adds otel-collector. Both call `oqtopus-cloud-infra start`, which treats the DB and the storage as one unit. `STORAGE_STACK` selects the stack (`seaweedfs` or `minio`) and defaults to `seaweedfs` in the Makefile. `STORAGE_DRIVER` is derived from it, so do not set it for these commands. The two stacks bind the same host ports, so `start` stops the other stack's services before starting the selected one. The `user-api` / `provider-api` services in `compose.yaml` are wired to SeaweedFS, so run the APIs on the host for the MinIO stack — which is the documented development flow anyway. MinIO is archived and receives no further fixes: this is for verifying the deprecated driver locally, nothing else.
+
+A driver is named after its backend only, like `seaweedfs`, without a prefix such as `local:`, because a driver is not necessarily local-only. `local:minio` is the exception, for compatibility with existing deployments.
+
+**Switching stacks:** if you switch `STORAGE_STACK` while keeping the DB, the seed objects are seeded again into the new stack, but objects of jobs created by users stay in the previous stack's volume, so their download URLs return 404. Switch stacks only when the local data can be discarded (see [Setup](../developer_guidelines/setup.md) for removing the volumes).
 
 ## Release compatibility check
 

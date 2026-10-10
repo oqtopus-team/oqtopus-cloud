@@ -1,28 +1,33 @@
 x-api-env: &api-env
   ENV: local
   DB_HOST: db
-  DB_NAME: main
-  DB_CONNECTOR: mysql+pymysql
+  DB_NAME: ${DB_NAME:-main}
+  DB_USERNAME: ${DB_USERNAME:-admin}
+  DB_PASSWORD: ${DB_PASSWORD:-password}
+  DB_CONNECTOR: ${DB_CONNECTOR:-mysql+pymysql}
   ALLOW_ORIGINS: "http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173"
-  ALLOW_CREDENTIALS: "true"
-  ALLOW_METHODS: "*"
-  ALLOW_HEADERS: "*"
-  LOG_LEVEL: DEBUG
-  # Hardcoded (not ${VAR:-default}) on purpose: `make up` exports its own
-  # host-side STORAGE_SEAWEEDFS_* (for seed/init_storage.py, which run
-  # outside docker) and, since it shells out to `docker compose up`, those
-  # would otherwise silently override these container-side values too.
+  ALLOW_CREDENTIALS: ${ALLOW_CREDENTIALS:-true}
+  ALLOW_METHODS: ${ALLOW_METHODS:-*}
+  ALLOW_HEADERS: ${ALLOW_HEADERS:-*}
+  LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+  # Values that are the same on the host side (`make up`, oqtopus-cli) and here
+  # are read from the environment, with the local defaults below. Keep the
+  # defaults in sync with the Makefile and oqtopus-cli's config/.env. Values
+  # that differ between the host and the containers (DB_HOST, ALLOW_ORIGINS and
+  # the storage ENDPOINT_URL, which is the host's localhost there) are
+  # hardcoded: a host-side value exported by the caller must not override the
+  # container-side one.
   STORAGE_DRIVER: seaweedfs
-  STORAGE_SEAWEEDFS_BUCKET_NAME: oqtopus-oqtopus-dev
-  STORAGE_SEAWEEDFS_USERNAME: devadmin
-  STORAGE_SEAWEEDFS_PASSWORD: devadmin123
+  STORAGE_SEAWEEDFS_BUCKET_NAME: ${STORAGE_SEAWEEDFS_BUCKET_NAME:-oqtopus-oqtopus-dev}
+  STORAGE_SEAWEEDFS_USERNAME: ${STORAGE_SEAWEEDFS_USERNAME:-devadmin}
+  STORAGE_SEAWEEDFS_PASSWORD: ${STORAGE_SEAWEEDFS_PASSWORD:-devadmin123}
   STORAGE_SEAWEEDFS_ENDPOINT_URL: http://seaweedfs:8333
   # Presigned URLs are used by clients outside the Compose network.
-  STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL: http://localhost:8333
-  ALLOW_DELETION: "true"
-  EDITABLE_FIELDS: '["name", "organization"]'
-  VISIBLE_FIELDS: '["id", "email", "name", "organization", "created_at"]'
-  LOGIN_HISTORY_ENABLED: "true"
+  STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL: ${STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL:-http://localhost:8333}
+  ALLOW_DELETION: ${ALLOW_DELETION:-true}
+  EDITABLE_FIELDS: '${EDITABLE_FIELDS:-["name", "organization"]}'
+  VISIBLE_FIELDS: '${VISIBLE_FIELDS:-["id", "email", "name", "organization", "created_at"]}'
+  LOGIN_HISTORY_ENABLED: ${LOGIN_HISTORY_ENABLED:-true}
   # OTel: defaults to ON locally so changes to tracing.py / instrumentors are
   # exercised by every local request. The bundled otel-collector below is a
   # debug sink (no Tempo/Grafana); for visual trace inspection, run
@@ -51,12 +56,18 @@ services:
     image: mysql:8.4
     platform: linux/x86_64
     environment:
-      - MYSQL_DATABASE=main
-      - MYSQL_USER=admin
-      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=${DB_NAME:-main}
+      - MYSQL_USER=${DB_USERNAME:-admin}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-password}
       - MYSQL_ROOT_PASSWORD=root
     volumes:
       - ./db/conf.d:/etc/mysql/conf.d
+      # Named, like the storage volumes, so the data survives `docker compose
+      # down` and the DB stays consistent with the storage. MYSQL_DATABASE,
+      # MYSQL_USER and MYSQL_PASSWORD are applied only when this volume is
+      # empty: after changing DB_NAME, DB_USERNAME or DB_PASSWORD, remove it
+      # (`docker compose down -v`).
+      - db-data:/var/lib/mysql
     ports:
       - 3306:3306
 
@@ -68,12 +79,12 @@ services:
     command: ["server", "-s3", "-dir=/data"]
     environment:
       # SeaweedFS bootstraps an admin S3 identity from these, and it must match
-      # STORAGE_SEAWEEDFS_USERNAME/PASSWORD above. Without them the gateway has
+      # STORAGE_SEAWEEDFS_USERNAME/PASSWORD in x-api-env above. Without them the gateway has
       # no identity at all: unsigned requests are allowed, but every *signed*
       # one — including all presigned uploads — is rejected with 403
       # InvalidAccessKeyId.
-      AWS_ACCESS_KEY_ID: devadmin
-      AWS_SECRET_ACCESS_KEY: devadmin123
+      AWS_ACCESS_KEY_ID: ${STORAGE_SEAWEEDFS_USERNAME:-devadmin}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SEAWEEDFS_PASSWORD:-devadmin123}
     ports:
       - "8333:8333" # S3 API
       - "9333:9333" # Master UI / cluster status
@@ -93,36 +104,43 @@ services:
       start_period: 15s
 
   # SeaweedFS doesn't guarantee bucket auto-creation on first write, so bootstrap
-  # the bucket explicitly. `s3.bucket.create` is idempotent, so this is safe to
-  # re-run on every `make up`.
+  # the bucket explicitly. This is safe to re-run on every `make up`.
   seaweedfs-bucket-init:
     image: chrislusf/seaweedfs
     depends_on:
       seaweedfs:
         condition: service_healthy
     entrypoint: /bin/sh
-    command: -c "echo 's3.bucket.create -name oqtopus-oqtopus-dev' | weed shell -master=seaweedfs:9333"
+    # `s3.bucket.create` fails with "already exists" when the bucket is there
+    # already, so treat that as success to keep this service idempotent.
+    command: -c "
+      out=$$(echo 's3.bucket.create -name ${STORAGE_SEAWEEDFS_BUCKET_NAME:-oqtopus-oqtopus-dev}' | weed shell -master=seaweedfs:9333 2>&1);
+      rc=$$?; echo \"$$out\";
+      [ $$rc -eq 0 ] || echo \"$$out\" | grep -q 'already exists'"
 
   # Deprecated MinIO stack, kept so the `local:minio` driver stays runnable
   # until it is removed (see docs/*/architecture/storage_backend_selection.md).
   # Behind a compose profile, so it is opt-in and the default stack never pulls
-  # these archived images: start it with `make up STORAGE_STACK=minio`.
+  # this image: start it with `make up STORAGE_STACK=minio`.
+  # MinIO removed its official container images in 2026. This community image
+  # is built from the official source and contains both `minio` and `mc`; pin
+  # both its final release tag and multi-architecture digest for reproducibility.
   # It maps the same host ports as seaweedfs above (9001), so the two stacks
   # cannot run at the same time.
   minio:
     profiles: ["minio"]
-    image: quay.io/minio/minio
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z@sha256:69b55a1c1c5dc285ce04db96689f5b2102317fc77a50680a1874ca6efd1c87f9
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${STORAGE_LOCAL_MINIO_USERNAME:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_LOCAL_MINIO_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 3s
       timeout: 2s
       retries: 5
@@ -130,14 +148,14 @@ services:
 
   mc:
     profiles: ["minio"]
-    image: minio/mc
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z@sha256:69b55a1c1c5dc285ce04db96689f5b2102317fc77a50680a1874ca6efd1c87f9
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: /bin/sh
     command: -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin && \
-      mc mb --ignore-existing local/oqtopus-oqtopus-dev && \
+      mc alias set local http://minio:9000 ${STORAGE_LOCAL_MINIO_USERNAME:-minioadmin} ${STORAGE_LOCAL_MINIO_PASSWORD:-minioadmin} && \
+      mc mb --ignore-existing local/${STORAGE_LOCAL_MINIO_BUCKET_NAME:-oqtopus-oqtopus-dev} && \
       echo '✅ Bucket created (or already exists)'"
 
   otel-collector:
@@ -169,5 +187,6 @@ services:
       - "8888:8888"
 
 volumes:
+  db-data:
   seaweedfs-data:
   minio-data:
