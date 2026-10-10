@@ -163,7 +163,9 @@ seed: ## Seed the local DB with test data (idempotent)
 	@uv run python scripts/seed.py
 
 down: infra-down ## Remove all containers and the network of this compose project (volumes, i.e. the data, are kept)
-	@docker compose down
+	@# Containers of a profile are removed only when the profile is enabled, so
+	@# enable the profiles of compose.yaml (minio: the MinIO stack).
+	@docker compose --profile minio down
 
 PRESIGNED_POST_COUNT ?= 100
 PRESIGNED_POST_WORKERS ?= 10
