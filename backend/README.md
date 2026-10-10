@@ -8,7 +8,7 @@ Check out the [API documentation](../docs/en/developer_guidelines/backend.md) fo
 make up
 ```
 
-`make up` starts the DB, storage and otel-collector. `make infra-up` starts only the DB and storage, and `make infra-down` stops only those, and `make infra-status` shows whether they are running (it fails only when the state is unknown; run `uv run oqtopus-cloud-infra status` to get the exit code); `make down` removes all containers of this compose project.
+`make up` starts the DB, storage and otel-collector. `make infra-up` starts only the DB and storage, and `make infra-down` stops only those, and `make infra-status` shows whether they are running (it fails only when the state is unknown; run `uv run oqtopus-cloud-infra status` to get the exit code); `make down` removes all containers and the network of this compose project. The data of the DB and the storage lives in volumes and survives `stop` and `down`; to discard it, run `docker compose down -v`.
 
 - user API
 
@@ -72,7 +72,7 @@ Input (environment variables):
 | Subcommand | Guarantee on exit code 0 |
 |------------|--------------------------|
 | `start` | The DB accepts connections, the schema is up to date and the initial data is seeded. Idempotent. Services of other stacks are stopped first. |
-| `stop` | The DB and the storage containers of all stacks are stopped (volumes are kept; other containers and networks are untouched). Idempotent. |
+| `stop` | The DB and the storage containers of all stacks are stopped. The containers and the volumes (the data) are kept, and other containers and networks are untouched. Idempotent. |
 | `status` | Reports the state through the exit code; stdout is for humans and its format is not part of the contract. |
 
 Exit codes (LSB init-script conventions):

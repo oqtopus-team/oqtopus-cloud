@@ -162,7 +162,7 @@ up: infra-up ## Start the DB, storage and otel-collector
 seed: ## Seed the local DB with test data (idempotent)
 	@uv run python scripts/seed.py
 
-down: infra-down ## Stop and remove all containers of this compose project
+down: infra-down ## Remove all containers and the network of this compose project (volumes, i.e. the data, are kept)
 	@docker compose down
 
 PRESIGNED_POST_COUNT ?= 100

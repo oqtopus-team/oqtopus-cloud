@@ -344,10 +344,10 @@ def cmd_stop() -> int:
     services = [DB_SERVICE]
     for stack in STACKS.values():
         services += [stack.service, stack.init_service]
-    # Not `down`: it would also remove the network and the other containers of
-    # the project. Volumes are kept.
+    # Neither `down` nor `rm`: `down` would also remove the network and the other
+    # containers of the project, and the containers are kept so that `start`
+    # resumes them. Data lives in volumes (see `volumes` in compose.yaml).
     _check(_compose("stop", *services))
-    _check(_compose("rm", "-f", *services))
     return EXIT_OK
 
 

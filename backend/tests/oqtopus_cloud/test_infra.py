@@ -203,11 +203,11 @@ def test_stop_touches_only_db_and_storage(
     monkeypatch.setenv("STORAGE_STACK", stack)
     assert exit_code("stop") == 0
     services = ["db", "seaweedfs", "seaweedfs-bucket-init", "minio", "mc"]
-    assert [c[-5:] for c in fake_run.calls] == [services, services]
+    assert [c[-5:] for c in fake_run.calls] == [services]
     assert fake_run.calls[0][-6] == "stop"
-    assert fake_run.calls[1][-7:-5] == ["rm", "-f"]
     for call in fake_run.calls:
         assert "down" not in call
+        assert "rm" not in call
         assert "otel-collector" not in call
         assert "--profile" in call
 
