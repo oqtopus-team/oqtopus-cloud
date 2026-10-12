@@ -1098,6 +1098,23 @@ def test_register_submit_cancel_delete(
         assert bef == aft
 
 
+def test_cancel_running_job_transitions_to_cancelling(
+    test_client,
+    test_db,
+):
+    test_db.add(_get_user_model(1))
+    job = _get_submitted_model(1)
+    job.status = "running"
+    test_db.add(job)
+    test_db.commit()
+
+    response = test_client.post(f"/jobs/{job.id}/cancel")
+
+    assert response.status_code == 200
+    test_db.refresh(job)
+    assert job.status == "cancelling"
+
+
 def test_submit_job_defaults_optional_infos_to_empty_objects(
     test_client,
     test_db,

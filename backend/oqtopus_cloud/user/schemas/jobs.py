@@ -28,6 +28,7 @@ class JobStatus(str, Enum):
     submitted = "submitted"
     ready = "ready"
     running = "running"
+    cancelling = "cancelling"
     succeeded = "succeeded"
     failed = "failed"
     cancelled = "cancelled"

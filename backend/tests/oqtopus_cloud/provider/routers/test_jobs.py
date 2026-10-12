@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from urllib.parse import urlparse
 
+import pytest
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
@@ -457,6 +458,71 @@ def test_update_job_status(
     assert float(model.execution_time) == 15.8
     assert model.running_at == running_at
     assert model.ended_at is not None
+
+
+@pytest.mark.parametrize("terminal_status", ["succeeded", "failed", "cancelled"])
+def test_update_cancelling_job_to_terminal_status(
+    test_db: Session,
+    terminal_status: str,
+):
+    job = _get_job_model(1, status=JobStatus.cancelling)
+    test_db.add(job)
+    test_db.commit()
+
+    response = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps({"status": terminal_status}),
+    )
+
+    assert response.status_code == 200
+    test_db.refresh(job)
+    assert job.status == terminal_status
+    assert job.ended_at is not None
+
+
+def test_update_cancelled_job_to_succeeded_with_result(
+    test_db: Session,
+    test_storage,
+):
+    job = _get_job_model(1, status=JobStatus.cancelled)
+    test_db.add(job)
+    test_db.commit()
+    test_storage.put(key="testjob1id/result.zip", data=b"{}")
+
+    response = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps(
+            {
+                "status": "succeeded",
+                "output_files": ["testjob1id/result.zip"],
+            }
+        ),
+    )
+
+    assert response.status_code == 200
+    test_db.refresh(job)
+    assert job.status == JobStatus.succeeded
+    assert job.output_files == json.dumps(["result"])
+    assert job.ended_at is not None
+
+
+def test_update_cancelled_job_to_succeeded_requires_result(
+    test_db: Session,
+):
+    job = _get_job_model(1, status=JobStatus.cancelled)
+    test_db.add(job)
+    test_db.commit()
+
+    response = client.patch(
+        "/jobs/testjob1id/status",
+        content=json.dumps({"status": "succeeded"}),
+    )
+
+    assert response.status_code == 409
+    test_db.refresh(job)
+    assert job.status == JobStatus.cancelled
+    assert job.output_files is None
+    assert job.ended_at is None
 
 
 def test_update_job_invalid_status_transitions(test_db: Session):

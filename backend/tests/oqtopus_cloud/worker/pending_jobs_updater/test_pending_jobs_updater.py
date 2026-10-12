@@ -76,6 +76,7 @@ def test_update_pending_jobs(
     test_db.add(_get_job(3, "device2", "submitted"))
     test_db.add(_get_job(4, "device2", "ready"))
     test_db.add(_get_job(5, "device2", "running"))
+    test_db.add(_get_job(9, "device1", "cancelling"))
     test_db.add(_get_job(6, "device1", "succeeded"))
     test_db.commit()
 
@@ -92,7 +93,7 @@ def test_update_pending_jobs(
     )
 
     # assertion
-    assert device1_pending_jobs == 1
+    assert device1_pending_jobs == 2
     assert device2_pending_jobs == 4
 
     test_db.add(_get_job(7, "device1", "running"))
@@ -110,7 +111,7 @@ def test_update_pending_jobs(
     )
 
     # assertion
-    assert device1_pending_jobs == 2
+    assert device1_pending_jobs == 3
     assert device2_pending_jobs == 5
 
 

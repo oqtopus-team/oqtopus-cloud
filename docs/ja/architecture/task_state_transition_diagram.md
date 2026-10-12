@@ -10,11 +10,13 @@ stateDiagram-v2
     
     state join_state <<join>>
     running --> join_state
+    running --> cancelling :cancel requested
+    cancelling --> join_state :execution resolved
     
     state join_state <<fork>>
     join_state --> succeeded :execution succeeded
     join_state --> failed :execution failed
-    join_state --> cancelled :cancel requested
+    join_state --> cancelled :execution cancelled
     
     succeeded --> [*] :deleted
     failed --> [*] :deleted
