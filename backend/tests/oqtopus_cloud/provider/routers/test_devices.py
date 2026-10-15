@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from typing import Dict
-from uuid import UUID
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
@@ -32,7 +32,9 @@ from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
     ConflictErrorResponse,
+    InternalServerErrorResponse,
 )
+from sqlalchemy.orm import Session
 
 utc = ZoneInfo("UTC")
 client = TestClient(app)
@@ -225,7 +227,6 @@ def test_update_device_calibration_creates_history(test_db, test_storage):
 
     history = test_db.query(DeviceInfoHistory).filter_by(device_id="SC").one()
     assert actual == DeviceDataUpdateResponse(message="Device's data updated")
-    assert UUID(history.history_id).version == 7
     assert history.n_qubits == 2
     assert history.n_couplings == 1
     assert test_storage.get(key=get_device_info_history_key(history.history_id)) == device_info
@@ -245,6 +246,49 @@ def test_update_device_calibration_rejects_duplicate_history(test_db, test_stora
 
     assert isinstance(actual, ConflictErrorResponse)
     assert actual.status_code == 409
+
+
+def test_update_device_calibration_recovers_after_commit_failure(
+    test_db, test_storage
+):
+    test_db.add(_get_model_qpu())
+    Session.commit(test_db)
+    calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
+    first_device_info = json.dumps(_get_device_info_dict()).encode()
+    changed_device_info = json.dumps(
+        {"device_id": "SC", "qubits": [{"id": 0}], "couplings": []}
+    ).encode()
+    device_info_key = get_device_info_key("SC")
+    test_storage.put(key=device_info_key, data=first_device_info)
+    request = DeviceInfoUpdate(calibrated_at=calibrated_at)
+    real_commit = test_db.commit
+    commit_attempts = 0
+
+    def fail_once_then_commit():
+        nonlocal commit_attempts
+        commit_attempts += 1
+        if commit_attempts == 1:
+            raise RuntimeError("commit failed")
+        real_commit()
+
+    with patch.object(test_db, "commit", side_effect=fail_once_then_commit):
+        first_result = update_device_calibration(
+            "SC", request, test_db, test_storage
+        )
+        assert isinstance(first_result, InternalServerErrorResponse)
+        assert test_db.query(DeviceInfoHistory).count() == 0
+
+        test_storage.put(key=device_info_key, data=changed_device_info)
+        retry_result = update_device_calibration("SC", request, test_db, test_storage)
+
+    history = test_db.query(DeviceInfoHistory).one()
+    assert retry_result == DeviceDataUpdateResponse(message="Device's data updated")
+    assert history.n_qubits == 2
+    assert history.n_couplings == 1
+    assert (
+        test_storage.get(key=get_device_info_history_key(history.history_id))
+        == first_device_info
+    )
 
 
 def test_update_device_calibration_requires_device_info(test_db, test_storage):

@@ -3,6 +3,7 @@ import json
 import zipfile
 from enum import Enum
 from io import BytesIO
+from uuid import NAMESPACE_URL, uuid5
 
 from fastapi import (
     APIRouter,
@@ -37,8 +38,6 @@ from oqtopus_cloud.provider.schemas.errors import (
     NotFoundErrorResponse,
 )
 from sqlalchemy.orm import Session
-from uuid_extensions import uuid7
-
 from . import LoggerRouteHandler
 
 
@@ -59,6 +58,13 @@ def _normalize_utc(value: datetime.datetime) -> datetime.datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=datetime.timezone.utc)
     return value.astimezone(datetime.timezone.utc)
+
+
+def _get_history_id(device_id: str, calibrated_at: datetime.datetime) -> str:
+    identity = json.dumps(
+        [device_id, calibrated_at.isoformat()], separators=(",", ":")
+    )
+    return str(uuid5(NAMESPACE_URL, identity))
 
 
 def _count_device_info_metadata(device_info: dict) -> tuple[int, int]:
@@ -260,15 +266,18 @@ def update_device_calibration(
             )
 
         device_info_key = get_device_info_key(device_id)
-        uploaded_device_info = storage.get(key=device_info_key)
-        if uploaded_device_info is None:
+        current_device_info = storage.get(key=device_info_key)
+        if current_device_info is None:
             return BadRequestResponse(message="device_info is required")
-        n_qubits, n_couplings = _extract_device_info_metadata(uploaded_device_info)
 
-        history_id = str(uuid7())
-        storage.put(
-            key=get_device_info_history_key(history_id), data=uploaded_device_info
-        )
+        history_id = _get_history_id(device_id, calibrated_at)
+        history_key = get_device_info_history_key(history_id)
+        archived_device_info = storage.get(key=history_key)
+        if archived_device_info is None:
+            archived_device_info = current_device_info
+            storage.put(key=history_key, data=archived_device_info)
+        n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
+
         device.calibrated_at = calibrated_at
         db.add(
             DeviceInfoHistory(
@@ -282,8 +291,10 @@ def update_device_calibration(
         db.commit()
         return DeviceDataUpdateResponse(message="Device's data updated")
     except ValueError as e:
+        db.rollback()
         return BadRequestResponse(message=str(e))
     except Exception as e:
+        db.rollback()
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
