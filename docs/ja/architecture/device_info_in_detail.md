@@ -56,12 +56,12 @@ sequenceDiagram
    participant Storage as Object Storage
 
    Client->>API: GET /devices/{id}/device_info/upload
-   API-->>Client: presigned upload URL data（Provider では upload_id も返す）
+   API-->>Client: presigned upload URL data
    Client->>Storage: device_info.zip を upload
    alt Admin フロー
       Client->>API: PATCH /devices/{id} with remaining DB fields only
    else Provider / Engine フロー
-      Client->>API: PATCH /devices/{id}/device_info with upload_id and calibrated_at
+      Client->>API: PATCH /devices/{id}/device_info with calibrated_at
    end
    API-->>Client: update accepted
 ```
@@ -70,21 +70,21 @@ sequenceDiagram
 
 Provider 側の upload も同じ storage convention を使いますが、確定用 endpoint は専用です。
 
-1. Provider API の `GET /devices/{device_id}/device_info/upload` で upload 先を取得し、返された `upload_id` を保持します。
-2. 返された staging URL へ `device_info.zip` をアップロードします。
-3. `PATCH /devices/{device_id}/device_info` に `upload_id` と `calibrated_at` を渡し、その upload を確定します。
+1. Provider API の `GET /devices/{device_id}/device_info/upload` で upload 先を取得します。
+2. `device_info.zip` をストレージへ直接アップロードします。
+3. `PATCH /devices/{device_id}/device_info` に `calibrated_at` を渡して upload を確定します。
 
 engine はこの flow を provider API 経由で使います。起動時に `DeviceGatewayFetcher` が device gateway から初回 fetch を行い、device repository update sequence を呼びます。device_info update が有効な場合、repository は次の順で処理します。
 
-1. presigned staging upload 先と `upload_id` を取得する
-2. `device_info_uploads/<device_id>/<upload_id>/device_info.zip` を upload する
-3. `PATCH /devices/{device_id}/device_info` に `upload_id` と `calibrated_at` を渡す
+1. presigned upload 先を取得する
+2. `devices/<device_id>/device_info.zip` を upload する
+3. `PATCH /devices/{device_id}/device_info` に `calibrated_at` を渡す
 
 起動後も、fetch した `device_info` payload または `calibrated_at` が変化したときに、同じ upload flow が再実行されます。
 
 ## 上書きと削除のセマンティクス
 
-Admin flow は決定的な current key へ直接 upload するため、同じ `device_id` に対する新しい archive は以前のオブジェクトを上書きします。Provider flow は最初に `upload_id` ごとの staging key へ upload します。確定に成功した場合のみ、その upload の検証済みbytesを決定的な current key と history key へ昇格し、staging object を削除します。未確定または不正な upload が current object を置き換えることはありません。
+storage key は決定的なので、同じ `device_id` に対して新しい archive を upload すると前のオブジェクトを上書きします。最後に成功した upload が新しい source of truth になります。
 
 Admin API の `DELETE /devices/{device_id}` は、次の両方を削除します。
 

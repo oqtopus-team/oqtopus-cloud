@@ -3,7 +3,7 @@ import json
 import zipfile
 from enum import Enum
 from io import BytesIO
-from uuid import NAMESPACE_URL, uuid4, uuid5
+from uuid import NAMESPACE_URL, uuid5
 
 from fastapi import (
     APIRouter,
@@ -18,7 +18,6 @@ from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
     get_device_info_history_key,
     get_device_info_key,
-    get_device_info_upload_key,
 )
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.devices import (
@@ -100,25 +99,6 @@ def _extract_device_info_metadata(device_info_data: bytes) -> tuple[int, int]:
         raise ValueError("device_info is invalid") from exc
 
 
-def _delete_upload(storage: AbstractStorage, key: str) -> None:
-    try:
-        storage.delete(key=key)
-    except Exception:
-        logger.exception("Failed to delete staged device info", extra={"key": key})
-
-
-def _restore_current_device_info(
-    storage: AbstractStorage, key: str, previous: bytes | None
-) -> None:
-    try:
-        if previous is None:
-            storage.delete(key=key)
-        else:
-            storage.put(key=key, data=previous)
-    except Exception:
-        logger.exception("Failed to restore current device info", extra={"key": key})
-
-
 @router.get(
     "/devices/{device_id}/device_info/upload",
     response_model=DeviceInfoUploadResponse,
@@ -138,12 +118,10 @@ def get_device_info_upload_url(
         device = db.get(Device, device_id)
         if device is None:
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
-        upload_id = uuid4()
         return DeviceInfoUploadResponse(
-            upload_id=upload_id,
             presigned_url=DeviceInfoUploadPresignedURL(
                 **storage.get_upload_presigned_url_data(
-                    key=get_device_info_upload_key(device_id, str(upload_id))
+                    key=get_device_info_key(device_id)
                 )
             ),
         )
@@ -267,12 +245,7 @@ def update_device_calibration(
     """
     logger.info("invoked update_device")
     try:
-        device = (
-            db.query(Device)
-            .filter(Device.id == device_id)
-            .with_for_update()
-            .one_or_none()
-        )
+        device = db.get(Device, device_id)
         if device is None:
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         calibrated_at = request.calibrated_at
@@ -280,17 +253,6 @@ def update_device_calibration(
         if calibrated_at is None:
             return BadRequestResponse(message="calibrated_at is required")
         calibrated_at = _normalize_utc(calibrated_at)
-
-        upload_key = get_device_info_upload_key(device_id, str(request.upload_id))
-        uploaded_device_info = storage.get(key=upload_key)
-        if uploaded_device_info is None:
-            return BadRequestResponse(message="device_info is required")
-
-        try:
-            n_qubits, n_couplings = _extract_device_info_metadata(uploaded_device_info)
-        except ValueError as e:
-            _delete_upload(storage, upload_key)
-            return BadRequestResponse(message=str(e))
 
         existing_history = (
             db.query(DeviceInfoHistory)
@@ -301,7 +263,6 @@ def update_device_calibration(
             .first()
         )
         if existing_history is not None:
-            _delete_upload(storage, upload_key)
             return ConflictErrorResponse(
                 message=(
                     f"device_info_history for device_id={device_id} and "
@@ -309,20 +270,20 @@ def update_device_calibration(
                 )
             )
 
+        device_info_key = get_device_info_key(device_id)
+        current_device_info = storage.get(key=device_info_key)
+        if current_device_info is None:
+            return BadRequestResponse(message="device_info is required")
+
         history_id = _get_history_id(device_id, calibrated_at)
         history_key = get_device_info_history_key(history_id)
         archived_device_info = storage.get(key=history_key)
         if archived_device_info is None:
-            storage.put(key=history_key, data=uploaded_device_info)
-        elif archived_device_info != uploaded_device_info:
-            _delete_upload(storage, upload_key)
-            return ConflictErrorResponse(
-                message="Device info history archive already exists with different content"
-            )
-
-        device_info_key = get_device_info_key(device_id)
-        previous_device_info = storage.get(key=device_info_key)
-        storage.put(key=device_info_key, data=uploaded_device_info)
+            archived_device_info = current_device_info
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
+            storage.put(key=history_key, data=archived_device_info)
+        else:
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
 
         device.calibrated_at = calibrated_at
         db.add(
@@ -338,23 +299,18 @@ def update_device_calibration(
             db.commit()
         except IntegrityError:
             db.rollback()
-            _restore_current_device_info(storage, device_info_key, previous_device_info)
-            _delete_upload(storage, upload_key)
             return ConflictErrorResponse(
                 message=(
                     f"device_info_history for device_id={device_id} and "
                     f"calibrated_at={calibrated_at.isoformat()} already exists."
                 )
             )
-        _delete_upload(storage, upload_key)
         return DeviceDataUpdateResponse(message="Device's data updated")
     except ValueError as e:
         db.rollback()
         return BadRequestResponse(message=str(e))
     except Exception as e:
         db.rollback()
-        if "device_info_key" in locals() and "previous_device_info" in locals():
-            _restore_current_device_info(storage, device_info_key, previous_device_info)
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
