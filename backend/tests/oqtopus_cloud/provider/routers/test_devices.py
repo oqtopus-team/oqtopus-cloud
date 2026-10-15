@@ -153,7 +153,9 @@ def test_update_device_calibration_qpu(test_db, test_storage):
     test_db.commit()
     device = test_db.get(Device, "SC")
     device_info_key = get_device_info_key(device.id)
-    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
+    test_storage.put(
+        key=device_info_key, data=json.dumps(_get_calibration_dict()).encode()
+    )
     # Act
     request = DeviceInfoUpdate(
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
@@ -174,7 +176,9 @@ def test_update_device_calibration_sim(test_db, test_storage):
     test_db.commit()
     device = test_db.get(Device, "SC2")
     device_info_key = get_device_info_key(device.id)
-    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
+    test_storage.put(
+        key=device_info_key, data=json.dumps(_get_calibration_dict()).encode()
+    )
     # Act
     request = DeviceInfoUpdate(
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
@@ -205,7 +209,9 @@ def test_update_device_calibration_with_uploaded_device_info(test_db, test_stora
     test_db.add(_get_model_qpu())
     test_db.commit()
     device_info_key = get_device_info_key("SC")
-    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
+    test_storage.put(
+        key=device_info_key, data=json.dumps(_get_calibration_dict()).encode()
+    )
 
     request = DeviceInfoUpdate(
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
@@ -232,7 +238,10 @@ def test_update_device_calibration_creates_history(test_db, test_storage):
     assert actual == DeviceDataUpdateResponse(message="Device's data updated")
     assert history.n_qubits == 2
     assert history.n_couplings == 1
-    assert test_storage.get(key=get_device_info_history_key(history.history_id)) == device_info
+    assert (
+        test_storage.get(key=get_device_info_history_key(history.history_id))
+        == device_info
+    )
 
 
 def test_update_device_calibration_rejects_duplicate_history(test_db, test_storage):
@@ -251,9 +260,7 @@ def test_update_device_calibration_rejects_duplicate_history(test_db, test_stora
     assert actual.status_code == 409
 
 
-def test_update_device_calibration_recovers_after_commit_failure(
-    test_db, test_storage
-):
+def test_update_device_calibration_recovers_after_commit_failure(test_db, test_storage):
     test_db.add(_get_model_qpu())
     Session.commit(test_db)
     calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
@@ -275,9 +282,7 @@ def test_update_device_calibration_recovers_after_commit_failure(
         real_commit()
 
     with patch.object(test_db, "commit", side_effect=fail_once_then_commit):
-        first_result = update_device_calibration(
-            "SC", request, test_db, test_storage
-        )
+        first_result = update_device_calibration("SC", request, test_db, test_storage)
         assert isinstance(first_result, InternalServerErrorResponse)
         assert test_db.query(DeviceInfoHistory).count() == 0
 
@@ -342,9 +347,7 @@ def test_update_device_calibration_rejects_invalid_json_shape(
     assert test_db.query(DeviceInfoHistory).count() == 0
 
 
-def test_update_device_calibration_rejects_multiple_zip_entries(
-    test_db, test_storage
-):
+def test_update_device_calibration_rejects_multiple_zip_entries(test_db, test_storage):
     test_db.add(_get_model_qpu())
     test_db.commit()
     buffer = BytesIO()

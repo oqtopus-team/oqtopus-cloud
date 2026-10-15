@@ -61,9 +61,7 @@ def _normalize_utc(value: datetime.datetime) -> datetime.datetime:
 
 
 def _get_history_id(device_id: str, calibrated_at: datetime.datetime) -> str:
-    identity = json.dumps(
-        [device_id, calibrated_at.isoformat()], separators=(",", ":")
-    )
+    identity = json.dumps([device_id, calibrated_at.isoformat()], separators=(",", ":"))
     return str(uuid5(NAMESPACE_URL, identity))
 
 
@@ -281,14 +279,10 @@ def update_device_calibration(
         archived_device_info = storage.get(key=history_key)
         if archived_device_info is None:
             archived_device_info = current_device_info
-            n_qubits, n_couplings = _extract_device_info_metadata(
-                archived_device_info
-            )
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
             storage.put(key=history_key, data=archived_device_info)
         else:
-            n_qubits, n_couplings = _extract_device_info_metadata(
-                archived_device_info
-            )
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
 
         device.calibrated_at = calibrated_at
         db.add(

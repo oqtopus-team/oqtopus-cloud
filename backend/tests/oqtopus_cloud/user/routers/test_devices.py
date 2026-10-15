@@ -110,7 +110,9 @@ def _get_model(device="SVSim", device_info: str | None = None):
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": device_info if device_info is not None else json.dumps({"device_id": device}),
+        "device_info": device_info
+        if device_info is not None
+        else json.dumps({"device_id": device}),
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
@@ -253,9 +255,7 @@ def test_nonexistent_device_returns_404_even_without_permission(test_db):
     # Assert - should be 404, not 403
     assert isinstance(response, NotFoundErrorResponse)
     assert response.status_code == 404
-    assert json.loads(response.body) == {
-        "message": f"device_id={device} is not found."
-    }
+    assert json.loads(response.body) == {"message": f"device_id={device} is not found."}
 
 
 def test_can_only_get_devices_that_user_can_access(test_db):

@@ -33,9 +33,7 @@ def _device_info_archive_bytes(device_info: dict) -> bytes:
     return buffer.getvalue()
 
 
-def _put_device_info(
-    storage: FSSpecStorage, device_id: str, device_info: dict
-) -> str:
+def _put_device_info(storage: FSSpecStorage, device_id: str, device_info: dict) -> str:
     key = get_device_info_key(device_id)
     storage.put(key=key, data=_device_info_archive_bytes(device_info))
     return storage.get_download_presigned_url(key=key)
