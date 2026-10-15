@@ -67,9 +67,15 @@ def _get_history_id(device_id: str, calibrated_at: datetime.datetime) -> str:
     return str(uuid5(NAMESPACE_URL, identity))
 
 
-def _count_device_info_metadata(device_info: dict) -> tuple[int, int]:
+def _count_device_info_metadata(device_info: object) -> tuple[int, int]:
+    if not isinstance(device_info, dict):
+        raise ValueError("device_info must be a JSON object")
     qubits = device_info.get("qubits", [])
     couplings = device_info.get("couplings", [])
+    if not isinstance(qubits, list):
+        raise ValueError("device_info.qubits must be an array")
+    if not isinstance(couplings, list):
+        raise ValueError("device_info.couplings must be an array")
     return len(qubits), len(couplings)
 
 
@@ -77,14 +83,14 @@ def _extract_device_info_metadata(device_info_data: bytes) -> tuple[int, int]:
     try:
         with zipfile.ZipFile(BytesIO(device_info_data)) as archive:
             file_names = [name for name in archive.namelist() if not name.endswith("/")]
-            if not file_names:
-                raise ValueError("device_info.zip does not contain a device info file")
+            if len(file_names) != 1:
+                raise ValueError("device_info.zip must contain exactly one file")
             with archive.open(file_names[0]) as device_info_file:
                 device_info = json.load(device_info_file)
         return _count_device_info_metadata(device_info)
     except zipfile.BadZipFile:
         pass
-    except (json.JSONDecodeError, KeyError) as exc:
+    except (json.JSONDecodeError, KeyError, RuntimeError, UnicodeDecodeError) as exc:
         raise ValueError("device_info.zip is invalid") from exc
 
     try:
@@ -275,8 +281,14 @@ def update_device_calibration(
         archived_device_info = storage.get(key=history_key)
         if archived_device_info is None:
             archived_device_info = current_device_info
+            n_qubits, n_couplings = _extract_device_info_metadata(
+                archived_device_info
+            )
             storage.put(key=history_key, data=archived_device_info)
-        n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
+        else:
+            n_qubits, n_couplings = _extract_device_info_metadata(
+                archived_device_info
+            )
 
         device.calibrated_at = calibrated_at
         db.add(

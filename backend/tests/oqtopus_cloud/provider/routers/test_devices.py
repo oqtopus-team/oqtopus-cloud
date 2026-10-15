@@ -1,10 +1,13 @@
 import json
+import zipfile
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Dict
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
+import pytest
 from oqtopus_cloud.common.models.device import (
     Device,
 )
@@ -303,6 +306,65 @@ def test_update_device_calibration_requires_device_info(test_db, test_storage):
     assert isinstance(actual, BadRequestResponse)
     assert actual.status_code == 400
     assert json.loads(actual.body) == {"message": "device_info is required"}
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (b"[]", "device_info must be a JSON object"),
+        (b"null", "device_info must be a JSON object"),
+        (
+            b'{"qubits": null, "couplings": []}',
+            "device_info.qubits must be an array",
+        ),
+        (
+            b'{"qubits": [], "couplings": {}}',
+            "device_info.couplings must be an array",
+        ),
+    ],
+)
+def test_update_device_calibration_rejects_invalid_json_shape(
+    test_db, test_storage, payload, message
+):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    test_storage.put(key=get_device_info_key("SC"), data=payload)
+
+    actual = update_device_calibration(
+        "SC",
+        DeviceInfoUpdate(calibrated_at=datetime.now(timezone.utc)),
+        test_db,
+        test_storage,
+    )
+
+    assert isinstance(actual, BadRequestResponse)
+    assert json.loads(actual.body) == {"message": message}
+    assert test_db.query(DeviceInfoHistory).count() == 0
+
+
+def test_update_device_calibration_rejects_multiple_zip_entries(
+    test_db, test_storage
+):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("device_info.json", json.dumps(_get_device_info_dict()))
+        archive.writestr("unexpected.json", "{}")
+    test_storage.put(key=get_device_info_key("SC"), data=buffer.getvalue())
+
+    actual = update_device_calibration(
+        "SC",
+        DeviceInfoUpdate(calibrated_at=datetime.now(timezone.utc)),
+        test_db,
+        test_storage,
+    )
+
+    assert isinstance(actual, BadRequestResponse)
+    assert json.loads(actual.body) == {
+        "message": "device_info.zip must contain exactly one file"
+    }
+    assert test_db.query(DeviceInfoHistory).count() == 0
 
 
 def test_update_device_info_timezone(test_db, test_storage):
