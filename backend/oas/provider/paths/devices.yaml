@@ -46,6 +46,14 @@ devices.device:
                 $ref: '../schemas/error.yaml#/error.NotFoundError'
               example:
                 message: Device not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/error.yaml#/error.ConflictError'
+              example:
+                message: Device history already exists
         '500':
           description: Internal Server Error
           content:

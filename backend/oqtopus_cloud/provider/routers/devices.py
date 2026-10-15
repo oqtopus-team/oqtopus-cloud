@@ -1,14 +1,22 @@
+import datetime
+import json
+import zipfile
 from enum import Enum
+from io import BytesIO
+from uuid import NAMESPACE_URL, uuid5
+
 from fastapi import (
     APIRouter,
     Depends,
 )
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
     get_device_info_key,
 )
 from oqtopus_cloud.provider.conf import logger, tracer
@@ -23,13 +31,14 @@ from oqtopus_cloud.provider.schemas.devices import (
 )
 from oqtopus_cloud.provider.schemas.errors import (
     BadRequestResponse,
+    ConflictErrorResponse,
     ErrorResponse,
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
 from . import LoggerRouteHandler
 
 
@@ -44,6 +53,50 @@ class DeviceType(Enum):
 
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+def _normalize_utc(value: datetime.datetime) -> datetime.datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=datetime.timezone.utc)
+    return value.astimezone(datetime.timezone.utc)
+
+
+def _get_history_id(device_id: str, calibrated_at: datetime.datetime) -> str:
+    identity = json.dumps([device_id, calibrated_at.isoformat()], separators=(",", ":"))
+    return str(uuid5(NAMESPACE_URL, identity))
+
+
+def _count_device_info_metadata(device_info: object) -> tuple[int, int]:
+    if not isinstance(device_info, dict):
+        raise ValueError("device_info must be a JSON object")
+    qubits = device_info.get("qubits", [])
+    couplings = device_info.get("couplings", [])
+    if not isinstance(qubits, list):
+        raise ValueError("device_info.qubits must be an array")
+    if not isinstance(couplings, list):
+        raise ValueError("device_info.couplings must be an array")
+    return len(qubits), len(couplings)
+
+
+def _extract_device_info_metadata(device_info_data: bytes) -> tuple[int, int]:
+    try:
+        with zipfile.ZipFile(BytesIO(device_info_data)) as archive:
+            file_names = [name for name in archive.namelist() if not name.endswith("/")]
+            if len(file_names) != 1:
+                raise ValueError("device_info.zip must contain exactly one file")
+            with archive.open(file_names[0]) as device_info_file:
+                device_info = json.load(device_info_file)
+        return _count_device_info_metadata(device_info)
+    except zipfile.BadZipFile:
+        pass
+    except (json.JSONDecodeError, KeyError, RuntimeError, UnicodeDecodeError) as exc:
+        raise ValueError("device_info.zip is invalid") from exc
+
+    try:
+        device_info = json.loads(device_info_data.decode())
+        return _count_device_info_metadata(device_info)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("device_info is invalid") from exc
 
 
 @router.get(
@@ -165,6 +218,7 @@ def update_device_status(
     responses={
         400: {"model": Message},
         404: {"model": Message},
+        409: {"model": Message},
         500: {"model": Message},
     },
 )
@@ -198,14 +252,65 @@ def update_device_calibration(
         logger.info(f"{calibrated_at}")
         if calibrated_at is None:
             return BadRequestResponse(message="calibrated_at is required")
+        calibrated_at = _normalize_utc(calibrated_at)
+
+        existing_history = (
+            db.query(DeviceInfoHistory)
+            .filter(
+                DeviceInfoHistory.device_id == device_id,
+                DeviceInfoHistory.calibrated_at == calibrated_at,
+            )
+            .first()
+        )
+        if existing_history is not None:
+            return ConflictErrorResponse(
+                message=(
+                    f"device_info_history for device_id={device_id} and "
+                    f"calibrated_at={calibrated_at.isoformat()} already exists."
+                )
+            )
 
         device_info_key = get_device_info_key(device_id)
-        if not storage.does_exist(key=device_info_key):
+        current_device_info = storage.get(key=device_info_key)
+        if current_device_info is None:
             return BadRequestResponse(message="device_info is required")
+
+        history_id = _get_history_id(device_id, calibrated_at)
+        history_key = get_device_info_history_key(history_id)
+        archived_device_info = storage.get(key=history_key)
+        if archived_device_info is None:
+            archived_device_info = current_device_info
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
+            storage.put(key=history_key, data=archived_device_info)
+        else:
+            n_qubits, n_couplings = _extract_device_info_metadata(archived_device_info)
+
         device.calibrated_at = calibrated_at
-        db.commit()
+        db.add(
+            DeviceInfoHistory(
+                history_id=history_id,
+                device_id=device_id,
+                calibrated_at=calibrated_at,
+                n_qubits=n_qubits,
+                n_couplings=n_couplings,
+            )
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return ConflictErrorResponse(
+                message=(
+                    f"device_info_history for device_id={device_id} and "
+                    f"calibrated_at={calibrated_at.isoformat()} already exists."
+                )
+            )
         return DeviceDataUpdateResponse(message="Device's data updated")
+    except ValueError as e:
+        db.rollback()
+        return BadRequestResponse(message=str(e))
     except Exception as e:
+        db.rollback()
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")

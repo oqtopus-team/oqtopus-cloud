@@ -1,9 +1,10 @@
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from pydantic import AwareDatetime, BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
@@ -11,6 +12,9 @@ from oqtopus_cloud.admin.conf import logger, tracer
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceBase,
     DeviceInfo,
+    DeviceInfoHistoryDetail,
+    DeviceInfoHistoryEntry,
+    DeviceInfoHistoryListResponse,
     DeviceInfoUploadPresignedURL,
     DeviceInfoUploadResponse,
     DeviceType,
@@ -26,11 +30,13 @@ from oqtopus_cloud.admin.schemas.errors import (
 )
 from oqtopus_cloud.admin.schemas.success import SuccessResponse
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
     get_device_info_key,
 )
 
@@ -87,6 +93,78 @@ class DevicePatch(BaseModel):
     )
 
 
+def _normalize_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
+    return DeviceInfoHistoryEntry(
+        history_id=history.history_id,
+        device_id=history.device_id,
+        calibrated_at=history.calibrated_at,
+        n_qubits=history.n_qubits,
+        n_couplings=history.n_couplings,
+    )
+
+
+def _history_to_detail(
+    history: DeviceInfoHistory, storage: AbstractStorage
+) -> DeviceInfoHistoryDetail:
+    return DeviceInfoHistoryDetail(
+        **_history_to_entry(history).model_dump(),
+        device_info=storage.get_download_presigned_url(
+            key=get_device_info_history_key(history.history_id)
+        ),
+    )
+
+
+def _apply_history_filters(
+    stmt,
+    count_stmt,
+    from_: datetime | None,
+    to: datetime | None,
+):
+    if from_ is not None:
+        from_ = _normalize_utc(from_)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+    if to is not None:
+        to = _normalize_utc(to)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at <= to)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at <= to)
+    return stmt, count_stmt
+
+
+def _snapshot_storage_objects(
+    storage: AbstractStorage, keys: list[str]
+) -> dict[str, bytes]:
+    snapshots: dict[str, bytes] = {}
+    for key in keys:
+        data = storage.get(key=key)
+        if data is not None:
+            snapshots[key] = data
+    return snapshots
+
+
+def _delete_storage_objects(
+    storage: AbstractStorage, snapshots: dict[str, bytes]
+) -> None:
+    for key in snapshots:
+        storage.delete(key=key)
+
+
+def _restore_storage_objects(
+    storage: AbstractStorage, snapshots: dict[str, bytes]
+) -> None:
+    for key, data in snapshots.items():
+        try:
+            storage.put(key=key, data=data)
+        except Exception:
+            logger.exception(f"Failed to restore storage object: {key}")
+
+
 @router.get(
     "/devices",
     response_model=list[DeviceInfo],
@@ -132,6 +210,113 @@ def get_device(
             logger.info(message)
             return NotFoundErrorResponse(message=message)
     except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/device_histories",
+    response_model=DeviceInfoHistoryListResponse,
+    responses={404: {"model": Message}, 500: {"model": Message}},
+)
+@tracer.capture_method
+def list_device_histories(
+    device_id: str | None = None,
+    from_: Annotated[datetime | None, Query(alias="from")] = None,
+    to: datetime | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    db: Session = Depends(get_db),
+) -> DeviceInfoHistoryListResponse | ErrorResponse:
+    try:
+        stmt = select(DeviceInfoHistory)
+        count_stmt = select(func.count()).select_from(DeviceInfoHistory)
+        if device_id is not None:
+            if db.get(Device, device_id) is None:
+                return NotFoundErrorResponse(
+                    message=f"device_id={device_id} is not found."
+                )
+            stmt = stmt.where(DeviceInfoHistory.device_id == device_id)
+            count_stmt = count_stmt.where(DeviceInfoHistory.device_id == device_id)
+
+        stmt, count_stmt = _apply_history_filters(stmt, count_stmt, from_, to)
+        total = db.scalar(count_stmt) or 0
+        histories = db.scalars(
+            stmt.order_by(
+                DeviceInfoHistory.calibrated_at.desc(),
+                DeviceInfoHistory.history_id.desc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        return DeviceInfoHistoryListResponse(
+            items=[_history_to_entry(history) for history in histories],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/device_histories/{history_id}",
+    response_model=DeviceInfoHistoryDetail,
+    responses={404: {"model": Message}, 500: {"model": Message}},
+)
+@tracer.capture_method
+def get_device_history(
+    history_id: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> DeviceInfoHistoryDetail | ErrorResponse:
+    try:
+        history = db.get(DeviceInfoHistory, history_id)
+        if history is None:
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_id={history_id} is not found."
+            )
+        history_key = get_device_info_history_key(history_id)
+        if not storage.does_exist(key=history_key):
+            return NotFoundErrorResponse(message="device_info object is not found.")
+        return _history_to_detail(history, storage)
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.delete(
+    "/device_histories/{history_id}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={404: {"model": Message}, 500: {"model": Message}},
+)
+@tracer.capture_method
+def delete_device_history(
+    history_id: str,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> SuccessResponse | ErrorResponse:
+    storage_snapshots: dict[str, bytes] = {}
+    try:
+        history = db.get(DeviceInfoHistory, history_id)
+        if history is None:
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_id={history_id} is not found."
+            )
+        history_key = get_device_info_history_key(history_id)
+        storage_snapshots = _snapshot_storage_objects(storage, [history_key])
+        _delete_storage_objects(storage, storage_snapshots)
+        db.delete(history)
+        db.commit()
+        return SuccessResponse(message="Device history deleted successfully")
+    except Exception as e:
+        db.rollback()
+        _restore_storage_objects(storage, storage_snapshots)
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
@@ -264,6 +449,7 @@ def delete_device(
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
+    storage_snapshots: dict[str, bytes] = {}
     try:
         logger.info("invoked delete device")
         # query
@@ -274,13 +460,24 @@ def delete_device(
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message="Device not found")
         device_info_key = get_device_info_key(device_id)
-        if storage.does_exist(key=device_info_key):
-            storage.delete(key=device_info_key)
+        histories = db.scalars(
+            select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
+        ).all()
+        storage_keys = [device_info_key]
+        storage_keys.extend(
+            get_device_info_history_key(history.history_id) for history in histories
+        )
+        storage_snapshots = _snapshot_storage_objects(storage, storage_keys)
+        _delete_storage_objects(storage, storage_snapshots)
+        for history in histories:
+            db.delete(history)
         # delete from RDS
         db.delete(query_result)
         db.commit()
         return SuccessResponse(message="Device deleted successfully")
     except Exception as e:
+        db.rollback()
+        _restore_storage_objects(storage, storage_snapshots)
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
