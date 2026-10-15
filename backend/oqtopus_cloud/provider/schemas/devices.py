@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import Annotated, Any
+from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, Field
 
@@ -36,6 +37,10 @@ class DeviceDataUpdateResponse(BaseModel):
 
 
 class DeviceInfoUpdate(BaseModel):
+    upload_id: UUID
+    """
+    Identifier returned when the device_info upload URL was issued.
+    """
     calibrated_at: Annotated[AwareDatetime, Field(examples=["2023-09-10T14:00:00Z"])]
     """
     Calibration timestamp for the uploaded device_info.
@@ -52,4 +57,5 @@ class DeviceInfoUploadPresignedURL(BaseModel):
 
 
 class DeviceInfoUploadResponse(BaseModel):
+    upload_id: UUID
     presigned_url: DeviceInfoUploadPresignedURL

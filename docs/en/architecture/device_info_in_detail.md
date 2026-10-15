@@ -55,12 +55,12 @@ sequenceDiagram
    participant Storage as Object Storage
 
    Client->>API: GET /devices/{id}/device_info/upload
-   API-->>Client: presigned upload URL data
+   API-->>Client: presigned upload URL data (and upload_id for Provider)
    Client->>Storage: upload device_info.zip
    alt Admin flow
       Client->>API: PATCH /devices/{id} with remaining DB fields only
    else Provider or Engine flow
-      Client->>API: PATCH /devices/{id}/device_info with calibrated_at
+      Client->>API: PATCH /devices/{id}/device_info with upload_id and calibrated_at
    end
    API-->>Client: update accepted
 ```
@@ -69,21 +69,21 @@ sequenceDiagram
 
 Provider-side uploads follow the same storage convention but use a dedicated confirmation endpoint:
 
-1. Request an upload target with `GET /devices/{device_id}/device_info/upload` on the Provider API.
-2. Upload `device_info.zip` directly to storage.
-3. Confirm the upload with `PATCH /devices/{device_id}/device_info` and a `calibrated_at` timestamp.
+1. Request an upload target with `GET /devices/{device_id}/device_info/upload` on the Provider API and retain the returned `upload_id`.
+2. Upload `device_info.zip` to the returned staging URL.
+3. Confirm that exact upload with `PATCH /devices/{device_id}/device_info`, passing both `upload_id` and `calibrated_at`.
 
 The engine uses this flow through the provider API. On startup, `DeviceGatewayFetcher` performs an initial fetch from the device gateway and calls the device repository update sequence. If device-info updates are enabled, the repository:
 
-1. requests a presigned upload target,
-2. uploads `devices/<device_id>/device_info.zip`,
-3. calls `PATCH /devices/{device_id}/device_info` with `calibrated_at`.
+1. requests a presigned staging upload target and `upload_id`,
+2. uploads `device_info_uploads/<device_id>/<upload_id>/device_info.zip`,
+3. calls `PATCH /devices/{device_id}/device_info` with `upload_id` and `calibrated_at`.
 
 After startup, the same upload flow runs again whenever the fetched `device_info` payload or `calibrated_at` changes.
 
 ## Overwrite and Delete Semantics
 
-Because the storage key is deterministic, uploading a new archive for the same `device_id` overwrites the previous object. The latest successful upload becomes the new source of truth.
+The Admin flow uploads directly to the deterministic current key, so a new archive for the same `device_id` overwrites the previous object. The Provider flow first uploads to an `upload_id`-scoped staging key. A successful confirmation validates and promotes those exact bytes to the deterministic current and history keys, then removes the staging object. An unconfirmed or invalid upload cannot replace the current object.
 
 `DELETE /devices/{device_id}` in the Admin API removes both:
 

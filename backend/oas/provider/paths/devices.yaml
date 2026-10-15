@@ -139,7 +139,7 @@ devices.device_info:
             nullable: false
             example: "qulacs"
       requestBody:
-        description: "Calibration timestamp for the uploaded device_info."
+        description: "Upload identifier returned with the presigned URL and the calibration timestamp for that upload."
         content:
           application/json:
             schema:
