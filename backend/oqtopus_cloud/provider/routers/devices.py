@@ -3,7 +3,6 @@ import json
 import zipfile
 from enum import Enum
 from io import BytesIO
-from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -18,7 +17,6 @@ from oqtopus_cloud.common.storages import AbstractStorage, get_storage
 from oqtopus_cloud.common.storages.storage_utils import (
     get_device_info_history_key,
     get_device_info_key,
-    get_device_info_upload_key,
 )
 from oqtopus_cloud.provider.conf import logger, tracer
 from oqtopus_cloud.provider.schemas.devices import (
@@ -109,12 +107,10 @@ def get_device_info_upload_url(
         device = db.get(Device, device_id)
         if device is None:
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
-        upload_id = uuid4().hex
         return DeviceInfoUploadResponse(
-            upload_id=upload_id,
             presigned_url=DeviceInfoUploadPresignedURL(
                 **storage.get_upload_presigned_url_data(
-                    key=get_device_info_upload_key(device_id, upload_id)
+                    key=get_device_info_key(device_id)
                 )
             ),
         )
@@ -263,18 +259,16 @@ def update_device_calibration(
                 )
             )
 
-        upload_key = get_device_info_upload_key(device_id, request.upload_id)
-        uploaded_device_info = storage.get(key=upload_key)
+        device_info_key = get_device_info_key(device_id)
+        uploaded_device_info = storage.get(key=device_info_key)
         if uploaded_device_info is None:
-            return BadRequestResponse(message="device_info upload not found")
+            return BadRequestResponse(message="device_info is required")
         n_qubits, n_couplings = _extract_device_info_metadata(uploaded_device_info)
 
-        device_info_key = get_device_info_key(device_id)
         history_id = str(uuid7())
-        history_key = get_device_info_history_key(history_id)
-        storage.put(key=history_key, data=uploaded_device_info)
-        storage.put(key=device_info_key, data=uploaded_device_info)
-        storage.delete(key=upload_key)
+        storage.put(
+            key=get_device_info_history_key(history_id), data=uploaded_device_info
+        )
         device.calibrated_at = calibrated_at
         db.add(
             DeviceInfoHistory(

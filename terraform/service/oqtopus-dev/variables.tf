@@ -95,6 +95,12 @@ variable "waf_enable_common_rules" {
   default     = false
 }
 
+variable "waf_common_rules_excluded_rules" {
+  description = "list of rule names in AWSManagedRulesCommonRuleSet to override to Count"
+  type        = list(string)
+  default     = []
+}
+
 variable "waf_enable_rate_limiting" {
   description = "flag for enabling/disabling rate limiting WAF rule"
   type        = bool
@@ -134,4 +140,10 @@ variable "otel_exporter_otlp_endpoint" {
     condition     = !var.otel_enabled || length(var.otel_exporter_otlp_endpoint) > 0
     error_message = "otel_exporter_otlp_endpoint must be set when otel_enabled = true."
   }
+}
+
+variable "otel_collector_layer_arn" {
+  description = "OTel Lambda collector layer ARN. When set, user-api / provider-api export via the in-environment collector (decouple processor) instead of posting to otel_exporter_otlp_endpoint from the request path."
+  type        = string
+  default     = ""
 }

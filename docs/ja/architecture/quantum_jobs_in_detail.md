@@ -28,9 +28,11 @@ User API、Provider API、ストレージは presigned URL で接続され、ク
 | `sse_log.zip` | `sse_log.log` | Provider | User | SSE ログ文字列を入れた JSON string payload | `sse` ジョブでのみ受け付けます。 |
 
 デフォルトのストレージドライバーは S3 です。
-ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントはストレージバックエンドへ直接ファイルを転送します。
+オンプレ環境やローカル開発では `local` や `seaweedfs` も使えます（`local:minio` は将来的に廃止する方針ですが、SeaweedFS への移行期間中は非推奨として利用できます）が、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントはストレージバックエンドへ直接ファイルを転送します。
 
 現在の storage-backed 形式では、クライアント側の archive entry は慣例として `<object-stem>.json` を使い、SSE ログでは慣例として `.log` entry を使います。
+
+ローカル開発やオンプレ環境で使う `seaweedfs` ドライバの選定経緯と設定は、[ストレージバックエンドの選定](storage_backend_selection.md) を参照してください。
 
 ## User API の流れ
 
@@ -88,8 +90,9 @@ DB にはジョブ ID と `.zip` suffix を除いた正規化済みオブジェ�
 | --- | --- | --- |
 | `program` | `sampling`, `estimation`, `multi_manual` | OpenQASM 3 program の配列です。非 multiprogramming job では通常 1 つの program を含みます。 |
 | `operator` | `estimation` | Pauli operator item の配列です。 |
+| `sse_program` | `sse` | SSE user program です。 |
 
-Provider API には、SSE job 用の `sse_program` を含む別の generated `jobs.S3SubmitJobInfo` schema があります。このフィールドは、ここで説明している User API の input upload schema には含まれません。
+User API と Provider API の `jobs.S3SubmitJobInfo` 定義を揃え、upload 側と download 側で同じ契約を使用します。
 
 Provider の出力 zip とその中の慣例上の payload 名、schema/format の対応は上のストレージモデル表を参照してください。
 

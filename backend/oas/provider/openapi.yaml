@@ -132,7 +132,7 @@ paths:
       tags:
         - devices
       summary: Confirm uploaded device_info and update calibrated timestamp
-      description: Confirm the uploaded device_info for the selected device and update its calibrated timestamp.
+      description: Confirm the uploaded device_info for the selected device and update its calibrated timestamp. Call this endpoint only after the upload to the presigned URL has completed successfully. If the upload fails, the caller must not confirm the calibration update.
       operationId: patchDeviceInfo
       security:
         - ApiKeyAuth: []
@@ -146,7 +146,7 @@ paths:
             nullable: false
             example: qulacs
       requestBody:
-        description: Upload identifier and calibration timestamp for the uploaded device_info.
+        description: Calibration timestamp for the uploaded device_info.
         content:
           application/json:
             schema:
@@ -189,7 +189,7 @@ paths:
       tags:
         - devices
       summary: Generate a presigned URL to upload device_info
-      description: Generate a presigned URL to upload device_info for the selected device.
+      description: Generate a presigned URL to upload device_info for the selected device. Upload device_info.zip to this URL, then call PATCH /devices/{device_id}/device_info only after the upload succeeds.
       operationId: getDeviceInfoUploadUrl
       security:
         - ApiKeyAuth: []
@@ -603,17 +603,12 @@ components:
     devices.DeviceInfoUpdate:
       type: object
       properties:
-        upload_id:
-          description: Upload identifier returned by the device_info upload URL endpoint.
-          type: string
-          example: 4a955d4fb28b4b699cdb8ad2274d3738
         calibrated_at:
           description: Calibration timestamp for the uploaded device_info.
           type: string
           format: date-time
           example: '2023-09-10T14:00:00Z'
       required:
-        - upload_id
         - calibrated_at
     devices.DeviceInfoUploadPresignedURL:
       type: object
@@ -631,13 +626,9 @@ components:
     devices.DeviceInfoUploadResponse:
       type: object
       properties:
-        upload_id:
-          type: string
-          description: Upload identifier for confirming the specific device_info upload.
         presigned_url:
           $ref: '#/components/schemas/devices.DeviceInfoUploadPresignedURL'
       required:
-        - upload_id
         - presigned_url
     jobs.JobStatus:
       type: string

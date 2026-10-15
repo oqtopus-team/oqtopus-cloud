@@ -36,10 +36,6 @@ class DeviceDataUpdateResponse(BaseModel):
 
 
 class DeviceInfoUpdate(BaseModel):
-    upload_id: Annotated[str, Field(examples=["4a955d4fb28b4b699cdb8ad2274d3738"])]
-    """
-    Upload identifier returned by the device_info upload URL endpoint.
-    """
     calibrated_at: Annotated[AwareDatetime, Field(examples=["2023-09-10T14:00:00Z"])]
     """
     Calibration timestamp for the uploaded device_info.
@@ -56,8 +52,4 @@ class DeviceInfoUploadPresignedURL(BaseModel):
 
 
 class DeviceInfoUploadResponse(BaseModel):
-    upload_id: str
-    """
-    Upload identifier for confirming the specific device_info upload.
-    """
     presigned_url: DeviceInfoUploadPresignedURL

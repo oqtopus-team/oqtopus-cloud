@@ -48,6 +48,7 @@ module "aws_waf" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_cloudwatch_metrics_enabled"></a> [cloudwatch\_metrics\_enabled](#input\_cloudwatch\_metrics\_enabled) | flag for enabling/disabling sending WAF metrics to cloudwatch | `bool` | `false` | no |
+| <a name="input_common_rules_excluded_rules"></a> [common\_rules\_excluded\_rules](#input\_common\_rules\_excluded\_rules) | list of rule names in AWSManagedRulesCommonRuleSet to override to Count | `list(string)` | `[]` | no |
 | <a name="input_enable_common_rules"></a> [enable\_common\_rules](#input\_enable\_common\_rules) | flag for enabling/disabling common rules WAF rule | `bool` | `false` | no |
 | <a name="input_enable_rate_limiting"></a> [enable\_rate\_limiting](#input\_enable\_rate\_limiting) | flag for enabling/disabling rate limiting WAF rule | `bool` | `false` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |

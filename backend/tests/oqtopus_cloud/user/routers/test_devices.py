@@ -110,9 +110,7 @@ def _get_model(device="SVSim", device_info: str | None = None):
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": device_info
-        if device_info is not None
-        else json.dumps({"device_id": device}),
+        "device_info": device_info if device_info is not None else json.dumps({"device_id": device}),
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
@@ -237,6 +235,29 @@ def test_cannot_get_device_that_not_exist(test_db):
     assert json.loads(response.body) == {"message": f"device_id={device} is not found."}
 
 
+def test_nonexistent_device_returns_404_even_without_permission(test_db):
+    """When device does not exist, return 404 regardless of user permissions.
+    This verifies the check order: existence (404) before authorization (403)."""
+    # Arrange
+    user_no = 1
+    device = "NonExistent"
+    request = _create_request()
+    request.state.user_id = f"email_{user_no}"
+
+    test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
+    test_db.commit()
+
+    # Act
+    response = get_device(device, request, test_db)
+
+    # Assert - should be 404, not 403
+    assert isinstance(response, NotFoundErrorResponse)
+    assert response.status_code == 404
+    assert json.loads(response.body) == {
+        "message": f"device_id={device} is not found."
+    }
+
+
 def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
@@ -336,10 +357,7 @@ def test_model_to_schema_returns_download_url_for_uploaded_device_info(test_stor
     device_id = "SVSim"
     model = _get_model(device=device_id)
     device_info_key = get_device_info_key(device_id)
-    test_storage.put(
-        key=device_info_key,
-        data=_device_info_archive_bytes({"device_id": device_id}),
-    )
+    test_storage.put(key=device_info_key, data=b"{}")
 
     actual = model_to_schema(model, test_storage)
 

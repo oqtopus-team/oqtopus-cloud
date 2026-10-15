@@ -7,6 +7,7 @@ nav:
       - Job State Transition Diagram: architecture/task_state_transition_diagram.md
       - Quantum Jobs in Detail: architecture/quantum_jobs_in_detail.md
       - Device Info in Detail: architecture/device_info_in_detail.md
+      - Storage Backend Selection: architecture/storage_backend_selection.md
       - Sequence Diagram: architecture/sequence_diagram.md
   - Developer Guidelines:
       - Development Flow: developer_guidelines/index.md
@@ -93,6 +94,7 @@ plugins:
             Task State Transition Diagram: タスクの状態遷移
             Quantum Jobs in Detail: 量子ジョブの詳細
             Device Info in Detail: デバイス情報の詳細
+            Storage Backend Selection: ストレージバックエンドの選定
             Sequence Diagram: シーケンス図
 
             Developer Guidelines: 開発者ガイドライン

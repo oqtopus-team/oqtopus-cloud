@@ -7,22 +7,20 @@ OQTOPUS は device_info の実体をオブジェクトストレージに保存�
 
 ## ストレージモデル
 
-現在のデバイス情報と各履歴 snapshot は、決定的な storage key を持ちます。
+各デバイスは、決定的な storage key を 1 つ持ちます。
 
 ```text
 devices/<device_id>/device_info.zip
-device_histories/<history_id>/device_info.zip
 ```
 
 オブジェクトキーはバックエンドで固定されています。クライアントは慣例として `device_info.json` を 1 つだけ含む zip をアップロードしますが、バックエンドが検証するのはオブジェクトキーであり、archive 内のファイル名ではありません。
 
 | Object | 慣例上の zip 内エントリ名 | 作成者 | 利用者 | payload format | 備考 |
 | --- | --- | --- | --- | --- | --- |
-| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDK | デバイス JSON payload | 現在のデバイス情報です。 |
-| `device_histories/<history_id>/device_info.zip` | `device_info.json` | Provider | Admin, User | デバイス JSON payload | 変更されない過去の snapshot です。 |
+| `devices/<device_id>/device_info.zip` | `device_info.json` | Admin client, Provider, Engine | Admin, User, SDK | デバイス JSON payload | 現在 storage-backed なデバイス payload はこれだけです。 |
 
 デフォルトのストレージドライバーは S3 です。
-ローカル開発では `local` や `local:minio` も使えますが、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントは archive をストレージバックエンドへ直接転送します。
+オンプレ環境やローカル開発では `local` や `seaweedfs` も使えます（`local:minio` は将来的に廃止する方針ですが、SeaweedFS への移行期間中は非推奨として利用できます。[ストレージバックエンドの選定](storage_backend_selection.md) を参照）が、API 契約は同じです。API は upload presigned URL data または download presigned URL を返し、クライアントは archive をストレージバックエンドへ直接転送します。
 
 OpenAPI レベルでは、`device_info.zip` の中身の payload format は構造化 schema としては規定されていません。Admin 側の request model では `device_info` を JSON 文字列として扱い、read 側 API では `device_info` を presigned download URL を入れた文字列 field として返します。
 
@@ -32,58 +30,6 @@ Admin API と User API の `GET /devices` および `GET /devices/{device_id}` �
 オブジェクトが存在しない場合、device row 自体が存在していても `device_info` は `null` になります。
 
 バックエンドは storage key を `devices` table に保存しません。毎回 `device_id` から `devices/<device_id>/device_info.zip` を組み立てて参照します。
-
-## DB 仕様
-
-`devices` table は、現在のデバイス状態を表す metadata を保持します。`device_info` payload の実体は DB には保存せず、`device_id` から導出できる現在用 storage key に保存します。
-
-| Column | 用途 |
-| --- | --- |
-| `id` | device identifier。現在用 storage key `devices/<device_id>/device_info.zip` の `<device_id>` としても使います。 |
-| `device_type` | `QPU` または `simulator`。 |
-| `status` | デバイスの公開状態。 |
-| `n_qubits` | 現在の device row に表示する量子ビット数。 |
-| `basis_gates` | JSON 文字列化した basis gate list。 |
-| `instructions` | JSON 文字列化した supported instruction list。 |
-| `calibrated_at` | 現在の device_info が確定された時刻。Provider の device_info 確定時に更新されます。 |
-| `description` | デバイス説明。 |
-
-`device_info_history` table は、過去の device_info snapshot を検索するための metadata だけを保持します。Provider API が履歴を発行するタイミングで、各 row にユニークな文字列 identifier を付与します。履歴 payload の実体も DB には保存せず、`history_id` から決定的に導出される history storage key に保存します。
-
-| Column | Type | Nullable | 用途 |
-| --- | --- | --- | --- |
-| `history_id` | varchar(36) | no | history row 発行時に付与するユニークな文字列。primary key であり、`GET /device_histories/{history_id}` の公開 identifier です。 |
-| `device_id` | varchar(64) | no | device identifier。この column には foreign key constraint を張りません。 |
-| `calibrated_at` | timestamp / datetime | no | snapshot の有効時刻。 |
-| `n_qubits` | integer | no | snapshot 時点の量子ビット数。履歴一覧と履歴詳細ヘッダーで使います。 |
-| `n_couplings` | integer | no | snapshot 時点の coupling 数。履歴一覧と履歴詳細ヘッダーで使います。 |
-| `created_at` | timestamp / datetime | yes | row 作成時刻。 |
-| `updated_at` | timestamp / datetime | yes | row 更新時刻。MySQL では `ON UPDATE CURRENT_TIMESTAMP`。 |
-
-制約と index は次の通りです。
-
-| Name | 内容 |
-| --- | --- |
-| Primary key | `history_id`。 |
-| Unique constraint | `(device_id, calibrated_at)`。同じデバイス・同じ calibrated_at の snapshot は 1 件だけです。 |
-| Foreign key | なし。device history の cleanup は application 側で明示的に行い、この table は snapshot identity で引ける小さな metadata table として保ちます。 |
-
-`device_info_history` には `storage_key` column を持たせません。history object key は次の規則で一意に決まるため、DB に重複して保存しない方針です。
-
-```text
-device_histories/<history_id>/device_info.zip
-```
-
-この key は実装上 `get_device_info_history_key(history_id)` で生成します。DB row と storage object の対応は `history_id` で表され、API は read 時に key を導出して object の存在確認と presigned URL 発行を行います。
-
-Provider API の `PATCH /devices/{device_id}/device_info` は、新しい `history_id` を付与してから upload 済み archive を現在用 key と history key の両方へ保存し、`devices.calibrated_at` を更新して `device_info_history` に metadata row を追加します。この row は archived snapshot の lookup と概要表示に必要な metadata だけを保持し、device catalog metadata や運用状態は現在の `devices` row に残します。同じ `(device_id, calibrated_at)` が既に存在する場合は conflict として扱い、履歴 row は上書きしません。
-
-User API と Admin API は、履歴を top-level resource として公開します。
-
-- `GET /device_histories` は履歴 metadata の一覧を返します。query parameter として `device_id`, `from`, `to`, `limit`, `offset` を指定できます。
-- `GET /device_histories/{history_id}` は、特定の履歴詳細と archived `device_info.zip` の presigned download URL を返します。
-
-Admin API の `DELETE /devices/{device_id}` は、`devices` row を削除する前に matching する `device_info_history` rows を明示的に削除します。あわせて現在用 object と各 history object も削除し、DB だけ、または object storage だけが残る状態を避けます。
 
 ## Admin API の流れ
 

@@ -189,37 +189,37 @@ jobs.Job:
       example: 2022-10-19T11:45:34Z
   required: []
   example:
-    job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
-    name: Bell State Sampling
-    description: Bell State Sampling Example
-    device_id: Kawasaki
-    job_type: estimation
-    job_info:
-      input: "https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D"
-    transpiler_info:
-      qubit_allocation:
-        "0": 12
-        "1": 16
-      skip_transpilation: false
-      seed_transpilation: 873
-    simulator_info:
-      n_qubits: 5
-      n_nodes: 12
-      n_per_node: 2
-      seed_simulation: 39058567
-      simulation_opt:
-        optimization_method: light
-        optimization_block_size: 1
-        optimization_swap_level: 1
-    mitigation_info:
-      ro_error_mitigation: pseudo_inverse
-    shots: 1000
-    status: submitted
-    execution_time: 10.123
-    submitted_at: 2022-10-19T11:45:34Z
-    ready_at: 2022-10-19T11:45:34Z
-    running_at: 2022-10-19T11:45:34Z
-    ended_at: 2022-10-19T11:45:34Z
+      job_id: 7af020f6-2e38-4d70-8cf0-4349650ea08c
+      name: Bell State Sampling
+      description: Bell State Sampling Example
+      device_id: Kawasaki
+      job_type: estimation
+      job_info:
+        input: https://oqtopus-cloud.s3.amazonaws.com/jobs/7af020f6-2e38-4d70-8cf0-4349650ea08c/input.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Expires=1714425600&Signature=abc123def456ghi789jkl%2Fsignature%3D
+      transpiler_info:
+        qubit_allocation:
+          "0": 12
+          "1": 16
+        skip_transpilation: false
+        seed_transpilation: 873
+      simulator_info:
+        n_qubits: 5
+        n_nodes: 12
+        n_per_node: 2
+        seed_simulation: 39058567
+        simulation_opt:
+          optimization_method: light
+          optimization_block_size: 1
+          optimization_swap_level: 1
+      mitigation_info:
+        ro_error_mitigation: pseudo_inverse
+      shots: 1000
+      status: submitted
+      execution_time: 10.123
+      submitted_at: 2022-10-19T11:45:34Z
+      ready_at: 2022-10-19T11:45:34Z
+      running_at: 2022-10-19T11:45:34Z
+      ended_at: 2022-10-19T11:45:34Z
 
 jobs.SubmittedJob:
   description: |-
@@ -315,11 +315,11 @@ jobs.S3OperatorItem:
     pauli:
       type: string
       description: The Pauli string.
+      nullable: false
       example: "X 0 X 1"
     coeff:
-      type: number
       description: "Coefficient number in the Pauli string representation."
-      example: 1.0
+      type: number
   required:
     - pauli
 
@@ -330,6 +330,7 @@ jobs.S3SubmitJobInfo:
       type: array
       description: >-
         A list of OPENQASM3 program.
+        Required for sampling, estimation and multiprogramming jobs.
         For non-multiprogramming jobs, this field is assumed to contain exactly one program.
         Otherwise, those programs are combined according to the multiprogramming machinery.
       items:
@@ -340,8 +341,14 @@ jobs.S3SubmitJobInfo:
       type: array
       items:
         $ref: "#/jobs.S3OperatorItem"
-  required:
-    - program
+      description: >-
+        Estimation operator.
+        Required for estimation jobs.
+    sse_program:
+      type: string
+      description: >-
+        SSE user program.
+        Required for SSE jobs.
 
 jobs.S3SamplingResult:
   type: object

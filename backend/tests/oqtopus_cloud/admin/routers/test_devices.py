@@ -1,8 +1,8 @@
 import json
 import os
+from datetime import datetime, timezone
 from io import BytesIO
 import zipfile
-from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
@@ -27,13 +27,15 @@ utc = ZoneInfo("UTC")
 
 
 def _device_info_archive_bytes(device_info: dict) -> bytes:
-    buf = BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("device_info.json", json.dumps(device_info))
-    return buf.getvalue()
+    return buffer.getvalue()
 
 
-def _put_device_info(storage: FSSpecStorage, device_id: str, device_info: dict) -> str:
+def _put_device_info(
+    storage: FSSpecStorage, device_id: str, device_info: dict
+) -> str:
     key = get_device_info_key(device_id)
     storage.put(key=key, data=_device_info_archive_bytes(device_info))
     return storage.get_download_presigned_url(key=key)
@@ -441,7 +443,7 @@ def test_register_devices_overlap(
     }
 
     response = client.post("/devices", json=body)
-    assert response.status_code == 400
+    assert response.status_code == 409
     assert response.json() == {"message": "device_id=SVSim1 already exists"}
 
 
@@ -536,7 +538,7 @@ def test_update_device_data_keeps_uploaded_device_info(
     device_info = {"device_id": "SVSim1"}
     device_info_key = get_device_info_key("SVSim1")
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
-    storage.put(key=device_info_key, data=_device_info_archive_bytes(device_info))
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
 
     test_db.flush()
     test_db.add(_get_model(1, device_info))
@@ -667,7 +669,7 @@ def test_delete_device_deletes_uploaded_device_info(
     device_info = {"device_id": "SVSim1"}
     device_info_key = get_device_info_key("SVSim1")
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
-    storage.put(key=device_info_key, data=_device_info_archive_bytes(device_info))
+    storage.put(key=device_info_key, data=json.dumps(device_info).encode())
 
     test_db.flush()
     test_db.add(_get_model(1, device_info))
@@ -679,26 +681,6 @@ def test_delete_device_deletes_uploaded_device_info(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device is None
     assert not storage.does_exist(key=device_info_key)
-
-
-def test_delete_device_deletes_device_info_history(test_db):
-    device_info = {"device_id": "SVSim1"}
-    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
-    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
-    storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
-    test_db.add(_get_model(1, device_info))
-    test_db.add(
-        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
-    )
-    test_db.commit()
-
-    response = client.delete("/devices/SVSim1")
-
-    assert response.status_code == 204
-    assert (
-        test_db.query(DeviceInfoHistory).filter_by(device_id="SVSim1").first() is None
-    )
-    assert not storage.does_exist(key=history_key)
 
 
 def test_delete_device_404(

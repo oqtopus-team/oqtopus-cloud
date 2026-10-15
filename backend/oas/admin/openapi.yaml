@@ -394,6 +394,14 @@ paths:
           description: Unauthorized
         '403':
           description: Not authorized
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ConflictError'
+              example:
+                message: device_id already exists
         '500':
           description: Internal Server Error
           content:
@@ -560,21 +568,17 @@ paths:
       parameters:
         - name: device_id
           in: query
-          description: Device identifier to filter histories.
           required: false
           schema:
             type: string
-          example: qulacs
         - name: from
           in: query
-          description: Inclusive lower bound of calibrated_at.
           required: false
           schema:
             type: string
             format: date-time
         - name: to
           in: query
-          description: Inclusive upper bound of calibrated_at.
           required: false
           schema:
             type: string
@@ -618,18 +622,15 @@ paths:
       tags:
         - devices
       summary: Get device history
-      description: Returns the device history identified by history_id.
       operationId: get_device_history
       security:
         - BearerAuth: []
       parameters:
         - name: history_id
           in: path
-          description: Unique string identifying the device history.
           required: true
           schema:
             type: string
-          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
       responses:
         '200':
           description: Returns device history.
@@ -638,7 +639,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
         '404':
-          description: Device or history not found
+          description: Device history not found
           content:
             application/json:
               schema:
@@ -653,18 +654,15 @@ paths:
       tags:
         - devices
       summary: Delete device history
-      description: Deletes the device history metadata and archived device_info object identified by history_id.
       operationId: delete_device_history
       security:
         - BearerAuth: []
       parameters:
         - name: history_id
           in: path
-          description: Unique string identifying the device history.
           required: true
           schema:
             type: string
-          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
       responses:
         '204':
           description: Device history deleted
@@ -1358,6 +1356,13 @@ components:
         description:
           type: string
           example: Superconducting quantum computer
+    error.ConflictError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     devices.DevicePatch:
       type: object
       properties:

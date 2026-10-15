@@ -61,6 +61,14 @@ devices:
         description: "Unauthorized"
       "403":
         description: "Not authorized"
+      "409":
+        description: Conflict
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.ConflictError"
+            example:
+              message: device_id already exists
       "500":
         description: Internal Server Error
         content:
@@ -218,140 +226,6 @@ devices.device_id:
             example:
               message: Internal server error
 
-device_histories:
-  get:
-    tags:
-      - devices
-    summary: List device histories
-    description: List device history metadata. Optionally filter by device_id.
-    operationId: list_device_histories
-    security:
-      - BearerAuth: []
-    parameters:
-      - name: device_id
-        in: query
-        description: Device identifier to filter histories.
-        required: false
-        schema:
-          type: string
-        example: qulacs
-      - name: from
-        in: query
-        description: Inclusive lower bound of calibrated_at.
-        required: false
-        schema:
-          type: string
-          format: date-time
-      - name: to
-        in: query
-        description: Inclusive upper bound of calibrated_at.
-        required: false
-        schema:
-          type: string
-          format: date-time
-      - name: limit
-        in: query
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 100
-      - name: offset
-        in: query
-        required: false
-        schema:
-          type: integer
-          minimum: 0
-          default: 0
-    responses:
-      "200":
-        description: Returns device history metadata.
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryListResponse"
-      "404":
-        description: Device with device_id not found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-
-device_histories.history_id:
-  get:
-    tags:
-      - devices
-    summary: Get device history
-    description: Returns the device history identified by history_id.
-    operationId: get_device_history
-    security:
-      - BearerAuth: []
-    parameters:
-      - name: history_id
-        in: path
-        description: Unique string identifying the device history.
-        required: true
-        schema:
-          type: string
-        example: "018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"
-    responses:
-      "200":
-        description: Returns device history.
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryDetail"
-      "404":
-        description: Device or history not found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-  delete:
-    tags:
-      - devices
-    summary: Delete device history
-    description: Deletes the device history metadata and archived device_info object identified by history_id.
-    operationId: delete_device_history
-    security:
-      - BearerAuth: []
-    parameters:
-      - name: history_id
-        in: path
-        description: Unique string identifying the device history.
-        required: true
-        schema:
-          type: string
-        example: "018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"
-    responses:
-      "204":
-        description: Device history deleted
-      "404":
-        description: Device history not found
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.NotFoundError"
-      "500":
-        description: Internal Server Error
-        content:
-          application/json:
-            schema:
-              $ref: "../schemas/error.yaml#/error.InternalServerError"
-
 devices.device_info.upload:
   get:
     tags:
@@ -396,3 +270,127 @@ devices.device_info.upload:
               $ref: "../schemas/error.yaml#/error.InternalServerError"
             example:
               message: Internal server error
+
+device_histories:
+  get:
+    tags:
+      - devices
+    summary: List device histories
+    description: List device history metadata. Optionally filter by device_id.
+    operationId: list_device_histories
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: device_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+    responses:
+      "200":
+        description: Returns device history metadata.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryListResponse"
+      "404":
+        description: Device with device_id not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+
+device_histories.history_id:
+  get:
+    tags:
+      - devices
+    summary: Get device history
+    operationId: get_device_history
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: history_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      "200":
+        description: Returns device history.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryDetail"
+      "404":
+        description: Device history not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"
+  delete:
+    tags:
+      - devices
+    summary: Delete device history
+    operationId: delete_device_history
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: history_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      "204":
+        description: Device history deleted
+      "404":
+        description: Device history not found
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.NotFoundError"
+      "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.InternalServerError"

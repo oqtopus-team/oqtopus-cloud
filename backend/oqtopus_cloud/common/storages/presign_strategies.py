@@ -46,7 +46,7 @@ class GeneralPresignStrategy(AbstractPresignStrategy):
 
 class S3PresignStrategy(GeneralPresignStrategy):
     """
-    Presigned URL strategy for AWS S3 compatible storages (S3, minIO) using boto3.
+    Presigned URL strategy for AWS S3 compatible storages (S3, SeaweedFS, etc.) using boto3.
     """
 
     def __init__(self, s3_fs: S3FileSystem, bucket_name: str):

@@ -1,7 +1,9 @@
 # Database TLS CA bundle
 
-`global-bundle.pem` is the CA trust bundle `oqtopus_cloud/common/session.py` uses to
-verify TLS when connecting to the database (see `DB_SSL_CA` / `_DEFAULT_DB_SSL_CA`).
+`global-bundle.pem` is the CA trust bundle `oqtopus_cloud/common/db_tls.py` uses to
+verify TLS when connecting to the database (see `DB_SSL_CA` / `DEFAULT_DB_SSL_CA`).
+Both the application (`session.py`) and the Alembic migrations (`alembic/env.py`)
+resolve TLS through that helper, so they trust the same bundle.
 
 It is a **combined** bundle, and it must stay combined:
 

@@ -73,6 +73,7 @@ module "user_api" {
   api_gateway_log_retention_days         = var.api_gateway_log_retention_days
   otel_enabled                           = var.otel_enabled
   otel_exporter_otlp_endpoint            = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn               = var.otel_collector_layer_arn
   lambda_log_retention_days              = var.lambda_log_retention_days
 
   storage_driver = "s3"
@@ -109,6 +110,7 @@ module "provider_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
   storage_driver                 = "s3"
   storage_env_vars_s3 = {
@@ -266,11 +268,12 @@ module "waf" {
     module.admin_api.api_gateway_stage_arn,
     module.user_signup_api.api_gateway_stage_arn,
   ]
-  enable_common_rules        = var.waf_enable_common_rules
-  enable_rate_limiting       = var.waf_enable_rate_limiting
-  rate_limit                 = var.waf_rate_limit
-  cloudwatch_metrics_enabled = var.waf_cloudwatch_metrics_enabled
-  sampled_requests_enabled   = var.waf_sampled_requests_enabled
+  common_rules_excluded_rules = var.waf_common_rules_excluded_rules
+  enable_common_rules         = var.waf_enable_common_rules
+  enable_rate_limiting        = var.waf_enable_rate_limiting
+  rate_limit                  = var.waf_rate_limit
+  cloudwatch_metrics_enabled  = var.waf_cloudwatch_metrics_enabled
+  sampled_requests_enabled    = var.waf_sampled_requests_enabled
 
   depends_on = [
     module.user_api,

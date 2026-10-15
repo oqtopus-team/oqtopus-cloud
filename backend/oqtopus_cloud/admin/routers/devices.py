@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query, status
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
@@ -16,10 +17,12 @@ from oqtopus_cloud.admin.schemas.devices import (
     DeviceInfoHistoryListResponse,
     DeviceInfoUploadPresignedURL,
     DeviceInfoUploadResponse,
-    DevicePatch,
+    DeviceType,
+    Status,
 )
 from oqtopus_cloud.admin.schemas.errors import (
     BadRequestErrorResponse,
+    ConflictErrorResponse,
     ErrorResponse,
     InternalServerErrorResponse,
     Message,
@@ -43,6 +46,53 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 utc = ZoneInfo("UTC")
 
 
+class DevicePatch(BaseModel):
+    device_type: DeviceType | None = Field(default=None, examples=["simulator"])
+    status: Status | None = Field(default=None, examples=["available"])
+    n_qubits: int | None = Field(default=None, examples=[64])
+    available_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    calibrated_at: AwareDatetime | None = Field(
+        default=None, examples=["2022-10-19T11:45:34Z"]
+    )
+    basis_gates: list[str] | None = Field(
+        default=None,
+        examples=[
+            [
+                "x",
+                "y",
+                "z",
+                "h",
+                "s",
+                "sdg",
+                "t",
+                "tdg",
+                "rx",
+                "ry",
+                "rz",
+                "cx",
+                "cz",
+                "swap",
+                "u1",
+                "u2",
+                "u3",
+                "u",
+                "p",
+                "id",
+                "sx",
+                "sxdg",
+            ]
+        ],
+    )
+    supported_instructions: list[str] | None = Field(
+        default=None, examples=[["measure", "barrier", "reset"]]
+    )
+    description: str | None = Field(
+        default=None, examples=["Superconducting quantum computer"]
+    )
+
+
 def _normalize_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
@@ -59,30 +109,15 @@ def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
     )
 
 
-def _get_history_object_key(history: DeviceInfoHistory) -> str:
-    return get_device_info_history_key(history.history_id)
-
-
 def _history_to_detail(
     history: DeviceInfoHistory, storage: AbstractStorage
 ) -> DeviceInfoHistoryDetail:
     return DeviceInfoHistoryDetail(
-        history_id=history.history_id,
-        device_id=history.device_id,
-        calibrated_at=history.calibrated_at,
-        n_qubits=history.n_qubits,
-        n_couplings=history.n_couplings,
+        **_history_to_entry(history).model_dump(),
         device_info=storage.get_download_presigned_url(
-            key=_get_history_object_key(history)
+            key=get_device_info_history_key(history.history_id)
         ),
     )
-
-
-def _get_existing_device(device_id: str, db: Session) -> Device | ErrorResponse:
-    device = db.scalars(select(Device).where(Device.id == device_id)).first()
-    if device is None:
-        return NotFoundErrorResponse(message=f"device_id={device_id} is not found.")
-    return device
 
 
 def _apply_history_filters(
@@ -155,10 +190,7 @@ def get_device(
 @router.get(
     "/device_histories",
     response_model=DeviceInfoHistoryListResponse,
-    responses={
-        404: {"model": Message},
-        500: {"model": Message},
-    },
+    responses={404: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def list_device_histories(
@@ -172,11 +204,11 @@ def list_device_histories(
     try:
         stmt = select(DeviceInfoHistory)
         count_stmt = select(func.count()).select_from(DeviceInfoHistory)
-
         if device_id is not None:
-            device = _get_existing_device(device_id, db)
-            if isinstance(device, ErrorResponse):
-                return device
+            if db.get(Device, device_id) is None:
+                return NotFoundErrorResponse(
+                    message=f"device_id={device_id} is not found."
+                )
             stmt = stmt.where(DeviceInfoHistory.device_id == device_id)
             count_stmt = count_stmt.where(DeviceInfoHistory.device_id == device_id)
 
@@ -202,10 +234,7 @@ def list_device_histories(
 @router.get(
     "/device_histories/{history_id}",
     response_model=DeviceInfoHistoryDetail,
-    responses={
-        404: {"model": Message},
-        500: {"model": Message},
-    },
+    responses={404: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def get_device_history(
@@ -214,15 +243,13 @@ def get_device_history(
     storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfoHistoryDetail | ErrorResponse:
     try:
-        history = db.scalars(
-            select(DeviceInfoHistory).where(DeviceInfoHistory.history_id == history_id)
-        ).first()
+        history = db.get(DeviceInfoHistory, history_id)
         if history is None:
             return NotFoundErrorResponse(
                 message=f"device_info_history history_id={history_id} is not found."
             )
-
-        if not storage.does_exist(key=_get_history_object_key(history)):
+        history_key = get_device_info_history_key(history_id)
+        if not storage.does_exist(key=history_key):
             return NotFoundErrorResponse(message="device_info object is not found.")
         return _history_to_detail(history, storage)
     except Exception as e:
@@ -235,10 +262,7 @@ def get_device_history(
     "/device_histories/{history_id}",
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={
-        404: {"model": Message},
-        500: {"model": Message},
-    },
+    responses={404: {"model": Message}, 500: {"model": Message}},
 )
 @tracer.capture_method
 def delete_device_history(
@@ -247,20 +271,14 @@ def delete_device_history(
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
     try:
-        logger.info("invoked delete device history")
-        history = db.scalars(
-            select(DeviceInfoHistory).where(DeviceInfoHistory.history_id == history_id)
-        ).first()
+        history = db.get(DeviceInfoHistory, history_id)
         if history is None:
             return NotFoundErrorResponse(
                 message=f"device_info_history history_id={history_id} is not found."
             )
-
-        history_key = _get_history_object_key(history)
+        history_key = get_device_info_history_key(history_id)
         if storage.does_exist(key=history_key):
             storage.delete(key=history_key)
-        else:
-            logger.warning("device_info_history object is not found: %s", history_key)
         db.delete(history)
         db.commit()
         return SuccessResponse(message="Device history deleted successfully")
@@ -304,7 +322,11 @@ def get_device_info_upload_url(
 @router.post(
     "/devices",
     response_model=SuccessResponse,
-    responses={400: {"model": Message}, 500: {"model": Message}},
+    responses={
+        400: {"model": Message},
+        409: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def register_devices(
@@ -322,7 +344,7 @@ def register_devices(
         ).first()
         if existing_device:
             logger.error(f"device_id={device_id} already exists")
-            return BadRequestErrorResponse(
+            return ConflictErrorResponse(
                 message=f"device_id={device_id} already exists"
             )
         new_device = schema_to_model(device_id, device_info)
@@ -409,7 +431,7 @@ def delete_device(
             select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
         ).all()
         for history in histories:
-            history_key = _get_history_object_key(history)
+            history_key = get_device_info_history_key(history.history_id)
             if storage.does_exist(key=history_key):
                 storage.delete(key=history_key)
             db.delete(history)
