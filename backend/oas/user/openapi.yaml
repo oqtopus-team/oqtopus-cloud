@@ -182,12 +182,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
-        '403':
-          description: Cannot access device with device_id
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error.ForbiddenError'
         '404':
           description: Device or history not found
           content:

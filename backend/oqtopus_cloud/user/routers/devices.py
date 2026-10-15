@@ -79,6 +79,12 @@ def _history_to_detail(
 def _check_user_device_access(
     device_id: str, event: Event, db: Session
 ) -> Device | ErrorResponse:
+    device = db.scalars(select(Device).where(Device.id == device_id)).first()
+    if device is None:
+        message = f"device_id={device_id} is not found."
+        logger.info(message)
+        return NotFoundErrorResponse(message=message)
+
     user_id = event.state.user_id
     available_devices = get_user_available_devices(user_id, db)
 
@@ -86,11 +92,6 @@ def _check_user_device_access(
         logger.error(f"{user_id} is not allowed to access device_id={device_id}.")
         return ForbiddenErrorResponse(message=f"Cannot access device_id={device_id}.")
 
-    device = db.scalars(select(Device).where(Device.id == device_id)).first()
-    if device is None:
-        message = f"device_id={device_id} is not found."
-        logger.info(message)
-        return NotFoundErrorResponse(message=message)
     return device
 
 
@@ -280,7 +281,9 @@ def get_device_history(
 
         access_result = _check_user_device_access(history.device_id, event, db)
         if isinstance(access_result, ErrorResponse):
-            return access_result
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_id={history_id} is not found."
+            )
 
         if not storage.does_exist(key=_get_history_object_key(history)):
             return NotFoundErrorResponse(message="device_info object is not found.")

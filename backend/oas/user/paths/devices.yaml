@@ -175,12 +175,6 @@ device_histories.history_id:
           application/json:
             schema:
               $ref: '../schemas/devices.yaml#/devices.DeviceInfoHistoryDetail'
-      '403':
-        description: Cannot access device with device_id
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml#/error.ForbiddenError'
       '404':
         description: Device or history not found
         content:

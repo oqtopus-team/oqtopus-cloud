@@ -490,6 +490,35 @@ def test_list_device_histories_forbidden(test_client, test_db):
     assert actual.json() == {"message": "Cannot access device_id=SC."}
 
 
+def test_list_device_histories_returns_not_found_for_unknown_device(
+    test_client, test_db
+):
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
+    test_db.commit()
+
+    actual = test_client.get("/device_histories?device_id=unknown")
+
+    assert actual.status_code == 404
+    assert actual.json() == {"message": "device_id=unknown is not found."}
+
+
+def test_get_device_history_hides_forbidden_history(test_client, test_db):
+    history_id = "history-SC-20240304123456"
+    test_db.add(_get_user_model(1, available_devices=["SVSim"]))
+    test_db.add(_get_model(device="SC"))
+    test_db.add(
+        _get_history_model("SC", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
+    )
+    test_db.commit()
+
+    actual = test_client.get(f"/device_histories/{history_id}")
+
+    assert actual.status_code == 404
+    assert actual.json() == {
+        "message": f"device_info_history history_id={history_id} is not found."
+    }
+
+
 """
 def test_get_task_404(
     test_db,
