@@ -15,9 +15,9 @@ class NotFoundError(BaseModel):
     message: str
 
 
-class InternalServerError(BaseModel):
+class ConflictError(BaseModel):
     message: str
 
 
-class ConflictError(BaseModel):
+class InternalServerError(BaseModel):
     message: str
