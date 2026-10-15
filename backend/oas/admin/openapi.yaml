@@ -605,6 +605,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryListResponse'
+        '401':
+          description: Unauthorized
         '404':
           description: Device with device_id not found
           content:
@@ -638,6 +640,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
+        '401':
+          description: Unauthorized
         '404':
           description: Device history not found
           content:
@@ -666,6 +670,8 @@ paths:
       responses:
         '204':
           description: Device history deleted
+        '401':
+          description: Unauthorized
         '404':
           description: Device history not found
           content:

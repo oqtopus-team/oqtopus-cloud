@@ -320,6 +320,8 @@ device_histories:
           application/json:
             schema:
               $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryListResponse"
+      "401":
+        description: Unauthorized
       "404":
         description: Device with device_id not found
         content:
@@ -354,6 +356,8 @@ device_histories.history_id:
           application/json:
             schema:
               $ref: "../schemas/devices.yaml#/devices.DeviceInfoHistoryDetail"
+      "401":
+        description: Unauthorized
       "404":
         description: Device history not found
         content:
@@ -382,6 +386,8 @@ device_histories.history_id:
     responses:
       "204":
         description: Device history deleted
+      "401":
+        description: Unauthorized
       "404":
         description: Device history not found
         content:

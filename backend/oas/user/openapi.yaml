@@ -140,6 +140,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
         '403':
           description: Cannot access device with device_id
           content:
@@ -182,6 +188,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.UnauthorizedError'
         '404':
           description: Device or history not found
           content:
