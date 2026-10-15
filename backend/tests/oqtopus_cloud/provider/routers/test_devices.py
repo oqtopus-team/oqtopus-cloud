@@ -37,6 +37,7 @@ from oqtopus_cloud.provider.schemas.errors import (
     ConflictErrorResponse,
     InternalServerErrorResponse,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 utc = ZoneInfo("UTC")
@@ -258,6 +259,30 @@ def test_update_device_calibration_rejects_duplicate_history(test_db, test_stora
 
     assert isinstance(actual, ConflictErrorResponse)
     assert actual.status_code == 409
+
+
+def test_update_device_calibration_returns_conflict_on_integrity_error(
+    test_db, test_storage
+):
+    test_db.add(_get_model_qpu())
+    Session.commit(test_db)
+    calibrated_at = datetime(2025, 4, 1, 12, 34, 56, 789000, tzinfo=timezone.utc)
+    test_storage.put(
+        key=get_device_info_key("SC"), data=json.dumps(_get_device_info_dict()).encode()
+    )
+
+    with patch.object(
+        test_db,
+        "commit",
+        side_effect=IntegrityError("insert", {}, RuntimeError("duplicate")),
+    ):
+        actual = update_device_calibration(
+            "SC", DeviceInfoUpdate(calibrated_at=calibrated_at), test_db, test_storage
+        )
+
+    assert isinstance(actual, ConflictErrorResponse)
+    assert actual.status_code == 409
+    assert test_db.query(DeviceInfoHistory).count() == 0
 
 
 def test_update_device_calibration_recovers_after_commit_failure(test_db, test_storage):

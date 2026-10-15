@@ -37,6 +37,7 @@ from oqtopus_cloud.provider.schemas.errors import (
     Message,
     NotFoundErrorResponse,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from . import LoggerRouteHandler
 
@@ -294,7 +295,16 @@ def update_device_calibration(
                 n_couplings=n_couplings,
             )
         )
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return ConflictErrorResponse(
+                message=(
+                    f"device_info_history for device_id={device_id} and "
+                    f"calibrated_at={calibrated_at.isoformat()} already exists."
+                )
+            )
         return DeviceDataUpdateResponse(message="Device's data updated")
     except ValueError as e:
         db.rollback()
