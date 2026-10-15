@@ -427,6 +427,32 @@ def test_list_device_histories_handler(test_client, test_db):
     }
 
 
+def test_list_device_histories_uses_stable_order_for_equal_timestamps(
+    test_client, test_db
+):
+    calibrated_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc)
+    test_db.add_all(
+        [
+            _get_user_model(1, available_devices=["SVSim1", "SVSim2"]),
+            _get_model("SVSim1"),
+            _get_model("SVSim2"),
+            _get_history_model("SVSim1", calibrated_at, 2, 1),
+            _get_history_model("SVSim2", calibrated_at, 4, 3),
+        ]
+    )
+    test_db.commit()
+
+    first_page = test_client.get("/device_histories?limit=1&offset=0")
+    second_page = test_client.get("/device_histories?limit=1&offset=1")
+
+    assert first_page.json()["items"][0]["history_id"] == (
+        "history-SVSim2-20240304123456"
+    )
+    assert second_page.json()["items"][0]["history_id"] == (
+        "history-SVSim1-20240304123456"
+    )
+
+
 def test_get_device_history_handler(test_client, test_db, test_storage):
     history_key = get_device_info_history_key("history-SVSim-20240304123456")
     test_storage.put(

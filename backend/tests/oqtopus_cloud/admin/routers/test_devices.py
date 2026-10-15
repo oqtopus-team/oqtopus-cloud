@@ -219,6 +219,29 @@ def test_list_device_histories(test_db):
     }
 
 
+def test_list_device_histories_uses_stable_order_for_equal_timestamps(test_db):
+    calibrated_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc)
+    test_db.add_all(
+        [
+            _get_model(1, {"device_id": "SVSim1"}),
+            _get_model(2, {"device_id": "SVSim2"}),
+            _get_history_model("SVSim1", calibrated_at, 2, 1),
+            _get_history_model("SVSim2", calibrated_at, 4, 3),
+        ]
+    )
+    test_db.commit()
+
+    first_page = client.get("/device_histories?limit=1&offset=0")
+    second_page = client.get("/device_histories?limit=1&offset=1")
+
+    assert first_page.json()["items"][0]["history_id"] == (
+        "history-SVSim2-20240304123456"
+    )
+    assert second_page.json()["items"][0]["history_id"] == (
+        "history-SVSim1-20240304123456"
+    )
+
+
 def test_get_device_history(test_db):
     device_info = {"device_id": "SVSim1"}
     storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")

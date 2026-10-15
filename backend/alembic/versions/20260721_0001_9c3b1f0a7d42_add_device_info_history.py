@@ -60,7 +60,17 @@ def upgrade() -> None:
             "MODIFY updated_at TIMESTAMP NULL "
             "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
         )
+    op.create_index(
+        "ix_device_info_history_calibrated_at_history_id",
+        "device_info_history",
+        ["calibrated_at", "history_id"],
+        unique=False,
+    )
 
 
 def downgrade() -> None:
+    op.drop_index(
+        "ix_device_info_history_calibrated_at_history_id",
+        table_name="device_info_history",
+    )
     op.drop_table("device_info_history")

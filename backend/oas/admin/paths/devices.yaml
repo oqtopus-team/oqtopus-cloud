@@ -276,7 +276,7 @@ device_histories:
     tags:
       - devices
     summary: List device histories
-    description: List device history metadata. Optionally filter by device_id.
+    description: List device history metadata, ordered by calibrated_at and history_id descending. Optionally filter by device_id.
     operationId: list_device_histories
     security:
       - BearerAuth: []

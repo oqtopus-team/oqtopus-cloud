@@ -215,7 +215,10 @@ def list_device_histories(
         stmt, count_stmt = _apply_history_filters(stmt, count_stmt, from_, to)
         total = db.scalar(count_stmt) or 0
         histories = db.scalars(
-            stmt.order_by(DeviceInfoHistory.calibrated_at.desc())
+            stmt.order_by(
+                DeviceInfoHistory.calibrated_at.desc(),
+                DeviceInfoHistory.history_id.desc(),
+            )
             .limit(limit)
             .offset(offset)
         ).all()

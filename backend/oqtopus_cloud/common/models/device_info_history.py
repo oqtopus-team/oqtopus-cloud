@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -15,6 +15,11 @@ class DeviceInfoHistory(TimestampMixin, Base):
             "device_id",
             "calibrated_at",
             name="uq_device_info_history_device_calibrated_at",
+        ),
+        Index(
+            "ix_device_info_history_calibrated_at_history_id",
+            "calibrated_at",
+            "history_id",
         ),
     )
 
