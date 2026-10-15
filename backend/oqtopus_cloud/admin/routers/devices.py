@@ -137,6 +137,34 @@ def _apply_history_filters(
     return stmt, count_stmt
 
 
+def _snapshot_storage_objects(
+    storage: AbstractStorage, keys: list[str]
+) -> dict[str, bytes]:
+    snapshots: dict[str, bytes] = {}
+    for key in keys:
+        data = storage.get(key=key)
+        if data is not None:
+            snapshots[key] = data
+    return snapshots
+
+
+def _delete_storage_objects(
+    storage: AbstractStorage, snapshots: dict[str, bytes]
+) -> None:
+    for key in snapshots:
+        storage.delete(key=key)
+
+
+def _restore_storage_objects(
+    storage: AbstractStorage, snapshots: dict[str, bytes]
+) -> None:
+    for key, data in snapshots.items():
+        try:
+            storage.put(key=key, data=data)
+        except Exception:
+            logger.exception(f"Failed to restore storage object: {key}")
+
+
 @router.get(
     "/devices",
     response_model=list[DeviceInfo],
@@ -273,6 +301,7 @@ def delete_device_history(
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
+    storage_snapshots: dict[str, bytes] = {}
     try:
         history = db.get(DeviceInfoHistory, history_id)
         if history is None:
@@ -280,12 +309,14 @@ def delete_device_history(
                 message=f"device_info_history history_id={history_id} is not found."
             )
         history_key = get_device_info_history_key(history_id)
-        if storage.does_exist(key=history_key):
-            storage.delete(key=history_key)
+        storage_snapshots = _snapshot_storage_objects(storage, [history_key])
+        _delete_storage_objects(storage, storage_snapshots)
         db.delete(history)
         db.commit()
         return SuccessResponse(message="Device history deleted successfully")
     except Exception as e:
+        db.rollback()
+        _restore_storage_objects(storage, storage_snapshots)
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")
@@ -418,6 +449,7 @@ def delete_device(
     db: Session = Depends(get_db),
     storage: AbstractStorage = Depends(get_storage),
 ) -> SuccessResponse | ErrorResponse:
+    storage_snapshots: dict[str, bytes] = {}
     try:
         logger.info("invoked delete device")
         # query
@@ -428,21 +460,24 @@ def delete_device(
             logger.error(f"device_id={device_id} is not found")
             return NotFoundErrorResponse(message="Device not found")
         device_info_key = get_device_info_key(device_id)
-        if storage.does_exist(key=device_info_key):
-            storage.delete(key=device_info_key)
         histories = db.scalars(
             select(DeviceInfoHistory).where(DeviceInfoHistory.device_id == device_id)
         ).all()
+        storage_keys = [device_info_key]
+        storage_keys.extend(
+            get_device_info_history_key(history.history_id) for history in histories
+        )
+        storage_snapshots = _snapshot_storage_objects(storage, storage_keys)
+        _delete_storage_objects(storage, storage_snapshots)
         for history in histories:
-            history_key = get_device_info_history_key(history.history_id)
-            if storage.does_exist(key=history_key):
-                storage.delete(key=history_key)
             db.delete(history)
         # delete from RDS
         db.delete(query_result)
         db.commit()
         return SuccessResponse(message="Device deleted successfully")
     except Exception as e:
+        db.rollback()
+        _restore_storage_objects(storage, storage_snapshots)
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
         return InternalServerErrorResponse(message="Internal Server Error")

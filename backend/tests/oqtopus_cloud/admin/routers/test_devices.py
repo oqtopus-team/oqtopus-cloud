@@ -3,9 +3,11 @@ import os
 from datetime import datetime, timezone
 from io import BytesIO
 import zipfile
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
+from oqtopus_cloud.admin.routers.devices import delete_device, delete_device_history
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceInfo,
     DeviceType,
@@ -19,6 +21,7 @@ from oqtopus_cloud.common.storages.storage_utils import (
     get_device_info_key,
 )
 from pydantic.type_adapter import TypeAdapter
+from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 client = TestClient(app)
@@ -304,6 +307,27 @@ def test_delete_device_history_allows_missing_storage_object(test_db):
         .first()
         is None
     )
+
+
+def test_delete_device_history_restores_storage_after_commit_failure(test_db):
+    device_info = {"device_id": "SVSim1"}
+    history = _get_history_model(
+        "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+    )
+    history_key = get_device_info_history_key(history.history_id)
+    archive = _device_info_archive_bytes(device_info)
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=history_key, data=archive)
+    test_db.add(_get_model(1, device_info))
+    test_db.add(history)
+    Session.commit(test_db)
+
+    with patch.object(test_db, "commit", side_effect=RuntimeError("commit failed")):
+        result = delete_device_history(history.history_id, test_db, storage)
+
+    assert result.status_code == 500
+    assert test_db.get(DeviceInfoHistory, history.history_id) is not None
+    assert storage.get(key=history_key) == archive
 
 
 def test_delete_device_history_404(test_db):
@@ -702,6 +726,32 @@ def test_delete_device_deletes_uploaded_device_info(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device is None
     assert not storage.does_exist(key=device_info_key)
+
+
+def test_delete_device_restores_storage_after_commit_failure(test_db):
+    device_info = {"device_id": "SVSim1"}
+    device = _get_model(1, device_info)
+    history = _get_history_model(
+        device.id, datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+    )
+    device_info_key = get_device_info_key(device.id)
+    history_key = get_device_info_history_key(history.history_id)
+    archive = _device_info_archive_bytes(device_info)
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=archive)
+    storage.put(key=history_key, data=archive)
+    test_db.add(device)
+    test_db.add(history)
+    Session.commit(test_db)
+
+    with patch.object(test_db, "commit", side_effect=RuntimeError("commit failed")):
+        result = delete_device(device.id, test_db, storage)
+
+    assert result.status_code == 500
+    assert test_db.get(Device, device.id) is not None
+    assert test_db.get(DeviceInfoHistory, history.history_id) is not None
+    assert storage.get(key=device_info_key) == archive
+    assert storage.get(key=history_key) == archive
 
 
 def test_delete_device_404(
