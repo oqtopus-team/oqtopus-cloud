@@ -43,6 +43,8 @@ _RUNNING_AT = datetime.datetime(2024, 3, 4, 12, 1, 0, tzinfo=datetime.timezone.u
 _ENDED_AT = datetime.datetime(2024, 3, 4, 12, 1, 16, tzinfo=datetime.timezone.utc)
 
 
+# NOTE: storage/init_storage.py derives each seeded device_info archive from
+# these rows so local DB metadata and object storage cannot drift.
 DEVICES: list[dict[str, Any]] = [
     {
         "id": "SC",
@@ -53,7 +55,6 @@ DEVICES: list[dict[str, Any]] = [
         "n_qubits": 64,
         "basis_gates": json.dumps(["sx", "rz", "rzx90", "id"]),
         "instructions": json.dumps(["measure", "barrier"]),
-        "device_info": "",
         "calibrated_at": _NOW,
         "description": "Superconducting quantum computer",
     },
@@ -72,7 +73,6 @@ DEVICES: list[dict[str, Any]] = [
             ]
         ),
         "instructions": json.dumps(["measure", "barrier", "reset"]),
-        "device_info": "",
         "calibrated_at": _NOW,
         "description": "State vector-based quantum circuit simulator",
     },
@@ -85,7 +85,6 @@ DEVICES: list[dict[str, Any]] = [
         "n_qubits": 64,
         "basis_gates": json.dumps(["sx", "rz", "rzx90", "id"]),
         "instructions": json.dumps(["measure", "barrier"]),
-        "device_info": "",
         "calibrated_at": _NOW,
         "description": "Superconducting quantum computer",
     },
@@ -98,7 +97,6 @@ DEVICES: list[dict[str, Any]] = [
         "n_qubits": 64,
         "basis_gates": json.dumps(["sx", "rz", "rzx90", "id"]),
         "instructions": json.dumps(["measure", "barrier"]),
-        "device_info": "",
         "calibrated_at": _NOW,
         "description": "Superconducting quantum computer",
     },
@@ -111,7 +109,6 @@ DEVICES: list[dict[str, Any]] = [
         "n_qubits": 16,
         "basis_gates": json.dumps(["sx", "x", "rz", "cx"]),
         "instructions": json.dumps(["measure", "barrier"]),
-        "device_info": "",
         "calibrated_at": _NOW,
         "description": "Qulacs Simulator",
     },
@@ -144,7 +141,7 @@ _MITIGATION_INFO = json.dumps({"ro_error_mitigation": "pseudo_inverse"})
 # NOTE: keep in sync with storage/init_storage.py — it uploads the storage
 # objects (input.zip, plus one <name>.zip per entry in output_files) that the
 # API's get_job_info() dereferences for each of these jobs. A job's DB row and
-# its MinIO objects must agree, or download URLs 404.
+# its storage objects must agree, or download URLs 404.
 JOBS: list[dict[str, Any]] = [
     # Job 1: a completed run. execution_time / ended_at are set, and
     # output_files + message reflect the result artifacts the provider uploaded.

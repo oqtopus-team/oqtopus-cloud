@@ -11,6 +11,8 @@ from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
+from oqtopus_cloud.common.storages import AbstractStorage, get_storage
+from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.devices import (
     DeviceInfo,
@@ -37,6 +39,7 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 def get_devices(
     event: Event,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> list[DeviceInfo] | ErrorResponse:
     try:
         logger.info("invoked list_devices")
@@ -49,7 +52,7 @@ def get_devices(
                 select(Device).where(Device.id.in_(available_devices))
             ).all()
 
-        return [model_to_schema(device) for device in devices]
+        return [model_to_schema(device, storage) for device in devices]
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -70,6 +73,7 @@ def get_device(
     device_id: str,
     event: Event,
     db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
 ) -> DeviceInfo | ErrorResponse:
     """_summary_
 
@@ -80,27 +84,27 @@ def get_device(
     Returns:
         GetDeviceResponse: _description_
     """
-    # TODO implement error handling
     try:
         user_id = event.state.user_id
         logger.info(f"User {user_id} is trying to access device_id={device_id}.")
-        available_devices = get_user_available_devices(user_id, db)
 
+        # Check order: 404 (existence) before 403 (authorization)
+        device = db.scalars(select(Device).where(Device.id == device_id)).first()
+        logger.info("invoked get_device")
+        if not device:
+            message = f"device_id={device_id} is not found."
+            logger.info(message)
+            return NotFoundErrorResponse(message=message)
+
+        available_devices = get_user_available_devices(user_id, db)
         if available_devices != "*" and device_id not in available_devices:
             logger.error(f"{user_id} is not allowed to access device_id={device_id}.")
             return ForbiddenErrorResponse(
                 message=f"Cannot access device_id={device_id}."
             )
 
-        device = db.scalars(select(Device).where(Device.id == device_id)).first()
-        logger.info("invoked get_device")
-        if device:
-            response = model_to_schema(device)
-            return response
-        else:
-            message = f"device_id={device_id} is not found."
-            logger.info(message)
-            return NotFoundErrorResponse(message=message)
+        response = model_to_schema(device, storage)
+        return response
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")
@@ -116,13 +120,25 @@ MAP_MODEL_TO_SCHEMA = {
     "n_qubits": "n_qubits",
     "basis_gates": "basis_gates",
     "instructions": "supported_instructions",
-    "device_info": "device_info",
     "calibrated_at": "calibrated_at",
     "description": "description",
 }
 
 
-def model_to_schema(model: Device) -> DeviceInfo:
+def get_device_info(
+    model: Device, storage: AbstractStorage | None = None
+) -> str | None:
+    if storage is None or not hasattr(storage, "does_exist"):
+        return getattr(model, "device_info", None)
+    device_info_key = get_device_info_key(model.id)
+    if storage.does_exist(key=device_info_key):
+        return storage.get_download_presigned_url(key=device_info_key)
+    return getattr(model, "device_info", None)
+
+
+def model_to_schema(
+    model: Device, storage: AbstractStorage | None = None
+) -> DeviceInfo:
     dict = {
         "device_id": getattr(model, "id", None),
         "device_type": getattr(model, "device_type", None),
@@ -132,7 +148,7 @@ def model_to_schema(model: Device) -> DeviceInfo:
         "n_qubits": getattr(model, "n_qubits", None),
         "basis_gates": json.loads(getattr(model, "basis_gates", "[]")),
         "supported_instructions": json.loads(getattr(model, "instructions", "[]")),
-        "device_info": getattr(model, "device_info", None),
+        "device_info": get_device_info(model, storage),
         "calibrated_at": getattr(model, "calibrated_at", None),
         "description": model.description,
     }

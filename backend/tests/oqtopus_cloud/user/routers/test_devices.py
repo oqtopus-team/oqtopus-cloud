@@ -7,6 +7,7 @@ from oqtopus_cloud.common.models.device import (
     Device,
 )
 from oqtopus_cloud.common.models.user import User, UserStatus
+from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
 from oqtopus_cloud.user.routers.devices import get_device, get_devices, model_to_schema
 from oqtopus_cloud.user.schemas.devices import DeviceInfo, DeviceType, Status
 from oqtopus_cloud.user.schemas.errors import (
@@ -84,7 +85,7 @@ def _create_request(method="GET") -> Request:
     return Request(scope=scope)
 
 
-def _get_model(device="SVSim"):
+def _get_model(device="SVSim", device_info: str | None = None):
     mode_dict = {
         "id": device,
         "device_type": "simulator",
@@ -94,7 +95,7 @@ def _get_model(device="SVSim"):
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
+        "device_info": device_info if device_info is not None else json.dumps({"device_id": device}),
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
@@ -125,8 +126,7 @@ def test_get_device(test_db):
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        # device_info=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
+        device_info=json.dumps({"device_id": "SVSim"}),
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -157,8 +157,7 @@ def test_can_get_device_if_in_available_devices(test_db):
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        # device_info=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
+        device_info=json.dumps({"device_id": device}),
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=timezone.utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -206,6 +205,29 @@ def test_cannot_get_device_that_not_exist(test_db):
     assert json.loads(response.body) == {"message": f"device_id={device} is not found."}
 
 
+def test_nonexistent_device_returns_404_even_without_permission(test_db):
+    """When device does not exist, return 404 regardless of user permissions.
+    This verifies the check order: existence (404) before authorization (403)."""
+    # Arrange
+    user_no = 1
+    device = "NonExistent"
+    request = _create_request()
+    request.state.user_id = f"email_{user_no}"
+
+    test_db.add(_get_user_model(user_no, ["Kawasaki", "SVSim"]))
+    test_db.commit()
+
+    # Act
+    response = get_device(device, request, test_db)
+
+    # Assert - should be 404, not 403
+    assert isinstance(response, NotFoundErrorResponse)
+    assert response.status_code == 404
+    assert json.loads(response.body) == {
+        "message": f"device_id={device} is not found."
+    }
+
+
 def test_can_only_get_devices_that_user_can_access(test_db):
     # Arrange
     user_no = 1
@@ -232,8 +254,7 @@ def test_can_only_get_devices_that_user_can_access(test_db):
             n_qubits=39,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            # calibrationData=CalibrationData(**_get_calibration_dict()),
-            device_info="{}",
+            device_info=json.dumps({"device_id": "SVSim"}),
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -246,8 +267,7 @@ def test_can_only_get_devices_that_user_can_access(test_db):
             n_qubits=39,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            # calibrationData=CalibrationData(**_get_calibration_dict()),
-            device_info="{}",
+            device_info=json.dumps({"device_id": "Test_model"}),
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -296,12 +316,25 @@ def test_model_to_shema():
         n_qubits=39,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        # calibrationData=CalibrationData(**_get_calibration_dict()),
-        device_info="{}",
+        device_info=json.dumps({"device_id": "SVSim"}),
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=pytz.utc),
         description="State vector-based quantum circuit simulator",
     )
     assert actual == expected
+
+
+def test_model_to_schema_returns_download_url_for_uploaded_device_info(test_storage):
+    device_id = "SVSim"
+    model = _get_model(device=device_id)
+    device_info_key = get_device_info_key(device_id)
+    test_storage.put(key=device_info_key, data=b"{}")
+
+    actual = model_to_schema(model, test_storage)
+
+    assert (
+        actual.device_info
+        == f"file://{test_storage.fs_url.removeprefix('file://')}/{device_info_key}"
+    )
 
 
 def test_get_device_handler(test_client, test_db):
@@ -323,8 +356,7 @@ def test_get_device_handler(test_client, test_db):
         "n_qubits": 39,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "supported_instructions": ["measure", "barrier", "reset"],
-        # "calibrationData": _get_calibration_dict(),
-        "device_info": "{}",
+        "device_info": json.dumps({"device_id": "SVSim"}),
         "calibrated_at": "2024-03-04T12:34:56Z",
         "description": "State vector-based quantum circuit simulator",
     }

@@ -93,7 +93,7 @@ services:
     restart: unless-stopped
 
   # Switch the User API to OIDC auth for the demo. ENV stays `local` so the
-  # DB/MinIO wiring is unchanged; AUTH_MODE is the independent switch that
+  # DB/storage wiring is unchanged; AUTH_MODE is the independent switch that
   # controls only how the caller identity is resolved.
   user-api:
     environment:
@@ -113,7 +113,7 @@ services:
         condition: service_started
 
   # Switch the Provider API to OIDC machine-to-machine auth for the demo.
-  # ENV stays `local` (DB/MinIO wiring unchanged); AUTH_MODE=oidc makes the API
+  # ENV stays `local` (DB/storage wiring unchanged); AUTH_MODE=oidc makes the API
   # verify an OAuth2 client-credentials Bearer token (from the `oqtopus-engine`
   # Keycloak client) and require the `provider.write` scope. oauth2-proxy is NOT
   # involved: machine clients fetch a token themselves and call :8888 directly.

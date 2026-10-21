@@ -59,9 +59,12 @@ module "user_api" {
   # the authorizer refs are DERIVED from auth_mode so a rollback to "aws" flips
   # everything back to the Lambda authorizer consistently (the module is kept
   # for exactly that; delete it once case A is verified stable).
-  authorizer_type                        = var.user_api_auth_mode == "aws" ? "LAMBDA" : "NONE"
-  lambda_authorizer_arn                  = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_arn : ""
-  lambda_authorizer_alias                = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_alias_name : ""
+  authorizer_type         = var.user_api_auth_mode == "aws" ? "LAMBDA" : "NONE"
+  lambda_authorizer_arn   = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_arn : ""
+  lambda_authorizer_alias = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_alias_name : ""
+  # The rollback authorizer accepts either Authorization or Q-API-Token.
+  # Disable caching so API Gateway does not require one identity-source header.
+  lambda_authorizer_cache_ttl_seconds    = 0
   cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
@@ -100,6 +103,7 @@ module "user_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
 
   # Edge / abuse protection (#4): bound the blast radius now that case A lets
@@ -150,6 +154,7 @@ module "provider_api" {
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
+  otel_collector_layer_arn       = var.otel_collector_layer_arn
   lambda_log_retention_days      = var.lambda_log_retention_days
 }
 
@@ -178,8 +183,14 @@ module "admin_api" {
   allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
   allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
   log_level                              = "INFO"
-  lambda_timeout                         = 30
-  api_gateway_log_retention_days         = var.api_gateway_log_retention_days
+  storage_driver                         = "s3"
+  storage_env_vars_s3 = {
+    STORAGE_S3_REGION      = var.region
+    STORAGE_S3_BUCKET_NAME = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  }
+  sse_bucket                     = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
+  lambda_timeout                 = 30
+  api_gateway_log_retention_days = var.api_gateway_log_retention_days
 }
 
 module "user_signup_api" {
@@ -304,11 +315,12 @@ module "waf" {
     module.admin_api.api_gateway_stage_arn,
     module.user_signup_api.api_gateway_stage_arn,
   ]
-  enable_common_rules        = var.waf_enable_common_rules
-  enable_rate_limiting       = var.waf_enable_rate_limiting
-  rate_limit                 = var.waf_rate_limit
-  cloudwatch_metrics_enabled = var.waf_cloudwatch_metrics_enabled
-  sampled_requests_enabled   = var.waf_sampled_requests_enabled
+  common_rules_excluded_rules = var.waf_common_rules_excluded_rules
+  enable_common_rules         = var.waf_enable_common_rules
+  enable_rate_limiting        = var.waf_enable_rate_limiting
+  rate_limit                  = var.waf_rate_limit
+  cloudwatch_metrics_enabled  = var.waf_cloudwatch_metrics_enabled
+  sampled_requests_enabled    = var.waf_sampled_requests_enabled
 
   depends_on = [
     module.user_api,

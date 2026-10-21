@@ -23,6 +23,8 @@ paths:
     $ref: ./paths/devices.yaml#/devices
   /devices/{device_id}:
     $ref: ./paths/devices.yaml#/devices.device_id
+  /devices/{device_id}/device_info/upload:
+    $ref: ./paths/devices.yaml#/devices.device_info.upload
   /announcements:
     $ref: ./paths/announcements.yaml#/announcements
   /announcements/{announcement_id}:

@@ -38,7 +38,7 @@ resource "aws_db_instance" "this" {
   engine                                = "mysql"
   engine_version                        = "8.4.8"
   iam_database_authentication_enabled   = "true"
-  instance_class                        = var.db_performance_insights_enabled == true ? "db.t3.medium" : "db.t3.micro"
+  instance_class                        = var.db_instance_class
   iops                                  = "0"
   kms_key_id                            = aws_kms_key.db_storage.arn
   manage_master_user_password           = true #追加 https://tech.dentsusoken.com/entry/terraform_manage_master_user_password
@@ -46,7 +46,7 @@ resource "aws_db_instance" "this" {
   maintenance_window                    = "sat:16:23-sat:16:53"
   max_allocated_storage                 = "1000"
   monitoring_interval                   = "0"
-  multi_az                              = "true"
+  multi_az                              = var.db_multi_az
   network_type                          = "IPV4"
   option_group_name                     = "default:mysql-8-4"
   parameter_group_name                  = aws_db_parameter_group.this.name

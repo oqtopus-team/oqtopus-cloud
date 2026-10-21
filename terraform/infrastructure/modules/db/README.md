@@ -56,6 +56,8 @@ module "db" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_db_instance_class"></a> [db\_instance\_class](#input\_db\_instance\_class) | The instance class for the RDS instance (e.g. db.t4g.micro, db.t4g.small, db.t4g.medium) | `string` | `"db.t4g.medium"` | no |
+| <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | Whether to deploy the RDS instance in Multi-AZ for high availability | `bool` | `true` | no |
 | <a name="input_db_name"></a> [db\_name](#input\_db\_name) | The name of the database | `string` | n/a | yes |
 | <a name="input_db_performance_insights_enabled"></a> [db\_performance\_insights\_enabled](#input\_db\_performance\_insights\_enabled) | DB performance insights enabled | `bool` | n/a | yes |
 | <a name="input_db_proxy_security_group_ids"></a> [db\_proxy\_security\_group\_ids](#input\_db\_proxy\_security\_group\_ids) | The security group IDs for the RDS proxy | `list(string)` | n/a | yes |

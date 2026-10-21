@@ -4,7 +4,7 @@ SHELL := bash
 
 SNAPSTART_ALIAS := snapstart
 
-.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-lambda-version-cleaner deploy-all deploy deploy-aliased-version set-alias test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
+.PHONY: help zip-user zip-provider zip-admin zip-lambda_auth zip-user_signup zip-pending-jobs-updater-worker zip-lambda-version-cleaner zip-all zip deploy-user deploy-provider deploy-admin deploy-pending-jobs-updater-worker deploy-lambda_auth deploy-user_signup deploy-lambda-version-cleaner deploy-lambda-version-cleaner-via-actions deploy-all deploy deploy-aliased-version set-alias invoke-lambda-version-cleaner invoke-lambda-version-cleaner-via-actions test-user test-provider test-admin test-lambda_auth test-user_signup test-all test all-user all-provider all-admin all-lambda_auth all-user_signup all
 
 -include .env
 export
@@ -123,7 +123,13 @@ deploy-lambda-version-cleaner: zip-lambda-version-cleaner	## Deploy lambda-versi
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda-version-cleaner \
 	BIN=./bin/lambda-version-cleaner
 
-deploy-all: deploy-user deploy-provider deploy-admin deploy-lambda_auth deploy-user_signup deploy-pending-jobs-updater-worker deploy-lambda-version-cleaner ## Deploy All Lambda Packages
+deploy-all: deploy-lambda-version-cleaner ## Deploy All Lambda Packages
+	@$(MAKE) deploy-user
+	@$(MAKE) deploy-provider
+	@$(MAKE) deploy-admin
+	@$(MAKE) deploy-lambda_auth
+	@$(MAKE) deploy-user_signup
+	@$(MAKE) deploy-pending-jobs-updater-worker
 
 OAS_DIR := $(abspath ../../backend/oas)
 
@@ -218,6 +224,9 @@ deploy-aliased-version:
 		FUNCTION_NAME=$(FUNCTION_NAME) \
 		VERSION=$$VERSION \
 		PROFILE=$(PROFILE)
+	@$(MAKE) invoke-lambda-version-cleaner \
+		FUNCTION_NAME=$(FUNCTION_NAME) \
+		PROFILE=$(PROFILE)
 	@echo "Deploy Completed."
 
 set-alias: ## Set Alias to Lambda Version
@@ -242,35 +251,51 @@ set-alias: ## Set Alias to Lambda Version
 		echo "Created alias '${ALIAS_NAME}' pointing to version ${FUNCTION_NAME}:${VERSION}"; \
 	fi
 
+invoke-lambda-version-cleaner: ## Remove unused published versions after deployment
+	@echo "Cleaning unused versions of ${FUNCTION_NAME} ..."
+	@aws lambda invoke \
+		--function-name oqtopus-$(PROFILE)-lambda-version-cleaner \
+		--invocation-type Event \
+		--payload '{"functionName":"$(FUNCTION_NAME)"}' \
+		--cli-binary-format raw-in-base64-out \
+		--profile $(PROFILE) \
+		/dev/null >/dev/null
+	@echo "Lambda version cleanup requested."
+
 deploy-user-via-actions: zip-user ## Deploy User API Lambda Package
-	@$(MAKE) deploy-aliased-version-via-actions: \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user-api \
 	BIN=./bin/user \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-provider-via-actions: zip-provider	## Deploy Provider API Lambda Package
-	@$(MAKE) deploy-aliased-version-via-actions: \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-provider-api \
 	BIN=./bin/provider \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-admin-via-actions: zip-admin	## Deploy Admin API Lambda Package
-	@$(MAKE) deploy-aliased-version-via-actions: \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-admin-api \
 	BIN=./bin/admin \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-lambda_auth-via-actions: zip-lambda_auth	## Deploy lambda_auth API Lambda Package
-	@$(MAKE) deploy-aliased-version-via-actions: \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda_auth \
 	BIN=./bin/lambda_auth \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
 
 deploy-user_signup-via-actions: zip-user_signup	## Deploy user_signup API Lambda Package
-	@$(MAKE) deploy-aliased-version-via-actions: \
+	@$(MAKE) deploy-aliased-version-via-actions \
 	FUNCTION_NAME=oqtopus-$(PROFILE)-user_signup-api \
 	BIN=./bin/user_signup \
 	ALIAS_NAME=$(SNAPSTART_ALIAS)
+
+deploy-lambda-version-cleaner-via-actions: zip-lambda-version-cleaner ## Deploy lambda-version-cleaner Lambda Package via Github Actions
+	@$(MAKE) deploy-via-actions \
+	FUNCTION_NAME=oqtopus-$(PROFILE)-lambda-version-cleaner \
+	BIN=./bin/lambda-version-cleaner
 
 deploy-via-actions: generate-tag-via-actions ## Deploy Lambda Package via Github Actions
 	@echo "Deploy ${FUNCTION_NAME} ..."
@@ -297,6 +322,8 @@ deploy-aliased-version-via-actions: ## Deploy Lambda Package as New Aliased Vers
 		ALIAS_NAME=$(ALIAS_NAME) \
 		FUNCTION_NAME=$(FUNCTION_NAME) \
 		VERSION=$$VERSION
+	@$(MAKE) invoke-lambda-version-cleaner-via-actions \
+		FUNCTION_NAME=$(FUNCTION_NAME)
 	@echo "Deploy Completed."
 
 set-alias-via-actions: ## Set Alias to Lambda Version via Github Actions
@@ -317,6 +344,16 @@ set-alias-via-actions: ## Set Alias to Lambda Version via Github Actions
 			--function-version ${VERSION} && \
 		echo "Created alias '${ALIAS_NAME}' pointing to version ${FUNCTION_NAME}:${VERSION}"; \
 	fi
+
+invoke-lambda-version-cleaner-via-actions: ## Remove unused published versions after deployment via GitHub Actions
+	@echo "Cleaning unused versions of ${FUNCTION_NAME} ..."
+	@aws lambda invoke \
+		--function-name oqtopus-$(PROFILE)-lambda-version-cleaner \
+		--invocation-type Event \
+		--payload '{"functionName":"$(FUNCTION_NAME)"}' \
+		--cli-binary-format raw-in-base64-out \
+		/dev/null >/dev/null
+	@echo "Lambda version cleanup requested."
 
 create-user-admin: ## Create Admin User
 	aws cognito-idp admin-create-user \

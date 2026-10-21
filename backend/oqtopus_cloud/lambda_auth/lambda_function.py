@@ -218,6 +218,35 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     return username
 
 
+@tracer.capture_method
+def _generate_stage_resource_arn(resource: str) -> str:
+    # Generate the stage resource ARN for the API Gateway
+    # NOTE: Cached policies must cover all API resources and methods.
+    # Reference: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
+    arn_parts = resource.split(":")
+
+    if len(arn_parts) != 6:
+        raise AuthError(f"Invalid methodArn: {resource}")
+
+    region = arn_parts[3]
+    account_id = arn_parts[4]
+
+    api_gateway_parts = arn_parts[5].split("/")
+
+    if len(api_gateway_parts) < 2:
+        raise AuthError(f"Invalid methodArn: {resource}")
+
+    api_id = api_gateway_parts[0]
+    stage = api_gateway_parts[1]
+
+    generated_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/{stage}/*/*"
+    logger.info(
+        f"Generated stage resource ARN: {generated_arn} from methodArn: {resource}"
+    )
+
+    return generated_arn
+
+
 def _generate_policy_allow(principal_id="", resource="", user_id=""):
     # Generate allow policy for the API Gateway
     auth_response = {"principalId": principal_id}
@@ -229,7 +258,7 @@ def _generate_policy_allow(principal_id="", resource="", user_id=""):
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Allow",
-                    "Resource": resource,
+                    "Resource": _generate_stage_resource_arn(resource),
                 }
             ],
         }
@@ -249,7 +278,11 @@ def _generate_policy_deny(principal_id="", resource="", user_id=""):
         policy_document = {
             "Version": "2012-10-17",
             "Statement": [
-                {"Action": "execute-api:Invoke", "Effect": "Deny", "Resource": resource}
+                {
+                    "Action": "execute-api:Invoke",
+                    "Effect": "Deny",
+                    "Resource": _generate_stage_resource_arn(resource),
+                }
             ],
         }
         auth_response["policyDocument"] = policy_document

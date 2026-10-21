@@ -45,6 +45,8 @@ locals {
     COGNITO = try(aws_api_gateway_authorizer.cognito[0].id, null)
     LAMBDA  = try(aws_api_gateway_authorizer.lambda[0].id, null)
   }
+
+  otel_layer_enabled = var.otel_collector_layer_arn != ""
 }
 
 data "aws_caller_identity" "current" {}
@@ -78,6 +80,7 @@ resource "aws_lambda_function" "this" {
         { STORAGE_DRIVER = var.storage_driver },
         var.storage_driver == "s3" ? var.storage_env_vars_s3 : {},
         var.storage_driver == "local" ? var.storage_env_vars_local : {},
+        var.storage_driver == "seaweedfs" ? var.storage_env_vars_seaweedfs : {},
         var.storage_driver == "local:minio" ? var.storage_env_vars_local_minio : {},
       ),
       var.sse_bucket != "" ? { SSE_BUCKET = var.sse_bucket } : {},
@@ -88,17 +91,27 @@ resource "aws_lambda_function" "this" {
       var.editable_fields != "" ? { EDITABLE_FIELDS = var.editable_fields } : {},
       var.visible_fields != "" ? { VISIBLE_FIELDS = var.visible_fields } : {},
       var.login_history_enabled != "" ? { LOGIN_HISTORY_ENABLED = var.login_history_enabled } : {},
-      var.otel_enabled ? {
-        OTEL_ENABLED                = "true"
-        OTEL_EXPORTER_OTLP_ENDPOINT = var.otel_exporter_otlp_endpoint
-        OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-        # Cap each export attempt so an unreachable collector cannot push the
-        # function past the API Gateway/Lambda timeout. 0.2s × ~2 retries ≒ 0.4s
-        # worst case; kill switch is otel_enabled = false. Direct export beats a
-        # co-located collector layer here: the layer's own retry queue, which
-        # OTEL_EXPORTER_OTLP_TIMEOUT does not bound, billed ~20s storms on freeze.
-        OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
-      } : {},
+      var.otel_enabled ? merge(
+        {
+          OTEL_ENABLED = "true"
+          # Layer mode exports to the in-environment collector, which acks
+          # from memory (decouple processor) — monitoring health never rides
+          # the response. Direct mode posts straight to the remote collector.
+          OTEL_EXPORTER_OTLP_ENDPOINT = local.otel_layer_enabled ? "http://localhost:4318" : var.otel_exporter_otlp_endpoint
+          OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+          # Cap each export attempt so an unreachable collector cannot push the
+          # function past the API Gateway/Lambda timeout. 0.2s × ~2 retries ≒ 0.4s
+          # worst case; kill switch is otel_enabled = false. In layer mode the
+          # target is local and acks in ~ms, so the cap should never bite.
+          OTEL_EXPORTER_OTLP_TIMEOUT = "0.2"
+        },
+        local.otel_layer_enabled ? {
+          # The layer reads its whole collector config from the env var below
+          # (env confmap provider), so nothing is baked into the function zip.
+          OPENTELEMETRY_COLLECTOR_CONFIG_URI = "env:OTEL_COLLECTOR_CONFIG_CONTENT"
+          OTEL_COLLECTOR_CONFIG_CONTENT      = local.otel_collector_config
+        } : {},
+      ) : {},
       var.lambda_additional_env != null ? var.lambda_additional_env : {},
       # AUTH_MODE is merged LAST so the dedicated, validated var.auth_mode wins:
       # lambda_additional_env must not be able to override it with an unvalidated
@@ -114,6 +127,7 @@ resource "aws_lambda_function" "this" {
   source_code_hash               = filebase64sha256("./bin/${var.identifier}/lambda.zip")
   function_name                  = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
   handler                        = var.lambda_handler
+  layers                         = local.otel_layer_enabled ? [var.otel_collector_layer_arn] : []
   memory_size                    = "1024"
   package_type                   = "Zip"
   reserved_concurrent_executions = var.reserved_concurrent_executions
@@ -350,10 +364,11 @@ resource "aws_api_gateway_deployment" "this" {
   # to the old deployment.
   triggers = {
     redeployment = sha1(jsonencode({
-      module_code   = filesha1("${path.module}/main.tf")
-      authorizer    = var.authorizer_type
-      authorization = aws_api_gateway_method.this.authorization
-      authorizer_id = aws_api_gateway_method.this.authorizer_id
+      module_code                  = filesha1("${path.module}/main.tf")
+      authorizer                   = var.authorizer_type
+      authorization                = aws_api_gateway_method.this.authorization
+      authorizer_id                = aws_api_gateway_method.this.authorizer_id
+      authorizer_cache_ttl_seconds = var.lambda_authorizer_cache_ttl_seconds
     }))
   }
   lifecycle {
@@ -361,6 +376,7 @@ resource "aws_api_gateway_deployment" "this" {
   }
   depends_on = [
     aws_api_gateway_integration.this,
+    aws_api_gateway_authorizer.lambda,
   ]
 }
 
@@ -516,12 +532,16 @@ resource "aws_api_gateway_authorizer" "cognito" {
 }
 
 resource "aws_api_gateway_authorizer" "lambda" {
-  count                            = var.authorizer_type == "LAMBDA" ? 1 : 0
-  name                             = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
-  rest_api_id                      = aws_api_gateway_rest_api.this.id
-  type                             = "REQUEST"
-  identity_source                  = ""
-  authorizer_result_ttl_in_seconds = 0
+  count       = var.authorizer_type == "LAMBDA" ? 1 : 0
+  name        = "${var.product}-${var.org}-${var.env}-${var.identifier}-lambda_auth"
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  type        = "REQUEST"
+  # With caching disabled, leave identity_source empty so the authorizer sees
+  # either Q-API-Token or Authorization and performs the dispatch itself.
+  # API Gateway would otherwise reject Q-API-Token-only requests before the
+  # authorizer runs. Cached callers retain the conventional Authorization key.
+  identity_source                  = var.lambda_authorizer_cache_ttl_seconds == 0 ? "" : "method.request.header.Authorization"
+  authorizer_result_ttl_in_seconds = var.lambda_authorizer_cache_ttl_seconds
   authorizer_uri                   = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_authorizer_arn}:${var.lambda_authorizer_alias}/invocations"
 }
 

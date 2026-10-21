@@ -94,17 +94,33 @@ make setup-uv
 
 以降のステップは別々のターミナルで実行します。各ターミナルで `cd backend` してから make コマンドを実行してください。
 
-### 1. DB・MinIOの起動（ターミナル1）
+### 1. DB・SeaweedFSの起動（ターミナル1）
 
 ```bash
 cd backend
 make up
 ```
 
-MySQL (ポート3306) と MinIO (ポート9000/9001) が起動します。
+MySQL (ポート3306) と SeaweedFS (S3 APIポート8333、Web UIポート9333/9001) が起動します。
 初回起動時はDBの初期化（テーブル作成・テストデータ投入）が自動で行われます。
 
-`make up` は foreground で動作するため、このターミナルはそのまま開いておいてください（停止させたい場合は Ctrl+C）。
+`make up` はコンテナ（DB、ストレージ、otel-collector）をバックグラウンドで起動して終了します。DB とストレージだけを起動する場合は `make infra-up` を使います。
+
+- `make infra-down` は DB とストレージのコンテナだけを停止します。他のコンテナは動いたままで、データは残ります。
+- `make infra-status` は DB とストレージが稼働しているかを表示します。停止中はエラーにならず、状態を判定できないときだけ失敗します。
+- `make down` はこの compose プロジェクトのすべてのコンテナとネットワークを削除します。DB とストレージのデータを保持するボリュームは残ります。
+
+ローカルのデータを破棄して初期データから始め直すときは、ボリュームも削除します。
+
+```bash
+cd backend
+docker compose --profile minio down -v
+make up
+```
+
+`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD` を変更した場合も、同じ手順でボリュームを削除してください。MySQL はデータディレクトリを作成するときにだけ、これらの設定を適用します。
+
+非推奨の MinIO スタックを起動する場合は `make up STORAGE_STACK=minio` を使います。[ストレージバックエンドの選定](../architecture/storage_backend_selection.md) を参照してください。
 
 ### 2. APIの起動
 
@@ -146,6 +162,9 @@ APIドキュメント（Swagger UI）で確認できます：
 - User API: [http://localhost:8080/docs](http://localhost:8080/docs)
 - Provider API: [http://localhost:8888/docs](http://localhost:8888/docs)
 - User Signup API: [http://localhost:8890/docs](http://localhost:8890/docs)（起動した場合）
+
+ストレージ経路だけを切り分けて確認したい場合は`make check-presigned-post`が使えます。
+通常の開発では不要です。詳細は[ストレージバックエンドの選定](../architecture/storage_backend_selection.md)を参照してください。
 
 ## ローカルでのフロントエンド起動
 

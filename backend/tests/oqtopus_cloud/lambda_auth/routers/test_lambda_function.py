@@ -12,6 +12,7 @@ from oqtopus_cloud.lambda_auth.lambda_function import (
     AuthError,
     _generate_policy_allow,
     _generate_policy_deny,
+    _generate_stage_resource_arn,
     _verify_api_token,
     _verify_access_token,
     lambda_handler,
@@ -503,10 +504,36 @@ def test__verify_api_token_unapproved(test_session, monkeypatch):
     no_rehash.assert_not_called()
 
 
-def test__generate_policy_allow():
-    actual = _generate_policy_allow(
-        "fake_username1", 'event["methodArn"]1', "fake_username1"
+def test__generate_stage_resource_arn():
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/GET/foo"
+
+    actual = _generate_stage_resource_arn(method_arn)
+
+    assert (
+        actual
+        == "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/*/*"
     )
+
+
+def test__generate_stage_resource_arn_invalid_arn_format():
+    with pytest.raises(AuthError) as excinfo:
+        _generate_stage_resource_arn("invalid-method-arn")
+
+    assert "Invalid methodArn" in str(excinfo.value)
+
+
+def test__generate_stage_resource_arn_invalid_api_gateway_part():
+    with pytest.raises(AuthError) as excinfo:
+        _generate_stage_resource_arn(
+            "arn:aws:execute-api:ap-northeast-1:123456789012:api-id"
+        )
+
+    assert "Invalid methodArn" in str(excinfo.value)
+
+
+def test__generate_policy_allow():
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/GET/devices"
+    actual = _generate_policy_allow("fake_username1", method_arn, "fake_username1")
     expect = {
         "principalId": "fake_username1",
         "policyDocument": {
@@ -515,7 +542,7 @@ def test__generate_policy_allow():
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Allow",
-                    "Resource": 'event["methodArn"]1',
+                    "Resource": "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/dev/*/*",
                 }
             ],
         },
@@ -526,9 +553,8 @@ def test__generate_policy_allow():
 
 
 def test__generate_policy_deny():
-    actual = _generate_policy_deny(
-        "fake_username2", 'event["methodArn"]2', "fake_username2"
-    )
+    method_arn = "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/prod/POST/jobs"
+    actual = _generate_policy_deny("fake_username2", method_arn, "fake_username2")
     expect = {
         "principalId": "fake_username2",
         "policyDocument": {
@@ -537,7 +563,7 @@ def test__generate_policy_deny():
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Deny",
-                    "Resource": 'event["methodArn"]2',
+                    "Resource": "arn:aws:execute-api:ap-northeast-1:123456789012:api-id/prod/*/*",
                 }
             ],
         },
@@ -551,7 +577,13 @@ def test_lambda_handler_api_token(monkeypatch):
     def fake__verify_api_token(id_token=""):
         return "fake_username"
 
-    input = {"headers": {"q-api-token": "api_token_secret"}, "methodArn": "methodArn"}
+    input = {
+        "headers": {
+            "q-api-token": "api_token_secret",
+            "authorization": "api_token_secret",
+        },
+        "methodArn": "methodArn",
+    }
 
     const = {
         "principalId": "fake_username",

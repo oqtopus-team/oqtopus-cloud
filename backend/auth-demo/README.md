@@ -160,7 +160,7 @@ it tells you nothing about authentication.
 
 | | `make up` (default) | Auth overlay (below) |
 | --- | --- | --- |
-| `ENV` | `local` | `local` (DB/MinIO wiring only) |
+| `ENV` | `local` | `local` (DB/SeaweedFS wiring only) |
 | `AUTH_MODE` | *(unset → `local`)* | `oidc` |
 | Request identity | fixed `admin-email`, no checks | OIDC Bearer **or** `Q-API-Token`, verified |
 | Q-API-Token verified? | **No** | **Yes** (`client.py`) |
@@ -178,7 +178,7 @@ docker compose -f compose.yaml -f compose.auth.yaml up -d --build
 make migrate-up && make seed      # if not already seeded (creates demo@oqtopus.local, approved)
 ```
 
-`ENV` stays `local` (so DB/MinIO wiring is unchanged); `AUTH_MODE=oidc` is the
+`ENV` stays `local` (so DB/SeaweedFS wiring is unchanged); `AUTH_MODE=oidc` is the
 independent switch that turns real authentication on. Keycloak comes up with the
 overlay too — it is only needed to *issue* a token (step 4); verifying a
 `Q-API-Token` itself hits the DB, not Keycloak.

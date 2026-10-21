@@ -7,8 +7,12 @@ from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
 )
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_key,
+)
 from oqtopus_cloud.provider.lambda_function import app
 from oqtopus_cloud.provider.routers.devices import (
+    get_device_info_upload_url,
     update_device,
     update_device_calibration,
     update_device_status,
@@ -16,11 +20,13 @@ from oqtopus_cloud.provider.routers.devices import (
 from oqtopus_cloud.provider.schemas.devices import (
     DeviceDataUpdateResponse,
     DeviceInfoUpdate,
+    DeviceInfoUploadResponse,
     DeviceStatusUpdate,
     UpdateDeviceRequest,
     UpdateDeviceResponse,
 )
 from oqtopus_cloud.provider.schemas.devices import Status as DeviceStatus
+from oqtopus_cloud.provider.schemas.errors import BadRequestResponse
 
 utc = ZoneInfo("UTC")
 client = TestClient(app)
@@ -50,7 +56,6 @@ def _get_model_sim():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
@@ -68,7 +73,6 @@ def _get_model_qpu():
         "n_qubits": 39,
         "basis_gates": '["x", "sx", "rz", "cx"]',
         "instructions": '["measure", "barrier", "reset"]',
-        "device_info": "{}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
         "created_at": datetime(2024, 3, 4, 12, 34, 56),
@@ -93,7 +97,6 @@ def test_update_device_n_qubits(test_db):
     assert device_aft.status == device_bef.status
     assert device_aft.calibrated_at == device_bef.calibrated_at
     assert device_aft.available_at == device_bef.available_at
-    assert device_aft.device_info == device_bef.device_info
     assert device_aft.basis_gates == device_bef.basis_gates
     assert device_aft.instructions == device_bef.instructions
     assert device_aft.pending_jobs == device_bef.pending_jobs
@@ -125,45 +128,101 @@ def test_update_device_status_not_available(test_db):
     assert actual == expected
 
 
-def test_update_device_calibration_qpu(test_db):
+def test_update_device_calibration_qpu(test_db, test_storage):
     # Arrange
     test_db.add(_get_model_qpu())
     test_db.commit()
     device = test_db.get(Device, "SC")
+    device_info_key = get_device_info_key(device.id)
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
-        device_info=json.dumps(_get_calibration_dict()),
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
-    actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
+    actual = update_device_calibration(
+        device_id=device.id, request=request, db=test_db, storage=test_storage
+    )
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
 
 
-def test_update_device_calibration_sim(test_db):
+def test_update_device_calibration_sim(test_db, test_storage):
     # Arrange
     test_db.add(_get_model_sim())
     test_db.commit()
     device = test_db.get(Device, "SC2")
+    device_info_key = get_device_info_key(device.id)
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
     # Act
     request = DeviceInfoUpdate(
-        device_info=json.dumps(_get_calibration_dict()),
         calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
     )
-    actual = update_device_calibration(device_id=device.id, request=request, db=test_db)
+    actual = update_device_calibration(
+        device_id=device.id, request=request, db=test_db, storage=test_storage
+    )
     # Assert
     expected = DeviceDataUpdateResponse(message="Device's data updated")
     assert actual == expected
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC2").calibrated_at == request.calibrated_at
 
 
-def test_update_device_info_timezone(test_db):
-    # Arrange
+def test_get_device_info_upload_url(test_db, test_storage):
     test_db.add(_get_model_qpu())
     test_db.commit()
 
+    actual = get_device_info_upload_url("SC", test_db, test_storage)
+
+    assert isinstance(actual, DeviceInfoUploadResponse)
+    device_info_key = get_device_info_key("SC")
+    assert actual.presigned_url.url.endswith(f"/{device_info_key}")
+    assert actual.presigned_url.fields["key"].endswith(f"/{device_info_key}")
+
+
+def test_update_device_calibration_with_uploaded_device_info(test_db, test_storage):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    device_info_key = get_device_info_key("SC")
+    test_storage.put(key=device_info_key, data=json.dumps(_get_calibration_dict()).encode())
+
+    request = DeviceInfoUpdate(
+        calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+    )
+    actual = update_device_calibration("SC", request, test_db, test_storage)
+
+    assert actual == DeviceDataUpdateResponse(message="Device's data updated")
+    assert test_storage.does_exist(key=device_info_key)
+    assert test_db.get(Device, "SC").calibrated_at == request.calibrated_at
+
+
+def test_update_device_calibration_requires_device_info(test_db, test_storage):
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+
+    request = DeviceInfoUpdate(
+        calibrated_at=datetime.now(ZoneInfo("Asia/Tokyo")),
+    )
+    actual = update_device_calibration("SC", request, test_db, test_storage)
+
+    assert isinstance(actual, BadRequestResponse)
+    assert actual.status_code == 400
+    assert json.loads(actual.body) == {"message": "device_info is required"}
+
+
+def test_update_device_info_timezone(test_db, test_storage):
+    # Arrange
+    test_db.add(_get_model_qpu())
+    test_db.commit()
+    test_storage.put(
+        key=get_device_info_key("SC"),
+        data=json.dumps(_get_calibration_dict()).encode(),
+    )
+
     req = DeviceInfoUpdate.model_validate_json(
-        '{ "device_info": "{}", "calibrated_at": "2025-04-01T12:34:56.789000+09:00" }'
+        '{ "calibrated_at": "2025-04-01T12:34:56.789000+09:00" }'
     )
 
     resp = client.patch("/devices/SC/device_info", content=req.model_dump_json())

@@ -14,7 +14,6 @@ def _get_model_dict():
         "n_qubits": 39,
         "basis_gates": ["x", "sx", "rz", "cx"],
         "instructions": ["measure", "barrier", "reset"],
-        "device_info": "{'n_nodes': 512, 'calibration_data': {'qubit_connectivity': ['(1,4)', '(4,5)', '(5,8)'], 't1': {'0': 55.51, '1': 37.03, '2': 57.13}}",
         "calibrated_at": datetime(2024, 3, 4, 12, 34, 56),
         "description": "State vector-based quantum circuit simulator",
     }
@@ -47,7 +46,6 @@ def test_model_to_schema_dict():
         "n_qubits": "n_qubits",
         "basis_gates": "basis_gates",
         "instructions": "instructions",
-        "device_info": "device_info",
         "calibrated_at": "calibrated_at",
     }
 

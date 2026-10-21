@@ -126,8 +126,10 @@ def fake_boto3_client(service, region_name=None, **kwargs):
 
 
 @pytest.fixture(autouse=True)
-def override_boto3_client(monkeypatch):
+def override_boto3_client(monkeypatch, tmp_path):
     monkeypatch.setattr(boto3, "client", fake_boto3_client)
+    monkeypatch.setenv("STORAGE_DRIVER", "local")
+    monkeypatch.setenv("STORAGE_LOCAL_BASE_PATH", str(tmp_path / "storage"))
 
 
 @pytest.fixture
