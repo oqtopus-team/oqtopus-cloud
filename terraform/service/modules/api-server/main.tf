@@ -116,7 +116,7 @@ resource "aws_lambda_function" "this" {
   handler                        = var.lambda_handler
   memory_size                    = "1024"
   package_type                   = "Zip"
-  reserved_concurrent_executions = "-1"
+  reserved_concurrent_executions = var.reserved_concurrent_executions
   role                           = aws_iam_role.lambda.arn
   runtime                        = "python3.12"
   skip_destroy                   = "false"
@@ -480,6 +480,10 @@ resource "aws_api_gateway_method_settings" "this" {
     metrics_enabled      = true
     logging_level        = "ERROR"
     cache_data_encrypted = true
+    # -1 = no override (fall back to the account-level throttle). Positive values
+    # bound the steady-state rate/burst as a backstop behind the WAF rate rule.
+    throttling_rate_limit  = var.throttling_rate_limit
+    throttling_burst_limit = var.throttling_burst_limit
   }
 
   depends_on = [aws_api_gateway_account.this]
@@ -585,4 +589,134 @@ resource "aws_api_gateway_integration_response" "options" {
     "method.response.header.Access-Control-Allow-Methods" = "'${var.allow_methods}'",
   }
   depends_on = [aws_api_gateway_integration.options]
+}
+
+# ── Edge / abuse-protection alarms (#4) ──────────────────────────────────────
+# Case A removes the API Gateway authorizer, so unauthenticated floods and
+# Q-API-Token brute force reach this Lambda. These alarms surface abuse and the
+# effects of the reserved-concurrency / throttling caps. All are gated on
+# var.enable_abuse_alarms; actions are optional (var.alarm_actions).
+
+locals {
+  abuse_alarm_count = var.enable_abuse_alarms ? 1 : 0
+  # ConcurrentExecutions is only meaningful once a reserved cap exists.
+  concurrency_alarm_count = var.enable_abuse_alarms && var.reserved_concurrent_executions > 0 ? 1 : 0
+  alarm_name_prefix       = "${var.product}-${var.org}-${var.env}-${var.identifier}-api"
+}
+
+# A Lambda throttle means the (reserved or account) concurrency ceiling was hit:
+# either a genuine traffic spike or a flood exhausting capacity. Alert eagerly.
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
+  count = local.abuse_alarm_count
+
+  alarm_name          = "${local.alarm_name_prefix}-lambda-throttles"
+  alarm_description   = "Lambda is being throttled -- concurrency ceiling reached (flood or under-sized reserved concurrency)."
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  dimensions          = { FunctionName = aws_lambda_function.this.function_name }
+  statistic           = "Sum"
+  period              = var.alarm_period_seconds
+  evaluation_periods  = var.alarm_evaluation_periods
+  threshold           = var.alarm_throttle_threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
+}
+
+# Lambda INVOCATION errors only: unhandled exceptions, timeouts, runtime faults.
+# This does NOT catch HTTP 500s that FastAPI/Mangum returns as a normal proxy
+# response -- those are a successful invocation to Lambda. Application 5XXs are
+# covered by the api_5xx_spike alarm below.
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  count = local.abuse_alarm_count
+
+  alarm_name          = "${local.alarm_name_prefix}-lambda-errors"
+  alarm_description   = "Lambda invocation errors (unhandled exceptions / timeouts / runtime faults) are elevated. Does not include app-returned HTTP 500s (see the 5XX alarm)."
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = aws_lambda_function.this.function_name }
+  statistic           = "Sum"
+  period              = var.alarm_period_seconds
+  evaluation_periods  = var.alarm_evaluation_periods
+  threshold           = var.alarm_error_threshold
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
+}
+
+# Concurrency approaching the reserved cap: early warning before throttling.
+resource "aws_cloudwatch_metric_alarm" "lambda_concurrency" {
+  count = local.concurrency_alarm_count
+
+  alarm_name        = "${local.alarm_name_prefix}-lambda-concurrency-high"
+  alarm_description = "Concurrent executions near the reserved cap -- throttling of real users is imminent."
+  namespace         = "AWS/Lambda"
+  metric_name       = "ConcurrentExecutions"
+  dimensions        = { FunctionName = aws_lambda_function.this.function_name }
+  statistic         = "Maximum"
+  period            = var.alarm_period_seconds
+  # ceil (not floor): at a small reserved cap, floor rounds the warning line down
+  # too far -- e.g. reserved=1 -> floor(0.8)=0 would fire on any invocation, and
+  # reserved=2 -> floor(1.6)=1 warns at 50%. ceil keeps the line just below the cap.
+  evaluation_periods  = var.alarm_evaluation_periods
+  threshold           = ceil(var.reserved_concurrent_executions * 0.8)
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
+}
+
+# A spike of 4XX (mostly 401/403 now that auth runs in-app) is the clearest
+# signal of credential stuffing or a misbehaving client hammering the endpoint.
+resource "aws_cloudwatch_metric_alarm" "api_4xx_spike" {
+  count = local.abuse_alarm_count
+
+  alarm_name        = "${local.alarm_name_prefix}-4xx-spike"
+  alarm_description = "API Gateway 4XX spike -- likely auth brute force / credential stuffing against the in-app verifier."
+  namespace         = "AWS/ApiGateway"
+  metric_name       = "4XXError"
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.this.name
+    Stage   = aws_api_gateway_stage.this.stage_name
+  }
+  statistic           = "Sum"
+  period              = var.alarm_period_seconds
+  evaluation_periods  = var.alarm_evaluation_periods
+  threshold           = var.alarm_4xx_threshold
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
+}
+
+# App-level 5XX: API Gateway counts HTTP 500s returned by the Lambda proxy
+# response, which the AWS/Lambda Errors metric does NOT (a 500 body is still a
+# successful invocation). This is the alarm that catches DB/downstream failures
+# and argon2-induced errors that FastAPI maps to a 500.
+resource "aws_cloudwatch_metric_alarm" "api_5xx_spike" {
+  count = local.abuse_alarm_count
+
+  alarm_name        = "${local.alarm_name_prefix}-5xx-spike"
+  alarm_description = "API Gateway 5XX spike -- app-returned server errors (DB/downstream failures) that the Lambda Errors metric does not capture."
+  namespace         = "AWS/ApiGateway"
+  metric_name       = "5XXError"
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.this.name
+    Stage   = aws_api_gateway_stage.this.stage_name
+  }
+  statistic           = "Sum"
+  period              = var.alarm_period_seconds
+  evaluation_periods  = var.alarm_evaluation_periods
+  threshold           = var.alarm_5xx_threshold
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
 }

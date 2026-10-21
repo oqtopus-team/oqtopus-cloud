@@ -102,6 +102,16 @@ module "user_api" {
     "STORAGE_S3_REGION"      = var.region
     "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
   }
+
+  # Edge / abuse protection (#4): bound the blast radius now that case A lets
+  # every request reach the Lambda and run in-app verification.
+  reserved_concurrent_executions = var.user_api_reserved_concurrency
+  throttling_rate_limit          = var.user_api_throttling_rate_limit
+  throttling_burst_limit         = var.user_api_throttling_burst_limit
+  enable_abuse_alarms            = var.user_api_enable_abuse_alarms
+  alarm_actions                  = var.alarm_sns_topic_arns
+  alarm_4xx_threshold            = var.user_api_alarm_4xx_threshold
+  alarm_5xx_threshold            = var.user_api_alarm_5xx_threshold
 }
 
 module "provider_api" {

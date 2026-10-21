@@ -101,6 +101,16 @@ module "user_api" {
   otel_enabled                   = var.otel_enabled
   otel_exporter_otlp_endpoint    = var.otel_exporter_otlp_endpoint
   lambda_log_retention_days      = var.lambda_log_retention_days
+
+  # Edge / abuse protection (#4): bound the blast radius now that case A lets
+  # every request reach the Lambda and run in-app verification.
+  reserved_concurrent_executions = var.user_api_reserved_concurrency
+  throttling_rate_limit          = var.user_api_throttling_rate_limit
+  throttling_burst_limit         = var.user_api_throttling_burst_limit
+  enable_abuse_alarms            = var.user_api_enable_abuse_alarms
+  alarm_actions                  = var.alarm_sns_topic_arns
+  alarm_4xx_threshold            = var.user_api_alarm_4xx_threshold
+  alarm_5xx_threshold            = var.user_api_alarm_5xx_threshold
 }
 
 module "provider_api" {
