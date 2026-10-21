@@ -10,6 +10,7 @@ WORKDIR /app
 
 COPY . /app
 
+# oqtopus-auth is resolved from PyPI (pinned in uv.lock); no local path source.
 RUN uv sync --frozen
 
 WORKDIR /app/backend
