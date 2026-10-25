@@ -56,6 +56,10 @@ router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
 
 DEFAULT_PAGE_INDEX = 1
 DEFAULT_ITEMS_PER_PAGE = 100
+# maximum of the page parameter in the OpenAPI spec
+MAX_PAGE_INDEX = 4294967295
+# fastapi_pagination.Params rejects a larger size
+MAX_ITEMS_PER_PAGE = 100
 
 S3_JOB_INFO_INPUT_FILE = "input.zip"
 
@@ -242,7 +246,10 @@ def can_user_access_device(username: str, device_id: str, db: Session) -> bool:
     "/jobs",
     response_model=list[Job],
     response_model_exclude_none=True,
-    responses={500: {"model": Message}},
+    responses={
+        400: {"model": Message},
+        500: {"model": Message},
+    },
 )
 @tracer.capture_method
 def get_jobs(
@@ -311,12 +318,17 @@ def get_jobs(
                 )
 
         # Filtering Jobs
-        if start_time is not None:
-            stime = datetime.fromisoformat(start_time).astimezone(utc)
-            stmt = stmt.filter(JobModel.submitted_at >= stime)
-        if end_time is not None:
-            etime = datetime.fromisoformat(end_time).astimezone(utc)
-            stmt = stmt.filter(JobModel.submitted_at <= etime)
+        try:
+            if start_time is not None:
+                stime = datetime.fromisoformat(start_time).astimezone(utc)
+                stmt = stmt.filter(JobModel.submitted_at >= stime)
+            if end_time is not None:
+                etime = datetime.fromisoformat(end_time).astimezone(utc)
+                stmt = stmt.filter(JobModel.submitted_at <= etime)
+        except (ValueError, OverflowError):
+            return BadRequestResponse(
+                message="start_time and end_time must be ISO 8601 date-times within the supported range"
+            )
         if status is not None:
             stmt = stmt.filter(JobModel.status == status)
         if q is not None:
@@ -328,12 +340,20 @@ def get_jobs(
                 )
             )
 
-        set_params(
-            Params(
+        try:
+            params = Params(
                 size=int(size) if size is not None else DEFAULT_ITEMS_PER_PAGE,
                 page=int(page) if page is not None else DEFAULT_PAGE_INDEX,
             )
-        )
+        except ValueError:
+            # int() rejects non-integers, and Params rejects page < 1 and a size
+            # outside 1..MAX_ITEMS_PER_PAGE (its ValidationError is a ValueError)
+            params = None
+        if params is None or params.page > MAX_PAGE_INDEX:
+            return BadRequestResponse(
+                message=f"page must be an integer from 1 to {MAX_PAGE_INDEX} and size an integer from 1 to {MAX_ITEMS_PER_PAGE}"
+            )
+        set_params(params)
         set_page(Page[JobModel])
         models = paginate(db, stmt)
 
