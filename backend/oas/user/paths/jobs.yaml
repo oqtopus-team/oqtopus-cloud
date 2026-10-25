@@ -78,7 +78,7 @@ jobs:
         schema:
           type: integer
           minimum: 1
-          maximum: 65535
+          maximum: 100
           default: 10
       - name: order
         in: query
@@ -99,6 +99,14 @@ jobs:
               type: array
               items:
                 $ref: "../schemas/jobs.yaml#/jobs.Job"
+      "400":
+        description: Bad Request
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/error.yaml#/error.BadRequest"
+            example:
+              message: Bad request malformed input data
       "401":
         description: Unauthorized
         content:
