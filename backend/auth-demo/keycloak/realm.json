@@ -101,10 +101,13 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:4181/oauth2/callback",
-        "http://localhost:4181/*"
+        "http://localhost:4181/*",
+        "http://localhost:4201/oauth2/callback",
+        "http://localhost:4201/*"
       ],
       "webOrigins": [
-        "http://localhost:4181"
+        "http://localhost:4181",
+        "http://localhost:4201"
       ],
       "defaultClientScopes": [
         "basic",
