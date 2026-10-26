@@ -87,8 +87,59 @@
         "provider.write"
       ],
       "optionalClientScopes": []
+    },
+    {
+      "clientId": "oqtopus-admin-oauth2-proxy",
+      "name": "OQTOPUS Admin oauth2-proxy",
+      "description": "Browser (BFF) client for the Admin API, fronted by its own oauth2-proxy on :4181.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "admin-oauth2-proxy-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:4181/oauth2/callback",
+        "http://localhost:4181/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4181"
+      ],
+      "defaultClientScopes": [
+        "basic",
+        "email",
+        "profile"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
+  "roles": {
+    "realm": [
+      {
+        "name": "oqtopus-admin",
+        "description": "Grants access to the OQTOPUS Admin API (checked by the backend as ADMIN_REQUIRED_ROLE)."
+      }
+    ]
+  },
   "clientScopes": [
     {
       "name": "provider.write",
@@ -272,6 +323,22 @@
                 "read.only": ["true"],
                 "always.read.value.from.ldap": ["true"],
                 "is.mandatory.in.ldap": ["true"]
+              }
+            },
+            {
+              "name": "oqtopus-admin-role",
+              "providerId": "role-ldap-mapper",
+              "config": {
+                "mode": ["READ_ONLY"],
+                "use.realm.roles.mapping": ["true"],
+                "roles.dn": ["ou=groups,dc=oqtopus,dc=local"],
+                "role.name.ldap.attribute": ["cn"],
+                "role.object.classes": ["groupOfNames"],
+                "membership.ldap.attribute": ["member"],
+                "membership.attribute.type": ["DN"],
+                "membership.user.ldap.attribute": ["uid"],
+                "user.roles.retrieve.strategy": ["LOAD_ROLES_BY_MEMBER_ATTRIBUTE"],
+                "memberof.ldap.attribute": ["memberOf"]
               }
             }
           ]

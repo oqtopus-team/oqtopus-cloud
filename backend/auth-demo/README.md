@@ -60,10 +60,13 @@ Wait ~30–60s for Keycloak to import the realm and OpenLDAP to seed
 
 | What | Value |
 | --- | --- |
-| LDAP demo user | `demo` / `demopassword` (email `demo@oqtopus.local`) |
+| LDAP demo user (admin) | `demo` / `demopassword` (email `demo@oqtopus.local`) |
+| LDAP demo user (non-admin) | `operator` / `operatorpassword` (email `operator@oqtopus.local`) |
 | Keycloak admin console | http://localhost:8081  (admin / admin) |
 | oauth2-proxy (app entry) | http://localhost:4180 |
 | User API (direct) | http://localhost:8080 |
+| oauth2-proxy — admin (app entry) | http://localhost:4181 |
+| Admin API (direct) | http://localhost:8889 |
 
 ## Try it — browser (full flow)
 
@@ -111,6 +114,61 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer bad.jwt" http
 - `auth-demo/ldap/demo.ldif` — the seed directory entry (uid=demo, mail=…).
 - `auth-demo/keycloak/realm.json` — realm `oqtopus`, the `oqtopus-oauth2-proxy`
   client, and the LDAP user-federation provider + attribute mappers.
+
+### Admin API (role-gated, OIDC)
+
+The **Admin API** runs the same flexible-auth pattern but with an
+operator-authorization model instead of the User API's DB approval gate:
+
+- `admin-api` (`:8889`) runs `AUTH_MODE=oidc`, behind its own
+  `oauth2-proxy-admin` (`:4181`) with a separate client/cookie.
+- The token is bound by the **authorized party** (`azp` = the
+  `oqtopus-admin-oauth2-proxy` client) rather than an audience mapper
+  (`OIDC_CLIENT_ID=oqtopus-admin-oauth2-proxy`, `OIDC_CLIENT_ID_CLAIM=azp`).
+- Authorization requires the **`oqtopus-admin` realm role** (read from
+  `realm_access.roles`, configured via `ADMIN_REQUIRED_ROLE`). The role is
+  granted by **group membership**, not to everyone: the LDAP group
+  `cn=oqtopus-admin,ou=groups` is mapped to the realm role by a Keycloak
+  `role-ldap-mapper`. `demo` is a member (→ admin, **200**); `operator` is not
+  (→ authenticated but not permitted, **403**). This mirrors AWS, where admins
+  live in a separate Cognito pool — here the separation is a group/role instead
+  of a second directory. On AWS the Admin API keeps the API Gateway Cognito
+  authorizer; this OIDC path is on-prem only.
+
+Verify the **browser path** (the real flow — a proxy session, not a hand-made
+Bearer): open <http://localhost:4181/users> and log in through the admin
+oauth2-proxy.
+
+- as `demo` (admin group member) → **200**
+- as `operator` (not a member) → **403** (authenticated, but lacks the role)
+- with no session → redirected to login; the admin proxy uses its own cookie
+  (`_oauth2_proxy_admin`), so a User-API session at `:4180` does not leak in.
+
+A direct backend check (bypassing the proxy, hand-made Bearer) is also possible
+and useful to isolate the API from the proxy:
+
+```bash
+# helper: token straight from Keycloak for the admin client
+tok() { curl -s http://localhost:8081/realms/oqtopus/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=oqtopus-admin-oauth2-proxy \
+  -d client_secret=admin-oauth2-proxy-secret -d scope="openid email profile" \
+  -d username="$1" -d password="$2" | jq -r .access_token; }
+
+curl -s -o /dev/null -w 'demo     -> %{http_code}\n' -H "Authorization: Bearer $(tok demo demopassword)"         http://localhost:8889/users  # 200
+curl -s -o /dev/null -w 'operator -> %{http_code}\n' -H "Authorization: Bearer $(tok operator operatorpassword)" http://localhost:8889/users  # 403
+```
+
+> This `:4181` entry is a backend smoke test: it forwards the **id token** as the
+> Bearer (like the User API's `:4180`), so the realm-roles mapper emits
+> `realm_access.roles` into both tokens. The production-shaped **access token**
+> path — nginx converting `X-Auth-Request-Access-Token` to `Authorization`, as in
+> `nginx.conf` `/api/` — is the single-origin front door added with the SPA in
+> `compose.frontend.yaml`.
+
+> First boot forces TOTP (`CONFIGURE_TOTP` is a default required action), which
+> blocks a scripted password grant with `Account is not fully set up`. Complete
+> the one-time TOTP setup via the browser, or clear the users' required actions
+> through the Keycloak admin API first.
 
 ### The Keycloak-in-Docker hostname split
 

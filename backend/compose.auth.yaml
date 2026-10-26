@@ -127,3 +127,69 @@ services:
     depends_on:
       keycloak:
         condition: service_started
+
+  # Switch the Admin API to OIDC auth for the demo (browser flow, like the User
+  # API, but behind its own oauth2-proxy below). ENV stays `local`. Admin
+  # authorization is role-based: the caller must hold the `oqtopus-admin` realm
+  # role (realm_access.roles), not a DB approval. The token is bound by the
+  # authorized party (azp = the admin oauth2-proxy client) instead of an
+  # audience mapper, so no extra realm audience mapper is needed.
+  admin-api:
+    environment:
+      AUTH_MODE: oidc
+      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
+      OIDC_CLIENT_ID: "oqtopus-admin-oauth2-proxy"
+      OIDC_CLIENT_ID_CLAIM: "azp"
+      ADMIN_REQUIRED_ROLE: "oqtopus-admin"
+      # ADMIN_PRINCIPAL_CLAIM defaults to preferred_username; ADMIN_ROLES_CLAIM
+      # defaults to realm_access.roles -- both match Keycloak's access token.
+    depends_on:
+      keycloak:
+        condition: service_started
+
+  # Backend browser smoke-test entry for the Admin API, mirroring the User API's
+  # :4180 proxy: it upstreams directly to admin-api and passes the OIDC *id
+  # token* as the Bearer (`--pass-authorization-header`). The id token therefore
+  # carries azp + realm_access.roles (the realm-roles mapper sets
+  # id.token.claim=true), which is what admin-api binds and authorizes on.
+  # The production-shaped *access token* path (nginx converting
+  # X-Auth-Request-Access-Token to Authorization, as in nginx.conf `/api/`) is
+  # the single-origin front door added with the SPA in compose.frontend.yaml.
+  # Separate client/cookie/secret from the User proxy so sessions don't mix.
+  oauth2-proxy-admin:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    depends_on:
+      keycloak:
+        condition: service_started
+      admin-api:
+        condition: service_started
+    command:
+      - --provider=oidc
+      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --skip-oidc-discovery=true
+      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
+      - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
+      - --client-id=oqtopus-admin-oauth2-proxy
+      - --client-secret=admin-oauth2-proxy-secret
+      - --redirect-url=http://localhost:4181/oauth2/callback
+      - --upstream=http://admin-api:8889
+      - --http-address=0.0.0.0:4181
+      # Distinct cookie name AND secret from the User API's proxy: cookies are
+      # not isolated by port (same localhost, Path=/), so a shared default name
+      # would let the two proxies read each other's session.
+      - --cookie-name=_oauth2_proxy_admin
+      - --cookie-secret=fedcba9876543210fedcba9876543210
+      - --cookie-secure=false
+      - --email-domain=*
+      - --scope=openid email profile
+      - --insecure-oidc-allow-unverified-email=true
+      - --skip-provider-button=true
+      - --pass-authorization-header=true
+      - --pass-access-token=true
+      - --set-xauthrequest=true
+      - --pass-user-headers=true
+    ports:
+      - "4181:4181"
+    restart: unless-stopped
