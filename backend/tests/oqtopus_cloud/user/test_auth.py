@@ -109,3 +109,14 @@ def test_oidc_authenticated_but_unapproved_is_403(oidc_mode, monkeypatch):
     )
     resp = client.get("/devices", headers={"Authorization": "Bearer good.jwt"})
     assert resp.status_code == 403
+
+
+def test_no_aws_context_or_correlation_header_does_not_crash(oidc_mode, monkeypatch):
+    # On-prem shape: ENV != local, no AWS Lambda context in scope, and nginx did
+    # not add X-Correlation-Id. The correlation-id step must fall back to a
+    # generated id instead of raising KeyError before auth runs: a missing token
+    # then yields a clean 401 (not a 500), with a generated correlation id.
+    monkeypatch.setenv("ENV", "prod")
+    resp = client.get("/devices")
+    assert resp.status_code == 401
+    assert resp.headers.get("X-Correlation-Id")
