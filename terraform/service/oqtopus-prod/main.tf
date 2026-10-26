@@ -172,15 +172,20 @@ module "admin_api" {
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
   authorizer_type                        = "COGNITO"
-  manage_cognito_user_pool               = true
-  power_tools_metrics_namespace          = "admin-api"
-  power_tools_service_name               = "admin-api"
-  allow_origins                          = "*" # restrict this depending on the client
-  allow_credentials                      = "true"
-  allow_methods                          = "GET,POST,PUT,PATCH,DELETE"
-  allow_headers                          = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
-  log_level                              = "INFO"
-  storage_driver                         = "s3"
+  # Admin keeps the API Gateway Cognito authorizer on AWS (not case A), so the
+  # app runs AUTH_MODE=aws and reads the authorizer's claims. Hardcoded, not a
+  # variable: AUTH_MODE=oidc here would contradict the Cognito authorizer, which
+  # still gates the edge. OIDC admin (role-gated, in-app) is on-prem only.
+  auth_mode                     = "aws"
+  manage_cognito_user_pool      = true
+  power_tools_metrics_namespace = "admin-api"
+  power_tools_service_name      = "admin-api"
+  allow_origins                 = "*" # restrict this depending on the client
+  allow_credentials             = "true"
+  allow_methods                 = "GET,POST,PUT,PATCH,DELETE"
+  allow_headers                 = "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token"
+  log_level                     = "INFO"
+  storage_driver                = "s3"
   storage_env_vars_s3 = {
     "STORAGE_S3_REGION"      = var.region
     "STORAGE_S3_BUCKET_NAME" = data.terraform_remote_state.infrastructure.outputs.s3.s3_bucket_name
