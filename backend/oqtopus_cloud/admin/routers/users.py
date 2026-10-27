@@ -12,6 +12,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
+    NotImplementedErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
@@ -271,6 +272,7 @@ def update_user_status(
     responses={
         404: {"model": Message},
         500: {"model": Message},
+        501: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -278,7 +280,26 @@ def delete_user(
     event: Event,
     user_id: str,
     db: Session = Depends(get_db),
-) -> None | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> (
+    None
+    | NotFoundErrorResponse
+    | NotImplementedErrorResponse
+    | InternalServerErrorResponse
+):
+    # Deletion removes the DB row AND the Cognito user. In oidc mode the account
+    # lives in an external IdP (e.g. Keycloak) that we have no delete driver for,
+    # so proceeding would delete the DB row and then fail at the Cognito call --
+    # a partial success that leaves the IdP account orphaned. Refuse up front,
+    # before any DB mutation, until an IdP-specific delete path exists.
+    if getattr(event.state, "auth_method", None) == "oidc":
+        logger.warning("User deletion is not supported in AUTH_MODE=oidc")
+        return NotImplementedErrorResponse(
+            message=(
+                "User deletion is not supported in the current auth mode "
+                "(no IdP delete driver)."
+            )
+        )
+
     user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)

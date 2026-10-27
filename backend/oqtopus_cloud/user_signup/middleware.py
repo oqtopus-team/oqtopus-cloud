@@ -1,4 +1,5 @@
 import os
+import uuid
 
 from fastapi import Request
 from fastapi.exceptions import HTTPException
@@ -14,7 +15,12 @@ class CustomMiddleware(BaseHTTPMiddleware):
             logger.info("Running in local environment")
             corr_id = "local-correlation-id"
         if not corr_id:
-            corr_id = request.scope["aws.context"].aws_request_id
+            # On AWS the Lambda context carries a request id; off AWS (e.g.
+            # on-prem behind nginx, which does not add X-Correlation-Id) it is
+            # absent, so fall back to a generated id rather than raising
+            # KeyError before auth even runs.
+            aws_context = request.scope.get("aws.context")
+            corr_id = getattr(aws_context, "aws_request_id", None) or str(uuid.uuid4())
 
         logger.set_correlation_id(corr_id)
 
