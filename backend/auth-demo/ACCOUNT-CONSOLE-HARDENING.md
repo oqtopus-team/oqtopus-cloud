@@ -17,6 +17,25 @@ implements, and what a production deployment must add before go-live.
 Rule: **no dual password management.** Keycloak federation runs `editMode=WRITABLE`
 (never `UNSYNCED`, which forks the password into Keycloak-local storage).
 
+### Where each credential lives (verified)
+
+| Component | Stores | Verified |
+| --- | --- | --- |
+| OpenLDAP | the password **hash** (`userPassword: {SSHA}…`, never `{CLEARTEXT}`) | ✅ seed and post-change value are `{SSHA}` |
+| Keycloak | LDAP user link (`federationLink`), MFA (TOTP/WebAuthn), sessions, audit | ✅ no local password credential (`/credentials` empty) |
+| oauth2-proxy | its session cookie / tokens | — |
+| OQTOPUS DB | `users.id`, status, `cognito_id`, and the **Argon2 hash** of a Q-API-Token — **no login password** | ✅ no password column in the model |
+| OQTOPUS API / Frontend | nothing — the password is never received on the on-prem path | ✅ no password endpoint; proxy-mode SPA holds no token |
+| Browser | only types it into the Keycloak Account Console | — |
+
+The human password therefore exists only as an LDAP hash; the Q-API-Token (a
+different credential) exists only as an Argon2 hash in the OQTOPUS DB; MFA lives
+in Keycloak. The OQTOPUS app tier handles no passwords.
+
+> AWS/Cognito caveat: the AWS-only `user_signup` service (sign-up, MFA reset)
+> *receives* a password and relays it to Cognito — it never stores it, and it is
+> not part of the on-prem Keycloak/LDAP topology (not deployed there).
+
 ## Demo vs. production
 
 | Item | Demo (`auth-demo`) | Production (required) |
@@ -39,17 +58,30 @@ production.
 
 - A password change in the Account Console is written through to LDAP
   (`userPassword`); Keycloak keeps no local password copy.
-- `usePasswordModifyExtendedOp=false` in the demo writes `userPassword` directly.
-  In production, prefer **RFC 3062 Password Modify Extended Operation**
-  (`usePasswordModifyExtendedOp=true`) **iff** OpenLDAP is built with it and the
-  password policy overlay is compatible — otherwise keep direct modify. Decide
-  per the OpenLDAP build + `ppolicy` configuration.
+- **`usePasswordModifyExtendedOp=true`** (RFC 3062). This matters for hashing:
+  a plain LDAP *Modify* of `userPassword` (ext-op off) stores the value **as-is**
+  — slapd does not hash it, so the password lands in the directory in cleartext.
+  The Extended Operation instead asks the **server** to set the password, so
+  slapd hashes it per `olcPasswordHash` (default `{SSHA}`). Confirm OpenLDAP
+  supports the ext-op and that the `ppolicy` overlay is compatible.
+- The demo seed (`demo.ldif`) stores `userPassword` as an `{SSHA}` hash, not
+  cleartext, so the directory never holds a `{CLEARTEXT}` value even before any
+  change.
 - `UNSYNCED` is forbidden (it stores the new password in Keycloak, diverging
   from LDAP).
 
 Verified in the demo: change password in Keycloak → old password rejected, new
 password accepted by Keycloak **and** by a direct LDAP bind (`ldapwhoami`),
-proving the write reached LDAP and is not Keycloak-local.
+proving the write reached LDAP and is not Keycloak-local; and the stored
+`userPassword` is `{SSHA}…` both for the seed and after a Keycloak-driven change
+(never `{CLEARTEXT}`). Keycloak holds **no** local password credential for the
+user (`/users/{id}/credentials` is empty; the user is `federationLink`-ed to
+LDAP).
+
+Production note: `{SSHA}` is salted SHA-1; for production prefer a stronger
+scheme via the OpenLDAP password modules + `ppolicy` (e.g. `{PBKDF2-SHA512}` or
+`{ARGON2}`) and set `olcPasswordHash` / the ppolicy `pwdCheckModule`
+accordingly. Verify `userPassword` is never `{CLEARTEXT}` on the real server.
 
 ## 2. Encrypt Keycloak→LDAP (TLS) — production
 
@@ -95,11 +127,14 @@ Example OpenLDAP ACL (`olcAccess`) sketch — scope writes to the OQTOPUS people
 subtree and to `userPassword` only:
 
 ```ldif
-# userPassword: the service account may change it; users may change their own;
-# anonymous may bind (compare) for authentication; nobody else can read it.
+# userPassword: the service account may CHANGE it but must not READ it. Use
+# granular privileges `=wx` (write + auth), NOT `write` — in OpenLDAP's
+# cumulative model `write` implies read. With the Password Modify Ext Op the
+# server performs the change and hashes it, so the account never handles the
+# hash. Users may change their own; anonymous may bind (compare) to authenticate.
 olcAccess: to dn.subtree="ou=people,dc=oqtopus,dc=local" attrs=userPassword
-  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=local" write
-  by self write
+  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=local" =wx
+  by self =wx
   by anonymous auth
   by * none
 # other attributes: service account reads; users read their own; else none.

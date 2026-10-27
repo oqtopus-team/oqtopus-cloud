@@ -17,7 +17,9 @@ cn: OQTOPUS Demo User
 sn: Demo
 givenName: OQTOPUS
 mail: demo@oqtopus.local
-userPassword: demopassword
+# {SSHA} hash of "demopassword" (slappasswd). Seeding a hash, not cleartext, so
+# the directory never holds a {CLEARTEXT} password even for the demo user.
+userPassword: {SSHA}7G9B6lJknWrpL3A5vOuHHNJDAPhPGHth
 
 # A second user who is NOT in the admin group, to demonstrate the Admin API's
 # role gate: this user authenticates fine but gets 403 from admin-api because
@@ -29,7 +31,8 @@ cn: OQTOPUS Operator
 sn: Operator
 givenName: OQTOPUS
 mail: operator@oqtopus.local
-userPassword: operatorpassword
+# {SSHA} hash of "operatorpassword".
+userPassword: {SSHA}+JxFwFg+ibPYsuurEhBWWqhzk0KW+Ocg
 
 # Admin group. Membership here (via the Keycloak role-ldap-mapper) grants the
 # `oqtopus-admin` realm role -- so only `demo` is an admin, not `operator`.

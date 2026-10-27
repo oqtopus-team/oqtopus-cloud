@@ -423,7 +423,7 @@
           "importEnabled": ["true"],
           "syncRegistrations": ["false"],
           "vendor": ["other"],
-          "usePasswordModifyExtendedOp": ["false"],
+          "usePasswordModifyExtendedOp": ["true"],
           "usernameLDAPAttribute": ["uid"],
           "rdnLDAPAttribute": ["uid"],
           "uuidLDAPAttribute": ["entryUUID"],
