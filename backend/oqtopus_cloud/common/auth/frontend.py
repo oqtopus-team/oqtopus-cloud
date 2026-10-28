@@ -150,14 +150,36 @@ def _identity_via_cognito_sub(claims: dict) -> Identity:
     if not sub or not isinstance(sub, str):
         raise AuthError(f"Token is missing the '{principal_claim}' claim")
 
+    # Deferred import avoids a frontend<->provisioning module cycle.
+    from oqtopus_cloud.common.auth.provisioning import (  # noqa: PLC0415
+        auto_provision_enabled,
+        provision_oidc_user,
+    )
+
     # Resolve users.id/email via users.cognito_id (+ approved gate). A DB error
-    # propagates (500); None means unknown or unapproved -> 403. The email is
-    # taken from the DB, since Cognito access tokens carry no email claim.
+    # propagates (500); None means unknown or unapproved -> 403.
     resolved = resolve_user_by_cognito_id(sub)
     if resolved is None:
-        raise AuthorizationError(f"No approved user for {principal_claim}={sub!r}")
+        # On-prem first login (OIDC_AUTO_PROVISION): there is no sign-up flow, so
+        # create an `unapproved` row keyed by `sub` -> users.cognito_id, then
+        # re-resolve. The row is unapproved, so this first request still 403s
+        # until an admin approves. A conflict raises (403) without a DB change.
+        if auto_provision_enabled():
+            provision_oidc_user(sub, claims)
+            resolved = resolve_user_by_cognito_id(sub)
+        if resolved is None:
+            raise AuthorizationError(f"No approved user for {principal_claim}={sub!r}")
 
     user_id, email = resolved
+    # On-prem: never auto-update a drifted email. If the verified token's email
+    # differs from the stored one, reject (403) rather than trust the token.
+    # Skipped on AWS (no auto-provision; access tokens carry no email claim).
+    if auto_provision_enabled():
+        token_email = claims.get("email")
+        if isinstance(token_email, str) and token_email and token_email != email:
+            raise AuthorizationError(
+                f"Token email does not match the record for {principal_claim}={sub!r}"
+            )
     return Identity(user_id=user_id, email=email, auth_method="oidc")
 
 

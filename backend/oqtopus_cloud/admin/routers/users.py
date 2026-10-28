@@ -175,6 +175,7 @@ def get_user(
 )
 @tracer.capture_method
 def update_user_status(
+    event: Event,
     user_id: str,
     update_user_request: UpdateUserRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
@@ -193,7 +194,27 @@ def update_user_status(
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
 
-        if update_user_request.email:
+        # Phase 1 keeps the invariant users.id = email, so in the on-prem OIDC
+        # deployment changing a user's email (which would rewrite users.id) is
+        # not supported. A no-op (same email) is allowed; AWS mode is unchanged.
+        if (
+            update_user_request.email
+            and update_user_request.email != query.id
+            and getattr(event.state, "auth_method", None) == "oidc"
+        ):
+            logger.warning(
+                f"Rejected email change in oidc mode for user_id={user_id}"
+            )
+            return BadRequestErrorResponse(
+                message="Email changes are not supported until the identity migration is complete."
+            )
+
+        # In oidc mode email is immutable: a different value was already rejected
+        # above, and a same-value submission is a no-op (skip the reassignment).
+        if (
+            update_user_request.email
+            and getattr(event.state, "auth_method", None) != "oidc"
+        ):
             if len(update_user_request.email) > LEN_VARCHAR:
                 raise FormatError(
                     FIELD_TOO_LONG_MESSAGE.format(

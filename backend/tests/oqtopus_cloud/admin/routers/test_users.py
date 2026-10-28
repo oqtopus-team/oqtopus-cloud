@@ -575,6 +575,47 @@ def test_patch_user_all_fields(test_db):
     assert actual == expect
 
 
+def _oidc_admin(monkeypatch):
+    # Put the handler in oidc mode and bypass the oidc middleware auth (which
+    # would otherwise need a Bearer token) so we can exercise the handler's
+    # auth_mode()-gated email-change block.
+    from oqtopus_cloud.common.auth.frontend import Identity
+
+    monkeypatch.setenv("AUTH_MODE", "oidc")
+    monkeypatch.setattr(
+        "oqtopus_cloud.admin.middleware.resolve_admin_identity",
+        lambda req: Identity(user_id="admin", auth_method="oidc"),
+    )
+
+
+def test_patch_user_email_change_rejected_in_oidc_mode(test_db, monkeypatch):
+    _oidc_admin(monkeypatch)
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    update_data = UpdateUserRequest(email="new@example.com", display_name="x")
+    response = client.patch("/users/email_1", json=update_data.model_dump())
+    assert response.status_code == 400
+    assert "Email changes are not supported" in response.json()["message"]
+    # DB unchanged.
+    from oqtopus_cloud.common.models.user import User
+
+    row = test_db.get(User, "email_1")
+    assert row is not None and row.email == "email_1"
+
+
+def test_patch_user_same_email_allowed_in_oidc_mode(test_db, monkeypatch):
+    _oidc_admin(monkeypatch)
+    test_db.flush()
+    test_db.add(_get_model(1))
+    test_db.commit()
+    # Same email is a no-op, not a change -> allowed; other fields still update.
+    update_data = UpdateUserRequest(email="email_1", display_name="renamed")
+    response = client.patch("/users/email_1", json=update_data.model_dump())
+    assert response.status_code == 200
+    assert response.json()["display_name"] == "renamed"
+
+
 def test_patch_user_404(
     test_db,
 ):
