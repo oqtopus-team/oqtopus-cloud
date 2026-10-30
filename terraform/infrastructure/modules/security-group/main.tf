@@ -76,14 +76,6 @@ resource "aws_security_group" "secret_manager" {
 }
 
 # Cognito
-resource "aws_security_group" "cognito" { #TODO: can be deleted but need to remove ENI first from the environments already in operation
-  name        = "${var.product}-${var.org}-${var.env}-to-cognito"
-  vpc_id      = var.vpc_id
-  description = "access to Cognito through Nat Gateway"
-  tags = {
-    Name = "${var.product}-${var.org}-${var.env}-to-cognito"
-  }
-}
 resource "aws_security_group" "cognito_idp" {
   name        = "${var.product}-${var.org}-${var.env}-cognito-idp"
   vpc_id      = var.vpc_id

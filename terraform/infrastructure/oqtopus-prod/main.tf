@@ -18,7 +18,7 @@ module "network" {
       name = "public-${az}",
       cidr = var.public_subnet_cidrs[i],
       az   = "${var.region}${az}"
-    }
+    } if contains(var.public_availability_zones, az)
   }
   vpc_flow_log_retention_days = var.vpc_flow_log_retention_days
 }

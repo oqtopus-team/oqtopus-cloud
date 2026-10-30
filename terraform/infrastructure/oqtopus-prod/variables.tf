@@ -46,6 +46,12 @@ variable "availability_zones" {
   default     = ["a", "c", "d"]
 }
 
+variable "public_availability_zones" {
+  description = "Availability Zones (subset of availability_zones) that get a public subnet"
+  type        = list(string)
+  default     = ["a"]
+}
+
 variable "private_subnet_cidrs" {
   description = "CIDR blocks for private subnets"
   type        = list(string)
