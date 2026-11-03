@@ -44,9 +44,12 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       # Fixed public URL so the `iss` claim and browser redirects are stable
-      # at localhost:8081; backchannel-dynamic lets in-network services still
-      # reach Keycloak at http://keycloak:8080.
-      KC_HOSTNAME: "http://localhost:8081"
+      # at ${PUBLIC_HOST}:8081 (set in .env, default localhost); backchannel-
+      # dynamic lets in-network services still reach Keycloak at
+      # http://keycloak:8080.
+      KC_HOSTNAME: "http://${PUBLIC_HOST:-localhost}:8081"
+      # Substituted for ${PUBLIC_HOST} in the imported realm.json.
+      PUBLIC_HOST: "${PUBLIC_HOST:-localhost}"
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
@@ -68,14 +71,14 @@ services:
         condition: service_started
     command:
       - --provider=oidc
-      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --oidc-issuer-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus
       - --skip-oidc-discovery=true
-      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --login-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus/protocol/openid-connect/auth
       - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
       - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
       - --client-id=oqtopus-oauth2-proxy
       - --client-secret=oauth2-proxy-secret
-      - --redirect-url=http://localhost:4180/oauth2/callback
+      - --redirect-url=http://${PUBLIC_HOST:-localhost}:4180/oauth2/callback
       - --upstream=http://user-api:8080
       - --http-address=0.0.0.0:4180
       - --cookie-secret=0123456789abcdef0123456789abcdef
@@ -98,7 +101,7 @@ services:
   user-api:
     environment:
       AUTH_MODE: oidc
-      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_ISSUER: "http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus"
       OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
       # Resource-server audience: the access token carries aud=oqtopus-user-api
       # via the realm's audience mapper.
@@ -120,7 +123,7 @@ services:
   provider-api:
     environment:
       AUTH_MODE: oidc
-      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_ISSUER: "http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus"
       OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
       OIDC_AUDIENCE: "oqtopus-provider-api"
       PROVIDER_REQUIRED_SCOPE: "provider.write"
@@ -137,7 +140,7 @@ services:
   admin-api:
     environment:
       AUTH_MODE: oidc
-      OIDC_ISSUER: "http://localhost:8081/realms/oqtopus"
+      OIDC_ISSUER: "http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus"
       OIDC_JWKS_URL: "http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs"
       OIDC_CLIENT_ID: "oqtopus-admin-oauth2-proxy"
       OIDC_CLIENT_ID_CLAIM: "azp"
@@ -166,14 +169,14 @@ services:
         condition: service_started
     command:
       - --provider=oidc
-      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --oidc-issuer-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus
       - --skip-oidc-discovery=true
-      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --login-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus/protocol/openid-connect/auth
       - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
       - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
       - --client-id=oqtopus-admin-oauth2-proxy
       - --client-secret=admin-oauth2-proxy-secret
-      - --redirect-url=http://localhost:4181/oauth2/callback
+      - --redirect-url=http://${PUBLIC_HOST:-localhost}:4181/oauth2/callback
       - --upstream=http://admin-api:8889
       - --http-address=0.0.0.0:4181
       # Distinct cookie name AND secret from the User API's proxy: cookies are

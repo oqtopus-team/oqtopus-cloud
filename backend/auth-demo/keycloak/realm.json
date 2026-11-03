@@ -53,11 +53,17 @@
         "http://localhost:4180/oauth2/callback",
         "http://localhost:4180/*",
         "http://localhost:4200/oauth2/callback",
-        "http://localhost:4200/*"
+        "http://localhost:4200/*",
+        "http://${PUBLIC_HOST}:4180/oauth2/callback",
+        "http://${PUBLIC_HOST}:4180/*",
+        "http://${PUBLIC_HOST}:4200/oauth2/callback",
+        "http://${PUBLIC_HOST}:4200/*"
       ],
       "webOrigins": [
         "http://localhost:4180",
-        "http://localhost:4200"
+        "http://localhost:4200",
+        "http://${PUBLIC_HOST}:4180",
+        "http://${PUBLIC_HOST}:4200"
       ],
       "defaultClientScopes": [
         "basic",
@@ -114,11 +120,17 @@
         "http://localhost:4181/oauth2/callback",
         "http://localhost:4181/*",
         "http://localhost:4201/oauth2/callback",
-        "http://localhost:4201/*"
+        "http://localhost:4201/*",
+        "http://${PUBLIC_HOST}:4181/oauth2/callback",
+        "http://${PUBLIC_HOST}:4181/*",
+        "http://${PUBLIC_HOST}:4201/oauth2/callback",
+        "http://${PUBLIC_HOST}:4201/*"
       ],
       "webOrigins": [
         "http://localhost:4181",
-        "http://localhost:4201"
+        "http://localhost:4201",
+        "http://${PUBLIC_HOST}:4181",
+        "http://${PUBLIC_HOST}:4201"
       ],
       "defaultClientScopes": [
         "basic",

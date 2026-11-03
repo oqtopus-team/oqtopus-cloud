@@ -393,6 +393,8 @@ VITE_APP_AUTH_MODE=proxy \
 # 2) Bring up the full stack incl. nginx + SPA (from backend/)
 cd -                             # back to backend/
 docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml up -d --build
+# To access from another PC, set the hostname it uses (default: localhost):
+#   PUBLIC_HOST=<hostname> docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml up -d --build
 make migrate-up && make seed     # if not already seeded
 ```
 
