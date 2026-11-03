@@ -22,14 +22,14 @@ services:
       - --http-address=0.0.0.0:4180
       - --reverse-proxy=true
       - --provider=oidc
-      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --oidc-issuer-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus
       - --skip-oidc-discovery=true
-      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --login-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus/protocol/openid-connect/auth
       - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
       - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
       - --client-id=oqtopus-oauth2-proxy
       - --client-secret=oauth2-proxy-secret
-      - --redirect-url=http://localhost:4200/oauth2/callback
+      - --redirect-url=http://${PUBLIC_HOST:-localhost}:4200/oauth2/callback
       - --upstream=static://200
       - --cookie-secret=0123456789abcdef0123456789abcdef
       - --cookie-secure=false
@@ -42,10 +42,10 @@ services:
       - --set-authorization-header=true
       - --pass-access-token=true
       - --set-xauthrequest=true
-      - --whitelist-domain=localhost:4200
+      - --whitelist-domain=${PUBLIC_HOST:-localhost}:4200
       # Allow the post-sign_out redirect to Keycloak's end-session endpoint
       # (RP-initiated logout).
-      - --whitelist-domain=localhost:8081
+      - --whitelist-domain=${PUBLIC_HOST:-localhost}:8081
 
   nginx:
     image: nginx:1.27-alpine
@@ -75,14 +75,14 @@ services:
       - --http-address=0.0.0.0:4181
       - --reverse-proxy=true
       - --provider=oidc
-      - --oidc-issuer-url=http://localhost:8081/realms/oqtopus
+      - --oidc-issuer-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus
       - --skip-oidc-discovery=true
-      - --login-url=http://localhost:8081/realms/oqtopus/protocol/openid-connect/auth
+      - --login-url=http://${PUBLIC_HOST:-localhost}:8081/realms/oqtopus/protocol/openid-connect/auth
       - --redeem-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/token
       - --oidc-jwks-url=http://keycloak:8080/realms/oqtopus/protocol/openid-connect/certs
       - --client-id=oqtopus-admin-oauth2-proxy
       - --client-secret=admin-oauth2-proxy-secret
-      - --redirect-url=http://localhost:4201/oauth2/callback
+      - --redirect-url=http://${PUBLIC_HOST:-localhost}:4201/oauth2/callback
       - --upstream=static://200
       # Distinct cookie name/secret from the User proxy (cookies aren't isolated
       # by port on localhost).
@@ -95,8 +95,8 @@ services:
       - --set-authorization-header=true
       - --pass-access-token=true
       - --set-xauthrequest=true
-      - --whitelist-domain=localhost:4201
-      - --whitelist-domain=localhost:8081
+      - --whitelist-domain=${PUBLIC_HOST:-localhost}:4201
+      - --whitelist-domain=${PUBLIC_HOST:-localhost}:8081
 
   nginx-admin:
     image: nginx:1.27-alpine
