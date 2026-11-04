@@ -45,9 +45,12 @@ dependencies = [
   # which run after `uv sync --no-dev`.
   "boto3>=1.34.55",
   "alembic>=1.13.2",
+  # On-prem operator orchestrator (oqtopus-cloud-ops): LDAP user/admin lifecycle.
+  "ldap3>=2.9.1",
 ]
 
 [project.scripts]
+oqtopus-cloud-ops = "oqtopus_cloud.ops.cli:main"
 oqtopus-cloud-user-api = "oqtopus_cloud.local_entry:run_user"
 oqtopus-cloud-provider-api = "oqtopus_cloud.local_entry:run_provider"
 oqtopus-cloud-admin-api = "oqtopus_cloud.local_entry:run_admin"
