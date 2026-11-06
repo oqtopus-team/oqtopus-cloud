@@ -4,6 +4,8 @@ on:
   push:
     paths:
     - 'backend/**/*.py'
+    - '.python-version'
+    - '.github/workflows/python-ci.yaml'
 
 jobs:
   lint-format:
