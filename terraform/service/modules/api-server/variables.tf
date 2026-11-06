@@ -272,6 +272,23 @@ variable "login_history_enabled" {
   description = "Flag to control whether user login history should be included in GET user API response"
 }
 
+variable "auth_mode" {
+  type        = string
+  default     = ""
+  description = <<-EOT
+    Authentication strategy for the FastAPI app (AUTH_MODE env var):
+    "aws" (API Gateway Lambda-authorizer context), "oidc" (verify the token
+    in-app), or "local". Empty (default) leaves AUTH_MODE unset, preserving the
+    historical behavior (AWS when not ENV=local), so existing deployments are
+    unchanged.
+  EOT
+
+  validation {
+    condition     = contains(["", "aws", "oidc", "local"], var.auth_mode)
+    error_message = "auth_mode must be one of \"\", \"aws\", \"oidc\", or \"local\"."
+  }
+}
+
 variable "lambda_timeout" {
   type        = number
   default     = 15
@@ -322,4 +339,138 @@ variable "lambda_log_retention_days" {
   type        = number
   default     = 14
   description = "CloudWatch log retention (days) for the Lambda function log group. Used when otel_enabled = true."
+}
+
+# ── Edge / abuse protection (#4) ─────────────────────────────────────────────
+# In case A the API Gateway authorizer is gone, so every request -- including
+# unauthenticated floods and Q-API-Token brute force (Argon2 is intentionally
+# expensive) -- reaches this Lambda. The knobs below bound the blast radius.
+# Defaults are inert (-1 / false) so untouched callers are unchanged; each env
+# opts in with concrete values.
+
+variable "reserved_concurrent_executions" {
+  type        = number
+  default     = -1
+  description = <<-EOT
+    Reserved concurrency for the Lambda. -1 (default) leaves it unreserved.
+    A positive value caps concurrent executions, which is the real global ceiling
+    on Argon2 parallelism, DB connections and cost under a flood, and stops this
+    function from starving the account's shared concurrency pool. Size it to peak
+    legitimate concurrency plus headroom -- too low throttles real users (429).
+    0 is a valid "kill switch": it stops ALL invocations of this function.
+  EOT
+
+  validation {
+    # -1 (unreserved) or a whole number >= 0. 0 = kill switch (see above);
+    # fractions and other negatives are rejected by the AWS API at apply time.
+    condition     = var.reserved_concurrent_executions == -1 || (var.reserved_concurrent_executions >= 0 && floor(var.reserved_concurrent_executions) == var.reserved_concurrent_executions)
+    error_message = "reserved_concurrent_executions must be -1 (unreserved) or a whole number >= 0 (0 stops the function)."
+  }
+}
+
+variable "throttling_rate_limit" {
+  type        = number
+  default     = -1
+  description = <<-EOT
+    API Gateway steady-state request rate (req/s) applied to all methods on the
+    stage. -1 (default) disables the override (account default applies).
+    Best-effort (not a hard cap), so it is a backstop behind the WAF rate-based
+    rule, not the primary control.
+  EOT
+
+  validation {
+    # -1 (no override) or a positive rate. 0 would block all traffic.
+    condition     = var.throttling_rate_limit == -1 || var.throttling_rate_limit > 0
+    error_message = "throttling_rate_limit must be -1 (no override) or a positive number."
+  }
+}
+
+variable "throttling_burst_limit" {
+  type        = number
+  default     = -1
+  description = "API Gateway burst capacity (token-bucket burst, not a concurrent-request count) for the stage. -1 (default) disables the override (account default applies)."
+
+  validation {
+    # -1 (no override) or a positive whole number. 0 would block all traffic.
+    condition     = var.throttling_burst_limit == -1 || (var.throttling_burst_limit > 0 && floor(var.throttling_burst_limit) == var.throttling_burst_limit)
+    error_message = "throttling_burst_limit must be -1 (no override) or a positive whole number."
+  }
+}
+
+variable "enable_abuse_alarms" {
+  type        = bool
+  default     = false
+  description = "Create CloudWatch alarms for Lambda throttles/invocation errors, concurrency near the reserved cap, and API Gateway 4XX/5XX spikes (abuse / credential-stuffing signal)."
+}
+
+variable "alarm_actions" {
+  type        = list(string)
+  default     = []
+  description = "SNS topic ARNs notified when an abuse alarm fires (and on recovery). Empty = alarms still show in the console but notify nothing."
+}
+
+variable "alarm_4xx_threshold" {
+  type        = number
+  default     = 500
+  description = "4XX responses within one period that trips the API Gateway 4XX-spike alarm (a 401/403 flood indicates credential stuffing or a bad client)."
+
+  validation {
+    condition     = var.alarm_4xx_threshold >= 0
+    error_message = "alarm_4xx_threshold must be >= 0."
+  }
+}
+
+variable "alarm_5xx_threshold" {
+  type        = number
+  default     = 10
+  description = "5XX responses within one period that trips the API Gateway 5XX-spike alarm. This catches app-returned 500s (FastAPI/Mangum proxy responses) that the Lambda Errors metric does not count as invocation errors."
+
+  validation {
+    condition     = var.alarm_5xx_threshold >= 0
+    error_message = "alarm_5xx_threshold must be >= 0."
+  }
+}
+
+variable "alarm_throttle_threshold" {
+  type        = number
+  default     = 1
+  description = "Lambda throttles within one period that trips the throttle alarm. 1 = alert on the first throttle, since a throttle means the concurrency cap was hit."
+
+  validation {
+    condition     = var.alarm_throttle_threshold >= 1
+    error_message = "alarm_throttle_threshold must be >= 1 (the alarm uses GreaterThanOrEqualToThreshold)."
+  }
+}
+
+variable "alarm_error_threshold" {
+  type        = number
+  default     = 10
+  description = "Lambda INVOCATION errors (unhandled exceptions, timeouts, runtime faults) within one period that trips the error alarm. Does NOT include HTTP 500s returned as normal proxy responses -- those are covered by the 5XX alarm."
+
+  validation {
+    condition     = var.alarm_error_threshold >= 0
+    error_message = "alarm_error_threshold must be >= 0."
+  }
+}
+
+variable "alarm_period_seconds" {
+  type        = number
+  default     = 300
+  description = "Evaluation period (seconds) for the abuse alarms. Must be a multiple of 60 (standard-resolution metrics)."
+
+  validation {
+    condition     = var.alarm_period_seconds >= 60 && var.alarm_period_seconds % 60 == 0
+    error_message = "alarm_period_seconds must be >= 60 and a multiple of 60."
+  }
+}
+
+variable "alarm_evaluation_periods" {
+  type        = number
+  default     = 1
+  description = "Number of periods the metric must breach before an abuse alarm fires."
+
+  validation {
+    condition     = var.alarm_evaluation_periods >= 1 && floor(var.alarm_evaluation_periods) == var.alarm_evaluation_periods
+    error_message = "alarm_evaluation_periods must be a whole number >= 1."
+  }
 }
