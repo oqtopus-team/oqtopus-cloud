@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job
+from oqtopus_cloud.worker.pending_jobs_updater import lambda_function
 from oqtopus_cloud.worker.pending_jobs_updater.lambda_function import (
     update_pending_jobs,
 )
@@ -13,6 +14,21 @@ from sqlalchemy import select
 # COUNT_PENDING_JOBS_SINCE filter behaves deterministically regardless of when
 # the test suite is executed.
 FIXED_NOW = datetime(2024, 3, 12, 12, 34, 56, tzinfo=timezone.utc)
+
+
+class TrackingGenerator:
+    def __init__(self, value):
+        self.value = value
+        self.closed = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.value
+
+    def close(self):
+        self.closed = True
 
 
 def _get_device(id: str) -> Device:
@@ -58,6 +74,37 @@ def _get_job(
         "created_at": submitted_at,
     }
     return Job(**model_dict)
+
+
+def test_lambda_handler_closes_db_generator(monkeypatch):
+    db_generator = TrackingGenerator(object())
+    expected_response = {"statusCode": 200, "body": "success"}
+
+    monkeypatch.setattr(lambda_function, "get_db", lambda: db_generator)
+    monkeypatch.setattr(
+        lambda_function,
+        "update_pending_jobs",
+        lambda db, current: expected_response,
+    )
+
+    assert lambda_function.lambda_handler({}, {}) == expected_response
+    assert db_generator.closed
+
+
+def test_lambda_handler_closes_db_generator_on_error(monkeypatch):
+    db_generator = TrackingGenerator(object())
+
+    monkeypatch.setattr(lambda_function, "get_db", lambda: db_generator)
+
+    def raise_error(db, current):
+        raise RuntimeError("update failed")
+
+    monkeypatch.setattr(lambda_function, "update_pending_jobs", raise_error)
+
+    response = lambda_function.lambda_handler({}, {})
+
+    assert response["statusCode"] == 500
+    assert db_generator.closed
 
 
 def test_update_pending_jobs(
