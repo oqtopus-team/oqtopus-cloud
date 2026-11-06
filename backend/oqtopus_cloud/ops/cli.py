@@ -16,6 +16,7 @@ import os
 import secrets as pysecrets
 import sys
 
+from oqtopus_cloud.common.session import validate_db_runtime_config
 from oqtopus_cloud.ops import commands
 from oqtopus_cloud.ops.adapters import DbClient, KeycloakClient, LdapClient
 from oqtopus_cloud.ops.journal import OperationJournal
@@ -53,6 +54,29 @@ def _keycloak(args: argparse.Namespace) -> KeycloakClient:
     )
 
 
+def _fixed_deployment_id(args: argparse.Namespace) -> str:
+    """Resolve the deployment id, fixed by the deployment -- not the operator.
+
+    In production the ops container sets ``DEPLOYMENT_ID`` (see the prod compose);
+    that value is authoritative and an operator cannot override it: a
+    ``--deployment-id`` that disagrees is rejected. The flag remains usable only
+    where ``DEPLOYMENT_ID`` is unset (local dev). This keeps the journal's
+    deployment binding (which gates resume-against-prod) out of operator hands.
+    """
+    env = os.getenv("DEPLOYMENT_ID")
+    flag = args.deployment_id
+    if env:
+        if flag and flag != env:
+            raise SystemExit(
+                "--deployment-id conflicts with the deployment-fixed DEPLOYMENT_ID; "
+                "do not pass --deployment-id in production"
+            )
+        return env
+    if not flag:
+        raise SystemExit("missing DEPLOYMENT_ID (set by the deployment, not the operator)")
+    return flag
+
+
 def _endpoints(
     args: argparse.Namespace,
     *,
@@ -65,7 +89,7 @@ def _endpoints(
     specific deployment and its LDAP/Keycloak/DB endpoints (so devs can't resume
     a half-done operation against prod)."""
     e = {
-        "deployment_id": _cfg(args, "deployment-id", "DEPLOYMENT_ID"),
+        "deployment_id": _fixed_deployment_id(args),
         "ldap_server": _cfg(args, "ldap-server", "LDAP_SERVER_URI"),
     }
     if users_base:
@@ -171,6 +195,12 @@ def main(argv: list[str] | None = None) -> None:
         )
         _run(journal, "user-add", args.uid, steps, inputs, args.operation_id)
     elif args.command in ("user-disable", "user-delete"):
+        # These commands write to the same production DB as the API. Validate the
+        # shared DB contract (DB_HOST/DB_NAME/DB_CONNECTOR + the configured
+        # credential source) up front -- always, not gated on a file path being
+        # present -- so a misconfigured ops container fails before it touches
+        # LDAP/Keycloak, never half-way through.
+        validate_db_runtime_config()
         steps = commands.user_disable_steps(
             _ldap(args), _keycloak(args), DbClient(), uid=args.uid, email=args.email
         )

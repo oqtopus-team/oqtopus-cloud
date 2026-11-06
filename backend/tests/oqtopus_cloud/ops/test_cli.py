@@ -1,11 +1,39 @@
 """CLI: resume binding (reject mismatched target) and temp-password file safety."""
 
+import argparse
 import os
 
 import pytest
 
 from oqtopus_cloud.ops import cli
 from oqtopus_cloud.ops.journal import OperationJournal
+
+
+def _ns(deployment_id=None):
+    return argparse.Namespace(deployment_id=deployment_id)
+
+
+def test_deployment_id_env_is_authoritative(monkeypatch):
+    monkeypatch.setenv("DEPLOYMENT_ID", "prod")
+    assert cli._fixed_deployment_id(_ns(deployment_id=None)) == "prod"
+    assert cli._fixed_deployment_id(_ns(deployment_id="prod")) == "prod"
+
+
+def test_deployment_id_flag_cannot_override_env(monkeypatch):
+    monkeypatch.setenv("DEPLOYMENT_ID", "prod")
+    with pytest.raises(SystemExit):
+        cli._fixed_deployment_id(_ns(deployment_id="dev"))
+
+
+def test_deployment_id_flag_used_only_when_env_absent(monkeypatch):
+    monkeypatch.delenv("DEPLOYMENT_ID", raising=False)
+    assert cli._fixed_deployment_id(_ns(deployment_id="dev")) == "dev"
+
+
+def test_deployment_id_required(monkeypatch):
+    monkeypatch.delenv("DEPLOYMENT_ID", raising=False)
+    with pytest.raises(SystemExit):
+        cli._fixed_deployment_id(_ns(deployment_id=None))
 
 
 def test_resume_rejects_input_mismatch(tmp_path):

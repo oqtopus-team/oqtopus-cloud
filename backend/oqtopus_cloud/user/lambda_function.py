@@ -13,6 +13,10 @@ from mangum import (
 )
 from starlette.middleware.cors import CORSMiddleware
 
+from oqtopus_cloud.common.session import (
+    db_credential_source,
+    validate_db_runtime_config,
+)
 from oqtopus_cloud.common.tracing import force_flush as _otel_force_flush
 from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.user.conf import logger, metrics, tracer
@@ -31,6 +35,18 @@ from oqtopus_cloud.user.routers import (
 )
 
 app: FastAPI = add_pagination(FastAPI())
+
+
+def _validate_db_runtime_config() -> None:
+    # On-prem (file-injected DB credentials): fail fast at startup on a broken
+    # DB contract (missing DB_HOST/DB_NAME/DB_CONNECTOR, bad connector, or an
+    # insecure/missing secret file) instead of on the first request. No-op on
+    # AWS/local, and under Lambda (lifespan off) it simply never runs.
+    if db_credential_source() == "file":
+        validate_db_runtime_config()
+
+
+app.add_event_handler("startup", _validate_db_runtime_config)
 
 app.add_middleware(CustomMiddleware)
 
