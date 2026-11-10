@@ -1,5 +1,6 @@
 import json
 import os
+from threading import Lock
 from typing import (
     Any,
     Generator,
@@ -15,7 +16,7 @@ from botocore.exceptions import (
 from sqlalchemy import (
     create_engine,
 )
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import Engine, URL
 from sqlalchemy.orm import Session, sessionmaker
 
 from oqtopus_cloud.common.db_tls import ssl_connect_args
@@ -63,6 +64,19 @@ _DB_CONNECT_TIMEOUT_SECONDS = 5
 # under the very same RDS Proxy conditions cited above. Those callers keep the
 # original unbounded read behavior.
 AUTH_DB_READ_TIMEOUT_SECONDS = 5
+
+_DEFAULT_DB_POOL_SIZE = 5
+_DEFAULT_DB_MAX_OVERFLOW = 0
+_DEFAULT_DB_POOL_TIMEOUT_SECONDS = 30
+_ENGINE_CACHE_LOCK = Lock()
+_ENGINE_CACHE: dict[
+    int | None,
+    tuple[
+        tuple[URL, int | None, int, int, float],
+        Engine,
+        sessionmaker[Session],
+    ],
+] = {}
 
 
 # The credential source is an explicit switch, NOT inferred from the presence of
@@ -213,8 +227,75 @@ def build_db_url() -> URL:
     )
 
 
+def _get_pool_settings() -> tuple[int, int, float]:
+    pool_size = int(os.getenv("DB_POOL_SIZE", str(_DEFAULT_DB_POOL_SIZE)))
+    max_overflow = int(os.getenv("DB_MAX_OVERFLOW", str(_DEFAULT_DB_MAX_OVERFLOW)))
+    pool_timeout = float(
+        os.getenv(
+            "DB_POOL_TIMEOUT_SECONDS",
+            str(_DEFAULT_DB_POOL_TIMEOUT_SECONDS),
+        )
+    )
+    if pool_size < 1:
+        raise ValueError("DB_POOL_SIZE must be at least 1")
+    if max_overflow < 0:
+        raise ValueError("DB_MAX_OVERFLOW must be non-negative")
+    if pool_timeout <= 0:
+        raise ValueError("DB_POOL_TIMEOUT_SECONDS must be positive")
+    return pool_size, max_overflow, pool_timeout
+
+
+def _get_session_factory(
+    database_url: URL,
+    read_timeout: int | None,
+    connect_args: dict[str, Any],
+) -> sessionmaker[Session]:
+    """Return a bounded, process-shared session factory.
+
+    The authorizer has a separate read timeout from normal API and worker
+    queries, so keep one shared Engine for each timeout variant.
+    """
+    pool_size, max_overflow, pool_timeout = _get_pool_settings()
+    cache_key = (
+        database_url,
+        read_timeout,
+        pool_size,
+        max_overflow,
+        pool_timeout,
+    )
+    with _ENGINE_CACHE_LOCK:
+        cached = _ENGINE_CACHE.get(read_timeout)
+        if cached is not None and cached[0] == cache_key:
+            return cached[2]
+        if cached is not None:
+            cached[1].dispose()
+
+        engine = create_engine(
+            database_url,
+            connect_args=connect_args,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=pool_timeout,
+            pool_pre_ping=True,
+        )
+        session_local = sessionmaker[Session](
+            autoflush=False,
+            bind=engine,
+        )
+        _ENGINE_CACHE[read_timeout] = (cache_key, engine, session_local)
+        return session_local
+
+
+def _dispose_cached_engines() -> None:
+    """Dispose cached Engines; intended for tests and controlled reconfiguration."""
+    with _ENGINE_CACHE_LOCK:
+        for _, engine, _ in _ENGINE_CACHE.values():
+            engine.dispose()
+        _ENGINE_CACHE.clear()
+
+
 def _create_session(read_timeout: int | None = None) -> Session:
-    """Build and return a database session.
+    """Build and return a session backed by a shared database Engine.
 
     read_timeout (seconds) is the PyMySQL read_timeout and is passed ONLY by the
     authorizer (AUTH_DB_READ_TIMEOUT_SECONDS). It is intentionally NOT a parameter
@@ -231,15 +312,12 @@ def _create_session(read_timeout: int | None = None) -> Session:
     # require_tls is enabled. Shared with alembic/env.py so both reach the
     # database the same way.
     connect_args.update(ssl_connect_args(url.host))
-    engine = create_engine(
+    session_local = _get_session_factory(
         url,
-        connect_args=connect_args,
+        read_timeout,
+        connect_args,
     )
-    SessionLocal = sessionmaker(
-        autoflush=False,
-        bind=engine,
-    )
-    return SessionLocal()
+    return session_local()
 
 
 def get_db() -> Generator:
