@@ -18,6 +18,9 @@ client = TestClient(app, raise_server_exceptions=False)
 @pytest.fixture
 def oidc_mode(monkeypatch):
     monkeypatch.setenv("AUTH_MODE", "oidc")
+    # resolve_identity validates the policy on every oidc request (Lambda has no
+    # startup hook); set the on-prem/OIDC policy so these contract tests run.
+    monkeypatch.setenv("USER_AUTH_POLICY", "oidc")
     monkeypatch.setenv("OIDC_USERNAME_CLAIM", "email")
     # Tests that route into a handler (not just the middleware) emit a Powertools
     # metric on completion; give it a namespace so that does not 500.

@@ -14,8 +14,10 @@ import pytest
 from argon2 import PasswordHasher
 
 from oqtopus_cloud.common.auth import client as client_auth
+from oqtopus_cloud.common.auth import cognito_policy
+from oqtopus_cloud.common.auth.cognito_policy import CognitoLookupError
 from oqtopus_cloud.common.auth.frontend import AuthError, AuthorizationError
-from oqtopus_cloud.common.models.user import UserStatus
+from oqtopus_cloud.common.models.user import MFAStatus, UserStatus
 
 UTC = ZoneInfo("UTC")
 _ph = PasswordHasher()
@@ -92,3 +94,109 @@ class TestResolveApiTokenIdentity:
         with pytest.raises(AuthorizationError):
             client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
         db.commit.assert_not_called()
+
+
+# --- AWS Cognito policy (USER_AUTH_POLICY=cognito) ---------------------------
+
+CogRow = namedtuple(
+    "CogRow",
+    "id api_token_id api_token_hash api_token_expiration userstatus mfa_status cognito_id",
+)
+
+
+def _cog_row(
+    secret,
+    *,
+    mfa=MFAStatus.enabled,
+    cognito_id="sub-123",
+    status=UserStatus.approved,
+    hasher=_ph,
+):
+    exp = datetime.now(UTC) + timedelta(days=90)
+    return CogRow(
+        "demo@oqtopus.local", "tok-id", hasher.hash(secret), exp, status, mfa, cognito_id
+    )
+
+
+class _FakeCognito:
+    def __init__(self, users):
+        self._users = users
+
+    def list_users(self, UserPoolId, Filter):
+        return {"Users": self._users}
+
+
+class _BoomCognito:
+    def list_users(self, UserPoolId, Filter):
+        raise RuntimeError("cognito unreachable")
+
+
+class TestCognitoPolicyApiToken:
+    @pytest.fixture(autouse=True)
+    def _cognito_env(self, monkeypatch):
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        monkeypatch.setenv("CLIENT_COGNITO_USER_POOL_ID", "ap-northeast-1_pool")
+
+    def _patch_cognito(self, monkeypatch, client):
+        monkeypatch.setattr(cognito_policy, "_cognito_client", lambda _pool: client)
+
+    def test_valid_cognito_token_succeeds(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret"))
+        self._patch_cognito(monkeypatch, _FakeCognito([{"Username": "u", "sub": "sub-123"}]))
+        identity = client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+        assert identity.user_id == "demo@oqtopus.local"
+
+    def test_mfa_disabled_is_403(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret", mfa=MFAStatus.disabled))
+        self._patch_cognito(monkeypatch, _FakeCognito([{"Username": "u"}]))
+        with pytest.raises(AuthorizationError, match="MFA"):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_missing_cognito_id_is_403(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret", cognito_id=None))
+        self._patch_cognito(monkeypatch, _FakeCognito([{"Username": "u"}]))
+        with pytest.raises(AuthorizationError, match="Cognito id"):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_cognito_user_absent_is_403(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret"))
+        self._patch_cognito(monkeypatch, _FakeCognito([]))  # deleted account
+        with pytest.raises(AuthorizationError, match="not found"):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_cognito_duplicate_is_lookup_error(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret"))
+        self._patch_cognito(
+            monkeypatch, _FakeCognito([{"Username": "a"}, {"Username": "b"}])
+        )
+        # An ambiguous directory is a server error (500), not a 403.
+        with pytest.raises(CognitoLookupError):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_cognito_unreachable_fails_closed(self, monkeypatch):
+        _mock_db(monkeypatch, _cog_row("s3cret"))
+        self._patch_cognito(monkeypatch, _BoomCognito())
+        with pytest.raises(CognitoLookupError):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+
+    def test_cognito_failure_does_not_rehash(self, monkeypatch):
+        # Fail-closed before the opportunistic rehash: no DB mutation.
+        db = _mock_db(monkeypatch, _cog_row("s3cret", hasher=_weak_ph))
+        self._patch_cognito(monkeypatch, _FakeCognito([]))
+        with pytest.raises(AuthorizationError):
+            client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+        db.commit.assert_not_called()
+
+
+class TestOidcPolicyApiTokenSkipsCognito:
+    def test_oidc_policy_makes_no_cognito_call(self, monkeypatch):
+        # USER_AUTH_POLICY=oidc (on-prem): approved-only, no Cognito dependency.
+        monkeypatch.setenv("USER_AUTH_POLICY", "oidc")
+
+        def _boom(_pool):
+            raise AssertionError("Cognito must not be contacted under oidc policy")
+
+        monkeypatch.setattr(cognito_policy, "_cognito_client", _boom)
+        _mock_db(monkeypatch, _row("s3cret"))
+        identity = client_auth.resolve_api_token_identity(_request("tok-id.s3cret"))
+        assert identity.user_id == "demo@oqtopus.local"

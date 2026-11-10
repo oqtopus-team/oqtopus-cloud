@@ -15,7 +15,7 @@ import os
 
 from sqlalchemy import select
 
-from oqtopus_cloud.common.models.user import User, UserStatus
+from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
 from oqtopus_cloud.common.session import (
     AUTH_DB_READ_TIMEOUT_SECONDS,
     _create_session,
@@ -52,22 +52,26 @@ def validate_user_status(user_id: str) -> bool:
     return user is not None
 
 
-def resolve_user_by_cognito_id(cognito_id: str) -> tuple[str, str | None] | None:
-    """Resolve the internal ``(users.id, users.email)`` from a Cognito ``sub``.
+def resolve_user_by_cognito_id(
+    cognito_id: str,
+) -> tuple[str, str | None, MFAStatus] | None:
+    """Resolve ``(users.id, users.email, users.mfa_status)`` from a Cognito ``sub``.
 
     A Cognito access token identifies the user by ``sub`` (its ``username`` claim
     is a generated UUID, not the email), which is stored as ``users.cognito_id``.
     This resolves that to the internal ``users.id`` (an email) used everywhere
     downstream, in a single query that also applies the approved gate.
 
-    The approved filter is applied unless ``AUTH_ENFORCE_STATUS=false``; even
-    then an *unknown* ``cognito_id`` still returns ``None`` -- the sub -> user id
-    mapping cannot be skipped. DB/driver errors propagate (surfaced as a 500, not
-    a 401/403).
+    ``mfa_status`` is returned so the AWS Cognito authorization policy
+    (``USER_AUTH_POLICY=cognito``) can require MFA; the on-prem/OIDC policy
+    ignores it. The approved filter is applied unless ``AUTH_ENFORCE_STATUS=
+    false``; even then an *unknown* ``cognito_id`` still returns ``None`` -- the
+    sub -> user id mapping cannot be skipped. DB/driver errors propagate
+    (surfaced as a 500, not a 401/403).
 
     Returns:
-        ``(users.id, users.email)`` for the matching user, or ``None`` when no
-        such (approved, when enforced) user exists.
+        ``(users.id, users.email, users.mfa_status)`` for the matching user, or
+        ``None`` when no such (approved, when enforced) user exists.
 
     """
     conditions = [User.cognito_id == cognito_id]
@@ -79,6 +83,6 @@ def resolve_user_by_cognito_id(cognito_id: str) -> tuple[str, str | None] | None
         user = db.execute(select(User).where(*conditions)).scalar()
         if user is None:
             return None
-        return (str(user.id), user.email)
+        return (str(user.id), user.email, user.mfa_status)
     finally:
         db.close()

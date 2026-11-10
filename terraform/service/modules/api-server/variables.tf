@@ -56,6 +56,12 @@ variable "cognito_user_pool_arns" {
   type        = list(string)
 }
 
+variable "enable_cognito_list_users" {
+  description = "Grant cognito-idp:ListUsers (scoped to cognito_user_pool_arns) to this service's Lambda role; needed only by the User API under AUTH_MODE=oidc (case A). Default false keeps least privilege for other services."
+  type        = bool
+  default     = false
+}
+
 variable "power_tools_metrics_namespace" {
   description = "The namespace for the PowerTools metrics"
   type        = string

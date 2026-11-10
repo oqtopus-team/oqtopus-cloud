@@ -104,6 +104,10 @@ services:
       # via the realm's audience mapper.
       OIDC_AUDIENCE: "oqtopus-user-api"
       OIDC_USERNAME_CLAIM: "email"
+      # On-prem / generic OIDC policy: MFA is delegated to the IdP (Keycloak);
+      # only `approved` is required and there is no Cognito dependency. (AWS uses
+      # USER_AUTH_POLICY=cognito; see terraform/service/*/main.tf.)
+      USER_AUTH_POLICY: "oidc"
       AUTH_ENFORCE_STATUS: "true"
       # Login history is an AWS-only feature (CloudTrail); disable it in the
       # non-AWS OIDC deployment so /users/me does not require a region/AWS creds.

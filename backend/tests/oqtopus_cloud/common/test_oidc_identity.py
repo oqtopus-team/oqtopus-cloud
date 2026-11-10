@@ -2,8 +2,8 @@
 env->config adapter (common/auth/oidc.py).
 
 Covers the two resolver modes:
-  - "direct": a claim's value is the users.id (Keycloak / on-prem).
-  - "cognito_sub": users.id is resolved via users.cognito_id == sub (Cognito).
+    - "direct": a claim's value is the users.id (Keycloak / on-prem).
+    - "cognito_sub": users.id is resolved via users.cognito_id == sub (Cognito).
 """
 
 from types import SimpleNamespace
@@ -16,8 +16,11 @@ from oqtopus_cloud.common.auth.frontend import (
     AuthError,
     AuthorizationError,
     _oidc_identity,
+    user_auth_policy,
+    validate_user_auth_policy,
 )
 from oqtopus_cloud.common.auth.oidc import OidcError
+from oqtopus_cloud.common.models.user import MFAStatus
 
 
 def _request() -> SimpleNamespace:
@@ -41,7 +44,11 @@ class TestCognitoSubResolver:
         monkeypatch.setattr(
             frontend,
             "resolve_user_by_cognito_id",
-            lambda sub: ("u@example.com", "u@example.com") if sub == "uuid-123" else None,
+            lambda sub: (
+                ("u@example.com", "u@example.com", MFAStatus.enabled)
+                if sub == "uuid-123"
+                else None
+            ),
         )
         identity = _oidc_identity(_request())
         assert identity.user_id == "u@example.com"
@@ -154,3 +161,126 @@ class TestConfigFromEnv:
         cfg = cloud_oidc._config_from_env()
         assert cfg.audience == "oqtopus-user-api"
         assert cfg.client_id is None
+
+
+# ── USER_AUTH_POLICY on the cognito_sub (access-token) path ──────────────────
+
+
+class TestCognitoPolicyMfaOnAccessToken:
+    """USER_AUTH_POLICY=cognito enforces DB MFA on the Cognito access-token path;
+    USER_AUTH_POLICY=oidc (on-prem) delegates MFA to the IdP and does not."""
+
+    @pytest.fixture(autouse=True)
+    def _resolver(self, monkeypatch):
+        monkeypatch.setenv("OIDC_IDENTITY_RESOLVER", "cognito_sub")
+
+    def _stub(self, monkeypatch, mfa):
+        _patch_claims(monkeypatch, {"sub": "uuid-123", "token_use": "access"})
+        monkeypatch.setattr(
+            frontend,
+            "resolve_user_by_cognito_id",
+            lambda _sub: ("u@example.com", "u@example.com", mfa),
+        )
+
+    def test_cognito_policy_mfa_enabled_succeeds(self, monkeypatch):
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        self._stub(monkeypatch, MFAStatus.enabled)
+        assert _oidc_identity(_request()).user_id == "u@example.com"
+
+    def test_cognito_policy_mfa_disabled_is_403(self, monkeypatch):
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        self._stub(monkeypatch, MFAStatus.disabled)
+        with pytest.raises(AuthorizationError, match="MFA"):
+            _oidc_identity(_request())
+
+    def test_oidc_policy_ignores_mfa(self, monkeypatch):
+        # On-prem: an MFA-disabled DB row is fine; the IdP (Keycloak) gates MFA.
+        monkeypatch.setenv("USER_AUTH_POLICY", "oidc")
+        self._stub(monkeypatch, MFAStatus.disabled)
+        assert _oidc_identity(_request()).user_id == "u@example.com"
+
+
+class TestUserAuthPolicyValidation:
+    """Fail-closed startup validation of USER_AUTH_POLICY under AUTH_MODE=oidc."""
+
+    def test_default_is_empty(self, monkeypatch):
+        monkeypatch.delenv("USER_AUTH_POLICY", raising=False)
+        assert user_auth_policy() == ""
+
+    def test_noop_when_not_oidc_mode(self, monkeypatch):
+        monkeypatch.delenv("AUTH_MODE", raising=False)  # ENV=local -> local mode
+        monkeypatch.delenv("USER_AUTH_POLICY", raising=False)
+        validate_user_auth_policy()  # no raise
+
+    def test_unset_under_oidc_fails(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.delenv("USER_AUTH_POLICY", raising=False)
+        with pytest.raises(RuntimeError, match="USER_AUTH_POLICY"):
+            validate_user_auth_policy()
+
+    def test_unknown_value_under_oidc_fails(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognitoo")
+        with pytest.raises(RuntimeError):
+            validate_user_auth_policy()
+
+    def test_cognito_requires_cognito_sub_resolver(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        monkeypatch.setenv("OIDC_IDENTITY_RESOLVER", "direct")
+        monkeypatch.setenv("CLIENT_COGNITO_USER_POOL_ID", "ap-northeast-1_x")
+        with pytest.raises(RuntimeError, match="cognito_sub"):
+            validate_user_auth_policy()
+
+    def test_cognito_requires_pool_id(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        monkeypatch.setenv("OIDC_IDENTITY_RESOLVER", "cognito_sub")
+        monkeypatch.delenv("CLIENT_COGNITO_USER_POOL_ID", raising=False)
+        with pytest.raises(RuntimeError, match="CLIENT_COGNITO_USER_POOL_ID"):
+            validate_user_auth_policy()
+
+    def test_valid_cognito_config_passes(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.setenv("USER_AUTH_POLICY", "cognito")
+        monkeypatch.setenv("OIDC_IDENTITY_RESOLVER", "cognito_sub")
+        monkeypatch.setenv("CLIENT_COGNITO_USER_POOL_ID", "ap-northeast-1_x")
+        validate_user_auth_policy()  # no raise
+
+    def test_valid_oidc_policy_passes(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+        monkeypatch.setenv("USER_AUTH_POLICY", "oidc")
+        validate_user_auth_policy()  # no raise
+
+
+class TestResolveIdentityEnforcesPolicyPerRequest:
+    """resolve_identity must validate USER_AUTH_POLICY on every oidc request,
+    independent of the startup event (Lambda runs with lifespan off), before it
+    dispatches to either the Bearer or the Q-API-Token resolver."""
+
+    @pytest.fixture(autouse=True)
+    def _oidc(self, monkeypatch):
+        monkeypatch.setenv("AUTH_MODE", "oidc")
+
+    @staticmethod
+    def _req(headers):
+        return SimpleNamespace(headers=headers)
+
+    def test_unset_policy_fails_before_bearer_dispatch(self, monkeypatch):
+        monkeypatch.delenv("USER_AUTH_POLICY", raising=False)
+        # No verify_bearer_token patch: if it reached the Bearer resolver it
+        # would fail differently. It must fail in validation first.
+        with pytest.raises(RuntimeError, match="USER_AUTH_POLICY"):
+            frontend.resolve_identity(self._req({"authorization": "Bearer x"}))
+
+    def test_unset_policy_fails_before_qapi_dispatch(self, monkeypatch):
+        monkeypatch.delenv("USER_AUTH_POLICY", raising=False)
+        # No DB mock: reaching the Q-API-Token resolver would touch the DB. It
+        # must fail in validation first, proving neither path needs startup.
+        with pytest.raises(RuntimeError, match="USER_AUTH_POLICY"):
+            frontend.resolve_identity(self._req({"q-api-token": "tok.secret"}))
+
+    def test_unknown_policy_fails(self, monkeypatch):
+        monkeypatch.setenv("USER_AUTH_POLICY", "bogus")
+        with pytest.raises(RuntimeError):
+            frontend.resolve_identity(self._req({"authorization": "Bearer x"}))

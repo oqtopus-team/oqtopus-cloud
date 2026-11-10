@@ -13,6 +13,7 @@ from mangum import (
 )
 from starlette.middleware.cors import CORSMiddleware
 
+from oqtopus_cloud.common.auth.frontend import validate_user_auth_policy
 from oqtopus_cloud.common.session import (
     db_credential_source,
     validate_db_runtime_config,
@@ -47,6 +48,16 @@ def _validate_db_runtime_config() -> None:
 
 
 app.add_event_handler("startup", _validate_db_runtime_config)
+
+
+def _validate_user_auth_policy() -> None:
+    # Fail-closed under AUTH_MODE=oidc: USER_AUTH_POLICY must be set to
+    # cognito|oidc (and, for cognito, be internally consistent). No-op on
+    # aws/local, and under Lambda (lifespan off) it never runs.
+    validate_user_auth_policy()
+
+
+app.add_event_handler("startup", _validate_user_auth_policy)
 
 app.add_middleware(CustomMiddleware)
 

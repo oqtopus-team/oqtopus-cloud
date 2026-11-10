@@ -69,6 +69,63 @@ def auth_mode() -> str:
     return "local" if os.getenv("ENV") == "local" else "aws"
 
 
+USER_AUTH_POLICIES = ("cognito", "oidc")
+
+
+def user_auth_policy() -> str:
+    """Return the configured User-API authorization policy (lowercased, or "").
+
+    - ``cognito``: apply the AWS Cognito conditions the Lambda authorizer used to
+      enforce -- MFA must be ``enabled``, and a Q-API-Token caller must still
+      exist in the Cognito User Pool.
+    - ``oidc``: MFA is delegated to the IdP (Keycloak / generic OIDC); only the
+      ``approved`` status is required, with no Cognito dependency.
+
+    Deliberately independent of ``OIDC_IDENTITY_RESOLVER``, the issuer,
+    ``OIDC_AUTO_PROVISION`` and the presence of Cognito env vars: the policy is
+    stated explicitly, never inferred -- inference is how a missing setting would
+    silently drop the MFA/Cognito checks on AWS (fail-open). It is required and
+    validated at startup under ``AUTH_MODE=oidc`` (:func:`validate_user_auth_policy`).
+    """
+    return os.getenv("USER_AUTH_POLICY", "").strip().lower()
+
+
+def validate_user_auth_policy() -> None:
+    """Fail-closed startup check for the User API's authorization policy.
+
+    No-op unless ``AUTH_MODE=oidc`` (``aws`` mode is covered by the API Gateway
+    Lambda authorizer; ``local`` is dev). Under ``oidc``:
+
+    - ``USER_AUTH_POLICY`` must be exactly ``cognito`` or ``oidc`` -- unset or an
+      unknown value aborts startup (never defaults to the weaker policy).
+    - ``cognito`` additionally requires ``OIDC_IDENTITY_RESOLVER=cognito_sub`` and
+      a Cognito User Pool id (``CLIENT_COGNITO_USER_POOL_ID``); otherwise the MFA
+      and Cognito-existence checks could not run, so the config is rejected.
+
+    Raises:
+        RuntimeError: on an unset/unknown policy or a contradictory config.
+    """
+    if auth_mode() != "oidc":
+        return
+    policy = user_auth_policy()
+    if policy not in USER_AUTH_POLICIES:
+        raise RuntimeError(
+            f"USER_AUTH_POLICY must be one of {USER_AUTH_POLICIES} when "
+            f"AUTH_MODE=oidc (got {policy!r}); refusing to start"
+        )
+    if policy == "cognito":
+        resolver = os.getenv("OIDC_IDENTITY_RESOLVER", "direct").strip().lower()
+        if resolver != "cognito_sub":
+            raise RuntimeError(
+                "USER_AUTH_POLICY=cognito requires OIDC_IDENTITY_RESOLVER=cognito_sub"
+            )
+        if not os.getenv("CLIENT_COGNITO_USER_POOL_ID"):
+            raise RuntimeError(
+                "USER_AUTH_POLICY=cognito requires CLIENT_COGNITO_USER_POOL_ID "
+                "(the Cognito User Pool id used for the MFA/existence checks)"
+            )
+
+
 def _local_identity() -> Identity:
     # Preserves the previous ENV=local hardcoded developer identity.
     return Identity(
@@ -156,8 +213,8 @@ def _identity_via_cognito_sub(claims: dict) -> Identity:
         provision_oidc_user,
     )
 
-    # Resolve users.id/email via users.cognito_id (+ approved gate). A DB error
-    # propagates (500); None means unknown or unapproved -> 403.
+    # Resolve users.id/email/mfa via users.cognito_id (+ approved gate). A DB
+    # error propagates (500); None means unknown or unapproved -> 403.
     resolved = resolve_user_by_cognito_id(sub)
     if resolved is None:
         # On-prem first login (OIDC_AUTO_PROVISION): there is no sign-up flow, so
@@ -170,7 +227,22 @@ def _identity_via_cognito_sub(claims: dict) -> Identity:
         if resolved is None:
             raise AuthorizationError(f"No approved user for {principal_claim}={sub!r}")
 
-    user_id, email = resolved
+    user_id, email, mfa_status = resolved
+
+    # AWS Cognito policy only: MFA must be enabled (the Cognito pool has MFA
+    # OPTIONAL, so an approved user may still lack MFA). The on-prem/OIDC policy
+    # delegates MFA to the IdP (Keycloak) and does not re-check it here.
+    if user_auth_policy() == "cognito":
+        from oqtopus_cloud.common.auth.cognito_policy import (  # noqa: PLC0415
+            MfaNotEnabled,
+            require_mfa_enabled,
+        )
+
+        try:
+            require_mfa_enabled(mfa_status)
+        except MfaNotEnabled as e:
+            raise AuthorizationError(str(e)) from e
+
     # On-prem: never auto-update a drifted email. If the verified token's email
     # differs from the stored one, reject (403) rather than trust the token.
     # Skipped on AWS (no auto-provision; access tokens carry no email claim).
@@ -191,6 +263,14 @@ def resolve_identity(request: Request) -> Identity:
     if mode == "aws":
         return _aws_identity(request)
     if mode == "oidc":
+        # Fail-closed on EVERY request, before dispatching: the User API runs
+        # under Mangum with lifespan off, so the startup validate_user_auth_policy
+        # never fires on AWS Lambda. Without this a missing / mistyped
+        # USER_AUTH_POLICY would silently skip the Cognito MFA check (Bearer) and
+        # the Cognito MFA/existence checks (Q-API-Token) on both paths. A
+        # misconfig raises RuntimeError -> 500 (not 401/403), never a silent pass.
+        validate_user_auth_policy()
+
         # "oidc" = verify the token in-app (not an on-prem-only mode): used both
         # on AWS (Cognito, case A -- no API Gateway authorizer) and on-prem
         # (Keycloak). The User API serves two caller kinds that AWS's Lambda

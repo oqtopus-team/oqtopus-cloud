@@ -227,6 +227,12 @@ resource "aws_iam_role_policy_attachment" "cloudtrail_access" {
   policy_arn = aws_iam_policy.cloudtrail_access.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cognito_list_users" {
+  count      = var.enable_cognito_list_users && length(var.cognito_user_pool_arns) > 0 ? 1 : 0
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.cognito_list_users[0].arn
+}
+
 resource "aws_iam_role_policy_attachment" "cognito_admin_delete_user" {
   count      = length(var.cognito_user_pool_arns) > 0 ? 1 : 0
   role       = aws_iam_role.lambda.name
@@ -268,6 +274,15 @@ resource "aws_iam_policy" "cognito_admin_delete_user" {
   count  = length(var.cognito_user_pool_arns) > 0 ? 1 : 0
   name   = "${var.product}-${var.org}-${var.env}-cognito-admin-delete-user-${var.identifier}"
   policy = data.aws_iam_policy_document.cognito_admin_delete_user.json
+}
+
+# Case-A (AUTH_MODE=oidc): the in-app Q-API-Token resolver confirms the caller
+# still exists in the Cognito User Pool (USER_AUTH_POLICY=cognito), the same
+# check the Lambda authorizer made. Scope ListUsers to the pool(s) only.
+resource "aws_iam_policy" "cognito_list_users" {
+  count  = var.enable_cognito_list_users && length(var.cognito_user_pool_arns) > 0 ? 1 : 0
+  name   = "${var.product}-${var.org}-${var.env}-cognito-list-users-${var.identifier}"
+  policy = data.aws_iam_policy_document.cognito_list_users.json
 }
 
 data "aws_iam_policy_document" "lambda_execution" {
@@ -324,6 +339,14 @@ data "aws_iam_policy_document" "cloudtrail_permission" {
 data "aws_iam_policy_document" "cognito_admin_delete_user" {
   statement {
     actions   = ["cognito-idp:AdminDeleteUser"]
+    effect    = "Allow"
+    resources = var.cognito_user_pool_arns
+  }
+}
+
+data "aws_iam_policy_document" "cognito_list_users" {
+  statement {
+    actions   = ["cognito-idp:ListUsers"]
     effect    = "Allow"
     resources = var.cognito_user_pool_arns
   }

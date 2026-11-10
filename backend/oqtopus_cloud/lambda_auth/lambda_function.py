@@ -1,9 +1,7 @@
 import os
 from typing import Optional
 
-import boto3
 import jwt
-from botocore.config import Config
 from sqlalchemy import select
 
 from oqtopus_cloud.common.auth.api_token import (
@@ -12,29 +10,19 @@ from oqtopus_cloud.common.auth.api_token import (
     rehash_api_token_if_needed,
     verify_api_token,
 )
-from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
+from oqtopus_cloud.common.auth.cognito_policy import (
+    CognitoPolicyError,
+    MfaNotEnabled,
+    require_cognito_user_exists,
+    require_mfa_enabled,
+)
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, _create_session
 from oqtopus_cloud.lambda_auth.conf import logger, tracer
 
-# Per-call timeouts so a stalled external dependency raises a Python
-# exception (visible in CloudWatch + X-Ray) instead of consuming the
-# Lambda timeout budget and being SIGKILL'd. Normal latencies observed:
-# Cognito IDP ~120ms, JWKS fetch ~150ms. read_timeout=3s gives ~20x
-# headroom over normal while still failing fast on a real stall; with
-# total_max_attempts=2 (one initial + one retry) the SDK-level worst case
-# is ~7s (3s read + 1s backoff + 3s read), comfortably under the 15s
-# Lambda timeout. connect_timeout=2s bounds the TCP+TLS handshake
-# (anything beyond is anomalous).
-#
-# NB: use total_max_attempts, NOT max_attempts. In a botocore retries
-# config, max_attempts means *retries excluding the initial call*
-# (max_attempts=N -> total_max_attempts=N+1), so max_attempts=2 would be
-# 3 calls (~11s) and blow the worst-case budget above.
-_BOTO_TIMEOUT_CONFIG = Config(
-    connect_timeout=2,
-    read_timeout=3,
-    retries={"total_max_attempts": 2, "mode": "standard"},
-)
+# JWKS fetch timeout (seconds). The Cognito ListUsers call's timeouts live in
+# common.auth.cognito_policy, which both this authorizer and the in-app resolver
+# share so the AWS authorization checks cannot drift.
 _JWKS_HTTP_TIMEOUT_SECONDS = 5
 
 
@@ -74,10 +62,10 @@ def _validate_user_status(
         if user is None:
             logger.info(f"User {user_id} or {cognito_id} is not approved")
             return False
-        # Get the MFA status from the database
-        # only for the case from oqtopus-frontend
-        if user_id and user.mfa_status != MFAStatus.enabled:
-            raise AuthError("MFA is not enabled for this user")
+        # MFA must be enabled for the browser (access-token) path. Shared with
+        # the in-app resolver via common.auth.cognito_policy.
+        if user_id:
+            require_mfa_enabled(user.mfa_status)
         return True
     except Exception as e:
         logger.error(f"Failed to get user status: {e}")
@@ -177,9 +165,13 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     finally:
         db.close()
 
-    # Authorization (no DB connection held across these).
-    if mfa_status != MFAStatus.enabled:
-        raise AuthError("MFA is not enabled for this user")
+    # Authorization (no DB connection held across these). MFA + Cognito-user
+    # existence are shared with the in-app resolver (common.auth.cognito_policy)
+    # so the AWS checks cannot drift.
+    try:
+        require_mfa_enabled(mfa_status)
+    except MfaNotEnabled as e:
+        raise AuthError(str(e))
 
     if cognito_id is None:
         raise AuthError("Cognito id is not found")
@@ -189,21 +181,11 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError("User is not approved")
 
     try:
-        # Initialize the Cognito client with explicit short timeouts so a
-        # stalled IDP call fails fast instead of consuming the Lambda budget.
-        client = boto3.client("cognito-idp", config=_BOTO_TIMEOUT_CONFIG)
-        # Get list users in the Cognito user pool with the specified Cognito ID
-        response = client.list_users(
-            UserPoolId=USER_POOL_ID, Filter=f'sub = "{cognito_id}"'
-        )
-        logger.info(len(response["Users"]))
-        if len(response["Users"]) == 0:
-            raise AuthError("Cognito user is not found")
-        elif len(response["Users"]) > 1:
-            raise AuthError("Cognito user is duplicated")
-        username = response["Users"][0]["Username"]
-    except Exception as e:
+        cognito_user = require_cognito_user_exists(cognito_id, user_pool_id=USER_POOL_ID)
+    except CognitoPolicyError as e:
+        # Preserve the historical deny message (zero/duplicate/Cognito error).
         raise AuthError(f"Failed to list users from Cognito {e}")
+    username = cognito_user["Username"]
 
     # Fully accepted -> opportunistic hash upgrade (never for a rejected req).
     # A fresh short-lived session, so no connection was held during the Cognito

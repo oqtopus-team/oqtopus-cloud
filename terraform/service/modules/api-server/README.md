@@ -109,6 +109,7 @@ module "user_api" {
 | <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
 | <a name="input_editable_fields"></a> [editable\_fields](#input\_editable\_fields) | List of user fields which can be edited by the user | `string` | `"[]"` | no |
+| <a name="input_enable_cognito_list_users"></a> [enable\_cognito\_list\_users](#input\_enable\_cognito\_list\_users) | Grant cognito-idp:ListUsers (scoped to cognito\_user\_pool\_arns) to this service's Lambda role; needed only by the User API under AUTH\_MODE=oidc (case A). Default false keeps least privilege for other services. | `bool` | `false` | no |
 | <a name="input_enable_cors"></a> [enable\_cors](#input\_enable\_cors) | Should enable CORS? (APIs for web client, this should be true, otherse false) | `bool` | `true` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |

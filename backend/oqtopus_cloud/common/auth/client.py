@@ -1,21 +1,29 @@
-"""Resolve a CLI client's identity from a DB-backed ``Q-API-Token`` (on-prem).
+"""Resolve a CLI client's identity from a DB-backed ``Q-API-Token``.
 
 Programmatic clients (``oqtopus-client`` / ``quri-parts-oqtopus``) authenticate
 to the User API with a static ``Q-API-Token: <id>.<secret>`` header rather than
-OIDC -- so this path never talks to an IdP. In AWS the token is verified by the
-API Gateway Lambda authorizer; on-prem the same check runs in-app here.
+OIDC -- so this path never talks to an IdP for *authentication*. Credential
+verification itself lives in :mod:`common.auth.api_token` (shared with the
+Lambda authorizer so the two cannot drift).
 
-Credential verification itself lives in :mod:`common.auth.api_token` (shared
-with the Lambda authorizer so the two cannot drift). This module adds only the
-on-prem concerns: reading the header, mapping to an :class:`Identity`, the
-domain authorization (approved status), and the 401-vs-403 contract. It is
-IdP-agnostic: no Cognito ``ListUsers`` / MFA-enabled / ``cognito_id`` lookup.
+Authorization depends on ``USER_AUTH_POLICY``:
+
+- ``oidc`` (on-prem / generic OIDC): the account must be ``approved``. No
+  Cognito dependency -- no ``ListUsers`` / MFA / ``cognito_id`` lookup.
+- ``cognito`` (AWS, case-A in-app): in addition to ``approved``, the same
+  conditions the Lambda authorizer enforced -- MFA ``enabled``, a non-null
+  ``cognito_id``, and the user still present in the Cognito User Pool
+  (``ListUsers``). These run via :mod:`common.auth.cognito_policy`, shared with
+  the Lambda authorizer. The Cognito network call is made only *after* the DB
+  session is closed, so no RDS Proxy connection is held across it.
+
 The resolved ``user_id`` is ``users.id`` (an email in practice), matching every
 other auth path so downstream handlers are unchanged.
 """
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from oqtopus_cloud.common.auth.api_token import (
@@ -28,6 +36,7 @@ from oqtopus_cloud.common.auth.frontend import (
     AuthError,
     AuthorizationError,
     Identity,
+    user_auth_policy,
 )
 from oqtopus_cloud.common.models.user import UserStatus
 from oqtopus_cloud.common.session import (
@@ -50,8 +59,11 @@ def resolve_api_token_identity(request: Request) -> Identity:
     Raises:
         AuthError: If the token is missing, malformed, unknown, has a bad
             secret, or is expired (-> 401).
-        AuthorizationError: If the token's user is not approved (-> 403).
-
+        AuthorizationError: If the token's user is not approved, or (Cognito
+            policy) lacks MFA / has no cognito_id / no longer exists in the
+            Cognito User Pool (-> 403).
+        CognitoLookupError: (Cognito policy) if the Cognito directory cannot be
+            queried or is ambiguous -- propagates as a 500/503 (fail-closed).
     """
     raw = request.headers.get(API_TOKEN_HEADER)
     # Reject a missing/malformed header before opening a DB session. A
@@ -62,6 +74,10 @@ def resolve_api_token_identity(request: Request) -> Identity:
     except ApiTokenError as e:
         raise AuthError(str(e), challenge=None) from e
 
+    policy = user_auth_policy()
+
+    # Phase 1: verify the token and read everything we need, then CLOSE the DB
+    # session -- the Cognito call below must not pin an RDS Proxy connection.
     db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
     try:
         try:
@@ -74,15 +90,44 @@ def resolve_api_token_identity(request: Request) -> Identity:
         if user.userstatus != UserStatus.approved:
             raise AuthorizationError(f"User '{user.id}' is not approved")
 
-        # Read what we need *before* any commit: rehash below commits, which
-        # (expire_on_commit) would otherwise make reading user.id re-SELECT (and
-        # raise if the row was concurrently deleted). token_id (from the parser)
-        # already equals user.api_token_id, since that's what we looked up by.
+        # Read what we need *before* closing. token_id (from the parser) already
+        # equals user.api_token_id, since that's what we looked up by.
         user_id = str(user.id)
         current_hash = user.api_token_hash
-
-        # Fully accepted -> opportunistic hash upgrade (never for a rejected req).
-        rehash_api_token_if_needed(db, token_id, current_hash, secret)
-        return Identity(user_id=user_id, auth_method="api_token")
+        # Cognito-policy inputs are read only when that policy is active, so the
+        # on-prem path never depends on these columns.
+        mfa_status = user.mfa_status if policy == "cognito" else None
+        cognito_id = user.cognito_id if policy == "cognito" else None
     finally:
         db.close()
+
+    # Phase 2 (AWS Cognito policy only): MFA enabled + cognito_id + the user
+    # still exists in the Cognito User Pool. No DB connection is held here.
+    if policy == "cognito":
+        from oqtopus_cloud.common.auth.cognito_policy import (  # noqa: PLC0415
+            CognitoIdMissing,
+            CognitoUserNotFound,
+            MfaNotEnabled,
+            enforce_api_token_cognito_policy,
+        )
+
+        user_pool_id = os.environ["CLIENT_COGNITO_USER_POOL_ID"]
+        try:
+            enforce_api_token_cognito_policy(
+                mfa_status, cognito_id, user_pool_id=user_pool_id
+            )
+        except (MfaNotEnabled, CognitoIdMissing, CognitoUserNotFound) as e:
+            # Authenticated but not permitted -> 403.
+            raise AuthorizationError(str(e)) from e
+        # CognitoLookupError (Cognito unreachable / ambiguous) is NOT caught:
+        # it propagates and is surfaced as a server error (500), never a silent
+        # accept and never a 403 -- fail-closed.
+
+    # Phase 3: fully accepted -> opportunistic hash upgrade in a fresh, short
+    # session (never for a rejected request; no connection held during Cognito).
+    rehash_db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+    try:
+        rehash_api_token_if_needed(rehash_db, token_id, current_hash, secret)
+    finally:
+        rehash_db.close()
+    return Identity(user_id=user_id, auth_method="api_token")

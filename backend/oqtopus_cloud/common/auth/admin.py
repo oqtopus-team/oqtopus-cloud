@@ -4,20 +4,19 @@ The Admin API authenticates *operators*, not end users, so its authorization
 model differs from the User API:
 
 - there is no DB ``users.status`` approval gate -- being an admin *is* the
-  authorization, and
+    authorization, and
 - the AWS deployment keeps the API Gateway **Cognito authorizer** (unlike the
-  User API's in-app "case A"), so in ``aws`` mode this module only reads the
-  identity the authorizer already verified and injected.
+    User API's in-app "case A"), so in ``aws`` mode this module only reads the
+    identity the authorizer already verified and injected.
 
 Dispatch on ``AUTH_MODE`` (shared with the User API via :func:`auth_mode`):
 
-- ``local`` : hardcoded developer identity (the existing ``ENV=local`` bypass).
-- ``aws``   : read ``cognito:username`` from the Cognito-authorizer claims.
-              Unchanged prod behavior.
-- ``oidc``  : verify a Bearer JWT in-app (e.g. Keycloak behind oauth2-proxy) and
-              require a configured admin role/group claim. "Being an admin" =
-              holding that role; without it the caller is authenticated but not
-              permitted (403).
+- ``local``: hardcoded developer identity (the existing ``ENV=local`` bypass).
+- ``aws``: read ``cognito:username`` from the Cognito-authorizer claims.
+    Unchanged prod behavior.
+- ``oidc``: verify a Bearer JWT in-app (e.g. Keycloak behind oauth2-proxy) and
+    require a configured admin role/group claim. "Being an admin" = holding
+    that role; without it the caller is authenticated but not permitted (403).
 """
 
 import os

@@ -64,8 +64,10 @@ module "user_api" {
   lambda_authorizer_alias = var.user_api_auth_mode == "aws" ? module.lambda_auth.lambda_auth_alias_name : ""
   # The rollback authorizer accepts either Authorization or Q-API-Token.
   # Disable caching so API Gateway does not require one identity-source header.
-  lambda_authorizer_cache_ttl_seconds    = 0
-  cognito_user_pool_arns                 = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  lambda_authorizer_cache_ttl_seconds = 0
+  cognito_user_pool_arns              = [data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_arn]
+  # ListUsers (case-A Q-API-Token existence check) is granted to the User API only.
+  enable_cognito_list_users              = true
   client_cognito_user_pool_id            = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_id
   client_cognito_user_pool_web_client_id = data.terraform_remote_state.infrastructure.outputs.user_cognito.user_pool_web_client_id
   power_tools_metrics_namespace          = "user-api"
@@ -94,6 +96,11 @@ module "user_api" {
     OIDC_TOKEN_USE         = "access"
     OIDC_IDENTITY_RESOLVER = "cognito_sub"
     OIDC_PRINCIPAL_CLAIM   = "sub"
+    # AWS authorization policy: besides `approved`, require MFA enabled and that
+    # the user still exists in the Cognito User Pool (Q-API-Token path) -- the
+    # conditions the Lambda authorizer enforced, now shared in-app. Validated
+    # fail-closed at startup against OIDC_IDENTITY_RESOLVER + the pool id below.
+    USER_AUTH_POLICY = "cognito"
   }
   api_gateway_log_retention_days = var.api_gateway_log_retention_days
   otel_enabled                   = var.otel_enabled

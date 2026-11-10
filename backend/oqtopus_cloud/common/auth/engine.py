@@ -6,12 +6,12 @@ no per-caller identity at all. This module adds a pluggable resolver -- mirrorin
 the user-facing :mod:`oqtopus_cloud.common.auth.frontend` -- selected by the same
 ``AUTH_MODE`` environment variable:
 
-- ``aws``   : the API Gateway validated the API key upstream; there is no
-              per-caller identity. Preserves the existing production behavior.
-- ``oidc``  : verify an OAuth2 *client-credentials* access token (JWKS) and
-              require a configurable scope (``PROVIDER_REQUIRED_SCOPE``,
-              default ``provider.write``). The principal is the client id.
-- ``local`` : bypass (the existing ``ENV=local`` developer path).
+- ``aws``: the API Gateway validated the API key upstream; there is no
+    per-caller identity. Preserves the existing production behavior.
+- ``oidc``: verify an OAuth2 *client-credentials* access token (JWKS) and
+    require a configurable scope (``PROVIDER_REQUIRED_SCOPE``, default
+    ``provider.write``). The principal is the client id.
+- ``local``: bypass (the existing ``ENV=local`` developer path).
 
 Authorization here is intentionally coarse: any client presenting a valid token
 with the required scope may act. Per-device scoping is out of scope.
