@@ -139,7 +139,7 @@ def validate_db_runtime_config() -> None:
     request. The DB password is never logged by this check.
 
     Raises:
-      RuntimeError: for a missing variable, a disallowed connector, an invalid
+        RuntimeError: for a missing variable, a disallowed connector, an invalid
         ``DB_CREDENTIAL_SOURCE``, or a missing/malformed secret file
         (InsecureSecretFile / FileNotFoundError also propagate from the loader).
     """
@@ -163,19 +163,19 @@ def get_secret() -> Any:
     Retrieves the database credentials from the configured source.
 
     Source is ``db_credential_source()``:
-      - ``file`` -> ``{"username", "password"}`` JSON from the restricted
+        - ``file`` -> ``{"username", "password"}`` JSON from the restricted
         ``DB_SECRET_FILE`` (on-prem; same file-secret contract as the ops CLI).
         Fail-closed: no fallback to local/AWS.
-      - ``local`` -> developer env vars (``DB_USERNAME`` / ``DB_PASSWORD``).
-      - ``aws`` -> AWS Secrets Manager.
+        - ``local`` -> developer env vars (``DB_USERNAME`` / ``DB_PASSWORD``).
+        - ``aws`` -> AWS Secrets Manager.
 
     Raises:
-      ClientError: If there is an error while retrieving the secret from AWS.
-      RuntimeError / InsecureSecretFile / FileNotFoundError: for a bad config or
+        ClientError: If there is an error while retrieving the secret from AWS.
+        RuntimeError / InsecureSecretFile / FileNotFoundError: for a bad config or
         an unsafe/missing/malformed secret file.
 
     Returns:
-      Any: The retrieved database credentials (``{"username", "password"}``).
+        Any: The retrieved database credentials (``{"username", "password"}``).
     """
     source = db_credential_source()
     if source == "file":

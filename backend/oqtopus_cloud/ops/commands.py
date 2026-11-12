@@ -4,12 +4,12 @@ Each function returns an ordered ``{step_name: callable}`` mapping. The order is
 the contract:
 
 - ``user-disable`` / ``user-delete`` (Phase 1 = logical delete, no physical
-  removal) suspend the DB **first** so API access stops immediately, then revoke
-  the API token and Keycloak sessions, remove the admin group, and lock the LDAP
-  account. A partial failure stays fail-closed (only disable steps remain).
+    removal) suspend the DB **first** so API access stops immediately, then revoke
+    the API token and Keycloak sessions, remove the admin group, and lock the LDAP
+    account. A partial failure stays fail-closed (only disable steps remain).
 - ``admin-revoke`` removes the LDAP group **before** revoking sessions.
 - ``admin-grant`` adds the group then revokes sessions so a re-login/refresh
-  picks up the new role.
+    picks up the new role.
 
 Callables depend only on the adapter protocols, so these are unit-testable with
 fakes. The temp password passed to ``user-add`` is used by a step and never

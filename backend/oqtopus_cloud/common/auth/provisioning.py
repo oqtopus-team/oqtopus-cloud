@@ -14,12 +14,12 @@ Phase 2.
 Invariants enforced here:
 
 - Runs only on the OIDC browser path (never Q-API-Token or Admin auth), only
-  after the token's signature/issuer/audience/expiry were verified.
+    after the token's signature/issuer/audience/expiry were verified.
 - Never auto-approves (status = ``unapproved``).
 - Never updates or merges an existing row: a ``sub`` whose email changed, or an
-  email already used by a different ``sub``, is a conflict -> 403, no DB change.
+    email already used by a different ``sub``, is a conflict -> 403, no DB change.
 - Idempotent via the PK (``id = email``) and the unique ``cognito_id``; a
-  concurrent first login that loses the race is rolled back and re-resolved.
+    concurrent first login that loses the race is rolled back and re-resolved.
 - Does not create a row when the email claim is missing.
 - Audits creations and conflicts.
 """

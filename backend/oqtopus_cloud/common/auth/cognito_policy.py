@@ -85,9 +85,9 @@ def require_cognito_user_exists(
     """Confirm exactly one Cognito user has ``sub == cognito_id``; return it.
 
     Fail-closed:
-      - missing ``cognito_id`` -> :class:`CognitoIdMissing` (403)
-      - zero matches -> :class:`CognitoUserNotFound` (403, account gone)
-      - a Cognito error, or more than one match -> :class:`CognitoLookupError`
+        - missing ``cognito_id`` -> :class:`CognitoIdMissing` (403)
+        - zero matches -> :class:`CognitoUserNotFound` (403, account gone)
+        - a Cognito error, or more than one match -> :class:`CognitoLookupError`
         (500/503; never silently accepted)
 
     Returns the single matched Cognito user record (so a caller that needs the

@@ -9,13 +9,13 @@ Lambda authorizer so the two cannot drift).
 Authorization depends on ``USER_AUTH_POLICY``:
 
 - ``oidc`` (on-prem / generic OIDC): the account must be ``approved``. No
-  Cognito dependency -- no ``ListUsers`` / MFA / ``cognito_id`` lookup.
+    Cognito dependency -- no ``ListUsers`` / MFA / ``cognito_id`` lookup.
 - ``cognito`` (AWS, case-A in-app): in addition to ``approved``, the same
-  conditions the Lambda authorizer enforced -- MFA ``enabled``, a non-null
-  ``cognito_id``, and the user still present in the Cognito User Pool
-  (``ListUsers``). These run via :mod:`common.auth.cognito_policy`, shared with
-  the Lambda authorizer. The Cognito network call is made only *after* the DB
-  session is closed, so no RDS Proxy connection is held across it.
+    conditions the Lambda authorizer enforced -- MFA ``enabled``, a non-null
+    ``cognito_id``, and the user still present in the Cognito User Pool
+    (``ListUsers``). These run via :mod:`common.auth.cognito_policy`, shared with
+    the Lambda authorizer. The Cognito network call is made only *after* the DB
+    session is closed, so no RDS Proxy connection is held across it.
 
 The resolved ``user_id`` is ``users.id`` (an email in practice), matching every
 other auth path so downstream handlers are unchanged.

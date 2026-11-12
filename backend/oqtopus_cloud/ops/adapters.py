@@ -6,11 +6,11 @@ fakes). The concrete implementations below perform the real I/O.
 
 Safety:
 - LDAP connections use ``raise_exceptions=True``; only explicitly idempotent
-  result codes (entry/attr already exists, no-such-attr on delete) are
-  swallowed. Every other failure propagates, so a step is never journaled
-  ``done`` on an ACL/schema/ppolicy/connectivity error.
+    result codes (entry/attr already exists, no-such-attr on delete) are
+    swallowed. Every other failure propagates, so a step is never journaled
+    ``done`` on an ACL/schema/ppolicy/connectivity error.
 - LDAP TLS requires the internal CA and ``CERT_REQUIRED`` (verified cert +
-  hostname). Plaintext is only reachable via an explicit demo-only flag.
+    hostname). Plaintext is only reachable via an explicit demo-only flag.
 - Keycloak HTTP uses a timeout and expects an ``https`` base URL.
 All methods are idempotent.
 """

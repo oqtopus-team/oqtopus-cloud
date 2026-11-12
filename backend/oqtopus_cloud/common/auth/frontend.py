@@ -76,10 +76,10 @@ def user_auth_policy() -> str:
     """Return the configured User-API authorization policy (lowercased, or "").
 
     - ``cognito``: apply the AWS Cognito conditions the Lambda authorizer used to
-      enforce -- MFA must be ``enabled``, and a Q-API-Token caller must still
-      exist in the Cognito User Pool.
+        enforce -- MFA must be ``enabled``, and a Q-API-Token caller must still
+        exist in the Cognito User Pool.
     - ``oidc``: MFA is delegated to the IdP (Keycloak / generic OIDC); only the
-      ``approved`` status is required, with no Cognito dependency.
+        ``approved`` status is required, with no Cognito dependency.
 
     Deliberately independent of ``OIDC_IDENTITY_RESOLVER``, the issuer,
     ``OIDC_AUTO_PROVISION`` and the presence of Cognito env vars: the policy is
@@ -97,10 +97,10 @@ def validate_user_auth_policy() -> None:
     Lambda authorizer; ``local`` is dev). Under ``oidc``:
 
     - ``USER_AUTH_POLICY`` must be exactly ``cognito`` or ``oidc`` -- unset or an
-      unknown value aborts startup (never defaults to the weaker policy).
+        unknown value aborts startup (never defaults to the weaker policy).
     - ``cognito`` additionally requires ``OIDC_IDENTITY_RESOLVER=cognito_sub`` and
-      a Cognito User Pool id (``CLIENT_COGNITO_USER_POOL_ID``); otherwise the MFA
-      and Cognito-existence checks could not run, so the config is rejected.
+        a Cognito User Pool id (``CLIENT_COGNITO_USER_POOL_ID``); otherwise the MFA
+        and Cognito-existence checks could not run, so the config is rejected.
 
     Raises:
         RuntimeError: on an unset/unknown policy or a contradictory config.
