@@ -6,6 +6,18 @@ provider (Keycloak), which federates an internal **LDAP** directory, fronted by
 **oauth2-proxy**. The API no longer depends on Amplify/Cognito — it just verifies
 an OIDC JWT and enforces its own authorization.
 
+> ## ⚠️ Security warning — demo only
+>
+> - This configuration is for **development and demonstrations only**. Never use
+>   it in production or expose it to the public internet.
+> - Use it only on a **trusted internal network or through a VPN**.
+> - It uses plain **HTTP**, `cookie-secure=false`, **fixed secrets** and **fixed
+>   demo passwords**.
+> - Docker Compose may expose the **database, LDAP, API and storage ports** externally,
+>   so restrict access with a host firewall or an equivalent network control.
+> - **Stop the stack after the demonstration** (see "Stop / reset").
+> - Production deployments must use the separate, hardened production configuration.
+
 ## Why this exists
 
 The requirement is to deploy the whole stack **on an internal network without
@@ -382,21 +394,31 @@ src/auth/
 
 ## Run it
 
-```bash
-# 1) Build the SPA in proxy mode (from the frontend repo)
-cd ../../oqtopus-frontend        # adjust to your checkout
-bun install
-VITE_APP_AUTH_MODE=proxy \
-  VITE_APP_ACCOUNT_CONSOLE_URL=http://localhost:8081/realms/oqtopus/account/ \
-  bun run build
+> When using a non-`localhost` `PUBLIC_HOST`, the stack is reachable by other
+> machines: read the **security warning** at the top of this file first.
 
-# 2) Bring up the full stack incl. nginx + SPA (from backend/)
-cd -                             # back to backend/
+```bash
+# 0) Hostname that browsers use to reach this host (default: localhost).
+#    For access from another PC use its IP/hostname, e.g. 192.168.1.10.
+export PUBLIC_HOST=localhost
+
+# 1) Build the SPAs in proxy mode (sibling checkouts of this repo)
+(cd ../../oqtopus-frontend && bun install && \
+  VITE_APP_AUTH_MODE=proxy \
+  VITE_APP_ACCOUNT_CONSOLE_URL=http://${PUBLIC_HOST}:8081/realms/oqtopus/account/ \
+  bun run build)
+(cd ../../oqtopus-admin && bun install && \
+  VITE_APP_AUTH_MODE=proxy \
+  VITE_APP_ACCOUNT_CONSOLE_URL=http://${PUBLIC_HOST}:8081/realms/oqtopus/account/ \
+  bun run build)
+
+# 2) Bring up the full stack incl. nginx + SPA (from backend/;
+#    PUBLIC_HOST is picked up from the environment variable or from .env)
 docker compose -f compose.yaml -f compose.auth.yaml -f compose.frontend.yaml up -d --build
 make migrate-up && make seed     # if not already seeded
 ```
 
-Then open <http://localhost:4200/dashboard> in a browser:
+Then open `http://${PUBLIC_HOST}:4200/dashboard` (default <http://localhost:4200/dashboard>) in a browser:
 
 1. You're redirected to Keycloak and log in as **`demo` / `demopassword`** (LDAP).
 2. **First login forces TOTP (MFA) enrollment** — scan the QR with an authenticator
