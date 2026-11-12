@@ -63,6 +63,14 @@ paths:
                 $ref: '#/components/schemas/error.NotFoundError'
               example:
                 message: Device not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.ConflictError'
+              example:
+                message: Device history already exists
         '500':
           description: Internal Server Error
           content:
@@ -571,6 +579,14 @@ components:
           nullable: false
       required:
         - message
+    error.ConflictError:
+      type: object
+      properties:
+        message:
+          type: string
+          nullable: false
+      required:
+        - message
     error.InternalServerError:
       type: object
       properties:
@@ -846,14 +862,6 @@ components:
       required:
         - status
     jobs.JobStatusUpdateResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          nullable: false
-      required:
-        - message
-    error.ConflictError:
       type: object
       properties:
         message:

@@ -556,6 +556,134 @@ paths:
                 $ref: '#/components/schemas/error.InternalServerError'
               example:
                 message: Internal server error
+  /device_histories:
+    get:
+      tags:
+        - devices
+      summary: List device histories
+      description: List device history metadata, ordered by calibrated_at and history_id descending. Optionally filter by device_id.
+      operationId: list_device_histories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Returns device history metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfoHistoryListResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Device with device_id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+  /device_histories/{history_id}:
+    get:
+      tags:
+        - devices
+      summary: Get device history
+      operationId: get_device_history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: history_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns device history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/devices.DeviceInfoHistoryDetail'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Device history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
+    delete:
+      tags:
+        - devices
+      summary: Delete device history
+      operationId: delete_device_history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: history_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Device history deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Device history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.InternalServerError'
   /devices/{device_id}/device_info/upload:
     get:
       tags:
@@ -1305,6 +1433,64 @@ components:
         description:
           type: string
           example: Superconducting quantum computer
+    devices.DeviceInfoHistoryEntry:
+      type: object
+      properties:
+        history_id:
+          description: Unique string identifying the device history.
+          type: string
+          example: 018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12
+        device_id:
+          type: string
+          example: qulacs
+        calibrated_at:
+          type: string
+          format: date-time
+          example: '2024-03-04T12:34:56Z'
+        n_qubits:
+          type: integer
+          example: 64
+        n_couplings:
+          type: integer
+          example: 72
+      required:
+        - history_id
+        - device_id
+        - calibrated_at
+        - n_qubits
+        - n_couplings
+    devices.DeviceInfoHistoryListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/devices.DeviceInfoHistoryEntry'
+        total:
+          type: integer
+          example: 3
+        limit:
+          type: integer
+          example: 100
+        offset:
+          type: integer
+          example: 0
+      required:
+        - items
+        - total
+        - limit
+        - offset
+    devices.DeviceInfoHistoryDetail:
+      allOf:
+        - $ref: '#/components/schemas/devices.DeviceInfoHistoryEntry'
+        - type: object
+          properties:
+            device_info:
+              description: Presigned URL for downloading the historical device_info.zip.
+              type: string
+              example: https://oqtopus-cloud.s3.amazonaws.com/device_histories/018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE
+          required:
+            - device_info
     devices.DeviceInfoUploadPresignedURL:
       type: object
       description: Presigned URL for uploading device_info.zip to OQTOPUS cloud.

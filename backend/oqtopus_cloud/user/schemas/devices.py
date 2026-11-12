@@ -86,3 +86,35 @@ class DeviceInfo(BaseModel):
     description: Annotated[
         str, Field(examples=["State vector-based quantum circuit simulator"])
     ]
+
+
+class DeviceInfoHistoryEntry(BaseModel):
+    history_id: Annotated[str, Field(examples=["018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12"])]
+    """
+    Unique string identifying the device history.
+    """
+    device_id: Annotated[str, Field(examples=["qulacs"])]
+    calibrated_at: Annotated[AwareDatetime, Field(examples=["2024-03-04T12:34:56Z"])]
+    n_qubits: Annotated[int, Field(examples=[64])]
+    n_couplings: Annotated[int, Field(examples=[72])]
+
+
+class DeviceInfoHistoryListResponse(BaseModel):
+    items: list[DeviceInfoHistoryEntry]
+    total: Annotated[int, Field(examples=[3])]
+    limit: Annotated[int, Field(examples=[100])]
+    offset: Annotated[int, Field(examples=[0])]
+
+
+class DeviceInfoHistoryDetail(DeviceInfoHistoryEntry):
+    device_info: Annotated[
+        str,
+        Field(
+            examples=[
+                "https://oqtopus-cloud.s3.amazonaws.com/device_histories/018f4c8a-7c2b-7f4d-9a2f-4f2f0b8f6f12/device_info.zip?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+            ]
+        ),
+    ]
+    """
+    Presigned URL for downloading the historical device_info.zip.
+    """

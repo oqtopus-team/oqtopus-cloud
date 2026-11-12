@@ -1,21 +1,30 @@
 import json
+from datetime import datetime, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi import Request as Event
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.models.user import User
 from oqtopus_cloud.common.session import (
     get_db,
 )
 from oqtopus_cloud.common.storages import AbstractStorage, get_storage
-from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
+    get_device_info_key,
+)
 from oqtopus_cloud.user.conf import logger, tracer
 from oqtopus_cloud.user.schemas.devices import (
     DeviceInfo,
+    DeviceInfoHistoryDetail,
+    DeviceInfoHistoryEntry,
+    DeviceInfoHistoryListResponse,
 )
 from oqtopus_cloud.user.schemas.errors import (
     ErrorResponse,
@@ -30,6 +39,77 @@ from . import LoggerRouteHandler
 utc = ZoneInfo("UTC")
 
 router: APIRouter = APIRouter(route_class=LoggerRouteHandler)
+
+
+def _normalize_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _history_to_entry(history: DeviceInfoHistory) -> DeviceInfoHistoryEntry:
+    return DeviceInfoHistoryEntry(
+        history_id=history.history_id,
+        device_id=history.device_id,
+        calibrated_at=history.calibrated_at,
+        n_qubits=history.n_qubits,
+        n_couplings=history.n_couplings,
+    )
+
+
+def _get_history_object_key(history: DeviceInfoHistory) -> str:
+    return get_device_info_history_key(history.history_id)
+
+
+def _history_to_detail(
+    history: DeviceInfoHistory, storage: AbstractStorage
+) -> DeviceInfoHistoryDetail:
+    return DeviceInfoHistoryDetail(
+        history_id=history.history_id,
+        device_id=history.device_id,
+        calibrated_at=history.calibrated_at,
+        n_qubits=history.n_qubits,
+        n_couplings=history.n_couplings,
+        device_info=storage.get_download_presigned_url(
+            key=_get_history_object_key(history)
+        ),
+    )
+
+
+def _check_user_device_access(
+    device_id: str, event: Event, db: Session
+) -> Device | ErrorResponse:
+    device = db.scalars(select(Device).where(Device.id == device_id)).first()
+    if device is None:
+        message = f"device_id={device_id} is not found."
+        logger.info(message)
+        return NotFoundErrorResponse(message=message)
+
+    user_id = event.state.user_id
+    available_devices = get_user_available_devices(user_id, db)
+
+    if available_devices != "*" and device_id not in available_devices:
+        logger.error(f"{user_id} is not allowed to access device_id={device_id}.")
+        return ForbiddenErrorResponse(message=f"Cannot access device_id={device_id}.")
+
+    return device
+
+
+def _apply_history_filters(
+    stmt,
+    count_stmt,
+    from_: datetime | None,
+    to: datetime | None,
+):
+    if from_ is not None:
+        from_ = _normalize_utc(from_)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at >= from_)
+    if to is not None:
+        to = _normalize_utc(to)
+        stmt = stmt.where(DeviceInfoHistory.calibrated_at <= to)
+        count_stmt = count_stmt.where(DeviceInfoHistory.calibrated_at <= to)
+    return stmt, count_stmt
 
 
 @router.get(
@@ -105,6 +185,109 @@ def get_device(
 
         response = model_to_schema(device, storage)
         return response
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/device_histories",
+    response_model=DeviceInfoHistoryListResponse,
+    responses={
+        403: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def list_device_histories(
+    event: Event,
+    device_id: str | None = None,
+    from_: Annotated[datetime | None, Query(alias="from")] = None,
+    to: datetime | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    db: Session = Depends(get_db),
+) -> DeviceInfoHistoryListResponse | ErrorResponse:
+    try:
+        stmt = select(DeviceInfoHistory)
+        count_stmt = select(func.count()).select_from(DeviceInfoHistory)
+
+        if device_id is not None:
+            access_result = _check_user_device_access(device_id, event, db)
+            if isinstance(access_result, ErrorResponse):
+                return access_result
+            stmt = stmt.where(DeviceInfoHistory.device_id == device_id)
+            count_stmt = count_stmt.where(DeviceInfoHistory.device_id == device_id)
+        else:
+            available_devices = get_user_available_devices(event.state.user_id, db)
+            if available_devices != "*":
+                if len(available_devices) == 0:
+                    return DeviceInfoHistoryListResponse(
+                        items=[], total=0, limit=limit, offset=offset
+                    )
+                stmt = stmt.where(DeviceInfoHistory.device_id.in_(available_devices))
+                count_stmt = count_stmt.where(
+                    DeviceInfoHistory.device_id.in_(available_devices)
+                )
+
+        stmt, count_stmt = _apply_history_filters(stmt, count_stmt, from_, to)
+        total = db.scalar(count_stmt) or 0
+        histories = db.scalars(
+            stmt.order_by(
+                DeviceInfoHistory.calibrated_at.desc(),
+                DeviceInfoHistory.history_id.desc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        return DeviceInfoHistoryListResponse(
+            items=[_history_to_entry(history) for history in histories],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        tracer.put_annotation("error", str(e))
+        logger.exception(f"Internal Server Error: {e}")
+        return InternalServerErrorResponse(message="Internal Server Error")
+
+
+@router.get(
+    "/device_histories/{history_id}",
+    response_model=DeviceInfoHistoryDetail,
+    responses={
+        403: {"model": Message},
+        404: {"model": Message},
+        500: {"model": Message},
+    },
+)
+@tracer.capture_method
+def get_device_history(
+    history_id: str,
+    event: Event,
+    db: Session = Depends(get_db),
+    storage: AbstractStorage = Depends(get_storage),
+) -> DeviceInfoHistoryDetail | ErrorResponse:
+    try:
+        history = db.scalars(
+            select(DeviceInfoHistory).where(DeviceInfoHistory.history_id == history_id)
+        ).first()
+        if history is None:
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_id={history_id} is not found."
+            )
+
+        access_result = _check_user_device_access(history.device_id, event, db)
+        if isinstance(access_result, ErrorResponse):
+            return NotFoundErrorResponse(
+                message=f"device_info_history history_id={history_id} is not found."
+            )
+
+        if not storage.does_exist(key=_get_history_object_key(history)):
+            return NotFoundErrorResponse(message="device_info object is not found.")
+        return _history_to_detail(history, storage)
     except Exception as e:
         tracer.put_annotation("error", str(e))
         logger.exception(f"Internal Server Error: {e}")

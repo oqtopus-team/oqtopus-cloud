@@ -1,23 +1,45 @@
 import json
 import os
 from datetime import datetime, timezone
+from io import BytesIO
+import zipfile
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from oqtopus_cloud.admin.lambda_function import app
+from oqtopus_cloud.admin.routers.devices import delete_device, delete_device_history
 from oqtopus_cloud.admin.schemas.devices import (
     DeviceInfo,
     DeviceType,
     Status,
 )
 from oqtopus_cloud.common.models.device import Device
+from oqtopus_cloud.common.models.device_info_history import DeviceInfoHistory
 from oqtopus_cloud.common.storages import FSSpecStorage
-from oqtopus_cloud.common.storages.storage_utils import get_device_info_key
+from oqtopus_cloud.common.storages.storage_utils import (
+    get_device_info_history_key,
+    get_device_info_key,
+)
 from pydantic.type_adapter import TypeAdapter
+from sqlalchemy.orm import Session
 from zoneinfo import ZoneInfo
 
 client = TestClient(app)
 
 utc = ZoneInfo("UTC")
+
+
+def _device_info_archive_bytes(device_info: dict) -> bytes:
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("device_info.json", json.dumps(device_info))
+    return buffer.getvalue()
+
+
+def _put_device_info(storage: FSSpecStorage, device_id: str, device_info: dict) -> str:
+    key = get_device_info_key(device_id)
+    storage.put(key=key, data=_device_info_archive_bytes(device_info))
+    return storage.get_download_presigned_url(key=key)
 
 
 def _get_model(n, device_info=None):
@@ -38,6 +60,21 @@ def _get_model(n, device_info=None):
     return Device(**mode_dict)
 
 
+def _get_history_model(
+    device_id: str,
+    calibrated_at: datetime,
+    n_qubits: int,
+    n_couplings: int,
+) -> DeviceInfoHistory:
+    return DeviceInfoHistory(
+        history_id=f"history-{device_id}-{calibrated_at:%Y%m%d%H%M%S}",
+        device_id=device_id,
+        calibrated_at=calibrated_at,
+        n_qubits=n_qubits,
+        n_couplings=n_couplings,
+    )
+
+
 def test_get_devices(
     test_db,
 ):
@@ -46,6 +83,9 @@ def test_get_devices(
     """
     device_info1 = {"device_id": "SVSim1"}
     device_info2 = {"device_id": "SVSim2"}
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    device_info_url1 = _put_device_info(storage, "SVSim1", device_info1)
+    device_info_url2 = _put_device_info(storage, "SVSim2", device_info2)
 
     test_db.flush()
     test_db.add(_get_model(1, device_info1))
@@ -64,7 +104,7 @@ def test_get_devices(
             n_qubits=2,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info1),
+            device_info=device_info_url1,
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -77,7 +117,7 @@ def test_get_devices(
             n_qubits=3,
             basis_gates=["x", "sx", "rz", "cx"],
             supported_instructions=["measure", "barrier", "reset"],
-            device_info=json.dumps(device_info2),
+            device_info=device_info_url2,
             calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
             description="State vector-based quantum circuit simulator",
         ),
@@ -101,6 +141,8 @@ def test_get_device(
     Simple GET /devices/{device_id} tests
     """
     device_info = {"device_id": "SVSim1"}
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    device_info_url = _put_device_info(storage, "SVSim1", device_info)
 
     test_db.flush()
     test_db.add(_get_model(1, device_info))
@@ -117,7 +159,7 @@ def test_get_device(
         n_qubits=2,
         basis_gates=["x", "sx", "rz", "cx"],
         supported_instructions=["measure", "barrier", "reset"],
-        device_info=json.dumps(device_info),
+        device_info=device_info_url,
         calibrated_at=datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc),
         description="State vector-based quantum circuit simulator",
     )
@@ -145,6 +187,156 @@ def test_get_device_no_device(
     test_db.add(_get_model(1, device_info))
     test_db.commit()
     response = client.get("/devices/SVSim2")
+    assert response.status_code == 404
+
+
+def test_list_device_histories(test_db):
+    device_info = {"device_id": "SVSim1"}
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
+    )
+    test_db.add(
+        _get_history_model("SVSim1", datetime(2024, 3, 5, 12, 34, 56, tzinfo=utc), 4, 3)
+    )
+    test_db.commit()
+
+    response = client.get("/device_histories?device_id=SVSim1&limit=1")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "items": [
+            {
+                "history_id": "history-SVSim1-20240305123456",
+                "device_id": "SVSim1",
+                "calibrated_at": "2024-03-05T12:34:56Z",
+                "n_qubits": 4,
+                "n_couplings": 3,
+            }
+        ],
+        "total": 2,
+        "limit": 1,
+        "offset": 0,
+    }
+
+
+def test_list_device_histories_uses_stable_order_for_equal_timestamps(test_db):
+    calibrated_at = datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc)
+    test_db.add_all(
+        [
+            _get_model(1, {"device_id": "SVSim1"}),
+            _get_model(2, {"device_id": "SVSim2"}),
+            _get_history_model("SVSim1", calibrated_at, 2, 1),
+            _get_history_model("SVSim2", calibrated_at, 4, 3),
+        ]
+    )
+    test_db.commit()
+
+    first_page = client.get("/device_histories?limit=1&offset=0")
+    second_page = client.get("/device_histories?limit=1&offset=1")
+
+    assert first_page.json()["items"][0]["history_id"] == (
+        "history-SVSim2-20240304123456"
+    )
+    assert second_page.json()["items"][0]["history_id"] == (
+        "history-SVSim1-20240304123456"
+    )
+
+
+def test_get_device_history(test_db):
+    device_info = {"device_id": "SVSim1"}
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
+    storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
+    )
+    test_db.commit()
+
+    response = client.get("/device_histories/history-SVSim1-20240304123456")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "history_id": "history-SVSim1-20240304123456",
+        "device_id": "SVSim1",
+        "calibrated_at": "2024-03-04T12:34:56Z",
+        "n_qubits": 2,
+        "n_couplings": 1,
+        "device_info": f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}/{history_key}",
+    }
+
+
+def test_delete_device_history(test_db):
+    device_info = {"device_id": "SVSim1"}
+    history_key = get_device_info_history_key("history-SVSim1-20240304123456")
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=history_key, data=_device_info_archive_bytes(device_info))
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
+    )
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-SVSim1-20240304123456")
+
+    assert response.status_code == 204
+    assert (
+        test_db.query(DeviceInfoHistory)
+        .filter_by(history_id="history-SVSim1-20240304123456")
+        .first()
+        is None
+    )
+    assert not storage.does_exist(key=history_key)
+
+
+def test_delete_device_history_allows_missing_storage_object(test_db):
+    device_info = {"device_id": "SVSim1"}
+    test_db.add(_get_model(1, device_info))
+    test_db.add(
+        _get_history_model("SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1)
+    )
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-SVSim1-20240304123456")
+
+    assert response.status_code == 204
+    assert (
+        test_db.query(DeviceInfoHistory)
+        .filter_by(history_id="history-SVSim1-20240304123456")
+        .first()
+        is None
+    )
+
+
+def test_delete_device_history_restores_storage_after_commit_failure(test_db):
+    device_info = {"device_id": "SVSim1"}
+    history = _get_history_model(
+        "SVSim1", datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+    )
+    history_key = get_device_info_history_key(history.history_id)
+    archive = _device_info_archive_bytes(device_info)
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=history_key, data=archive)
+    test_db.add(_get_model(1, device_info))
+    test_db.add(history)
+    Session.commit(test_db)
+
+    with patch.object(test_db, "commit", side_effect=RuntimeError("commit failed")):
+        result = delete_device_history(history.history_id, test_db, storage)
+
+    assert result.status_code == 500
+    assert test_db.get(DeviceInfoHistory, history.history_id) is not None
+    assert storage.get(key=history_key) == archive
+
+
+def test_delete_device_history_404(test_db):
+    device_info = {"device_id": "SVSim1"}
+    test_db.add(_get_model(1, device_info))
+    test_db.commit()
+
+    response = client.delete("/device_histories/history-unknown")
+
     assert response.status_code == 404
 
 
@@ -534,6 +726,32 @@ def test_delete_device_deletes_uploaded_device_info(
     device = test_db.query(Device).filter(Device.id == "SVSim1").first()
     assert device is None
     assert not storage.does_exist(key=device_info_key)
+
+
+def test_delete_device_restores_storage_after_commit_failure(test_db):
+    device_info = {"device_id": "SVSim1"}
+    device = _get_model(1, device_info)
+    history = _get_history_model(
+        device.id, datetime(2024, 3, 4, 12, 34, 56, tzinfo=utc), 2, 1
+    )
+    device_info_key = get_device_info_key(device.id)
+    history_key = get_device_info_history_key(history.history_id)
+    archive = _device_info_archive_bytes(device_info)
+    storage = FSSpecStorage(fs_url=f"file://{os.environ['STORAGE_LOCAL_BASE_PATH']}")
+    storage.put(key=device_info_key, data=archive)
+    storage.put(key=history_key, data=archive)
+    test_db.add(device)
+    test_db.add(history)
+    Session.commit(test_db)
+
+    with patch.object(test_db, "commit", side_effect=RuntimeError("commit failed")):
+        result = delete_device(device.id, test_db, storage)
+
+    assert result.status_code == 500
+    assert test_db.get(Device, device.id) is not None
+    assert test_db.get(DeviceInfoHistory, history.history_id) is not None
+    assert storage.get(key=device_info_key) == archive
+    assert storage.get(key=history_key) == archive
 
 
 def test_delete_device_404(
