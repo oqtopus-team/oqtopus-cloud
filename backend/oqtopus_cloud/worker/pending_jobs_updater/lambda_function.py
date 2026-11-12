@@ -59,13 +59,16 @@ class Response:
 @event_source(data_class=EventBridgeEvent)
 def lambda_handler(event: EventBridgeEvent, context):
     logger.info("invoke worker lambda_handler")
+    db_generator = get_db()
     try:
-        db = next(get_db())
+        db = next(db_generator)
         response = update_pending_jobs(db, datetime.now(tz=timezone.utc))
         return response
     except Exception as e:
         logger.exception("Error occurred")
         return Response.error(str(e))
+    finally:
+        db_generator.close()
 
 
 def update_pending_jobs(db, current: datetime):
