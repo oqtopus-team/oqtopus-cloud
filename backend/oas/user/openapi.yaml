@@ -163,7 +163,7 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 65535
+            maximum: 100
             default: 10
         - name: order
           in: query
@@ -184,6 +184,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/jobs.Job'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error.BadRequest'
+              example:
+                message: Bad request malformed input data
         '401':
           description: Unauthorized
           content:
@@ -1259,6 +1267,13 @@ components:
         ready_at: '2022-10-19T11:45:34Z'
         running_at: '2022-10-19T11:45:34Z'
         ended_at: '2022-10-19T11:45:34Z'
+    error.BadRequest:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     jobs.JobInfoUploadPresignedURL:
       description: Presigned URL for uploading file to OCTOPUS cloud.
       type: object
@@ -1296,13 +1311,6 @@ components:
       required:
         - job_id
         - presigned_url
-    error.BadRequest:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-        - message
     jobs.SubmitJobRequest:
       type: object
       properties:

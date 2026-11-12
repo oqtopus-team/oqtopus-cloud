@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+import pytest
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.models.user import User, UserStatus
@@ -547,6 +548,94 @@ def test_get_jobs_invalid_fields(
 
     assert response.status_code == 400
     assert actual == expect
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "page=0",
+        "page=abc",
+        "page=4294967296",
+        "page=99999999999999999999",
+        "size=0",
+        "size=101",
+        "size=abc",
+    ],
+)
+def test_get_jobs_invalid_pagination(
+    test_client,
+    test_db,
+    query,
+):
+    """_summary_
+    GET /jobs with a page or size out of range returns 400, not 500
+    """
+
+    test_db.flush()
+    test_db.add(_get_submitted_model(1))
+    test_db.commit()
+
+    response = test_client.get(f"/jobs?{query}")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "message": "page must be an integer from 1 to 4294967295 and size an integer from 1 to 100"
+    }
+
+
+def test_get_jobs_max_pagination(
+    test_client,
+    test_db,
+):
+    """_summary_
+    GET /jobs with the largest allowed size, and with the largest allowed page
+    """
+
+    test_db.flush()
+    test_db.add(_get_submitted_model(1))
+    test_db.commit()
+
+    response = test_client.get("/jobs?size=100&fields=job_id")
+
+    assert response.status_code == 200
+    assert response.json() == [{"job_id": "testjob1id"}]
+
+    response = test_client.get("/jobs?page=4294967295&size=100&fields=job_id")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "start_time=not-a-date",
+        "end_time=2024-13-01T00%3A00%3A00Z",
+        "start_time=0001-01-01T00:00:00%2B14:00",
+        "end_time=0001-01-01T00:00:00%2B14:00",
+        "start_time=9999-12-31T23:59:59-14:00",
+        "end_time=9999-12-31T23:59:59-14:00",
+    ],
+)
+def test_get_jobs_invalid_time(
+    test_client,
+    test_db,
+    query,
+):
+    """_summary_
+    GET /jobs with an invalid or out-of-range date-time returns 400, not 500
+    """
+
+    test_db.flush()
+    test_db.add(_get_submitted_model(1))
+    test_db.commit()
+
+    response = test_client.get(f"/jobs?{query}")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "message": "start_time and end_time must be ISO 8601 date-times within the supported range"
+    }
 
 
 def test_get_jobs_filtering_start_time(
