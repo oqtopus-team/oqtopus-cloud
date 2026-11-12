@@ -57,8 +57,14 @@ module "user_api" {
 | [aws_api_gateway_stage.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_stage) | resource |
 | [aws_cloudwatch_log_group.api_gateway_log_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_cloudwatch_log_group.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_cloudwatch_metric_alarm.api_4xx_spike](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
+| [aws_cloudwatch_metric_alarm.api_5xx_spike](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
+| [aws_cloudwatch_metric_alarm.lambda_concurrency](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
+| [aws_cloudwatch_metric_alarm.lambda_errors](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
+| [aws_cloudwatch_metric_alarm.lambda_throttles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
 | [aws_iam_policy.cloudtrail_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.cognito_admin_delete_user](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.cognito_list_users](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.lambda_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.lambda_tag_resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.s3_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -69,6 +75,7 @@ module "user_api" {
 | [aws_iam_role_policy_attachment.apigateway_putlog](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.cloudtrail_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.cognito_admin_delete_user](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.cognito_list_users](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.cognito_poweruser_attach](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.lambda_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.lambda_s3_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -84,6 +91,7 @@ module "user_api" {
 | [aws_iam_policy_document.apigateway_putlog_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.cloudtrail_permission](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.cognito_admin_delete_user](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.cognito_list_users](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.lambda_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.lambda_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.lambda_tag_resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -95,12 +103,20 @@ module "user_api" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_alarm_4xx_threshold"></a> [alarm\_4xx\_threshold](#input\_alarm\_4xx\_threshold) | 4XX responses within one period that trips the API Gateway 4XX-spike alarm (a 401/403 flood indicates credential stuffing or a bad client). | `number` | `500` | no |
+| <a name="input_alarm_5xx_threshold"></a> [alarm\_5xx\_threshold](#input\_alarm\_5xx\_threshold) | 5XX responses within one period that trips the API Gateway 5XX-spike alarm. This catches app-returned 500s (FastAPI/Mangum proxy responses) that the Lambda Errors metric does not count as invocation errors. | `number` | `10` | no |
+| <a name="input_alarm_actions"></a> [alarm\_actions](#input\_alarm\_actions) | SNS topic ARNs notified when an abuse alarm fires (and on recovery). Empty = alarms still show in the console but notify nothing. | `list(string)` | `[]` | no |
+| <a name="input_alarm_error_threshold"></a> [alarm\_error\_threshold](#input\_alarm\_error\_threshold) | Lambda INVOCATION errors (unhandled exceptions, timeouts, runtime faults) within one period that trips the error alarm. Does NOT include HTTP 500s returned as normal proxy responses -- those are covered by the 5XX alarm. | `number` | `10` | no |
+| <a name="input_alarm_evaluation_periods"></a> [alarm\_evaluation\_periods](#input\_alarm\_evaluation\_periods) | Number of periods the metric must breach before an abuse alarm fires. | `number` | `1` | no |
+| <a name="input_alarm_period_seconds"></a> [alarm\_period\_seconds](#input\_alarm\_period\_seconds) | Evaluation period (seconds) for the abuse alarms. Must be a multiple of 60 (standard-resolution metrics). | `number` | `300` | no |
+| <a name="input_alarm_throttle_threshold"></a> [alarm\_throttle\_threshold](#input\_alarm\_throttle\_threshold) | Lambda throttles within one period that trips the throttle alarm. 1 = alert on the first throttle, since a throttle means the concurrency cap was hit. | `number` | `1` | no |
 | <a name="input_allow_credentials"></a> [allow\_credentials](#input\_allow\_credentials) | The allowed credentials for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_deletion"></a> [allow\_deletion](#input\_allow\_deletion) | Flag to control whether users can delete their accounts | `string` | `"false"` | no |
 | <a name="input_allow_headers"></a> [allow\_headers](#input\_allow\_headers) | The allowed headers for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | `null` | no |
 | <a name="input_api_gateway_log_retention_days"></a> [api\_gateway\_log\_retention\_days](#input\_api\_gateway\_log\_retention\_days) | Number of days for which API Gateway logs are retained | `number` | `14` | no |
+| <a name="input_auth_mode"></a> [auth\_mode](#input\_auth\_mode) | Authentication strategy for the FastAPI app (AUTH\_MODE env var):<br>"aws" (API Gateway Lambda-authorizer context), "oidc" (verify the token<br>in-app), or "local". Empty (default) leaves AUTH\_MODE unset, preserving the<br>historical behavior (AWS when not ENV=local), so existing deployments are<br>unchanged. | `string` | `""` | no |
 | <a name="input_authorizer_type"></a> [authorizer\_type](#input\_authorizer\_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required. | `string` | `"COGNITO"` | no |
 | <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | The ID of the Cognito user pool | `string` | `""` | no |
 | <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | The web client ID of the Cognito user pool | `string` | `""` | no |
@@ -108,12 +124,15 @@ module "user_api" {
 | <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
 | <a name="input_editable_fields"></a> [editable\_fields](#input\_editable\_fields) | List of user fields which can be edited by the user | `string` | `"[]"` | no |
+| <a name="input_enable_abuse_alarms"></a> [enable\_abuse\_alarms](#input\_enable\_abuse\_alarms) | Create CloudWatch alarms for Lambda throttles/invocation errors, concurrency near the reserved cap, and API Gateway 4XX/5XX spikes (abuse / credential-stuffing signal). | `bool` | `false` | no |
+| <a name="input_enable_cognito_list_users"></a> [enable\_cognito\_list\_users](#input\_enable\_cognito\_list\_users) | Grant cognito-idp:ListUsers (scoped to cognito\_user\_pool\_arns) to this service's Lambda role; needed only by the User API under AUTH\_MODE=oidc (case A). Default false keeps least privilege for other services. | `bool` | `false` | no |
 | <a name="input_enable_cors"></a> [enable\_cors](#input\_enable\_cors) | Should enable CORS? (APIs for web client, this should be true, otherse false) | `bool` | `true` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |
 | <a name="input_lambda_additional_env"></a> [lambda\_additional\_env](#input\_lambda\_additional\_env) | Additional environment variables | `map(any)` | `{}` | no |
 | <a name="input_lambda_authorizer_alias"></a> [lambda\_authorizer\_alias](#input\_lambda\_authorizer\_alias) | Alias of the Lambda function used for authorizer | `string` | `""` | no |
 | <a name="input_lambda_authorizer_arn"></a> [lambda\_authorizer\_arn](#input\_lambda\_authorizer\_arn) | ARN of the Lambda function used for authorizer | `string` | `""` | no |
+| <a name="input_lambda_authorizer_cache_ttl_seconds"></a> [lambda\_authorizer\_cache\_ttl\_seconds](#input\_lambda\_authorizer\_cache\_ttl\_seconds) | TTL in seconds for the Lambda authorizer result cache. Set to 0 to disable caching. | `number` | `300` | no |
 | <a name="input_lambda_handler"></a> [lambda\_handler](#input\_lambda\_handler) | The handler for the Lambda function | `string` | n/a | yes |
 | <a name="input_lambda_log_retention_days"></a> [lambda\_log\_retention\_days](#input\_lambda\_log\_retention\_days) | CloudWatch log retention (days) for the Lambda function log group. Used when otel\_enabled = true. | `number` | `14` | no |
 | <a name="input_lambda_security_group_ids"></a> [lambda\_security\_group\_ids](#input\_lambda\_security\_group\_ids) | The security group IDs for the Lambda function | `list(string)` | n/a | yes |
@@ -131,6 +150,7 @@ module "user_api" {
 | <a name="input_product"></a> [product](#input\_product) | product name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | region of the deployment | `string` | n/a | yes |
 | <a name="input_require_api_key"></a> [require\_api\_key](#input\_require\_api\_key) | Set `true` if API key is required | `bool` | `false` | no |
+| <a name="input_reserved_concurrent_executions"></a> [reserved\_concurrent\_executions](#input\_reserved\_concurrent\_executions) | Reserved concurrency for the Lambda. -1 (default) leaves it unreserved.<br>A positive value caps concurrent executions, which is the real global ceiling<br>on Argon2 parallelism, DB connections and cost under a flood, and stops this<br>function from starving the account's shared concurrency pool. Size it to peak<br>legitimate concurrency plus headroom -- too low throttles real users (429).<br>0 is a valid "kill switch": it stops ALL invocations of this function. | `number` | `-1` | no |
 | <a name="input_sse_bucket"></a> [sse\_bucket](#input\_sse\_bucket) | SSE bucket name | `string` | `""` | no |
 | <a name="input_sse_container_log_name"></a> [sse\_container\_log\_name](#input\_sse\_container\_log\_name) | SSE container log name | `string` | `""` | no |
 | <a name="input_sse_user_program_name"></a> [sse\_user\_program\_name](#input\_sse\_user\_program\_name) | SSE user program name | `string` | `""` | no |
@@ -140,6 +160,8 @@ module "user_api" {
 | <a name="input_storage_env_vars_local_minio"></a> [storage\_env\_vars\_local\_minio](#input\_storage\_env\_vars\_local\_minio) | Deprecated. The Lambda environment variables for the local MinIO storage driver, kept for existing deployments. Use `storage_env_vars_seaweedfs` instead. | <pre>object({<br>    STORAGE_LOCAL_MINIO_BUCKET_NAME  = string<br>    STORAGE_LOCAL_MINIO_USERNAME     = string<br>    STORAGE_LOCAL_MINIO_PASSWORD     = string<br>    STORAGE_LOCAL_MINIO_ENDPOINT_URL = string<br>  })</pre> | `null` | no |
 | <a name="input_storage_env_vars_s3"></a> [storage\_env\_vars\_s3](#input\_storage\_env\_vars\_s3) | The Lambda environment variables for S3 storage drivder. | <pre>object({<br>    STORAGE_S3_REGION      = string<br>    STORAGE_S3_BUCKET_NAME = string<br>  })</pre> | `null` | no |
 | <a name="input_storage_env_vars_seaweedfs"></a> [storage\_env\_vars\_seaweedfs](#input\_storage\_env\_vars\_seaweedfs) | The Lambda environment variables for the self-hosted SeaweedFS storage driver. `STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL` controls the endpoint embedded in presigned URLs. | <pre>object({<br>    STORAGE_SEAWEEDFS_BUCKET_NAME         = string<br>    STORAGE_SEAWEEDFS_USERNAME            = string<br>    STORAGE_SEAWEEDFS_PASSWORD            = string<br>    STORAGE_SEAWEEDFS_ENDPOINT_URL        = string<br>    STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL = string<br>  })</pre> | `null` | no |
+| <a name="input_throttling_burst_limit"></a> [throttling\_burst\_limit](#input\_throttling\_burst\_limit) | API Gateway burst capacity (token-bucket burst, not a concurrent-request count) for the stage. -1 (default) disables the override (account default applies). | `number` | `-1` | no |
+| <a name="input_throttling_rate_limit"></a> [throttling\_rate\_limit](#input\_throttling\_rate\_limit) | API Gateway steady-state request rate (req/s) applied to all methods on the<br>stage. -1 (default) disables the override (account default applies).<br>Best-effort (not a hard cap), so it is a backstop behind the WAF rate-based<br>rule, not the primary control. | `number` | `-1` | no |
 | <a name="input_visible_fields"></a> [visible\_fields](#input\_visible\_fields) | List of user fields which user can view | `string` | `"[]"` | no |
 
 ## Outputs
