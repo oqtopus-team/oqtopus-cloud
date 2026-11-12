@@ -8,6 +8,7 @@ jobs.JobStatus:
     - submitted
     - ready
     - running
+    - cancelling
     - succeeded
     - failed
     - cancelled
