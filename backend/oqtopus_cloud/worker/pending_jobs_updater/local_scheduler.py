@@ -5,6 +5,10 @@ from time import sleep
 from aws_lambda_powertools.utilities.data_classes import EventBridgeEvent
 
 from oqtopus_cloud import infra
+from oqtopus_cloud.common.session import (
+    db_credential_source,
+    validate_db_runtime_config,
+)
 
 SCHEDULING_RATE_S: int = int(os.getenv("LOCAL_WORKER_SCHEDULING_RATE_S", 60))
 
@@ -37,6 +41,12 @@ def main() -> None:
     from oqtopus_cloud.worker.pending_jobs_updater.lambda_function import (
         lambda_handler,
     )
+
+    # Validate the DB contract once, before the loop, so a misconfiguration
+    # (missing DB vars, bad connector, insecure/missing secret file) fails the
+    # worker at startup instead of on the first scheduled run. On-prem file mode.
+    if db_credential_source() == "file":
+        validate_db_runtime_config()
 
     event: EventBridgeEvent = EventBridgeEvent({})
     context: dict = {}

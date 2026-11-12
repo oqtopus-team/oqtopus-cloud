@@ -1,42 +1,28 @@
 import os
-from datetime import datetime
 from typing import Optional
 
-import boto3
 import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHash, VerificationError, VerifyMismatchError
-from botocore.config import Config
-from sqlalchemy import select, update
-from zoneinfo import ZoneInfo
+from sqlalchemy import select
 
-from oqtopus_cloud.common.models.user import MFAStatus, User, UserStatus
+from oqtopus_cloud.common.auth.api_token import (
+    ApiTokenError,
+    parse_api_token,
+    rehash_api_token_if_needed,
+    verify_api_token,
+)
+from oqtopus_cloud.common.auth.cognito_policy import (
+    CognitoPolicyError,
+    MfaNotEnabled,
+    require_cognito_user_exists,
+    require_mfa_enabled,
+)
+from oqtopus_cloud.common.models.user import User, UserStatus
 from oqtopus_cloud.common.session import AUTH_DB_READ_TIMEOUT_SECONDS, _create_session
 from oqtopus_cloud.lambda_auth.conf import logger, tracer
 
-utc = ZoneInfo("UTC")
-
-ph = PasswordHasher()
-
-# Per-call timeouts so a stalled external dependency raises a Python
-# exception (visible in CloudWatch + X-Ray) instead of consuming the
-# Lambda timeout budget and being SIGKILL'd. Normal latencies observed:
-# Cognito IDP ~120ms, JWKS fetch ~150ms. read_timeout=3s gives ~20x
-# headroom over normal while still failing fast on a real stall; with
-# total_max_attempts=2 (one initial + one retry) the SDK-level worst case
-# is ~7s (3s read + 1s backoff + 3s read), comfortably under the 15s
-# Lambda timeout. connect_timeout=2s bounds the TCP+TLS handshake
-# (anything beyond is anomalous).
-#
-# NB: use total_max_attempts, NOT max_attempts. In a botocore retries
-# config, max_attempts means *retries excluding the initial call*
-# (max_attempts=N -> total_max_attempts=N+1), so max_attempts=2 would be
-# 3 calls (~11s) and blow the worst-case budget above.
-_BOTO_TIMEOUT_CONFIG = Config(
-    connect_timeout=2,
-    read_timeout=3,
-    retries={"total_max_attempts": 2, "mode": "standard"},
-)
+# JWKS fetch timeout (seconds). The Cognito ListUsers call's timeouts live in
+# common.auth.cognito_policy, which both this authorizer and the in-app resolver
+# share so the AWS authorization checks cannot drift.
 _JWKS_HTTP_TIMEOUT_SECONDS = 5
 
 
@@ -76,36 +62,22 @@ def _validate_user_status(
         if user is None:
             logger.info(f"User {user_id} or {cognito_id} is not approved")
             return False
-        # Get the MFA status from the database
-        # only for the case from oqtopus-frontend
-        if user_id and user.mfa_status != MFAStatus.enabled:
-            raise AuthError("MFA is not enabled for this user")
+        # MFA must be enabled for the browser (access-token) path. Shared with
+        # the in-app resolver via common.auth.cognito_policy.
+        if user_id:
+            require_mfa_enabled(user.mfa_status)
         return True
     except Exception as e:
         logger.error(f"Failed to get user status: {e}")
         raise AuthError("Failed to get user status")
 
 
-def _validate_headers_for_api_token(headers: dict) -> None:
-    api_token = headers.get("q-api-token")
-    authorization = headers.get("authorization")
-
-    # validate that both headers are present and match
-    if not authorization or not api_token:
-        raise AuthError(
-            "Authentication header is missing: authorization or q-api-token"
-        )
-
-    if authorization != api_token:
-        raise AuthError("Authorization and q-api-token do not match")
-
-
 @tracer.capture_method
-def _verify_id_token(id_token: Optional[str]) -> str:
-    if id_token is None:
-        raise AuthError("ID token is not found")
+def _verify_access_token(access_token: Optional[str]) -> str:
+    if access_token is None:
+        raise AuthError("Access token is not found")
 
-    id_token = id_token.replace("Bearer ", "")
+    access_token = access_token.replace("Bearer ", "")
 
     # Get environment variables
     try:
@@ -122,48 +94,53 @@ def _verify_id_token(id_token: Optional[str]) -> str:
     try:
         # Get the signing key from the JWT
         jwks_client = jwt.PyJWKClient(jwks_url, timeout=_JWKS_HTTP_TIMEOUT_SECONDS)
-        signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+        signing_key = jwks_client.get_signing_key_from_jwt(access_token)
     except Exception as e:
         raise AuthError(f"Failed to get signing key from JWT: {e}")
 
     try:
-        # Decode and verify the ID token
+        # Cognito access tokens identify the app client with ``client_id``;
+        # unlike ID tokens, they don't necessarily contain an ``aud`` claim.
         token = jwt.decode(
-            id_token,
+            access_token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=CLIENT_ID,
             issuer=issuer,
             options={
-                "require": ["exp", "iss", "aud"],
+                "require": [
+                    "exp",
+                    "iss",
+                    "client_id",
+                    "token_use",
+                    "username",
+                ],
                 "verify_iss": True,
                 "verify_exp": True,
-                "verify_aud": True,
+                "verify_aud": False,
             },
         )
 
-        # verify the token_use claim
-        if token["token_use"] != "id":
+        if token["token_use"] != "access":
             raise AuthError("Invalid token_use")
+        if token["client_id"] != CLIENT_ID:
+            raise AuthError("Invalid client_id")
 
         # verify the user status
-        if not _validate_user_status(user_id=token["cognito:username"]):
+        if not _validate_user_status(user_id=token["username"]):
             raise AuthError("User is not approved")
 
-        return token["cognito:username"]
+        return token["username"]
     except Exception:
-        raise AuthError("ID token is invalid")
+        raise AuthError("Access token is invalid")
 
 
 @tracer.capture_method
 def _verify_api_token(api_token: Optional[str]) -> str:
-    if api_token is None or api_token == "":
-        raise AuthError("API token is None")
-
+    # Parse via the shared parser so CLI and Lambda reject the same shapes.
     try:
-        api_token_id, api_token_secret = api_token.split(".")
-    except ValueError:
-        raise AuthError("API token is malformed")
+        api_token_id, api_token_secret = parse_api_token(api_token)
+    except ApiTokenError as e:
+        raise AuthError(str(e))
 
     # Get environment variables
     try:
@@ -171,53 +148,30 @@ def _verify_api_token(api_token: Optional[str]) -> str:
     except Exception as e:
         raise AuthError(f"Environment variable is not set {e}")
 
+    # Credential check (Argon2/expiry) is shared with the in-app resolver via
+    # common.auth.api_token so the two cannot drift. Extract the values we need
+    # and close the session immediately -- the authorization below includes a
+    # Cognito call, and we must not hold an RDS Proxy connection across it.
+    db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
     try:
-        # Get a database session
-        db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
-        try:
-            select_stmt = select(
-                User.mfa_status,
-                User.api_token_hash,
-                User.api_token_expiration,
-                User.cognito_id,
-            ).where(User.api_token_id == api_token_id)
-            verification_data = db.execute(select_stmt).first()
-            if verification_data is None:
-                raise AuthError("Invalid API token")
-
-            mfa_status, api_token_hash, api_token_expiration, cognito_id = (
-                verification_data
-            )
-
-            # Check the API token hash
-            try:
-                ph.verify(api_token_hash, api_token_secret)
-            except VerifyMismatchError:
-                raise AuthError("Invalid API token")
-            except (VerificationError, InvalidHash):
-                raise AuthError("API token verification error")
-
-            if ph.check_needs_rehash(api_token_hash):
-                update_stmt = (
-                    update(User)
-                    .where(User.api_token_id == api_token_id)
-                    .values(api_token_hash=ph.hash(api_token_secret))
-                )
-                db.execute(update_stmt)
-                db.commit()
-
-            # Check the API token expiration
-            if (api_token_expiration is None) or (
-                api_token_expiration.astimezone(utc) < datetime.now(utc)
-            ):
-                raise AuthError("API token is expired")
-        finally:
-            db.close()
+        user = verify_api_token(db, api_token_id, api_token_secret)
+        mfa_status = user.mfa_status
+        cognito_id = user.cognito_id
+        current_hash = user.api_token_hash
+    except ApiTokenError as e:
+        raise AuthError(f"Database error {e}")
     except Exception as e:
         raise AuthError(f"Database error {e}")
+    finally:
+        db.close()
 
-    if mfa_status != MFAStatus.enabled:
-        raise AuthError("MFA is not enabled for this user")
+    # Authorization (no DB connection held across these). MFA + Cognito-user
+    # existence are shared with the in-app resolver (common.auth.cognito_policy)
+    # so the AWS checks cannot drift.
+    try:
+        require_mfa_enabled(mfa_status)
+    except MfaNotEnabled as e:
+        raise AuthError(str(e))
 
     if cognito_id is None:
         raise AuthError("Cognito id is not found")
@@ -227,22 +181,23 @@ def _verify_api_token(api_token: Optional[str]) -> str:
         raise AuthError("User is not approved")
 
     try:
-        # Initialize the Cognito client with explicit short timeouts so a
-        # stalled IDP call fails fast instead of consuming the Lambda budget.
-        client = boto3.client("cognito-idp", config=_BOTO_TIMEOUT_CONFIG)
-        # Get list users in the Cognito user pool with the specified Cognito ID
-        response = client.list_users(
-            UserPoolId=USER_POOL_ID, Filter=f'sub = "{cognito_id}"'
-        )
-        logger.info(len(response["Users"]))
-        if len(response["Users"]) == 0:
-            raise AuthError("Cognito user is not found")
-        elif len(response["Users"]) > 1:
-            raise AuthError("Cognito user is duplicated")
-        else:
-            return response["Users"][0]["Username"]
-    except Exception as e:
+        cognito_user = require_cognito_user_exists(cognito_id, user_pool_id=USER_POOL_ID)
+    except CognitoPolicyError as e:
+        # Preserve the historical deny message (zero/duplicate/Cognito error).
         raise AuthError(f"Failed to list users from Cognito {e}")
+    username = cognito_user["Username"]
+
+    # Fully accepted -> opportunistic hash upgrade (never for a rejected req).
+    # A fresh short-lived session, so no connection was held during the Cognito
+    # call above.
+    rehash_db = _create_session(read_timeout=AUTH_DB_READ_TIMEOUT_SECONDS)
+    try:
+        rehash_api_token_if_needed(
+            rehash_db, api_token_id, current_hash, api_token_secret
+        )
+    finally:
+        rehash_db.close()
+    return username
 
 
 @tracer.capture_method
@@ -333,13 +288,11 @@ def lambda_handler(event, context):
 
     try:
         if "q-api-token" in headers:
-            # Get API token from headers
-            _validate_headers_for_api_token(headers)
             # Verify API token
             user_id = _verify_api_token(headers["q-api-token"])
         elif "authorization" in headers:
-            # Verify Cognito ID token
-            user_id = _verify_id_token(headers["authorization"])
+            # Verify the Cognito access token sent by the browser client.
+            user_id = _verify_access_token(headers["authorization"])
         else:
             logger.error("Unexpected header")
             policy_document = _generate_policy_deny(

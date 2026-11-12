@@ -101,6 +101,7 @@ module "user_api" {
 | <a name="input_allow_methods"></a> [allow\_methods](#input\_allow\_methods) | The allowed methods for the API Gateway | `string` | `null` | no |
 | <a name="input_allow_origins"></a> [allow\_origins](#input\_allow\_origins) | The allowed origins for the API Gateway | `string` | `null` | no |
 | <a name="input_api_gateway_log_retention_days"></a> [api\_gateway\_log\_retention\_days](#input\_api\_gateway\_log\_retention\_days) | Number of days for which API Gateway logs are retained | `number` | `14` | no |
+| <a name="input_auth_mode"></a> [auth\_mode](#input\_auth\_mode) | Authentication strategy for the FastAPI app (AUTH\_MODE env var):<br>"aws" (API Gateway Lambda-authorizer context), "oidc" (verify the token<br>in-app), or "local". Empty (default) leaves AUTH\_MODE unset, preserving the<br>historical behavior (AWS when not ENV=local), so existing deployments are<br>unchanged. | `string` | `""` | no |
 | <a name="input_authorizer_type"></a> [authorizer\_type](#input\_authorizer\_type) | Specifies the API's authorization method. Use `COGNITO` for authentication via a Cognito User Pool, `LAMBDA` for a Lambda function, or `COGNITO` if no authorization is required. | `string` | `"COGNITO"` | no |
 | <a name="input_client_cognito_user_pool_id"></a> [client\_cognito\_user\_pool\_id](#input\_client\_cognito\_user\_pool\_id) | The ID of the Cognito user pool | `string` | `""` | no |
 | <a name="input_client_cognito_user_pool_web_client_id"></a> [client\_cognito\_user\_pool\_web\_client\_id](#input\_client\_cognito\_user\_pool\_web\_client\_id) | The web client ID of the Cognito user pool | `string` | `""` | no |
@@ -108,6 +109,7 @@ module "user_api" {
 | <a name="input_db_proxy_endpoint"></a> [db\_proxy\_endpoint](#input\_db\_proxy\_endpoint) | The endpoint of the RDS proxy | `string` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | The ARN of the secret for the RDS instance | `string` | n/a | yes |
 | <a name="input_editable_fields"></a> [editable\_fields](#input\_editable\_fields) | List of user fields which can be edited by the user | `string` | `"[]"` | no |
+| <a name="input_enable_cognito_list_users"></a> [enable\_cognito\_list\_users](#input\_enable\_cognito\_list\_users) | Grant cognito-idp:ListUsers (scoped to cognito\_user\_pool\_arns) to this service's Lambda role; needed only by the User API under AUTH\_MODE=oidc (case A). Default false keeps least privilege for other services. | `bool` | `false` | no |
 | <a name="input_enable_cors"></a> [enable\_cors](#input\_enable\_cors) | Should enable CORS? (APIs for web client, this should be true, otherse false) | `bool` | `true` | no |
 | <a name="input_env"></a> [env](#input\_env) | environment name | `string` | n/a | yes |
 | <a name="input_identifier"></a> [identifier](#input\_identifier) | identifier | `string` | n/a | yes |
