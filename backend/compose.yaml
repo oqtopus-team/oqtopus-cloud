@@ -42,6 +42,8 @@ x-api-common: &api-common
   build:
     context: ..
     dockerfile: backend/Dockerfile
+    # oqtopus-auth is resolved from PyPI (pinned in uv.lock); no sibling-repo
+    # context is needed anymore.
   depends_on:
     db:
       condition: service_started
@@ -185,6 +187,16 @@ services:
     command: uv run uvicorn oqtopus_cloud.provider.lambda_function:app --host 0.0.0.0 --port 8888 --log-level debug
     ports:
       - "8888:8888"
+
+  admin-api:
+    <<: *api-common
+    environment:
+      <<: *api-env
+      POWERTOOLS_METRICS_NAMESPACE: admin-api
+      POWERTOOLS_SERVICE_NAME: admin-api
+    command: uv run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8889 --log-level debug
+    ports:
+      - "8889:8889"
 
 volumes:
   db-data:

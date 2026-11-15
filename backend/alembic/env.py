@@ -1,9 +1,12 @@
 """Alembic environment configuration.
 
-The database URL is built from environment variables (DB_HOST, DB_NAME,
-DB_CONNECTOR, DB_USERNAME, DB_PASSWORD). When ENV=local, the username/password
-default to admin/password to match the local MySQL Docker setup in
-backend/oqtopus_cloud/common/session.py.
+The database URL is built from DB_HOST / DB_NAME / DB_CONNECTOR plus credentials
+resolved by oqtopus_cloud.common.session.get_secret() -- the SAME resolver the
+application uses, honouring DB_CREDENTIAL_SOURCE (file | local | aws). On-prem
+migrations therefore run with DB_SECRET_FILE only (no DB_USERNAME/DB_PASSWORD in
+the environment), exactly like the API containers. A manual migration can still
+opt into env credentials with DB_CREDENTIAL_SOURCE=local, or bypass resolution
+entirely with ALEMBIC_DATABASE_URL (used for the SQLite initial-revision case).
 
 target_metadata aggregates every model class imported via
 oqtopus_cloud.common.models, so the package's __init__.py must import all
@@ -23,13 +26,14 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine, pool
-from sqlalchemy.engine import make_url
+from sqlalchemy.engine import URL, make_url
 
 # Importing the package registers every model class with Base.metadata.
 import oqtopus_cloud.common.models  # noqa: F401
 from oqtopus_cloud.common.db_tls import ssl_connect_args
 from oqtopus_cloud.common.model_util import DateTimeTz
 from oqtopus_cloud.common.models import Base
+from oqtopus_cloud.common.session import build_db_url, validate_db_runtime_config
 
 config = context.config
 
@@ -42,22 +46,19 @@ target_metadata = Base.metadata
 logger = logging.getLogger("alembic.env")
 
 
-def _build_url() -> str:
+def _build_url() -> URL:
     # Allow callers to override the URL directly (useful for generating the
-    # initial revision against an empty SQLite database, etc.).
+    # initial revision against an empty SQLite database, etc.). This explicit
+    # path is the only one exempt from the DB-contract validation below.
     override = os.environ.get("ALEMBIC_DATABASE_URL")
     if override:
-        return override
-    connector = os.environ.get("DB_CONNECTOR", "mysql+pymysql")
-    host = os.environ["DB_HOST"]
-    db_name = os.environ["DB_NAME"]
-    if os.environ.get("ENV") == "local":
-        user = os.environ.get("DB_USERNAME", "admin")
-        password = os.environ.get("DB_PASSWORD", "password")
-    else:
-        user = os.environ["DB_USERNAME"]
-        password = os.environ["DB_PASSWORD"]
-    return f"{connector}://{user}:{password}@{host}/{db_name}"
+        return make_url(override)
+    # Normal path: enforce the SAME DB contract the application does at startup
+    # (DB_HOST/DB_NAME/DB_CONNECTOR present + allowed connector + the configured
+    # credential source), and build the URL with the SAME shared helper -- so
+    # migrations and the app resolve credentials and escape them identically.
+    validate_db_runtime_config()
+    return build_db_url()
 
 
 def process_revision_directives(context, revision, directives):

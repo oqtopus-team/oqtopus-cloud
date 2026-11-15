@@ -15,6 +15,10 @@ from starlette.middleware.cors import CORSMiddleware
 
 from oqtopus_cloud.admin.conf import logger, metrics, tracer
 from oqtopus_cloud.admin.middleware import CustomMiddleware
+from oqtopus_cloud.common.session import (
+    db_credential_source,
+    validate_db_runtime_config,
+)
 from oqtopus_cloud.admin.routers import (
     announcements as announcements_router,
 )
@@ -29,6 +33,16 @@ from oqtopus_cloud.admin.routers import (
 )
 
 app: FastAPI = add_pagination(FastAPI())
+
+
+def _validate_db_runtime_config() -> None:
+    # On-prem (file-injected DB credentials): fail fast at startup on a broken
+    # DB contract instead of on the first request. No-op on AWS/local.
+    if db_credential_source() == "file":
+        validate_db_runtime_config()
+
+
+app.add_event_handler("startup", _validate_db_runtime_config)
 
 app.add_middleware(CustomMiddleware)
 

@@ -10,6 +10,10 @@ from fastapi import FastAPI
 from mangum import (
     Mangum,
 )
+from oqtopus_cloud.common.session import (
+    db_credential_source,
+    validate_db_runtime_config,
+)
 from oqtopus_cloud.common.tracing import force_flush as _otel_force_flush
 from oqtopus_cloud.common.tracing import setup_tracing
 from oqtopus_cloud.provider.conf import logger, metrics, tracer
@@ -26,6 +30,16 @@ from oqtopus_cloud.provider.routers import (
 from starlette.middleware.cors import CORSMiddleware
 
 app: FastAPI = FastAPI()
+
+
+def _validate_db_runtime_config() -> None:
+    # On-prem (file-injected DB credentials): fail fast at startup on a broken
+    # DB contract instead of on the first request. No-op on AWS/local.
+    if db_credential_source() == "file":
+        validate_db_runtime_config()
+
+
+app.add_event_handler("startup", _validate_db_runtime_config)
 
 app.add_middleware(CustomMiddleware)
 

@@ -11,6 +11,7 @@ on:
     - 'backend/oqtopus_cloud/**'
     - 'backend/scripts/seed.py'
     - 'backend/storage/**'
+    - '.python-version'
     - '.github/workflows/infra-smoke.yaml'
 
 jobs:

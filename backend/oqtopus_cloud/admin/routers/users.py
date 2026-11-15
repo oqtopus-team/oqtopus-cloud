@@ -12,6 +12,7 @@ from oqtopus_cloud.admin.schemas.errors import (
     InternalServerErrorResponse,
     Message,
     NotFoundErrorResponse,
+    NotImplementedErrorResponse,
 )
 from oqtopus_cloud.admin.schemas.users import (
     GetOneUserResponse,
@@ -174,6 +175,7 @@ def get_user(
 )
 @tracer.capture_method
 def update_user_status(
+    event: Event,
     user_id: str,
     update_user_request: UpdateUserRequest = Body(..., description="new status"),
     db: Session = Depends(get_db),
@@ -192,7 +194,27 @@ def update_user_status(
             logger.error(f"User not found: {user_id}")
             return NotFoundErrorResponse(message=f"User not found: {user_id}")
 
-        if update_user_request.email:
+        # Phase 1 keeps the invariant users.id = email, so in the on-prem OIDC
+        # deployment changing a user's email (which would rewrite users.id) is
+        # not supported. A no-op (same email) is allowed; AWS mode is unchanged.
+        if (
+            update_user_request.email
+            and update_user_request.email != query.id
+            and getattr(event.state, "auth_method", None) == "oidc"
+        ):
+            logger.warning(
+                f"Rejected email change in oidc mode for user_id={user_id}"
+            )
+            return BadRequestErrorResponse(
+                message="Email changes are not supported until the identity migration is complete."
+            )
+
+        # In oidc mode email is immutable: a different value was already rejected
+        # above, and a same-value submission is a no-op (skip the reassignment).
+        if (
+            update_user_request.email
+            and getattr(event.state, "auth_method", None) != "oidc"
+        ):
             if len(update_user_request.email) > LEN_VARCHAR:
                 raise FormatError(
                     FIELD_TOO_LONG_MESSAGE.format(
@@ -271,6 +293,7 @@ def update_user_status(
     responses={
         404: {"model": Message},
         500: {"model": Message},
+        501: {"model": Message},
     },
 )
 @tracer.capture_method
@@ -278,7 +301,26 @@ def delete_user(
     event: Event,
     user_id: str,
     db: Session = Depends(get_db),
-) -> None | NotFoundErrorResponse | InternalServerErrorResponse:
+) -> (
+    None
+    | NotFoundErrorResponse
+    | NotImplementedErrorResponse
+    | InternalServerErrorResponse
+):
+    # Deletion removes the DB row AND the Cognito user. In oidc mode the account
+    # lives in an external IdP (e.g. Keycloak) that we have no delete driver for,
+    # so proceeding would delete the DB row and then fail at the Cognito call --
+    # a partial success that leaves the IdP account orphaned. Refuse up front,
+    # before any DB mutation, until an IdP-specific delete path exists.
+    if getattr(event.state, "auth_method", None) == "oidc":
+        logger.warning("User deletion is not supported in AUTH_MODE=oidc")
+        return NotImplementedErrorResponse(
+            message=(
+                "User deletion is not supported in the current auth mode "
+                "(no IdP delete driver)."
+            )
+        )
+
     user_pool_id = event.state.user_pool_id
     region = event.state.region
     client = boto3.client("cognito-idp", region_name=region)
