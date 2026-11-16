@@ -42,6 +42,7 @@ User API、Provider API、ストレージは presigned URL で接続され、ク
    アップロードする zip には、User API の `jobs.S3SubmitJobInfo` で表現されるジョブ入力を、慣例として `input.json` に入れます。
 3. `POST /jobs/{job_id}/submit` で submission を完了します。
    request body には `device_id`, `job_type`, `shots` と、任意の transpiler, simulator, mitigation, name, description を含めます。バックエンドは `<job_id>/input.zip` が存在することを確認してから status を `submitted` に変更します。
+   sampling・estimation・multi-manual ジョブの `shots` が設定済みのデバイス上限を超える場合は HTTP 400 を返します。SSE の親ジョブは対象外で、内部ジョブごとに shots を指定します。
 4. `GET /jobs` または `GET /jobs/{job_id}` でジョブ詳細を取得します。
    submitted 以降のジョブでは、`job_info.input` が download presigned URL になります。Provider が `PATCH /jobs/{job_id}/status` で出力ファイルを報告すると、User API の `job_info` に出力ファイル用 URL が現れます。
 5. `DELETE /jobs/{job_id}` で終端状態のジョブを削除します。

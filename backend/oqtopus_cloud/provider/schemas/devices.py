@@ -12,6 +12,10 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 class UpdateDeviceRequest(BaseModel):
     n_qubits: int | None = None
+    max_shots: Annotated[int | None, Field(ge=0, le=4294967295)] = None
+    """
+    Maximum shots per device execution. Zero clears an unknown limit; omission leaves it unchanged.
+    """
 
 
 class UpdateDeviceResponse(BaseModel):

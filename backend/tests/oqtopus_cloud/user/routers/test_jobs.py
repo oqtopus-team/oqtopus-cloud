@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+import pytest
 from oqtopus_cloud.common.models.device import Device
 from oqtopus_cloud.common.models.job import Job as JobModel
 from oqtopus_cloud.common.models.user import User, UserStatus
@@ -213,6 +214,40 @@ def test_submit_job_404(
     response = test_client.post("/jobs/testjob1id/submit", content=json.dumps(_get_submit_body()))
     assert response.status_code == 404
     assert response.json() == {"message": "job not found with the given id"}
+
+
+def test_submit_job_rejects_shots_above_device_limit(test_client, test_db, test_storage):
+    device = test_db.get(Device, "Kawasaki")
+    device.max_shots = 1000
+    test_db.add(_get_user_model(1))
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+    test_storage.put(key="testjob1id/input.zip", data=b"dummy_job_info")
+
+    response = test_client.post("/jobs/testjob1id/submit", json=_get_submit_body())
+
+    assert response.status_code == 400
+    assert "1000" in response.json()["message"]
+    test_db.expire_all()
+    assert test_db.get(JobModel, "testjob1id").status == "registered"
+
+
+@pytest.mark.parametrize(
+    ("limit", "job_type"),
+    [(1024, "sampling"), (1025, "estimation"), (None, "multi_manual"), (1000, "sse")],
+)
+def test_submit_job_accepts_valid_shots(test_client, test_db, test_storage, limit, job_type):
+    test_db.get(Device, "Kawasaki").max_shots = limit
+    test_db.add(_get_user_model(1))
+    test_db.add(_get_registered_model(1))
+    test_db.commit()
+    test_storage.put(key="testjob1id/input.zip", data=b"dummy_job_info")
+    body = _get_submit_body()
+    body["job_type"] = job_type
+
+    response = test_client.post("/jobs/testjob1id/submit", json=body)
+
+    assert response.status_code == 200
 
 
 def test_submit_job_400_invalid_status(

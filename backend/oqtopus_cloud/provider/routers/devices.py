@@ -109,6 +109,8 @@ def update_device(
             return NotFoundErrorResponse(f"device_id={device_id} is not found.")
         if request.n_qubits is not None:
             device.n_qubits = request.n_qubits
+        if request.max_shots is not None:
+            device.max_shots = request.max_shots or None
 
         db.commit()
         return UpdateDeviceResponse()

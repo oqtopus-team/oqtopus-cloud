@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Dict
 from zoneinfo import ZoneInfo
 
+import pytest
 from fastapi.testclient import TestClient
 from oqtopus_cloud.common.models.device import (
     Device,
@@ -100,6 +101,40 @@ def test_update_device_n_qubits(test_db):
     assert device_aft.basis_gates == device_bef.basis_gates
     assert device_aft.instructions == device_bef.instructions
     assert device_aft.pending_jobs == device_bef.pending_jobs
+
+
+def test_update_device_max_shots_and_legacy_request(test_db):
+    test_db.add(_get_model_sim())
+    test_db.commit()
+
+    update_device("SC2", UpdateDeviceRequest(max_shots=1000), test_db)
+    assert test_db.get(Device, "SC2").max_shots == 1000
+
+    update_device("SC2", UpdateDeviceRequest(n_qubits=40), test_db)
+    assert test_db.get(Device, "SC2").max_shots == 1000
+
+    update_device("SC2", UpdateDeviceRequest(max_shots=0), test_db)
+    assert test_db.get(Device, "SC2").max_shots is None
+
+
+def test_update_device_max_shots_http(test_db):
+    response = client.patch("/devices/Kawasaki", json={"max_shots": 4294967295})
+    assert response.status_code == 200
+    assert test_db.get(Device, "Kawasaki").max_shots == 4294967295
+
+    response = client.patch("/devices/Kawasaki", json={"max_shots": -1})
+    assert response.status_code == 422
+    assert test_db.get(Device, "Kawasaki").max_shots == 4294967295
+
+    response = client.patch("/devices/Kawasaki", json={"max_shots": 0})
+    assert response.status_code == 200
+    assert test_db.get(Device, "Kawasaki").max_shots is None
+
+
+@pytest.mark.parametrize("value", [-1, 4294967296])
+def test_update_device_rejects_invalid_max_shots(value):
+    with pytest.raises(ValueError):
+        UpdateDeviceRequest(max_shots=value)
 
 
 def test_update_device_status_available(test_db):

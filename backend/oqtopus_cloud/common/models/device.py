@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from sqlalchemy import String, Text, text
+from sqlalchemy import BigInteger, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from oqtopus_cloud.common.model_util import DateTimeTz
@@ -62,6 +62,7 @@ class Device(Base, TimestampMixin):
         default=1,
         server_default=text("1"),
     )
+    max_shots: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     basis_gates: Mapped[str] = mapped_column(
         String(256),
         nullable=False,
