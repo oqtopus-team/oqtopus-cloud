@@ -82,6 +82,10 @@ engine はこの flow を provider API 経由で使います。起動時に `Dev
 
 起動後も、fetch した `device_info` payload または `calibrated_at` が変化したときに、同じ upload flow が再実行されます。
 
+これとは別に、Engine は Gateway の `max_shots` を起動時と変更時に既存の Provider `PATCH /devices/{device_id}` で同期します。値は `device_info.zip` から抽出しません。正の値は 1 回の実行あたりの上限、`0` は上限不明へのクリアを表し、フィールドの省略または `null` は既存値を維持します。上限不明は DB に `NULL` として保存します。
+
+Cloud のマイグレーションと Provider / User API を先に適用してから Engine を更新します。既存デバイスの上限は同期されるまで不明です。Cloud は上限不明の submission を警告ログ付きで受理し、Engine も Gateway 呼び出し前に定期取得した上限を確認します。SSE 内部ジョブも対象です。同期や定期取得と実行の間に上限が変化する可能性は残ります。
+
 ## 上書きと削除のセマンティクス
 
 storage key は決定的なので、同じ `device_id` に対して新しい archive を upload すると前のオブジェクトを上書きします。最後に成功した upload が新しい source of truth になります。

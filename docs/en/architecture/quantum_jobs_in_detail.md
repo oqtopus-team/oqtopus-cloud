@@ -41,6 +41,7 @@ For why the `seaweedfs` driver used by local development and on-premises deploym
    The uploaded zip conventionally contains the job input as `input.json`, described by the User API `jobs.S3SubmitJobInfo`.
 3. Complete submission with `POST /jobs/{job_id}/submit`.
    The request body contains DB metadata such as `device_id`, `job_type`, `shots`, and optional transpiler, simulator, mitigation, name, and description fields. The backend verifies that `<job_id>/input.zip` exists before moving the job to `submitted`.
+   For sampling, estimation, and multi-manual jobs, `shots` must not exceed the known per-execution device limit; an excess returns HTTP 400. SSE parent jobs are excluded because their internal jobs specify shots separately.
 4. Read job details with `GET /jobs` or `GET /jobs/{job_id}`.
    For submitted and later jobs, `job_info.input` is a download presigned URL. Uploaded provider outputs appear in `job_info` after the provider reports them through `PATCH /jobs/{job_id}/status`.
 5. Delete a terminal job with `DELETE /jobs/{job_id}`.

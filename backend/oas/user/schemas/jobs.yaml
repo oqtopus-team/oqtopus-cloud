@@ -94,6 +94,7 @@ jobs.SubmitJobRequest:
       type: integer
       minimum: 1
       maximum: 1e7
+      description: For sampling, estimation, and multi_manual jobs, the device's configured per-execution limit also applies. SSE internal jobs are checked separately at execution.
       example: 1000
   required:
     - device_id

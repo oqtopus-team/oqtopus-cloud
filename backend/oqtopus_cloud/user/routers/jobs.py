@@ -188,6 +188,13 @@ def submit_job(
             return ForbiddenErrorResponse(
                 message=f"cannot create job for device={request.device_id}"
             )
+        if request.job_type != JobType.sse:
+            if device.max_shots is None:
+                logger.warning(f"max_shots is not configured for device={device.id}")
+            elif request.shots > device.max_shots:
+                return BadRequestResponse(
+                    message=f"shots exceeds device {device.id} limit of {device.max_shots}"
+                )
         job.device_id = request.device_id
 
         job.transpiler_info = json.dumps(request.transpiler_info or {})

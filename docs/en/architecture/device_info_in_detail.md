@@ -81,6 +81,10 @@ The engine uses this flow through the provider API. On startup, `DeviceGatewayFe
 
 After startup, the same upload flow runs again whenever the fetched `device_info` payload or `calibrated_at` changes.
 
+Separately, Engine synchronizes the Gateway's `max_shots` through the existing Provider `PATCH /devices/{device_id}` on startup and when it changes. The value is not read from `device_info.zip`. A positive value sets the per-execution limit, `0` clears it to unknown, and an omitted or null field leaves the previous value unchanged. An unknown limit is stored as SQL `NULL`.
+
+Apply the Cloud migration and deploy the updated Provider and User APIs before the updated Engine. Existing devices remain unknown until synchronized. Cloud accepts submissions with unknown limits and logs a warning; Engine also checks its periodically refreshed limit before Gateway calls, including SSE internal jobs. Synchronization and polling are not an atomic guarantee against a limit changing between checks.
+
 ## Overwrite and Delete Semantics
 
 Because the storage key is deterministic, uploading a new archive for the same `device_id` overwrites the previous object. The latest successful upload becomes the new source of truth.

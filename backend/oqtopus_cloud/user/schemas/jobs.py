@@ -253,6 +253,9 @@ class SubmitJobRequest(BaseModel):
         Field(examples=[{"ro_error_mitigation": "pseudo_inverse"}]),
     ] = None
     shots: Annotated[int, Field(examples=[1000], ge=1, le=10000000)]
+    """
+    For sampling, estimation, and multi_manual jobs, the device's configured per-execution limit also applies. SSE internal jobs are checked separately at execution.
+    """
 
 
 class GetJobStatusResponse(BaseModel):

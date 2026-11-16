@@ -545,6 +545,13 @@ components:
         n_qubits:
           type: integer
           nullable: true
+        max_shots:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          maximum: 4294967295
+          description: Maximum shots per device execution. Zero clears an unknown limit; omission leaves it unchanged.
     devices.UpdateDeviceResponse:
       type: object
       properties:
