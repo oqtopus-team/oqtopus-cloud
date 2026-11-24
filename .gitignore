@@ -223,3 +223,6 @@ backend/benchmark-results/
 
 # Real-backend storage compatibility reports
 backend/storage-compatibility-results/
+
+# Local SeaweedFS data shared with the host (backend/compose.yaml)
+backend/data/

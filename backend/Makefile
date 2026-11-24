@@ -63,6 +63,8 @@ generate-all-schema: ## Generate user, provider, and admin schemas
 	@$(MAKE) generate-user_signup-schema
 
 export ENV=local
+export LOCAL_UID ?= $(shell id -u)
+export LOCAL_GID ?= $(shell id -g)
 export DB_HOST=localhost
 export DB_NAME=main
 export DB_CONNECTOR=mysql+pymysql
@@ -81,6 +83,11 @@ export DB_PASSWORD=password
 export STORAGE_SEAWEEDFS_BUCKET_NAME=oqtopus-oqtopus-dev
 export STORAGE_SEAWEEDFS_USERNAME=devadmin
 export STORAGE_SEAWEEDFS_PASSWORD=devadmin123
+# Host directory for the SeaweedFS data (bind-mounted to /data). A relative path is resolved
+# against the directory of compose.yaml (backend/), not the directory `make` is run from.
+export STORAGE_SEAWEEDFS_DATA_DIR=./data/seaweedfs
+export STORAGE_SEAWEEDFS_VOLUME_MAX=64
+export STORAGE_SEAWEEDFS_VOLUME_SIZE_LIMIT_MB=1024
 export STORAGE_SEAWEEDFS_ENDPOINT_URL=http://localhost:8333
 export STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL=http://localhost:8333
 export STORAGE_LOCAL_MINIO_BUCKET_NAME=oqtopus-oqtopus-dev
