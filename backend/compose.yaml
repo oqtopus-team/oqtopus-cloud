@@ -78,7 +78,27 @@ services:
   # command does not start it).
   seaweedfs:
     image: chrislusf/seaweedfs
-    command: ["server", "-s3", "-dir=/data"]
+    command:
+      - mini
+      # The official image ships /etc/seaweedfs/filer.toml, which keeps the LevelDB metadata
+      # under /data/filerldb2. Keep -dir=/data and do not mount your own filer.toml, so that
+      # the volume files and the metadata stay together in the one host directory.
+      - -dir=/data
+      # mini also starts WebDAV (7333), an Iceberg catalog (8181) and a Lance server (9101).
+      # Please turn it off when not in use.
+      - -webdav=false
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.autoCreateBucket=false
+      # Data capacity = -volume.max (number of volume slots) x -master.volumeSizeLimitMB
+      # (size of one volume), e.g. 64 x 1024MB = 64GB by default. Each bucket uses at least
+      # one volume, so the slots also bound the number of buckets.
+      - -volume.max=${STORAGE_SEAWEEDFS_VOLUME_MAX:-64}
+      - -master.volumeSizeLimitMB=${STORAGE_SEAWEEDFS_VOLUME_SIZE_LIMIT_MB:-1024}
+      # Without a password the Admin UI binds to loopback inside the container, so the
+      # published port below would not work. Override the default on a shared host.
+      - -admin.password=${STORAGE_SEAWEEDFS_PASSWORD:-devadmin123}
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     environment:
       # SeaweedFS bootstraps an admin S3 identity from these, and it must match
       # STORAGE_SEAWEEDFS_USERNAME/PASSWORD in x-api-env above. Without them the gateway has
@@ -87,12 +107,35 @@ services:
       # InvalidAccessKeyId.
       AWS_ACCESS_KEY_ID: ${STORAGE_SEAWEEDFS_USERNAME:-devadmin}
       AWS_SECRET_ACCESS_KEY: ${STORAGE_SEAWEEDFS_PASSWORD:-devadmin123}
+      # One volume per new bucket instead of 7 (master.toml volume_growth copy_1).
+      WEED_MASTER_VOLUME_GROWTH_COPY_1: "1"
     ports:
       - "8333:8333" # S3 API
       - "9333:9333" # Master UI / cluster status
       - "9001:8888" # Filer UI (remapped; 8888/8889/8890 are provider/admin/user_signup API ports)
+      - "23646:23646" # Admin UI (login: admin / STORAGE_SEAWEEDFS_PASSWORD)
     volumes:
+      # All the SeaweedFS state lives under /data. It holds:
+      #   <bucket>_<id>.dat / .idx / .vif   volume data files
+      #   m9333/                            master state
+      #   filerldb2/                        filer metadata (LevelDB)
+      #   admin/                            Admin UI settings and job history
+      #   worker/                           worker id
+      #   mini.options                      pinned options (volume size limit etc.)
+      #
+      # Choose where to keep it by leaving exactly ONE of the two lines below uncommented.
+      #
+      # (1) Docker named volume (default): managed by Docker, not visible from the host.
+      #     It is declared under the top-level `volumes:` at the end of this file.
       - seaweedfs-data:/data
+      # (2) Host directory: shared with the host (STORAGE_SEAWEEDFS_DATA_DIR, default
+      #     ./data/seaweedfs relative to this file). The container runs as LOCAL_UID:LOCAL_GID
+      #     (see `user:` above), so the files are owned by the host user. To use it, comment
+      #     out (1) and uncomment (2).
+      #     Back it up with the container STOPPED (a LevelDB directory must not be copied while
+      #     it is in use):
+      #       docker compose stop seaweedfs && cp -a <dir> <backup> && docker compose start seaweedfs
+      # - ${STORAGE_SEAWEEDFS_DATA_DIR:-./data/seaweedfs}:/data
     healthcheck:
       # Checks the S3 port specifically (not the master's :9333/cluster/status):
       # seaweedfs-bucket-init below talks to :8333, and that gateway binds about
