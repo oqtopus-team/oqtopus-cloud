@@ -1,0 +1,78 @@
+# cn=config changes for the on-prem OpenLDAP: strong password hash, the ppolicy
+# overlay (so `pwdReset`/`pwdMustChange` force a change at first login), and
+# least-privilege ACLs separating the Keycloak (read) and ops (write) binds.
+#
+# WHY A SEPARATE FILE: osixia applies the data-DIT bootstrap LDIF to the suffix
+# backend; it does NOT modify cn=config. Apply this against the config backend
+# at bring-up (or bake it into a custom OpenLDAP image), then verify at the #27
+# milestone. On the server:
+#
+#   docker compose exec openldap \
+#     ldapmodify -Y EXTERNAL -H ldapi:/// -f /path/10-ppolicy-acl-hash.ldif
+#
+# NOTE: the database index below is assumed to be {1}mdb; confirm with
+#   ldapsearch -Y EXTERNAL -H ldapi:/// -b cn=config 'olcDatabase=*mdb*' dn
+# and adjust `olcDatabase={1}mdb,cn=config` to the actual value.
+
+# --- modules: ppolicy overlay + PBKDF2 password hashing --------------------
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: ppolicy
+-
+add: olcModuleLoad
+olcModuleLoad: pw-pbkdf2
+
+# --- strong hash: Password Modify ExtOp stores {PBKDF2-SHA512} --------------
+# Forbid {SSHA}/{SHA}/{MD5}/{CLEARTEXT} for end-user passwords (set server-side
+# via the Password Modify ExtOp used by Keycloak and the ops user-add command).
+dn: olcDatabase={-1}frontend,cn=config
+changetype: modify
+replace: olcPasswordHash
+olcPasswordHash: {PBKDF2-SHA512}
+
+# --- ppolicy overlay on the data database -----------------------------------
+dn: olcOverlay=ppolicy,olcDatabase={1}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcPPolicyConfig
+olcOverlay: ppolicy
+olcPPolicyDefault: cn=default,ou=policies,dc=oqtopus,dc=internal
+olcPPolicyHashCleartext: TRUE
+olcPPolicyUseLockout: TRUE
+
+# --- least-privilege ACLs ---------------------------------------------------
+# userPassword (ou=people only): NEVER readable by anyone (so neither bind can
+# read hashes). Anonymous may `auth` (to bind). Both service binds get a
+# write-ONLY bit `=w` (OpenLDAP `write`/`w` alone implies read; `=w` sets
+# exactly write, not read): the Keycloak bind performs the Password Modify
+# ExtOp for browser password changes, and the ops bind sets temp passwords in
+# user-add. `self =w` lets a user change (not read) their own password.
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+replace: olcAccess
+olcAccess: {0}to dn.subtree="ou=people,dc=oqtopus,dc=internal" attrs=userPassword
+  by self =w
+  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=internal" =w
+  by dn.exact="cn=ops,ou=services,dc=oqtopus,dc=internal" =w
+  by anonymous auth
+  by * none
+olcAccess: {1}to dn.subtree="ou=services,dc=oqtopus,dc=internal" attrs=userPassword
+  by anonymous auth
+  by * none
+olcAccess: {2}to dn.subtree="ou=people,dc=oqtopus,dc=internal"
+  by dn.exact="cn=ops,ou=services,dc=oqtopus,dc=internal" write
+  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=internal" read
+  by self read
+  by * none
+olcAccess: {3}to dn.subtree="ou=groups,dc=oqtopus,dc=internal"
+  by dn.exact="cn=ops,ou=services,dc=oqtopus,dc=internal" write
+  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=internal" read
+  by * none
+olcAccess: {4}to dn.subtree="ou=policies,dc=oqtopus,dc=internal"
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
+  by * read
+olcAccess: {5}to *
+  by dn.exact="cn=ops,ou=services,dc=oqtopus,dc=internal" read
+  by dn.exact="cn=keycloak,ou=services,dc=oqtopus,dc=internal" read
+  by * none

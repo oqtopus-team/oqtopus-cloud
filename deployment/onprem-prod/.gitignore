@@ -1,0 +1,8 @@
+# Never commit issued keys/certs or injected secrets. The Root CA private key
+# stays offline on the admin terminal; leaf certs/keys and secret files are
+# generated locally and copied to the server out of band.
+pki/out/
+secrets/
+*.key
+*.pem
+!pki/**/*.sh

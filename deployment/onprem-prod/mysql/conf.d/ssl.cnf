@@ -1,0 +1,9 @@
+[mysqld]
+# TLS using the internal-CA `db` leaf certificate (copied to mysql-owned paths
+# by the db entrypoint). The app connects with DB_SSL_CA=<internal CA> and
+# host `db` (cert SAN includes `db`), so it verifies the chain; Keycloak's JDBC
+# uses sslMode=REQUIRED. require_secure_transport is left OFF for now (hardening
+# item: flip ON once every client is confirmed on TLS).
+ssl-ca=/etc/mysql/certs/ca.crt
+ssl-cert=/etc/mysql/certs/db.crt
+ssl-key=/etc/mysql/certs/db.key

@@ -1,0 +1,39 @@
+# Data-DIT bootstrap for the on-prem OQTOPUS directory (dc=oqtopus,dc=internal).
+#
+# Only standard-schema entries live here (osixia applies this to the data
+# backend at first init). The dedicated bind accounts are added by the
+# generated secrets/ldap-bind-accounts.ldif (passwords injected), and the
+# password policy / ACLs / strong password hash are cn=config items applied
+# separately (see ldap/config/) because the data-LDIF backend cannot set them.
+#
+# End-user entries are NOT seeded here: test users are created with the ops
+# `user-add` command (which sets a temporary password; ppolicy pwdReset then
+# forces a change at first login).
+
+dn: ou=people,dc=oqtopus,dc=internal
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=oqtopus,dc=internal
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=services,dc=oqtopus,dc=internal
+objectClass: organizationalUnit
+ou: services
+
+dn: ou=policies,dc=oqtopus,dc=internal
+objectClass: organizationalUnit
+ou: policies
+
+# Admin group (membership -> oqtopus-admin realm role via the Keycloak
+# role-ldap-mapper). Seeded with a NON-person placeholder member so the group
+# stays schema-valid (groupOfNames requires >=1 member) while having ZERO real
+# admins at init. `admin-grant` adds real `uid=...` members and `admin-revoke`
+# removes them; the role mapper only maps resolvable uids, so the placeholder
+# never grants the role. This supports zero-admin initialization and removing
+# the last admin without emptying the group.
+dn: cn=oqtopus-admin,ou=groups,dc=oqtopus,dc=internal
+objectClass: groupOfNames
+cn: oqtopus-admin
+member: cn=placeholder,ou=services,dc=oqtopus,dc=internal

@@ -1,6 +1,13 @@
 .git
 .venv
 
+# On-prem production secrets and issued PKI material must NEVER enter a build
+# context (the API image is built from the repo root with `COPY . /app`).
+# Scoped to these directories so the bundled RDS CA under
+# backend/oqtopus_cloud/common/certs is not affected.
+deployment/onprem-prod/secrets/
+deployment/onprem-prod/pki/out/
+
 **/__pycache__
 **/*.py[cod]
 **/.pytest_cache
@@ -10,3 +17,14 @@
 **/.coverage*
 **/coverage*.xml
 **/htmlcov*
+
+# Terraform local caches/state must never enter the build context: the provider
+# plugin cache is hundreds of MB (it filled the Docker disk during a build) and
+# tfstate can contain secrets. None of it is needed by the Python image.
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+
+# Node dependencies are always reinstalled in their own image, never copied in.
+**/node_modules/

@@ -1,0 +1,34 @@
+name: On-prem prod guard
+
+# Fail if any forbidden demo/insecure setting leaks into the on-premise production manifests.
+# The self-test proves the guard detects a known-bad sample, so a green run means the
+# check is actually working.
+
+on:
+  push:
+    paths:
+    - 'deployment/onprem-prod/**'
+    - 'scripts/ci/onprem_prod_guard.sh'
+    - 'scripts/ci/onprem_prod_forbidden_patterns.txt'
+    - 'scripts/ci/testdata/**'
+    - '.github/workflows/onprem-prod-guard.yaml'
+  pull_request:
+    paths:
+    - 'deployment/onprem-prod/**'
+    - 'scripts/ci/onprem_prod_guard.sh'
+    - 'scripts/ci/onprem_prod_forbidden_patterns.txt'
+    - 'scripts/ci/testdata/**'
+    - '.github/workflows/onprem-prod-guard.yaml'
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Self-test (the guard must detect the known-bad fixture)
+      run: bash scripts/ci/onprem_prod_guard.sh --selftest
+
+    - name: Scan on-prem production manifests for forbidden settings
+      run: bash scripts/ci/onprem_prod_guard.sh

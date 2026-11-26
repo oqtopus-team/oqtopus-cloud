@@ -1,0 +1,461 @@
+# On-prem PRODUCTION stack for the OQTOPUS flexible-auth deployment.
+#
+#   Browser ──HTTPS──> nginx :8443 (app.<domain>)  ─┬─ /          SPA (proxy build)
+#                                                   ├─ /oauth2/*  oauth2-proxy
+#                                                   └─ /api/*      user-api (Bearer)
+#   Browser ──HTTPS──> keycloak :9443 (auth.<domain>)  login / token / jwks
+#   oauth2-proxy ─(backchannel, internal CA)─> keycloak ; keycloak ─> openldap
+#   user-api ─(JWKS, internal CA)─> keycloak ; apis ─> db (MySQL) / seaweedfs
+#
+# Production posture (vs backend/auth-demo, which this supersedes):
+#   - Keycloak runs `start` (production mode) over HTTPS with an external MySQL
+#     schema and a hardened realm (sslRequired=all, no Direct Access Grants).
+#   - All secrets are injected from ./secrets/*.{,json} (0600) at runtime; none
+#     are literals in this file. TLS uses the internal CA under ./pki/out.
+#   - oauth2-proxy uses Secure/__Host- cookies; LDAP binds with a dedicated,
+#     least-privilege service account (not cn=admin).
+#
+# Prereqs (run once, on the admin terminal):
+#   pki/gen-ca.sh [BASE_DOMAIN]        # internal CA + leaf certs
+#   scripts/gen-secrets.sh            # 0600 secret files
+#   Build both SPAs using scripts/build-spas.sh (see README.md).
+#   add to /etc/hosts:  127.0.0.1 app.oqtopus.internal auth.oqtopus.internal
+#   import pki/out/ca/ca.crt into the browser/OS trust store.
+
+name: oqtopus-onprem
+
+# Credentials and TLS keys injected from files (never literals here).
+secrets:
+  mysql_root_password: { file: ./secrets/mysql_root_password }
+  db_app_password: { file: ./secrets/db_app_password }
+  db_app_secret: { file: ./secrets/db_app_secret.json }
+  keycloak_admin_password: { file: ./secrets/keycloak_admin_password }
+  ldap_admin_password: { file: ./secrets/ldap_admin_password }
+  ldap_bind_password: { file: ./secrets/ldap_bind_password }
+  oauth2_proxy_client_secret: { file: ./secrets/oauth2_proxy_client_secret }
+  oauth2_proxy_admin_client_secret: { file: ./secrets/oauth2_proxy_admin_client_secret }
+  keycloak_db_password: { file: ./secrets/keycloak_db_password }
+  # oauth2-proxy cookie secret lives inside a --config file (no --cookie-secret-file
+  # flag exists); this keeps the distroless image shell-free.
+  oauth2_proxy_config: { file: ./secrets/oauth2-proxy.cfg }
+  oauth2_proxy_admin_config: { file: ./secrets/oauth2-proxy-admin.cfg }
+
+x-api-env: &api-env
+  # ENV!=local so the production code paths run; credentials come from a file
+  # (DB_CREDENTIAL_SOURCE=file overrides any ENV-based resolution).
+  ENV: onprem
+  AUTH_MODE: oidc
+  OIDC_ISSUER: https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}/realms/oqtopus
+  # Backchannel JWKS over the internal network (cert SAN includes `keycloak`);
+  # the app trusts the internal CA via SSL_CERT_FILE below.
+  OIDC_JWKS_URL: https://keycloak:8443/realms/oqtopus/protocol/openid-connect/certs
+  DB_HOST: db
+  DB_NAME: main
+  DB_CONNECTOR: mysql+pymysql
+  DB_CREDENTIAL_SOURCE: file
+  DB_SECRET_FILE: /run/oqtopus/db_app_secret.json
+  DB_SSL_CA: /certs/ca.crt
+  # On-prem oidc deployment only talks TLS to Keycloak/DB (both internal-CA), so
+  # trusting just the internal CA here is sufficient and keeps JWKS verify working.
+  SSL_CERT_FILE: /certs/ca.crt
+  REQUESTS_CA_BUNDLE: /certs/ca.crt
+  LOGIN_HISTORY_ENABLED: "false"
+  AUTH_ENFORCE_STATUS: "true"
+  # Storage (job payloads) via the bundled SeaweedFS.
+  STORAGE_DRIVER: seaweedfs
+  STORAGE_SEAWEEDFS_BUCKET_NAME: oqtopus-oqtopus
+  # STORAGE_SEAWEEDFS_USERNAME/PASSWORD come from ./secrets/seaweedfs.env (no
+  # insecure defaults in the manifest); see env_file on the api/seaweedfs services.
+  STORAGE_SEAWEEDFS_ENDPOINT_URL: http://seaweedfs:8333
+  # Sign the browser-facing origin. Nginx forwards the original host and URI
+  # to SeaweedFS so the signature remains valid through TLS termination.
+  STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL: https://app.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${APP_HTTPS_PORT:-8443}
+  ALLOW_ORIGINS: https://app.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${APP_HTTPS_PORT:-8443}
+  ALLOW_CREDENTIALS: "true"
+  ALLOW_METHODS: "*"
+  ALLOW_HEADERS: "*"
+  LOG_LEVEL: INFO
+  OTEL_ENABLED: "false"
+
+x-api-build: &api-build
+  context: ../..
+  dockerfile: backend/Dockerfile
+
+# APIs: copy the 0444 compose-mounted DB secret to a root-owned 0600 file (the
+# app's strict secret loader rejects group/other-readable files), then run.
+x-api-common: &api-common
+  build: *api-build
+  env_file: [./secrets/seaweedfs.env]
+  secrets: [db_app_secret]
+  volumes:
+    - ./pki/out/ca/ca.crt:/certs/ca.crt:ro
+  depends_on:
+    db: { condition: service_healthy }
+    migrate: { condition: service_completed_successfully }
+    keycloak: { condition: service_started }
+    seaweedfs-bucket-init: { condition: service_completed_successfully }
+  restart: unless-stopped
+
+services:
+  db:
+    image: mysql:8.4
+    # Copy the internal-CA `db` leaf cert to mysql-owned paths (bind-mounted
+    # host keys are not owned by the container's mysql uid), then start mysqld
+    # with TLS. Runs as root before docker-entrypoint.sh drops to mysql.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        mkdir -p /etc/mysql/certs
+        cp /certs-src/ca.crt /certs-src/db.crt /certs-src/db.key /etc/mysql/certs/
+        chown -R mysql:mysql /etc/mysql/certs
+        chmod 600 /etc/mysql/certs/db.key
+        chmod 644 /etc/mysql/certs/ca.crt /etc/mysql/certs/db.crt
+        exec docker-entrypoint.sh mysqld --mysql-native-password=OFF
+    environment:
+      MYSQL_DATABASE: main
+      MYSQL_USER: oqtopus
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/db_app_password
+    secrets: [mysql_root_password, db_app_password]
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./mysql/conf.d/ssl.cnf:/etc/mysql/conf.d/ssl.cnf:ro
+      - ./pki/out/certs/db.crt:/certs-src/db.crt:ro
+      - ./pki/out/certs/db.key:/certs-src/db.key:ro
+      - ./pki/out/ca/ca.crt:/certs-src/ca.crt:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  # Create the Keycloak schema + dedicated keycloak DB user (idempotent). A
+  # one-shot (not an initdb.d script, which can hit noexec on bind mounts).
+  # $(cat ...) runs in the container shell (Compose passes it literally).
+  db-init:
+    image: mysql:8.4
+    depends_on:
+      db: { condition: service_healthy }
+    secrets: [mysql_root_password, keycloak_db_password]
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        export MYSQL_PWD="$(cat /run/secrets/mysql_root_password)"
+        mysql -h db -uroot -e "CREATE DATABASE IF NOT EXISTS keycloak CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS 'keycloak'@'%' IDENTIFIED BY '$(cat /run/secrets/keycloak_db_password)'; ALTER USER 'keycloak'@'%' IDENTIFIED BY '$(cat /run/secrets/keycloak_db_password)'; GRANT ALL PRIVILEGES ON keycloak.* TO 'keycloak'@'%'; FLUSH PRIVILEGES;"
+    restart: "no"
+
+  openldap:
+    image: osixia/openldap:1.5.0
+    platform: linux/amd64
+    # --copy-service applies the bootstrap LDIF; TLS is enforced (LDAPS :636,
+    # StartTLS on :389) using the internal-CA leaf certificate.
+    command: ["--copy-service"]
+    environment:
+      LDAP_ORGANISATION: OQTOPUS
+      LDAP_DOMAIN: ${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}
+      # Bootstrap-only root password; Keycloak binds with the dedicated
+      # `cn=keycloak,ou=services` account (read-only), and the ops CLI with
+      # `cn=ops,ou=services` (write) -- not this account.
+      LDAP_ADMIN_PASSWORD_FILE: /run/secrets/ldap_admin_password
+      LDAP_TLS: "true"
+      LDAP_TLS_ENFORCE: "true"
+      LDAP_TLS_CRT_FILENAME: ldap.crt
+      LDAP_TLS_KEY_FILENAME: ldap.key
+      LDAP_TLS_CA_CRT_FILENAME: ca.crt
+      LDAP_TLS_VERIFY_CLIENT: "never"
+    secrets: [ldap_admin_password]
+    volumes:
+      - ./ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
+      # Generated (passwords injected); adds the cn=keycloak / cn=ops bind
+      # accounts after the ou=services the bootstrap LDIF creates.
+      - ./secrets/ldap-bind-accounts.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/60-bind-accounts.ldif:ro
+      - ./pki/out/certs/ldap.crt:/container/service/slapd/assets/certs/ldap.crt:ro
+      - ./pki/out/certs/ldap.key:/container/service/slapd/assets/certs/ldap.key:ro
+      - ./pki/out/ca/ca.crt:/container/service/slapd/assets/certs/ca.crt:ro
+      - ldap-data:/var/lib/ldap
+      - ldap-config:/etc/ldap/slapd.d
+    ports:
+      # Verification: bind LDAPS to loopback only. In production, expose (if at
+      # all) only on the management network / VPN, not on all interfaces.
+      - "127.0.0.1:${LDAPS_PORT:-1636}:636"
+    restart: unless-stopped
+
+  keycloak:
+    # Pinned to a 26.6.x patch that supports the LDAP password-policy control, so
+    # OpenLDAP's `pwdReset` forces a browser password change on first login
+    # (26.0 does not). Enable "Enable LDAP password policy" on the LDAP provider
+    # (admin console toggle; see keycloak/realm.json LDAP config note).
+    image: quay.io/keycloak/keycloak:26.6.4
+    # Secrets are read from files and exported, then Keycloak starts in
+    # production mode over HTTPS. KC_HTTP_ENABLED is left false (HTTPS only).
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -euo pipefail
+        export KC_DB_PASSWORD="$(cat /run/secrets/keycloak_db_password)"
+        export KC_BOOTSTRAP_ADMIN_PASSWORD="$(cat /run/secrets/keycloak_admin_password)"
+        export LDAP_BIND_PASSWORD="$(cat /run/secrets/ldap_bind_password)"
+        export OQTOPUS_OAUTH2_PROXY_SECRET="$(cat /run/secrets/oauth2_proxy_client_secret)"
+        export OQTOPUS_ADMIN_OAUTH2_PROXY_SECRET="$(cat /run/secrets/oauth2_proxy_admin_client_secret)"
+        exec /opt/keycloak/bin/kc.sh start --import-realm --optimized=false
+    environment:
+      KC_DB: mysql
+      # sslMode=REQUIRED encrypts the Keycloak<->MySQL connection. Upgrading to
+      # VERIFY_IDENTITY (internal-CA + hostname verification, via a JDBC
+      # truststore) is a remaining item before production acceptance.
+      KC_DB_URL: jdbc:mysql://db:3306/keycloak?sslMode=REQUIRED
+      KC_DB_USERNAME: keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_HOSTNAME: https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}
+      KC_HTTP_ENABLED: "false"
+      KC_HTTPS_PORT: "8443"
+      KC_HTTPS_CERTIFICATE_FILE: /certs/auth.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/auth.key
+      KC_HEALTH_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      # Trust the internal CA so the LDAPS federation to openldap (ldaps://,
+      # useTruststoreSpi=always) verifies the OpenLDAP server certificate.
+      KC_TRUSTSTORE_PATHS: /certs/ca.crt
+    secrets:
+      - keycloak_db_password
+      - keycloak_admin_password
+      - ldap_bind_password
+      - oauth2_proxy_client_secret
+      - oauth2_proxy_admin_client_secret
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - ./pki/out/certs/auth.crt:/certs/auth.crt:ro
+      - ./pki/out/certs/auth.key:/certs/auth.key:ro
+      - ./pki/out/ca/ca.crt:/certs/ca.crt:ro
+    depends_on:
+      db: { condition: service_healthy }
+      db-init: { condition: service_completed_successfully }
+      openldap: { condition: service_started }
+    ports:
+      # Verification: loopback only (reach via /etc/hosts auth.oqtopus.internal
+      # -> 127.0.0.1). In production, expose per the public/VPN boundary design.
+      - "127.0.0.1:${KC_HTTPS_PORT:-9443}:8443"
+    restart: unless-stopped
+
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    command: ["server", "-s3", "-dir=/data"]
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from ./secrets/seaweedfs.env
+    # (generated; no insecure defaults in the manifest).
+    env_file: [./secrets/seaweedfs.env]
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8333/"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  seaweedfs-bucket-init:
+    image: chrislusf/seaweedfs
+    depends_on:
+      seaweedfs: { condition: service_healthy }
+    entrypoint: /bin/sh
+    command: -c "
+      out=$$(echo 's3.bucket.create -name oqtopus-oqtopus' | weed shell -master=seaweedfs:9333 2>&1);
+      rc=$$?; echo \"$$out\";
+      [ $$rc -eq 0 ] || echo \"$$out\" | grep -q 'already exists'"
+
+  # One-shot DB migration. Runs the SAME DB contract as the APIs
+  # (DB_CREDENTIAL_SOURCE=file + DB_SSL_CA over the internal-CA TLS connection);
+  # the APIs start only after this completes successfully.
+  migrate:
+    build: *api-build
+    environment:
+      ENV: onprem
+      DB_HOST: db
+      DB_NAME: main
+      DB_CONNECTOR: mysql+pymysql
+      DB_CREDENTIAL_SOURCE: file
+      DB_SECRET_FILE: /run/oqtopus/db_app_secret.json
+      DB_SSL_CA: /certs/ca.crt
+    secrets: [db_app_secret]
+    volumes:
+      - ./pki/out/ca/ca.crt:/certs/ca.crt:ro
+    depends_on:
+      db: { condition: service_healthy }
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /run/oqtopus && install -m 600 /run/secrets/db_app_secret /run/oqtopus/db_app_secret.json
+        cd /app/backend && exec uv run alembic upgrade head
+    restart: "no"
+
+  user-api:
+    <<: *api-common
+    environment:
+      <<: *api-env
+      # On-prem identity: resolve users.id via users.cognito_id == sub, and
+      # auto-provision an `unapproved` row on first login (first request 403s
+      # until an admin approves). USER_AUTH_POLICY=oidc -> MFA is delegated to
+      # the IdP (no Cognito dependency).
+      #
+      # Token binding is the ACCESS-token-only audience `oqtopus-user-api` (a
+      # realm audience mapper adds it to the access token but NOT the id token),
+      # so id tokens and other clients' tokens are rejected. NOTE: do NOT set
+      # OIDC_TOKEN_USE here -- oqtopus-auth would require a `token_use` claim,
+      # which standard Keycloak tokens do not carry, and every request would 401.
+      OIDC_IDENTITY_RESOLVER: cognito_sub
+      OIDC_PRINCIPAL_CLAIM: sub
+      OIDC_AUDIENCE: oqtopus-user-api
+      OIDC_AUTO_PROVISION: "true"
+      USER_AUTH_POLICY: oidc
+      POWERTOOLS_METRICS_NAMESPACE: user-api
+      POWERTOOLS_SERVICE_NAME: user-api
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        install -m 600 /run/secrets/db_app_secret /run/oqtopus/db_app_secret.json 2>/dev/null \
+          || (mkdir -p /run/oqtopus && install -m 600 /run/secrets/db_app_secret /run/oqtopus/db_app_secret.json)
+        exec uv run uvicorn oqtopus_cloud.user.lambda_function:app --host 0.0.0.0 --port 8080 --log-level info
+
+  admin-api:
+    <<: *api-common
+    environment:
+      <<: *api-env
+      # Dedicated access-token-only audience rejects id tokens (which lack it),
+      # while the existing azp binding + realm-role check are preserved. No
+      # OIDC_TOKEN_USE (standard Keycloak tokens carry no `token_use`).
+      STORAGE_SEAWEEDFS_PUBLIC_ENDPOINT_URL: https://admin.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${ADMIN_HTTPS_PORT:-8444}
+      OIDC_AUDIENCE: oqtopus-admin-api
+      OIDC_CLIENT_ID: oqtopus-admin-oauth2-proxy
+      OIDC_CLIENT_ID_CLAIM: azp
+      ADMIN_REQUIRED_ROLE: oqtopus-admin
+      POWERTOOLS_METRICS_NAMESPACE: admin-api
+      POWERTOOLS_SERVICE_NAME: admin-api
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /run/oqtopus && install -m 600 /run/secrets/db_app_secret /run/oqtopus/db_app_secret.json
+        exec uv run uvicorn oqtopus_cloud.admin.lambda_function:app --host 0.0.0.0 --port 8889 --log-level info
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    depends_on:
+      keycloak: { condition: service_started }
+      user-api: { condition: service_started }
+    secrets: [oauth2_proxy_config, oauth2_proxy_client_secret]
+    volumes:
+      - ./pki/out/ca/ca.crt:/certs/ca.crt:ro
+    # distroless image (no shell): cookie secret comes from the --config file,
+    # client secret from --client-secret-file. No literals in this manifest.
+    command:
+      - --config=/run/secrets/oauth2_proxy_config
+      - --client-secret-file=/run/secrets/oauth2_proxy_client_secret
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true
+      - --provider=oidc
+      - --oidc-issuer-url=https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}/realms/oqtopus
+      - --skip-oidc-discovery=true
+      - --login-url=https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}/realms/oqtopus/protocol/openid-connect/auth
+      - --redeem-url=https://keycloak:8443/realms/oqtopus/protocol/openid-connect/token
+      - --oidc-jwks-url=https://keycloak:8443/realms/oqtopus/protocol/openid-connect/certs
+      - --provider-ca-file=/certs/ca.crt
+      - --client-id=oqtopus-oauth2-proxy
+      - --redirect-url=https://app.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${APP_HTTPS_PORT:-8443}/oauth2/callback
+      - --upstream=static://200
+      - --cookie-name=__Host-oqtopus
+      - --cookie-secure=true
+      - --cookie-samesite=lax
+      - --email-domain=*
+      - --scope=openid email profile
+      - --skip-provider-button=true
+      - --set-authorization-header=true
+      - --pass-access-token=true
+      - --set-xauthrequest=true
+      - --whitelist-domain=app.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${APP_HTTPS_PORT:-8443}
+      - --whitelist-domain=auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      oauth2-proxy: { condition: service_started }
+      user-api: { condition: service_started }
+    volumes:
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/storage.conf:/etc/nginx/oqtopus-storage.conf:ro
+      - ./nginx/logout.js:/etc/nginx/njs/logout.js:ro
+      - ./pki/out/certs/app.crt:/certs/app.crt:ro
+      - ./pki/out/certs/app.key:/certs/app.key:ro
+      - ${FRONTEND_DIST:-../../../oqtopus-frontend/dist}:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:${APP_HTTPS_PORT:-8443}:443"
+    restart: unless-stopped
+
+  oauth2-proxy-admin:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    depends_on:
+      keycloak: { condition: service_started }
+      admin-api: { condition: service_started }
+    secrets: [oauth2_proxy_admin_config, oauth2_proxy_admin_client_secret]
+    volumes:
+      - ./pki/out/ca/ca.crt:/certs/ca.crt:ro
+    command:
+      - --config=/run/secrets/oauth2_proxy_admin_config
+      - --client-secret-file=/run/secrets/oauth2_proxy_admin_client_secret
+      - --http-address=0.0.0.0:4181
+      - --reverse-proxy=true
+      - --provider=oidc
+      - --oidc-issuer-url=https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}/realms/oqtopus
+      - --skip-oidc-discovery=true
+      - --login-url=https://auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}/realms/oqtopus/protocol/openid-connect/auth
+      - --redeem-url=https://keycloak:8443/realms/oqtopus/protocol/openid-connect/token
+      - --oidc-jwks-url=https://keycloak:8443/realms/oqtopus/protocol/openid-connect/certs
+      - --provider-ca-file=/certs/ca.crt
+      - --client-id=oqtopus-admin-oauth2-proxy
+      - --redirect-url=https://admin.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${ADMIN_HTTPS_PORT:-8444}/oauth2/callback
+      - --upstream=static://200
+      - --cookie-name=__Host-oqtopus-admin
+      - --cookie-secure=true
+      - --cookie-samesite=lax
+      - --email-domain=*
+      - --scope=openid email profile
+      - --skip-provider-button=true
+      - --set-authorization-header=true
+      - --pass-access-token=true
+      - --set-xauthrequest=true
+      - --whitelist-domain=admin.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${ADMIN_HTTPS_PORT:-8444}
+      - --whitelist-domain=auth.${OQTOPUS_BASE_DOMAIN:-oqtopus.internal}:${KC_HTTPS_PORT:-9443}
+    restart: unless-stopped
+
+  nginx-admin:
+    image: nginx:1.27-alpine
+    depends_on:
+      oauth2-proxy-admin: { condition: service_started }
+      admin-api: { condition: service_started }
+    volumes:
+      - ./nginx/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/admin.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/storage.conf:/etc/nginx/oqtopus-storage.conf:ro
+      - ./nginx/logout.js:/etc/nginx/njs/logout.js:ro
+      - ./pki/out/certs/admin.crt:/certs/admin.crt:ro
+      - ./pki/out/certs/admin.key:/certs/admin.key:ro
+      - ${ADMIN_DIST:-../../../oqtopus-admin/dist}:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:${ADMIN_HTTPS_PORT:-8444}:443"
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  ldap-data:
+  ldap-config:
+  seaweedfs-data:

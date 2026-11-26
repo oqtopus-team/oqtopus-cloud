@@ -1,0 +1,17 @@
+# KNOWN-BAD fixture for onprem_prod_guard.sh --selftest ONLY.
+# It intentionally contains forbidden settings so the guard proves it detects
+# them. This path is NOT a production root and is never scanned by the real run.
+services:
+  keycloak:
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_HTTP_ENABLED: "true"
+  oauth2-proxy:
+    command:
+      - --cookie-secure=false
+      - --insecure-oidc-allow-unverified-email=true
+      - --cookie-secret=0123456789abcdef0123456789abcdef
+ldap:
+  bindDn: "cn=admin,dc=oqtopus,dc=local"
+client:
+  directAccessGrantsEnabled: true

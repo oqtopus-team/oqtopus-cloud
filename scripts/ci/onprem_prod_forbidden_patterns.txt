@@ -1,0 +1,14 @@
+# Forbidden settings in on-prem PRODUCTION manifests (implementation plan S1).
+# Format:  <ERE regex><TAB><human description>
+# Lines starting with '#' and blank lines are ignored.
+# These settings are allowed ONLY in the demo (backend/*.yaml, backend/auth-demo/),
+# which the guard does not scan. If one appears under a production root it fails.
+start-dev	Keycloak dev mode (use `start` / production mode)
+cookie-secure=false	oauth2-proxy insecure cookie (must be cookie-secure=true)
+cookie-secure:[[:space:]]*false	oauth2-proxy insecure cookie (must be true)
+insecure-oidc-allow-unverified-email=true	insecure unverified-email acceptance
+directAccessGrantsEnabled"?[[:space:]]*:[[:space:]]*true	Password Grant enabled on a client (must be false)
+cn=admin,dc=	LDAP admin bind DN (use a dedicated least-privilege service account)
+KC_HTTP_ENABLED"?[[:space:]]*:?[[:space:]]*"?true	Keycloak plaintext HTTP enabled (HTTPS only)
+cookie-secret=[0-9a-fA-F]{24,}	hardcoded literal cookie secret (inject from a secret store)
+--cookie-secret=[0-9a-fA-F]{24,}	hardcoded literal cookie secret (inject from a secret store)

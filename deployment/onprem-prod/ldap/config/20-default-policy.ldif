@@ -1,0 +1,21 @@
+# Default password policy entry referenced by the ppolicy overlay
+# (olcPPolicyDefault). Added to the DATA tree AFTER the ppolicy module is loaded
+# (10-ppolicy-acl-hash.ldif), so the `pwdPolicy` objectClass is available.
+# Apply with an authenticated bind (ops/admin), not -Y EXTERNAL.
+#
+#   pwdMustChange: TRUE  -> after an admin sets/reset a password (ops user-add),
+#                           the user is forced to change it at next login
+#                           (surfaced to Keycloak via the pwdReset control).
+dn: cn=default,ou=policies,dc=oqtopus,dc=internal
+objectClass: pwdPolicy
+objectClass: device
+cn: default
+pwdAttribute: userPassword
+pwdMustChange: TRUE
+pwdAllowUserChange: TRUE
+pwdLockout: TRUE
+pwdMaxFailure: 5
+pwdLockoutDuration: 900
+pwdMinLength: 12
+pwdExpireWarning: 0
+pwdGraceAuthNLimit: 0
